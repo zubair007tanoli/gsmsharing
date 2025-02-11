@@ -1,0 +1,209 @@
+﻿<style>
+    .comment-editor {
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 20px;
+    }
+    #editor {
+        border: 1px solid #edeff1;
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 14px;
+        min-height: 200px;
+        text-align: left; /* Default alignment */
+    }
+    .toolbar button, .toolbar select {
+        padding: 2px 5px;
+        font-size: 14px;
+        color: #1A1A1B;
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+    }
+    .toolbar button:hover, .toolbar select:hover {
+        color: #0079D3;
+    }
+    #imagePreview {
+        max-width: 100%;
+        max-height: 200px;
+        margin-top: 10px;
+    }
+    .resizable-image {
+        max-width: 100%;
+        height: auto;
+        cursor: pointer;
+    }
+    .resizable-image:hover {
+        border: 2px dashed #0079D3;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+    }
+    table td, table th {
+        border: 1px solid #ddd;
+        padding: 8px;
+        min-width: 100px;
+        height: 40px; /* Decent row height */
+        position: relative;
+    }
+    table td:hover::after, table th:hover::after {
+        content: '+';
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 16px;
+        color: #0079D3;
+        cursor: pointer;
+    }
+    table td:hover::before, table th:hover::before {
+        content: '−';
+        position: absolute;
+        right: -10px;
+        top: -10px;
+        font-size: 16px;
+        color: #ff0000;
+        cursor: pointer;
+    }
+</style>
+<div class="container">
+    <div class="comment-editor">
+        <div class="toolbar mb-2">
+            <select id="headingSelect">
+                <option value="">Heading</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+                <option value="h4">Heading 4</option>
+                <option value="h5">Heading 5</option>
+                <option value="h6">Heading 6</option>
+            </select>
+            <select id="fontSelect">
+                <option value="">Font</option>
+                <option value="Arial">Arial</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Courier">Courier</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Palatino">Palatino</option>
+                <option value="Garamond">Garamond</option>
+                <option value="Bookman">Bookman</option>
+                <option value="Comic Sans MS">Comic Sans MS</option>
+                <option value="Trebuchet MS">Trebuchet MS</option>
+                <option value="Arial Black">Arial Black</option>
+            </select>
+            <button onclick="formatText('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+            <button onclick="formatText('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+            <button onclick="formatText('underline')" title="Underline"><i class="fas fa-underline"></i></button>
+            <button onclick="openLinkModal()" title="Add Link"><i class="fas fa-link"></i></button>
+            <button onclick="openImageModal()" title="Add Image"><i class="fas fa-image"></i></button>
+            <button onclick="formatText('justifyLeft')" title="Align Left"><i class="fas fa-align-left"></i></button>
+            <button onclick="formatText('justifyCenter')" title="Align Center"><i class="fas fa-align-center"></i></button>
+            <button onclick="formatText('justifyRight')" title="Align Right"><i class="fas fa-align-right"></i></button>
+            <button onclick="openColorPicker('foreColor')" title="Text Color"><i class="fas fa-paint-brush"></i></button>
+            <button onclick="openColorPicker('hiliteColor')" title="Background Color"><i class="fas fa-fill"></i></button>
+            <button onclick="insertTable()" title="Insert Table"><i class="fas fa-table"></i></button>
+            <button onclick="formatText('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+            <button onclick="formatText('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+        </div>
+        <div id="editor" class="form-control" contenteditable="true"></div>
+   @*      <div class="d-flex justify-content-end mt-2">
+            <button class="btn btn-primary" onclick="submitComment()">Submit Post</button>
+        </div> *@
+    </div>
+</div>
+
+<!-- Link Modal -->
+<div class="modal fade" id="linkModal" tabindex="-1" aria-labelledby="linkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="linkModalLabel">Insert Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="linkUrl">URL</label>
+                    <input type="text" id="linkUrl" class="form-control" placeholder="Enter URL">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="insertLink()">Insert Link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="imageUrl" class="form-control mb-2" placeholder="Enter Image URL">
+                <input type="text" id="imageAlt" class="form-control mb-2" placeholder="Enter Image Alt Text">
+                <input type="file" id="imageFile" class="form-control mb-2" accept="image/*">
+                <img id="imagePreview" src="" alt="Image Preview" style="display: none;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="insertImage()">Insert Image</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Color Picker Modal -->
+<div class="modal fade" id="colorPickerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Choose Color</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="color" id="colorPicker" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="applyColor()">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Modal -->
+<div class="modal fade" id="tableModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Insert Table</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="rows">Rows</label>
+                    <input type="number" id="rows" class="form-control" min="1" value="2">
+                </div>
+                <div class="form-group">
+                    <label for="columns">Columns</label>
+                    <input type="number" id="columns" class="form-control" min="1" value="2">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="createTable()">Insert Table</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+<script src="~/js/EditorScripts.js"></script>

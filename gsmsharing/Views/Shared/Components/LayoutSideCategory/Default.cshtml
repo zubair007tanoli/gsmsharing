@@ -1,0 +1,137 @@
+﻿@model IEnumerable<gsmsharing.ViewModels.CategoryViewModel>
+@{
+    var currentPath = Context.Request.Path;
+}
+
+<div class="sidebar rounded-top rounded-2">
+    <h5 class="sidebar-title mb-3">Categories</h5>
+    <div id="categories">
+        @foreach (var category in Model)
+        {
+            var isActive = currentPath.Equals($"/Category/{category.Slug}", StringComparison.OrdinalIgnoreCase);
+            var hasSubcategories = category.SubCategories.Any();
+
+            <div class="category-container">
+                <a class="category-item d-flex align-items-center @(hasSubcategories ? "has-subcategories" : "") @(isActive ? "active" : "")"
+                   href="@Url.Action("Index", "Category", new { slug = category.Slug })"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#subcategories-@category.CategoryID"
+                   aria-expanded="@(isActive ? "true" : "false")">
+                    <i class="@(!string.IsNullOrEmpty(category.IconClass) ? category.IconClass : "fas fa-folder") category-icon"></i>
+                    <span class="category-name">@category.Name</span>
+                    @if (hasSubcategories)
+                    {
+                        <i class="fas fa-chevron-right ms-auto subcategory-indicator"></i>
+                    }
+                </a>
+
+                @if (hasSubcategories)
+                {
+                    <div class="collapse @(isActive ? "show" : "")" id="subcategories-@category.CategoryID">
+                        <div class="subcategories">
+                            @foreach (var subcategory in category.SubCategories)
+                            {
+                                var isSubcategoryActive = currentPath.Equals($"/Category/{subcategory.Slug}", StringComparison.OrdinalIgnoreCase);
+                                <a class="category-item subcategory-item @(isSubcategoryActive ? "active" : "")"
+                                   href="@Url.Action("Index", "Category", new { slug = subcategory.Slug })"
+                                   title="@subcategory.Description">
+                                    <i class="@(!string.IsNullOrEmpty(subcategory.IconClass) ? subcategory.IconClass : "fas fa-circle-dot") category-icon"></i>
+                                    <span class="category-name">@subcategory.Name</span>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .sidebar {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .sidebar-title {
+        color: var(--reddit-text, #1c1c1c);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .category-container {
+        margin-bottom: 0.25rem;
+    }
+
+    .category-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.25rem;
+        border-radius: 12px;
+        color: var(--reddit-text, #1c1c1c);
+        text-decoration: none;
+        transition: all 0.25s ease-in-out;
+        position: relative;
+    }
+
+    .category-icon {
+        font-size: 1rem;
+        margin-right: 0.75rem;
+        color: var(--reddit-text, #1c1c1c);
+        opacity: 0.8;
+    }
+
+    .category-name {
+        flex: 1;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .category-item:hover {
+        background-color: var(--reddit-light-gray, #f6f7f8);
+        text-decoration: none;
+        transform: translateX(5px);
+    }
+
+    .category-item:active {
+        transform: translateX(2px);
+    }
+
+    .subcategory-item {
+        padding-left: 2.5rem;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .subcategories {
+        margin-left: 0.75rem;
+    }
+
+    .subcategory-indicator {
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+        opacity: 0.6;
+    }
+
+    .category-item[aria-expanded="true"] .subcategory-indicator {
+        transform: rotate(90deg);
+    }
+
+    .has-subcategories {
+        cursor: pointer;
+    }
+
+    .category-item:hover .category-icon,
+    .category-item:hover .subcategory-indicator {
+        opacity: 1;
+    }
+
+    .category-item.active {
+        background-color: var(--reddit-light-gray, #f6f7f8);
+        font-weight: 600;
+    }
+</style>

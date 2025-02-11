@@ -1,0 +1,147 @@
+﻿@using gsmsharing.ViewModels
+@model CommunityViewModel
+<div class="modal fade" id="createCommunityModal" tabindex="-1" aria-labelledby="createCommunityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title" id="createCommunityModalLabel">
+                    <i class="fas fa-users me-2"></i>
+                    Create New Community
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-action="CreateCommunity" asp-controller="Community" method="post" enctype="multipart/form-data">
+                    <!-- Basic Information -->
+                    <div class="mb-4">
+                        <label class="form-label">Community Name</label>
+                        <input type="text" class="form-control" name="Name" maxlength="100" required
+                               placeholder="Enter community name">
+                        <div class="form-text">Choose a unique name (max 100 characters)</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Category</label>
+                        <select id="CategoryId" name="CategoryId" class="form-control">
+                            <option value="">-- Select a Category --</option>
+                            @foreach (var category in Model.Categories)
+                            {
+                                if (category.Disabled)
+                                {
+                                    <option value="@category.Value" disabled>@category.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@category.Value">@category.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="Description" rows="3" maxlength="500"
+                                  placeholder="Describe your community"></textarea>
+                        <div class="form-text">Brief overview of your community (max 500 characters)</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Community Rules</label>
+                        <textarea class="form-control" name="Rules" rows="4"
+                                  placeholder="Set your community guidelines"></textarea>
+                    </div>
+
+                    <!-- Media Upload -->
+                 @*    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Cover Image</label>
+                            <div class="media-upload mb-2" onclick="document.getElementById('coverImage').click()">
+                                <i class="fas fa-image upload-icon"></i>
+                                <p class="mb-0">Upload cover image</p>
+                                <input type="file" id="coverImage" name="CoverImage" hidden accept="image/*">
+                                <div class="mb-3">
+                                    <label class="form-label">Image Preview</label>
+                                    <img id="imagePreview" class="image-preview" src="/placeholder.svg" alt="Image preview" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="form-text">Recommended: 1920x384px</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Icon</label>
+                            <div class="media-upload mb-2" onclick="document.getElementById('iconImage').click()">
+                                <i class="fas fa-camera upload-icon"></i>
+                                <p class="mb-0">Upload community icon</p>
+                                <input type="file" id="iconImage" name="IconImage" hidden accept="image/*">
+                                <div class="mb-3">
+                                    <label class="form-label">Image Preview</label>
+                                    <img id="imagePreview" class="image-preview" src="/placeholder.svg" alt="Image preview" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="form-text">Recommended: 256x256px</div>
+                        </div>
+                    </div> *@
+
+                    <!-- SEO Settings -->
+                    <button class="seo-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#communitySeoFields" aria-expanded="false" aria-controls="communitySeoFields">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-cog"></i>
+                            <span>SEO Configuration</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+
+                    <div class="collapse" id="communitySeoFields">
+                        <div class="seo-fields mb-4">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Meta Title</label>
+                                    <input type="text" class="form-control" name="MetaTitle"
+                                           placeholder="Enter meta title">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">OG Title</label>
+                                    <input type="text" class="form-control" name="OgTitle"
+                                           placeholder="Enter OG title">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Meta Description</label>
+                                    <textarea class="form-control" name="MetaDescription" rows="2"
+                                              placeholder="Enter meta description"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">URL Slug</label>
+                                    <input type="text" class="form-control" name="Slug" maxlength="100"
+                                           pattern="^[a-zA-Z0-9-]+$" placeholder="enter-url-slug">
+                                    <div class="form-text">Only letters, numbers, and hyphens allowed</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy Settings -->
+                    <div class="d-flex gap-4 mb-4">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" asp-for="IsPrivate" class="form-check-input" >
+                            <label asp-for="IsPrivate" class="form-check-label" >Private Community</label>
+                            <div class="form-text">Only visible to members</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="checkbox" asp-for="IsVerified" class="form-check-input" name="IsVerified">
+                            <label asp-for="IsVerified" class="form-check-label">Request Verification</label>
+                            <div class="form-text">Official community status</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-end gap-3 pt-4 border-top">
+                        <button type="button" class="btn-draft" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn-publish">
+                            <i class="fas fa-plus"></i>
+                            Create Community
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

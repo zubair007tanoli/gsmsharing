@@ -1,0 +1,172 @@
+﻿@model gsmsharing.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+
+}
+<style>
+    .social-login {
+        margin-top: 25px;
+        text-align: center;
+    }
+
+        .social-login p {
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+    .social-login-btn {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 12px;
+        border-radius: 5px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+        .social-login-btn i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+    .btn-google {
+        background-color: #db4437;
+        color: white;
+        border: 1px solid #db4437;
+    }
+
+    .btn-facebook {
+        background-color: #1877f2;
+        color: white;
+        border: 1px solid #1877f2;
+    }
+
+    .btn-twitter {
+        background-color: #1da1f2;
+        color: white;
+        border: 1px solid #1da1f2;
+    }
+
+    .btn-google:hover {
+        background-color: #c23321;
+        border-color: #c23321;
+        transform: translateY(-2px);
+    }
+
+    .btn-facebook:hover {
+        background-color: #165dbb;
+        border-color: #165dbb;
+        transform: translateY(-2px);
+    }
+
+    .btn-twitter:hover {
+        background-color: #1991db;
+        border-color: #1991db;
+        transform: translateY(-2px);
+    }
+
+    .signup-link {
+        text-align: center;
+        margin-top: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+
+        .signup-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .signup-link a:hover {
+                text-decoration: underline;
+            }
+
+</style>
+<link href="~/css/Register_Login.css" rel="stylesheet" />
+<div class="login-popup p-5 mt-5">
+    <div class="logo">
+        <img src="https://via.placeholder.com/180x50.png?text=GSMSHARING+LOGO" alt="GSMSHARING Logo">
+    </div>
+
+    <h2 class="text-center mb-4">Create New Account</h2>
+    <i class="fas fa-user-plus fa-2x icon-circle"></i>
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <form asp-action="Register" method="post">
+        <div class="mb-3 form-floating">
+            <input asp-for="Email" class="form-control" id="Email" placeholder="name@example.com">
+            <label for="Email"><i class="fas fa-envelope"></i> Email address</label>
+            <span asp-validation-for="Email" class="text-danger"></span>
+            @if (ViewData["EmailError"] != null)
+            {
+                <span class="text-danger">@ViewData["EmailError"]</span>
+            }
+        </div>
+        <div class="mb-3 form-floating">
+            <input asp-for="UserName" class="form-control" id="UserName" placeholder="Username" required>
+            <label for="UserName"><i class="fas fa-user"></i> Username</label>
+            <span asp-validation-for="UserName" class="text-danger"></span>
+            @if (ViewData["UsernameError"] != null)
+            {
+                <span class="text-danger">@ViewData["UsernameError"]</span>
+            }
+        </div>
+        <div class="mb-3 form-floating">
+            <input asp-for="Password" class="form-control" id="Password" placeholder="Password" required>
+            <label for="Password"><i class="fas fa-lock"></i> Password</label>
+            <button type="button" class="show-password-toggle"><i class="fas fa-eye"></i></button>
+
+        </div>
+        <div class="mb-3 form-floating">
+            <input asp-for="ConfirmPassword" class="form-control" id="ConfirmPassword" placeholder="Confirm Password" required>
+            <label for="ConfirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+        </div>
+        <input type="hidden" asp-for="ReturnUrl" value="/Home/Index" />
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-user-plus me-2"></i>Create Account
+        </button>
+    </form>
+
+    <!-- Social Login Section -->
+    <div class="social-login">
+        <p class="mb-3">Or sign up with social</p>
+        <a href="#" class="btn btn-google social-login-btn">
+            <i class="fab fa-google"></i> Google
+        </a>
+        <a href="#" class="btn btn-facebook social-login-btn">
+            <i class="fab fa-facebook-f"></i> Facebook
+        </a>
+        <a href="#" class="btn btn-twitter social-login-btn">
+            <i class="fab fa-twitter"></i> Twitter
+        </a>
+    </div>
+
+    <!-- Login Link -->
+    <div class="signup-link">
+        <p>Already have an account? <a href="#">Sign in</a></p>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        // Target elements
+        const passwordField = document.getElementById("Password");
+        const toggleButton = document.querySelector(".show-password-toggle");
+
+        // Event listener for the button click
+        toggleButton.addEventListener("click", function () {
+            const type = passwordField.getAttribute("type") === "password" ? "text" : "password";
+            passwordField.setAttribute("type", type);
+
+            // Toggle button text for better UX
+            this.textContent = type === "password" ? "Show" : "Hide";
+        });
+
+    </script>
+}
+
+

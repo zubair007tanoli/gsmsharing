@@ -1,0 +1,346 @@
+﻿@model IEnumerable<gsmsharing.ViewModels.CategoryViewModel>
+@{
+    var currentPath = Context.Request.Path;
+}
+
+
+<div class="card category-card">
+    <div class="card-header bg-white border-bottom-0 pt-4">
+        <h5 class="category-title">Categories</h5>
+        <div class="category-header-line"></div>
+    </div>
+    <div class="card-body pt-2">
+        <div class="accordion custom-accordion" id="categoriesAccordion">
+            @foreach (var category in Model)
+            {
+                var isActive = currentPath.Equals($"/Category/{category.Slug}", StringComparison.OrdinalIgnoreCase);
+                var collapseId = $"collapse_{category.CategoryID}";
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button category-button @(!isActive ? "collapsed" : "")"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#@collapseId">
+                            <i class="@(!string.IsNullOrEmpty(category.IconClass) ? category.IconClass : "fas fa-folder") category-icon"></i>
+                            <span class="category-label">@category.Name</span>
+                            <span class="category-count">@category.ItemCount.ToString("N0")</span>
+                        </button>
+                    </h2>
+
+                    @if (category.SubCategories.Any())
+                    {
+                        <div id="@collapseId"
+                             class="accordion-collapse collapse @(isActive ? "show" : "")"
+                             data-bs-parent="#categoriesAccordion">
+                            <div class="accordion-body">
+                                <div class="subcategory-list">
+                                    @foreach (var subcategory in category.SubCategories)
+                                    {
+                                        var isSubActive = currentPath.Equals($"/Category/{subcategory.Slug}", StringComparison.OrdinalIgnoreCase);
+                                        <a href="@Url.Action("Index", "Category", new { slug = subcategory.Slug })"
+                                           class="subcategory-item @(isSubActive ? "active" : "")">
+                                            <i class="@subcategory.IconClass subcategory-icon"></i>
+                                            <span class="subcategory-label">@subcategory.Name</span>
+                                            <span class="subcategory-count">@subcategory.ItemCount.ToString("N0")</span>
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card category-card">
+    <div class="card-header bg-white border-bottom-0 pt-4">
+        <h5 class="category-title">Categories</h5>
+        <div class="category-header-line"></div>
+    </div>
+    <div class="card-body pt-2">
+        <select class="category-select" style="width: 100%">
+            <option value="">Search Categories</option>
+            @foreach (var category in Model)
+            {
+                <optgroup label="@category.Name" data-icon="@category.IconClass">
+                    <option value="/Category/@category.Slug"
+                            data-icon="@(!string.IsNullOrEmpty(category.IconClass) ? category.IconClass : "fas fa-folder")"
+                            data-count="@category.ItemCount">
+                        @category.Name
+                    </option>
+                    @foreach (var subcategory in category.SubCategories)
+                    {
+                        <option value="/Category/@subcategory.Slug"
+                                data-icon="@subcategory.IconClass"
+                                data-count="@subcategory.ItemCount">
+                            @subcategory.Name
+                        </option>
+                    }
+                </optgroup>
+            }
+        </select>
+    </div>
+</div>
+<style>
+    /*Drop Down Style*/
+    /* Select2 Enhanced Category Styles */
+    .select2-container--default .select2-selection--single {
+        background-color: var(--input-background);
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        height: 48px;
+        padding: 8px 12px;
+    }
+
+    .select2-category-option i {
+        font-size: 16px;
+        color: var(--primary-color);
+        width: 20px;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .select2-category-option i.bi {
+            font-size: 18px; /* Slightly larger for Bootstrap Icons */
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--text-primary);
+            line-height: 10px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 46px;
+        }
+
+    .select2-dropdown {
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .select2-search--dropdown {
+        padding: 12px;
+    }
+
+        .select2-search--dropdown .select2-search__field {
+            padding: 8px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+    .select2-results__option {
+        padding: 8px 12px;
+    }
+
+    .select2-results__group {
+        padding: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        background-color: var(--surface);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .select2-category-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+        .select2-category-option i {
+            font-size: 16px;
+            color: var(--primary-color);
+            width: 20px;
+            text-align: center;
+        }
+
+    .select2-subcategory-option {
+        padding-left: 24px;
+    }
+
+    .category-option-text {
+        flex: 1;
+    }
+
+    .category-option-count {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--primary-color);
+    }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] .category-option-count {
+            color: rgba(255, 255, 255, 0.8);
+        }
+</style>
+<style>
+    .category-card {
+        border: none;
+        background: linear-gradient(to bottom, #ffffff, #fafafa);
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .category-title {
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        position: relative;
+    }
+
+    .category-header-line {
+        height: 3px;
+        background: linear-gradient(to right, #3498db, #5dadec);
+        width: 40px;
+        margin-top: 0.5rem;
+    }
+
+    .custom-accordion .accordion-item {
+        border: none;
+        margin-bottom: 0.5rem;
+    }
+
+    .category-button {
+        padding: 1rem 1.25rem;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 8px !important;
+        transition: all 0.3s ease;
+    }
+
+        .category-button:not(.collapsed) {
+            background: #f8f9fa;
+            box-shadow: inset 0 -3px 0 #3498db;
+        }
+
+        .category-button:hover {
+            background: #f8f9fa;
+            transform: translateX(5px);
+        }
+
+    .category-icon {
+        font-size: 1.1rem;
+        color: #3498db;
+        margin-right: 1rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    .category-label {
+        font-weight: 500;
+        color: #2c3e50;
+        flex: 1;
+    }
+
+    .category-count {
+        background: #eef2f7;
+        color: #5c6c7c;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-left: 1rem;
+    }
+
+    .subcategory-list {
+        padding: 0.5rem 0;
+    }
+
+    .subcategory-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        color: #5c6c7c;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 0.25rem 0;
+        transition: all 0.2s ease;
+    }
+
+        .subcategory-item:hover {
+            background: #f8f9fa;
+            color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .subcategory-item.active {
+            background: #f0f7ff;
+            color: #3498db;
+        }
+
+    .subcategory-icon {
+        font-size: 0.85rem;
+        margin-right: 0.75rem;
+        opacity: 0.6;
+    }
+
+    .subcategory-label {
+        flex: 1;
+        font-weight: 500;
+    }
+
+    .subcategory-count {
+        background: #eef2f7;
+        color: #5c6c7c;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+
+    .accordion-button::after {
+        margin-left: 1rem;
+        width: 1rem;
+        height: 1rem;
+        background-size: 1rem;
+    }
+</style>
+@* <script>
+
+
+    $(document).ready(function() {
+            $('.category-select').select2({
+                placeholder: 'Search categories and subcategories...',
+                allowClear: true,
+                width: '100%',
+                templateResult: formatCategory,
+                templateSelection: formatCategory,
+                escapeMarkup: function(markup) {
+                    return markup;
+                }
+            }).on('select2:select', function(e) {
+                window.location.href = e.params.data.id;
+            });
+        });
+
+        function formatCategory(category) {
+            if (!category.id || !category.element) {
+                return category.text;
+            }
+
+            var icon = $(category.element).data('icon') || 'fas fa-folder';
+            var count = $(category.element).data('count');
+            var isOptgroup = $(category.element).parent().is('optgroup');
+
+            var $container = $('<div class="select2-category-option"></div>');
+            var $icon = $('<i class="' + icon + '"></i>');
+            var $text = $('<span class="category-option-text">' + category.text + '</span>');
+            var $count = count ? $('<span class="category-option-count">' + count.toLocaleString() + '</span>') : '';
+
+            if (isOptgroup) {
+                $container.addClass('select2-subcategory-option');
+                $icon.addClass('subcategory-icon');
+            }
+
+            return $container.append($icon).append($text).append($count);
+        }
+</script> *@

@@ -1,0 +1,124 @@
+﻿@model IEnumerable<gsmsharing.Models.Category>
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="card">
+    <div class="card-body p-0">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#recentTab">
+                    <i class="fas fa-clock"></i>
+                    <span>Recent Posts</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trendingTab">
+                    <i class="fas fa-fire"></i>
+                    <span>Trending</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#followingTab">
+                    <i class="fas fa-users"></i>
+                    <span>Following</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content p-3">
+            <!-- Recent Posts Tab -->
+            <div class="tab-pane fade show active" id="recentTab" role="tabpanel">
+                <div class="post-card border shadow-sm">
+                    <div class="d-flex gap-3">
+                        <!-- Thumbnail -->
+                        <div class="d-none d-sm-block">
+                            <img src="https://via.placeholder.com/140" class="thumbnail rounded" alt="Post Thumbnail">
+                        </div>
+
+                        <!-- Post Content -->
+                        <div class="flex-grow-1">
+                            <!-- Post Header -->
+                            <div class="post-meta mb-2">
+                                <a href="#" class="community-badge me-1">r/iPhoneUnlocking</a>
+                                <span>•</span>
+                                <span class="ms-1">Posted by</span>
+                                <a href="#" class="text-decoration-none ms-1">u/AlexTech</a>
+                                <span class="ms-1">2 hours ago</span>
+                            </div>
+
+                            <!-- Post Title -->
+                            <h3 class="post-title mb-2">New iPhone 15 Unlock Method Found</h3>
+
+                            <!-- Post Description -->
+                            <p class="post-meta mb-2">Just discovered a new method for unlocking the latest iPhone 15 series. This works for all carriers and doesn't require any special hardware...</p>
+
+                            <!-- Tags -->
+                            <div class="mb-2">
+                                <span class="badge bg-primary rounded-pill">Unlocking</span>
+                                <span class="badge bg-secondary rounded-pill">iPhone 15</span>
+                            </div>
+
+                            <!-- Post Actions -->
+                            <div class="post-actions d-flex align-items-center gap-2">
+                                <button type="button">
+                                    <i class="fas fa-arrow-up me-1"></i>
+                                    Like
+                                </button>
+                                <button type="button">
+                                    <i class="fas fa-arrow-down me-1"></i>
+                                    Dislike
+                                </button>
+                                <button type="button">
+                                    <i class="fas fa-comment-alt me-1"></i>
+                                    45 Comments
+                                </button>
+                                <button type="button">
+                                    <i class="fas fa-share me-1"></i>
+                                    Share
+                                </button>
+                                <div class="views-count ms-auto">
+                                    <i class="fas fa-eye me-1"></i>
+                                    1.2k views
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trending Tab -->
+            <div class="tab-pane fade" id="trendingTab" role="tabpanel">
+                <!-- Trending content here -->
+            </div>
+
+            <!-- Following Tab -->
+            <div class="tab-pane fade" id="followingTab" role="tabpanel">
+                <!-- Following content here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<form asp-action="Index" method="post">
+    <div class="form-group">
+        <label for="CategoryId">Category:</label>
+        <select id="CategoryId" name="CategoryId" class="form-control">
+            <option value="">-- Select a Category --</option>
+            @foreach (var category in ViewBag.Categories)
+            {
+                if (category.Disabled)
+                {
+                    <option value="@category.Value" disabled>@category.Text</option>
+                }
+                else
+                {
+                    <option value="@category.Value">@category.Text</option>
+                }
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>

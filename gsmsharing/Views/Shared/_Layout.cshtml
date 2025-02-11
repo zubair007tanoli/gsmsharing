@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - gsmsharing</title>
+    <script type="importmap"></script>
+    <!-- Bootstrap 5.x CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    @* Resources *@
+    <link rel="stylesheet" href="~/css/GsmMainStyle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Customs.css" asp-append-version="true" />
+    @RenderSection("Resources", required: false)
+    @RenderSection("customStyle", required: false)
+    @* Favicon *@
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png">
+</head>
+<body>
+    <partial name="_Header.cshtml" />
+    <!-- Main Content -->
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <!-- Left Sidebar -->
+            <div class="col-lg-3 d-none d-lg-block">
+                <!-- Quick Actions -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create New Post
+                            </button>
+                            <button class="btn btn-light">
+                                <i class="fas fa-tools me-2"></i>Access Tools
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                @* @await Component.InvokeAsync("LayoutSideCategory") *@
+                <!-- Categories Ends-->
+                <!-- Categories -->
+                @await Component.InvokeAsync("LayoutSideCategoryCout")
+               
+            </div>
+
+            <!-- Main Content Column -->
+            <div class="col-lg-6">
+                <main role="main" class="pb-3">
+                    @RenderBody()
+                </main>
+
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="col-lg-3 d-none d-lg-block">
+                <!-- Community Stats -->
+                <div class="card community-pulse-card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Community Pulse</h5>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="pulse-stat">
+                                    <div class="stat-value">1.2k</div>
+                                    <div class="stat-label">Online Users</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="pulse-stat">
+                                    <div class="stat-value">458</div>
+                                    <div class="stat-label">New Posts</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sidebar content here -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - gsmsharing - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <!-- Then load Select2 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+    <script>
+                $(document).ready(function() {
+            $('.category-select').select2({
+                placeholder: 'Search categories and subcategories...',
+                allowClear: true,
+                width: '100%',
+                templateResult: formatCategory,
+                templateSelection: formatCategory,
+                escapeMarkup: function(markup) {
+                    return markup;
+                }
+            }).on('select2:select', function(e) {
+                window.location.href = e.params.data.id;
+            });
+        });
+
+        function formatCategory(category) {
+            if (!category.id || !category.element) {
+                return category.text;
+            }
+
+            var icon = $(category.element).data('icon') || 'fas fa-folder';
+            var count = $(category.element).data('count');
+            var isOptgroup = $(category.element).parent().is('optgroup');
+
+            var $container = $('<div class="select2-category-option"></div>');
+            var $icon = $('<i class="' + icon + '"></i>');
+            var $text = $('<span class="category-option-text">' + category.text + '</span>');
+            var $count = count ? $('<span class="category-option-count">' + count.toLocaleString() + '</span>') : '';
+
+            if (isOptgroup) {
+                $container.addClass('select2-subcategory-option');
+                $icon.addClass('subcategory-icon');
+            }
+
+            return $container.append($icon).append($text).append($count);
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
