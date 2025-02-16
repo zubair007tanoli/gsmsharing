@@ -22,8 +22,8 @@ namespace gsmsharing.ExeMethods
             if (string.IsNullOrWhiteSpace(post.MetaDescription))
             {
                 // Generate meta description from summary or content
-                var description = !string.IsNullOrWhiteSpace(post.Summary)
-                    ? post.Summary
+                var description = !string.IsNullOrWhiteSpace(post.MetaDescription)
+                    ? post.MetaDescription
                     : StripHtmlAndTruncate(post.Content, 155);
 
                 post.MetaDescription = description?.Length > 160

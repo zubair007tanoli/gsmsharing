@@ -6,9 +6,9 @@ using gsmsharing.Models.ImageModels;
 using gsmsharing.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using gsmsharing.Business;
+using gsmsharing.Models.SEO;
 
 var builder = WebApplication.CreateBuilder(args);
 //Asp.Net Core Identity DB
@@ -39,7 +39,10 @@ builder.Services.AddScoped<ICategoryRepository,CategoryRepository>();
 builder.Services.AddScoped<DatabaseConnection>();
 builder.Services.AddScoped<IFileStorage, ImageRepository>();
 builder.Services.AddScoped<ICommunityRepository, CommunityRepository>();
+builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<ISeo, SEORepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<PostSEODataAccess>();
 builder.Services.AddSingleton<AIContentGenerator>();
 var app = builder.Build();
 

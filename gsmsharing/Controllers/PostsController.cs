@@ -1,5 +1,6 @@
 ﻿using gsmsharing.ExeMethods;
 using gsmsharing.Interfaces;
+using gsmsharing.Models;
 using gsmsharing.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +12,18 @@ namespace gsmsharing.Controllers
         private readonly ICategoryRepository _categoryRepository;
         private readonly IFileStorage _fileStorage;
         private readonly ICommunityRepository _communityRepository;
-
-        public PostsController(ILogger<HomeController> logger, ICategoryRepository categoryRepository, IFileStorage fileStorage, ICommunityRepository communityRepository)
+        private readonly IPostRepository _postRepository;
+        private readonly ISeo _seoRepository;
+        private readonly IUserService _userService;
+        public PostsController(ILogger<HomeController> logger, ICategoryRepository categoryRepository, IFileStorage fileStorage, ICommunityRepository communityRepository, IPostRepository postRepository, ISeo seoRepository, IUserService userService)
         {
             _logger = logger;
             _categoryRepository = categoryRepository;
             _fileStorage = fileStorage;
             _communityRepository = communityRepository;
+            _postRepository = postRepository;
+            _seoRepository = seoRepository;
+            _userService = userService;
         }
 
         [HttpGet]
@@ -57,8 +63,10 @@ namespace gsmsharing.Controllers
                     ModelState.AddModelError("Post.FeaturedImage", uploadResult.ErrorMessage);
                     return View(postViewModel);
                 }
-               
             }
+            var ModelPost = ViewModelExtensions.ToModel(postViewModel.Post);
+            var data = await _postRepository.CreateAsync(ModelPost);
+            await _seoRepository.GenerateAndSaveSchema(data, _userService?.GetCurrentUserId() ?? "Anonymous");
             return RedirectToAction("Create");
         }
 

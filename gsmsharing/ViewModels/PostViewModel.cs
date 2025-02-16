@@ -10,9 +10,9 @@ namespace gsmsharing.ViewModels
         [StringLength(200, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 200 characters")]
         public string Title { get; set; }
 
-        [Required(ErrorMessage = "Summary is required")]
-        [StringLength(500, ErrorMessage = "Summary cannot exceed 500 characters")]
-        public string Summary { get; set; }
+        [Required(ErrorMessage = "Tags is required")]
+        [StringLength(500, ErrorMessage = "Tags cannot exceed 500 characters")]
+        public string Tags { get; set; }
 
         [Required(ErrorMessage = "Content is required")]
         public string Content { get; set; }

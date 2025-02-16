@@ -1,4 +1,6 @@
-﻿using gsmsharing.Interfaces;
+﻿using gsmsharing.Database;
+using gsmsharing.ExeMethods;
+using gsmsharing.Interfaces;
 using gsmsharing.Models;
 using gsmsharing.Models.SEO;
 
@@ -7,10 +9,12 @@ namespace gsmsharing.Repositories
     public class PostRepository : IPostRepository
     {
         private readonly PostSEODataAccess _postSEODataAccess;
+        private readonly DatabaseConnection _db;
 
-        public PostRepository(PostSEODataAccess postSEODataAccess)
+        public PostRepository(PostSEODataAccess postSEODataAccess, DatabaseConnection db)
         {
             _postSEODataAccess = postSEODataAccess;
+            _db = db;
         }
 
         public async Task<int> CreateArticleSchema(int postId, string title, string authorName)
@@ -35,9 +39,43 @@ namespace gsmsharing.Repositories
 
         public async Task<Post> CreateAsync(Post post)
         {
+            try
+            {
+                String slugs = SlugGenerator.GenerateSlug(post.Slug);
+                post.Slug = slugs;
+                const string sql = @"
+                    INSERT INTO Posts (
+                        UserId, Title, Slug, MetaDescription, Content, FeaturedImage,
+                        MetaTitle, PostStatus, AllowComments, CreatedAt, UpdatedAt, CommunityID
+                    )
+                    VALUES (
+                        @UserId, @Title, @Slug, @MetaDescription, @Content, @FeaturedImage,
+                        @MetaTitle,@PostStatus, @AllowComments, @CommunityID
+                    );
+                    SELECT SCOPE_IDENTITY();";
 
-          var chek = await CreateArticleSchema(1, "title", "authorName");
-            return null;
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@UserId", post.UserId },
+                    { "@Title", post.Title },
+                    { "@Slug", post.Slug },
+                    { "@MetaDescription", (object)post.MetaDescription ?? DBNull.Value },
+                    { "@Content", post.Content },
+                    { "@FeaturedImage", (object)post.FeaturedImage ?? DBNull.Value },             
+                    { "@PostStatus", post.PostStatus ?? "draft" },
+                    { "@AllowComments", post.AllowComments ?? true },
+                    { "@CommunityID", (object)post.CommunityID ?? DBNull.Value }
+                };
+
+                return await _db.ExecuteScalarAsync<Post>(sql, parameters);
+            }       
+            
+                catch (Exception ex)
+                {
+                    ex.Message.ToString();                
+                    throw;
+                }
+       
         }
 
         public Task DeleteAsync(int id)

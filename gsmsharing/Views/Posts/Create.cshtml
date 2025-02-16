@@ -31,7 +31,7 @@
                     </div>
                 </div>
 
-                <form asp-action="Create" method="post" enctype="multipart/form-data">
+                <form asp-controller="Posts" asp-action="Create" method="post" enctype="multipart/form-data">
                     <div class="post-editor">
                         <div class="mb-4">
                             <div class="community-selector">
@@ -44,7 +44,7 @@
                                         </option>
                                     }
                                 </select>
-                                <button type="button" class="create-community-btn" data-bs-toggle="modal" data-bs-target="#createCommunityModal">
+                                <button type="submit" class="create-community-btn" data-bs-toggle="modal" data-bs-target="#createCommunityModal">
                                     <i class="fas fa-plus"></i>
                                     <span>Create New</span>
                                 </button>
@@ -55,7 +55,7 @@
                             <input type="text" asp-for="Post.Title" class="form-control mb-3" placeholder="Title" style="font-size: 18px; font-weight: 500;">
                             <span asp-validation-for="Post.Title" class="text-danger"></span>
 
-                            <textarea asp-for="Post.MetaDescription" class="form-control mb-3" rows="2" placeholder="Summary"></textarea>
+                            <textarea asp-for="Post.MetaDescription" class="form-control mb-3" rows="2" placeholder="Post Discription"></textarea>
                             <span asp-validation-for="Post.MetaDescription" class="text-danger"></span>
 
 
@@ -69,8 +69,17 @@
                             </div>
 
                             <div class="mt-3">
-                                <label class="form-label">Image Preview</label>
-                                <img id="imagePreview" class="image-preview" src="/placeholder.svg" alt="Image preview" style="display: none;">
+                               
+                                <img id="imagePreviewPost" class="image-preview" alt="Image preview" style="display: none;">
+                            </div>
+
+                            <div class="tag-input-container">
+                                <div class="tags-container" id="tags-container"></div>
+                                <input type="text" id="tag-input-field" class="form-control mb-3"
+                                       placeholder="Type and press space or enter to add tags"
+                                       style="font-size: 18px; font-weight: 500;">
+                                <input type="hidden" id="tags-hidden" asp-for="Post.Tags">
+                                <span asp-validation-for="Post.Tags" class="text-danger"></span>
                             </div>
                         </div>
 
@@ -132,7 +141,7 @@
                         </div>
                     </div>
 
-                    <!-- Image Post Modal -->
+                 <!-- Image Post Modal -->
                     <div class="modal fade" id="imagePostModal" tabindex="-1" aria-labelledby="imagePostModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
@@ -155,7 +164,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Image Preview</label>
-                                        <img id="imagePreview" class="image-preview" src="/placeholder.svg" alt="Image preview" style="display: none;">
+                                        <img id="imagePreview" class="image-preview"  alt="Image preview" style="display: none;">
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -203,9 +212,69 @@
 <partial name="_CommunityModel" model="@Model.Community" />
 
 @section Scripts {
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+   @*  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> *@
     <script>
+
+         $(document).ready(function() {
+            const inputField = $('#tag-input-field');
+            const tagsContainer = $('#tags-container');
+            const hiddenInput = $('#tags-hidden');
+            let tags = [];
+
+            // Function to render tags
+            function renderTags() {
+                tagsContainer.empty();
+                tags.forEach(function(tag, index) {
+                    const tagElement = $('<div class="tag"></div>').text(tag);
+                    const closeButton = $('<span class="tag-close">×</span>');
+
+                    closeButton.on('click', function() {
+                        tags.splice(index, 1);
+                        renderTags();
+                        updateHiddenInput();
+                    });
+
+                    tagElement.append(closeButton);
+                    tagsContainer.append(tagElement);
+                });
+            }
+
+            // Function to update the hidden input with comma-separated tags
+            function updateHiddenInput() {
+                hiddenInput.val(tags.join(','));
+            }
+
+            // Handle keydown events (Space and Enter)
+            inputField.on('keydown', function(e) {
+                if (e.keyCode === 32 || e.keyCode === 13) { // Space or Enter
+                    e.preventDefault();
+
+                    const value = inputField.val().trim();
+                    if (value && !tags.includes(value)) {
+                        tags.push(value);
+                        renderTags();
+                        updateHiddenInput();
+                        inputField.val('');
+                    }
+                }
+            });
+
+            // Initialize if there are existing tags
+            if (hiddenInput.val()) {
+                tags = hiddenInput.val().split(',').map(tag => tag.trim()).filter(tag => tag);
+                renderTags();
+            }
+
+            // Handle form submission
+            $('form').on('submit', function() {
+                // One final update to ensure the hidden input has the latest tags
+                updateHiddenInput();
+                return true;
+            });
+        });
+
+
         document.addEventListener('DOMContentLoaded', function() {
             const tabButtons = document.querySelectorAll('.tab-btn');
             tabButtons.forEach(button => {
@@ -215,20 +284,40 @@
                 });
             });
 
-            const imageUpload = document.getElementById('Post_FeaturedImage');
-            const imagePreview = document.getElementById('imagePreview');
+                const imageUpload = document.getElementById('Post_FeaturedImage');
+        const imagePreview = document.getElementById('imagePreviewPost');
 
-            imageUpload.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        imagePreview.src = e.target.result;
-                        imagePreview.style.display = 'block';
-                    }
-                    reader.readAsDataURL(file);
+        if (!imageUpload || !imagePreview) {
+            console.error('Image upload or preview element not found!');
+            return;
+        }
+
+        imageUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+
+            if (file) {
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Only JPG, PNG, GIF, and WebP images are allowed.');
+                    imageUpload.value = '';
+                    return;
                 }
-            });
+
+                const maxSize = 2 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert('File size must be less than 2MB.');
+                    imageUpload.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
             // // Add event listeners for cover and icon image uploads
             // ['coverImage', 'iconImage'].forEach(id => {
