@@ -37,37 +37,41 @@ namespace gsmsharing.Repositories
                 schemaProperties);
         }
 
-        public async Task<Post> CreateAsync(Post post)
+        public async Task<int> CreateAsync(Post post)
         {
             try
             {
                 String slugs = SlugGenerator.GenerateSlug(post.Slug);
                 post.Slug = slugs;
                 const string sql = @"
-                    INSERT INTO Posts (
-                        UserId, Title, Slug, MetaDescription, Content, FeaturedImage,
-                        MetaTitle, PostStatus, AllowComments, CreatedAt, UpdatedAt, CommunityID
-                    )
-                    VALUES (
-                        @UserId, @Title, @Slug, @MetaDescription, @Content, @FeaturedImage,
-                        @MetaTitle,@PostStatus, @AllowComments, @CommunityID
-                    );
-                    SELECT SCOPE_IDENTITY();";
+                        INSERT INTO Posts (
+                            UserId, Title, Slug, Content, FeaturedImage,
+                            PostStatus, AllowComments, 
+                            CommunityID, IsPromoted, IsFeatured
+                        )
+                        VALUES (
+                            @UserId, @Title, @Slug, @Content, @FeaturedImage,
+                            @PostStatus, @AllowComments, 
+                            @CommunityID,  @IsPromoted, @IsFeatured
+                        );
+                        SELECT SCOPE_IDENTITY();";
+
 
                 var parameters = new Dictionary<string, object>
                 {
                     { "@UserId", post.UserId },
                     { "@Title", post.Title },
-                    { "@Slug", post.Slug },
-                    { "@MetaDescription", (object)post.MetaDescription ?? DBNull.Value },
+                    { "@Slug", post.Slug },                    
                     { "@Content", post.Content },
                     { "@FeaturedImage", (object)post.FeaturedImage ?? DBNull.Value },             
                     { "@PostStatus", post.PostStatus ?? "draft" },
                     { "@AllowComments", post.AllowComments ?? true },
-                    { "@CommunityID", (object)post.CommunityID ?? DBNull.Value }
+                    { "@CommunityID", (object)post.CommunityID ?? DBNull.Value },
+                    { "@IsPromoted",(object)post.IsPromoted ?? DBNull.Value},
+                    {"@IsFeatured", (object)post.IsFeatured ?? DBNull.Value }
                 };
 
-                return await _db.ExecuteScalarAsync<Post>(sql, parameters);
+                return await _db.ExecuteScalarAsync<int>(sql, parameters);
             }       
             
                 catch (Exception ex)

@@ -9,7 +9,7 @@ namespace gsmsharing.Interfaces
         Task<IEnumerable<Post>> GetAllAsync();
         Task<IEnumerable<Post>> GetByCommunityIdAsync(int communityId);
         Task<IEnumerable<Post>> GetByUserIdAsync(string userId);
-        Task<Post> CreateAsync(Post post);    
+        Task<int> CreateAsync(Post post);    
         Task<Post> UpdateAsync(Post post);
         Task DeleteAsync(int id);
         Task<int> GetTotalCountAsync();

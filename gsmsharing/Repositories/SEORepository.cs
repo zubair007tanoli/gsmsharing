@@ -1,4 +1,5 @@
 ﻿using gsmsharing.Database;
+using gsmsharing.ExeMethods;
 using gsmsharing.Interfaces;
 using gsmsharing.Models;
 using Microsoft.AspNetCore.Identity;
@@ -162,58 +163,66 @@ namespace gsmsharing.Repositories
             });
 
             const string sql = @"
-        IF EXISTS (SELECT 1 FROM PostSEO WHERE PostID = @PostID)
-            UPDATE PostSEO 
-            SET Schema = @Schema,
-                MetaTitle = @MetaTitle,
-                MetaDescription = @MetaDescription,
-                MetaKeywords = @MetaKeywords,
-                OgTitle = @OgTitle,
-                OgDescription = @OgDescription,
-                OgImage = @OgImage,
-                TwitterCard = @TwitterCard,
-                TwitterTitle = @TwitterTitle,
-                TwitterDescription = @TwitterDescription,
-                TwitterImage = @TwitterImage,
-                CanonicalURL = @CanonicalURL,
-                Robots = @Robots,
-                UpdatedAt = GETDATE()
-            WHERE PostID = @PostID
-        ELSE
-            INSERT INTO PostSEO (
-                PostID,
-                MetaTitle,
-                MetaDescription,
-                MetaKeywords,
-                OgTitle,
-                OgDescription,
-                OgImage,
-                TwitterCard,
-                TwitterTitle,
-                TwitterDescription,
-                TwitterImage,
-                CanonicalURL,
-                Robots,
-                Schema,
-                CreatedAt
-            )
-            VALUES (
-                @PostID,
-                @MetaTitle,
-                @MetaDescription,
-                @MetaKeywords,
-                @OgTitle,
-                @OgDescription,
-                @OgImage,
-                @TwitterCard,
-                @TwitterTitle,
-                @TwitterDescription,
-                @TwitterImage,
-                @CanonicalURL,
-                @Robots,
-                @Schema,
-                GETDATE()
-            )";
+    IF EXISTS (SELECT 1 FROM PostSEO WHERE PostID = @PostID)
+    BEGIN
+        UPDATE PostSEO 
+        SET [Schema] = @Schema,
+            MetaTitle = @MetaTitle,
+            MetaDescription = @MetaDescription,
+            MetaKeywords = @MetaKeywords,
+            OgTitle = @OgTitle,
+            OgDescription = @OgDescription,
+            OgImage = @OgImage,
+            TwitterCard = @TwitterCard,
+            TwitterTitle = @TwitterTitle,
+            TwitterDescription = @TwitterDescription,
+            TwitterImage = @TwitterImage,
+            CanonicalURL = @CanonicalURL,
+            Robots = @Robots
+        WHERE PostID = @PostID;
+
+        SELECT SEOId FROM PostSEO WHERE PostID = @PostID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO PostSEO (
+            PostID,
+            MetaTitle,
+            MetaDescription,
+            MetaKeywords,
+            OgTitle,
+            OgDescription,
+            OgImage,
+            TwitterCard,
+            TwitterTitle,
+            TwitterDescription,
+            TwitterImage,
+            CanonicalURL,
+            Robots,
+            [Schema]
+        )
+        OUTPUT INSERTED.SEOId
+        VALUES (
+            @PostID,
+            @MetaTitle,
+            @MetaDescription,
+            @MetaKeywords,
+            @OgTitle,
+            @OgDescription,
+            @OgImage,
+            @TwitterCard,
+            @TwitterTitle,
+            @TwitterDescription,
+            @TwitterImage,
+            @CanonicalURL,
+            @Robots,
+            @Schema
+        );
+    END;";
+            post.OgTitle = SlugGenerator.ShortenTitle(post.Title);
+            post.OgDescription = SlugGenerator.ShortenDescription(post.MetaDescription);
+            post.OgImage = post.FeaturedImage;
+
 
             // Assuming the Post model might not have all these properties,
             // you may need to adjust based on your actual Post model structure
@@ -223,10 +232,10 @@ namespace gsmsharing.Repositories
                     { "@Schema", jsonSchema },
                     { "@MetaTitle", post.MetaTitle ?? (object)DBNull.Value },
                     { "@MetaDescription", post.MetaDescription ?? (object)DBNull.Value },
-                    { "@MetaKeywords", GetPropertyValueOrDefault(post, "MetaKeywords") },
+                    { "@MetaKeywords", post.Tags ?? (object)DBNull.Value },
                     { "@OgTitle", post.OgTitle ?? (object)DBNull.Value },
                     { "@OgDescription", post.OgDescription ?? (object)DBNull.Value },
-                    { "@OgImage", post.OgImage ?? (object)DBNull.Value },
+                    { "@OgImage", post.FeaturedImage ?? (object)DBNull.Value },
                     { "@TwitterCard", GetPropertyValueOrDefault(post, "TwitterCard") },
                     { "@TwitterTitle", GetPropertyValueOrDefault(post, "TwitterTitle") },
                     { "@TwitterDescription", GetPropertyValueOrDefault(post, "TwitterDescription") },

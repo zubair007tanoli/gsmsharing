@@ -64,9 +64,12 @@ namespace gsmsharing.Controllers
                     return View(postViewModel);
                 }
             }
+
             var ModelPost = ViewModelExtensions.ToModel(postViewModel.Post);
+            ModelPost.UserId =  _userService?.GetCurrentUserId() ?? "Anonymous";
             var data = await _postRepository.CreateAsync(ModelPost);
-            await _seoRepository.GenerateAndSaveSchema(data, _userService?.GetCurrentUserId() ?? "Anonymous");
+            ModelPost.PostID = (int)data;
+            await _seoRepository.GenerateAndSaveSchema(ModelPost,ModelPost.UserId);
             return RedirectToAction("Create");
         }
 
