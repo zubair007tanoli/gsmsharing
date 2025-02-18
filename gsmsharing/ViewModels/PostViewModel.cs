@@ -29,6 +29,10 @@ namespace gsmsharing.ViewModels
 
         public bool AllowComments { get; set; } = true;
 
+        public bool IsPromoted { get; set; } = false;
+        public bool IsFeatured { get; set; } = false;
+   
+
         // SEO Properties
         [StringLength(60, ErrorMessage = "Meta title cannot exceed 60 characters")]
         public string MetaTitle { get; set; }
