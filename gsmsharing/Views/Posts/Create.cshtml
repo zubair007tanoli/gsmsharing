@@ -247,7 +247,7 @@
 
             // Handle keydown events (Space and Enter)
             inputField.on('keydown', function(e) {
-                if (e.keyCode === 32 || e.keyCode === 13) { // Space or Enter
+                if (e.keyCode === 13) { // Space or Enter
                     e.preventDefault();
 
                     const value = inputField.val().trim();
