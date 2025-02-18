@@ -75,6 +75,7 @@
 
                             <div class="tag-input-container">
                                 <div class="tags-container" id="tags-container"></div>
+                                <label class="form-label">Tags</label>
                                 <input type="text" id="tag-input-field" class="form-control mb-3"
                                        placeholder="Type and press space or enter to add tags"
                                        style="font-size: 18px; font-weight: 500;">
@@ -226,7 +227,7 @@
             function renderTags() {
                 tagsContainer.empty();
                 tags.forEach(function(tag, index) {
-                    const tagElement = $('<div class="tag"></div>').text(tag);
+                    const tagElement = $('<div class="tag"></div>').text(tag).css('min-height', '40px');;
                     const closeButton = $('<span class="tag-close">×</span>');
 
                     closeButton.on('click', function() {
