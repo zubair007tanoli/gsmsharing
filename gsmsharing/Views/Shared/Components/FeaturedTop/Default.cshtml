@@ -1,0 +1,166 @@
+﻿<style>
+    .featured-post {
+        height: 400px;
+    }
+
+    .side-post {
+        height: 120px;
+        margin-bottom: 20px;
+    }
+
+    .bottom-post {
+        height: 200px;
+    }
+
+    .post {
+        background-size: cover;
+        background-position: center;
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .post-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0));
+        color: white;
+    }
+
+    .post-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .post-excerpt {
+        font-size: 0.9em;
+        margin-bottom: 5px;
+    }
+
+    .post-meta {
+        font-size: 0.8em;
+        opacity: 0.8;
+    }
+    /* News Ticker Styles */
+    .news-ticker {
+        background-color: #f8f9fa;
+        overflow: hidden;
+        padding: 10px 0;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .news-ticker-content {
+        display: inline-block;
+        padding-left: 100%;
+        animation: ticker 30s linear infinite;
+    }
+
+    .news-ticker-item {
+        display: inline-block;
+        padding: 0 2rem;
+    }
+    @@keyframes ticker {
+        0%{
+        transform: translate3d(0, 0, 0);
+    }
+    100% {
+        transform: translate3d(-100%, 0, 0);
+    }
+
+    }
+</style>
+<div class="news-ticker">
+    <div class="news-ticker-content">
+        <span class="news-ticker-item"><i class="fas fa-newspaper"></i> Breaking News: Major tech company announces new AI breakthrough</span>
+        <span class="news-ticker-item"><i class="fas fa-globe"></i> Global climate summit to be held next month</span>
+        <span class="news-ticker-item"><i class="fas fa-virus"></i> Health officials report decline in COVID-19 cases</span>
+        <span class="news-ticker-item"><i class="fas fa-rocket"></i> SpaceX successfully launches another batch of satellites</span>
+        <span class="news-ticker-item"><i class="fas fa-landmark"></i> New legislation aims to boost small businesses</span>
+    </div>
+</div>
+
+<div class="container mt-4">  
+    <div class="row">
+        <div class="col-md-8">
+            <div class="featured-post post" style="background-image: url('https://picsum.photos/800/400');">
+                <div class="post-content">
+                    <h2 class="post-title">Featured Post Title</h2>
+                    <p class="post-excerpt">This is a brief excerpt of the featured post. It gives readers a quick overview of the content.</p>
+                    <p class="post-meta">
+                        <i class="fas fa-user"></i> John Doe
+                        <i class="fas fa-calendar-alt ms-2"></i> May 1, 2023
+                        <i class="fas fa-comments ms-2"></i> 5 Comments
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="side-post post" style="background-image: url('https://picsum.photos/400/200');">
+                <div class="post-content">
+                    <h3 class="post-title">Side Post 1</h3>
+                    <p class="post-meta">
+                        <i class="fas fa-calendar-alt"></i> Apr 28, 2023
+                    </p>
+                </div>
+            </div>
+            <div class="side-post post" style="background-image: url('https://picsum.photos/401/200');">
+                <div class="post-content">
+                    <h3 class="post-title">Side Post 2</h3>
+                    <p class="post-meta">
+                        <i class="fas fa-calendar-alt"></i> Apr 25, 2023
+                    </p>
+                </div>
+            </div>
+            <div class="side-post post" style="background-image: url('https://picsum.photos/402/200');">
+                <div class="post-content">
+                    <h3 class="post-title">Side Post 3</h3>
+                    <p class="post-meta">
+                        <i class="fas fa-calendar-alt"></i> Apr 22, 2023
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-4 mb-4">
+            <div class="bottom-post post" style="background-image: url('https://picsum.photos/403/300');">
+                <div class="post-content">
+                    <h3 class="post-title">Bottom Post 1</h3>
+                    <p class="post-excerpt">A brief excerpt of the bottom post content.</p>
+                    <p class="post-meta">
+                        <i class="fas fa-user"></i> Jane Smith
+                        <i class="fas fa-calendar-alt ms-2"></i> Apr 20, 2023
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="bottom-post post" style="background-image: url('https://picsum.photos/404/300');">
+                <div class="post-content">
+                    <h3 class="post-title">Bottom Post 2</h3>
+                    <p class="post-excerpt">Another brief excerpt of the bottom post content.</p>
+                    <p class="post-meta">
+                        <i class="fas fa-user"></i> Mike Johnson
+                        <i class="fas fa-calendar-alt ms-2"></i> Apr 18, 2023
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="bottom-post post" style="background-image: url('https://picsum.photos/405/300');">
+                <div class="post-content">
+                    <h3 class="post-title">Bottom Post 3</h3>
+                    <p class="post-excerpt">Yet another brief excerpt of the bottom post content.</p>
+                    <p class="post-meta">
+                        <i class="fas fa-user"></i> Sarah Lee
+                        <i class="fas fa-calendar-alt ms-2"></i> Apr 15, 2023
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

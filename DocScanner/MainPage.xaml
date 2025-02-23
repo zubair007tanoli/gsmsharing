@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="DocScanner.MainPage">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Grid Grid.Row="0" Padding="16" ColumnDefinitions="*,Auto,Auto">
+            <Label 
+                Text="Scaned Doc's"
+                FontSize="24"
+                FontAttributes="Bold"
+                VerticalOptions="Center" />
+
+            <Button 
+                Grid.Column="1"
+                Text="Select"
+                Margin="8,0"
+                Command="{Binding ToggleSelectionModeCommand}" />
+
+            <Button 
+                Grid.Column="2"
+                Text="Share"
+                IsVisible="{Binding IsSelectionMode}"
+                Command="{Binding ShareSelectedCommand}" />
+        </Grid>
+
+        <!-- Document Grid -->
+        <CollectionView 
+            Grid.Row="1"
+            ItemsSource="{Binding Documents}"
+            SelectionMode="Multiple"
+            Margin="8">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout 
+                    Orientation="Vertical"
+                    Span="2"
+                    HorizontalItemSpacing="8"
+                    VerticalItemSpacing="8" />
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid RowDefinitions="*,Auto" Padding="4">
+                        <!-- Document Image -->
+                        <Border 
+                            Grid.Row="0"
+                            HeightRequest="180"
+                            Padding="0"
+                            >
+                            <Image 
+                                Source="{Binding ProcessedImagePath}"
+                                Aspect="AspectFill" />
+                        </Border>
+
+                        <!-- Document Info -->
+                        <StackLayout Grid.Row="1" Spacing="4">
+                            <Label 
+                                Text="{Binding Title}"
+                                FontAttributes="Bold" />
+                            <Label 
+                                Text="{Binding CreatedAt, StringFormat='{0:MMM dd, yyyy}'}"
+                                TextColor="Gray"
+                                FontSize="12" />
+                        </StackLayout>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <Button Grid.Column="1" Grid.Row="2" Text="Select" 
+                Margin="8,0" Command="{Binding ToggleSelectionModeCommand}" />
+    </Grid>
+
+
+</ContentPage>
