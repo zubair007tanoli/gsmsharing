@@ -199,7 +199,7 @@
 }
 
 .post-actions {
-    padding: 16px;
+    padding: 2px;
     border-top: 1px solid var(--reddit-border);
     display: flex;
     align-items: center;
