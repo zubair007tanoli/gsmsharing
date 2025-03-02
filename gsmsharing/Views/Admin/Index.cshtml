@@ -1,0 +1,330 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+    ViewData["BreadcrumbSection"] = "Dashboard";
+    ViewData["BreadcrumbPage"] = "Overview";
+    Layout = "_AdminLayout";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Dashboard Overview</h1>
+            <div>
+                <button class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i> Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row">
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-primary">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">2,845</h4>
+                <p class="admin-stat-label">Total Users</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 12.5% since last month
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-success">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">1,253</h4>
+                <p class="admin-stat-label">Total Posts</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 8.3% since last month
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-warning">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">78</h4>
+                <p class="admin-stat-label">Communities</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 5.2% since last month
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-danger">
+                <i class="fas fa-comments"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">4,521</h4>
+                <p class="admin-stat-label">Comments</p>
+                <div class="admin-stat-change negative">
+                    <i class="fas fa-arrow-down"></i> 3.1% since last month
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">User Growth</h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary active">Weekly</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Monthly</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary">Yearly</button>
+                </div>
+            </div>
+            <div class="admin-card-body">
+                <canvas id="userGrowthChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Content Distribution</h5>
+            </div>
+            <div class="admin-card-body">
+                <canvas id="contentDistributionChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Recent Posts</h5>
+                <a href="/Admin/Posts" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="admin-card-body p-0">
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <a href="#" class="fw-medium text-dark">Getting Started with GSM Sharing</a>
+                                </td>
+                                <td>John Doe</td>
+                                <td><span class="badge bg-success">Published</span></td>
+                                <td>2025-02-28</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <a href="#" class="fw-medium text-dark">Top 10 Mobile Phones in 2025</a>
+                                </td>
+                                <td>Jane Smith</td>
+                                <td><span class="badge bg-success">Published</span></td>
+                                <td>2025-02-27</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <a href="#" class="fw-medium text-dark">The Future of 6G Technology</a>
+                                </td>
+                                <td>Mike Johnson</td>
+                                <td><span class="badge bg-warning">Pending</span></td>
+                                <td>2025-02-26</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <a href="#" class="fw-medium text-dark">How to Unlock Your Phone</a>
+                                </td>
+                                <td>Sarah Williams</td>
+                                <td><span class="badge bg-success">Published</span></td>
+                                <td>2025-02-25</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <a href="#" class="fw-medium text-dark">Best Apps for Productivity</a>
+                                </td>
+                                <td>David Brown</td>
+                                <td><span class="badge bg-danger">Rejected</span></td>
+                                <td>2025-02-24</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">New Users</h5>
+                <a href="/Admin/Users" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="admin-card-body p-0">
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=32&width=32" alt="User" class="rounded-circle me-2">
+                                        <span class="fw-medium">John Doe</span>
+                                    </div>
+                                </td>
+                                <td>john.doe@example.com</td>
+                                <td><span class="badge bg-primary">Member</span></td>
+                                <td>2025-02-28</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=32&width=32" alt="User" class="rounded-circle me-2">
+                                        <span class="fw-medium">Jane Smith</span>
+                                    </div>
+                                </td>
+                                <td>jane.smith@example.com</td>
+                                <td><span class="badge bg-info">Moderator</span></td>
+                                <td>2025-02-27</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=32&width=32" alt="User" class="rounded-circle me-2">
+                                        <span class="fw-medium">Mike Johnson</span>
+                                    </div>
+                                </td>
+                                <td>mike.johnson@example.com</td>
+                                <td><span class="badge bg-primary">Member</span></td>
+                                <td>2025-02-26</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=32&width=32" alt="User" class="rounded-circle me-2">
+                                        <span class="fw-medium">Sarah Williams</span>
+                                    </div>
+                                </td>
+                                <td>sarah.williams@example.com</td>
+                                <td><span class="badge bg-primary">Member</span></td>
+                                <td>2025-02-25</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=32&width=32" alt="User" class="rounded-circle me-2">
+                                        <span class="fw-medium">David Brown</span>
+                                    </div>
+                                </td>
+                                <td>david.brown@example.com</td>
+                                <td><span class="badge bg-danger">Banned</span></td>
+                                <td>2025-02-24</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+        <script>
+            // User Growth Chart
+            var userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+            var userGrowthChart = new Chart(userGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'New Users',
+                        data: [65, 78, 90, 105, 125, 145, 180, 205, 230, 245, 260, 285],
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                borderDash: [2, 4],
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Content Distribution Chart
+            var contentDistributionCtx = document.getElementById('contentDistributionChart').getContext('2d');
+            var contentDistributionChart = new Chart(contentDistributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Posts', 'Comments', 'Chat Messages', 'Reactions'],
+                    datasets: [{
+                        data: [1253, 4521, 8765, 6234],
+                        backgroundColor: [
+                            'rgba(37, 99, 235, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        </script>
+}

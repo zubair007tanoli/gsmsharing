@@ -1,0 +1,572 @@
+﻿@{
+    ViewData["Title"] = "Communities Management";
+    ViewData["BreadcrumbSection"] = "Content Management";
+    ViewData["BreadcrumbPage"] = "Communities";
+    Layout = "_AdminLayout";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Communities Management</h1>
+            <div>
+                <button class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-file-export me-2"></i> Export
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCommunityModal">
+                    <i class="fas fa-users-cog me-2"></i> Add Community
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row">
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-primary">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">78</h4>
+                <p class="admin-stat-label">Total Communities</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 5.2% since last month
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-success">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">12,453</h4>
+                <p class="admin-stat-label">Total Members</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 8.7% since last month
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-info">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">15</h4>
+                <p class="admin-stat-label">Verified Communities</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 2 new this month
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon bg-warning">
+                <i class="fas fa-lock"></i>
+            </div>
+            <div class="admin-stat-content">
+                <h4 class="admin-stat-value">23</h4>
+                <p class="admin-stat-label">Private Communities</p>
+                <div class="admin-stat-change positive">
+                    <i class="fas fa-arrow-up"></i> 3 new this month
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Communities List</h5>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-filter me-1"></i> Filter
+                        </button>
+                        <div class="dropdown-menu p-3" style="width: 250px;">
+                            <h6 class="dropdown-header px-0 mb-2">Filter Communities</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                <select class="form-select form-select-sm">
+                                    <option value="">All Categories</option>
+                                    <option value="1">Mobile Phones</option>
+                                    <option value="2">Accessories</option>
+                                    <option value="3">Software</option>
+                                    <option value="4">Tutorials</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select form-select-sm">
+                                    <option value="">All Status</option>
+                                    <option value="verified">Verified</option>
+                                    <option value="unverified">Unverified</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Privacy</label>
+                                <select class="form-select form-select-sm">
+                                    <option value="">All</option>
+                                    <option value="public">Public</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-sm btn-primary">Apply Filters</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group" style="width: 250px;">
+                        <span class="input-group-text bg-light border-0">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-0 bg-light" placeholder="Search communities...">
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover datatable mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                        <label class="form-check-label" for="selectAll"></label>
+                                    </div>
+                                </th>
+                                <th>Community</th>
+                                <th>Category</th>
+                                <th>Members</th>
+                                <th>Creator</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox">
+                                        <label class="form-check-label"></label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=40&width=40" alt="Community" class="rounded me-2">
+                                        <div>
+                                            <h6 class="mb-0">Android Enthusiasts</h6>
+                                            <small class="text-muted">android-enthusiasts</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Mobile Phones</td>
+                                <td>2,345</td>
+                                <td>John Doe</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i> Verified
+                                    </span>
+                                </td>
+                                <td>2025-01-15</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-eye me-2"></i> View Details
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-users me-2"></i> Manage Members
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-ban me-2"></i> Suspend Community
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox">
+                                        <label class="form-check-label"></label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=40&width=40" alt="Community" class="rounded me-2">
+                                        <div>
+                                            <h6 class="mb-0">iPhone Users</h6>
+                                            <small class="text-muted">iphone-users</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Mobile Phones</td>
+                                <td>1,987</td>
+                                <td>Jane Smith</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i> Verified
+                                    </span>
+                                </td>
+                                <td>2025-01-20</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-eye me-2"></i> View Details
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-users me-2"></i> Manage Members
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-ban me-2"></i> Suspend Community
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox">
+                                        <label class="form-check-label"></label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=40&width=40" alt="Community" class="rounded me-2">
+                                        <div>
+                                            <h6 class="mb-0">Wireless Earbuds</h6>
+                                            <small class="text-muted">wireless-earbuds</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Accessories</td>
+                                <td>856</td>
+                                <td>Robert Johnson</td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-clock me-1"></i> Unverified
+                                    </span>
+                                </td>
+                                <td>2025-02-05</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-eye me-2"></i> View Details
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-users me-2"></i> Manage Members
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-check-circle me-2"></i> Verify Community
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox">
+                                        <label class="form-check-label"></label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=40&width=40" alt="Community" class="rounded me-2">
+                                        <div>
+                                            <h6 class="mb-0">App Developers</h6>
+                                            <small class="text-muted">app-developers</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Software</td>
+                                <td>1,245</td>
+                                <td>Sarah Williams</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i> Verified
+                                    </span>
+                                </td>
+                                <td>2025-01-30</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-eye me-2"></i> View Details
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-users me-2"></i> Manage Members
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-ban me-2"></i> Suspend Community
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox">
+                                        <label class="form-check-label"></label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="/placeholder.svg?height=40&width=40" alt="Community" class="rounded me-2">
+                                        <div>
+                                            <h6 class="mb-0">Phone Photography</h6>
+                                            <small class="text-muted">phone-photography</small>
+                                            <span class="badge bg-warning text-dark ms-1">
+                                                <i class="fas fa-lock me-1"></i> Private
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Tutorials</td>
+                                <td>678</td>
+                                <td>David Brown</td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-clock me-1"></i> Unverified
+                                    </span>
+                                </td>
+                                <td>2025-02-10</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-eye me-2"></i> View Details
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-users me-2"></i> Manage Members
+                                                </a>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-check-circle me-2"></i> Verify Community
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="admin-card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted">Showing 1 to 5 of 78 entries</span>
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Community Modal -->
+<div class="modal fade" id="addCommunityModal" tabindex="-1" aria-labelledby="addCommunityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCommunityModalLabel">Add New Community</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="communityName" class="form-label">Community Name</label>
+                            <input type="text" class="form-control" id="communityName" placeholder="Enter community name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="communitySlug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="communitySlug" placeholder="Enter slug">
+                            <small class="text-muted">The "slug" is the URL-friendly version of the name.</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="communityDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="communityDescription" rows="3" placeholder="Enter description"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="communityCategory" class="form-label">Category</label>
+                            <select class="form-select select2" id="communityCategory">
+                                <option value="">Select Category</option>
+                                <option value="1">Mobile Phones</option>
+                                <option value="2">Accessories</option>
+                                <option value="3">Software</option>
+                                <option value="4">Tutorials</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="communityCreator" class="form-label">Creator</label>
+                            <select class="form-select select2" id="communityCreator">
+                                <option value="">Select Creator</option>
+                                <option value="1">John Doe</option>
+                                <option value="2">Jane Smith</option>
+                                <option value="3">Robert Johnson</option>
+                                <option value="4">Sarah Williams</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="communityIcon" class="form-label">Icon Image</label>
+                            <input type="file" class="form-control" id="communityIcon">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="communityCover" class="form-label">Cover Image</label>
+                            <input type="file" class="form-control" id="communityCover">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="communityRules" class="form-label">Community Rules</label>
+                        <textarea class="form-control" id="communityRules" rows="3" placeholder="Enter community rules"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isPrivate">
+                                <label class="form-check-label" for="isPrivate">Private Community</label>
+                                <small class="d-block text-muted">Private communities are only visible to members</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isVerified">
+                                <label class="form-check-label" for="isVerified">Verified Community</label>
+                                <small class="d-block text-muted">Verified communities get a special badge</small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Add Community</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            $('.datatable').DataTable({
+                responsive: true,
+                paging: false,
+                info: false,
+                searching: false
+            });
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            // Initialize Select2
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $('#addCommunityModal')
+            });
+
+            // Select all checkbox
+            $('#selectAll').on('change', function() {
+                $('tbody .form-check-input').prop('checked', $(this).prop('checked'));
+            });
+
+            // Auto-generate slug from name
+            $('#communityName').on('keyup', function() {
+                var slug = $(this).val()
+                    .toLowerCase()
+                    .replace(/[^\w ]+/g, '')
+                    .replace(/ +/g, '-');
+                $('#communitySlug').val(slug);
+            });
+        });
+    </script>
+}
