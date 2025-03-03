@@ -239,9 +239,9 @@ namespace gsmsharing.Repositories
                     { "@TwitterCard", GetPropertyValueOrDefault(post, "TwitterCard") },
                     { "@TwitterTitle", GetPropertyValueOrDefault(post, "TwitterTitle") },
                     { "@TwitterDescription", GetPropertyValueOrDefault(post, "TwitterDescription") },
-                    { "@TwitterImage", GetPropertyValueOrDefault(post, "TwitterImage") },
+                    { "@TwitterImage",  post.FeaturedImage ?? (object)DBNull.Value },
                     { "@CanonicalURL", GetPropertyValueOrDefault(post, "CanonicalURL") },
-                    { "@Robots", GetPropertyValueOrDefault(post, "Robots") }
+                    { "@Robots", "index, follow" }
                 };
 
             var result = await _db.ExecuteNonQueryAsync(sql, parameters);
