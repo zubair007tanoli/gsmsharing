@@ -3,6 +3,8 @@ using gsmsharing.ExeMethods;
 using gsmsharing.Interfaces;
 using gsmsharing.Models;
 using gsmsharing.Models.SEO;
+using gsmsharing.ViewModels;
+using System.Data;
 
 namespace gsmsharing.Repositories
 {
@@ -87,9 +89,84 @@ namespace gsmsharing.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<Post>> GetAllAsync()
+        public async Task<IEnumerable<PostViewModelDisplay>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            try
+            {
+                const string sql = @"
+            SELECT 
+                p.[PostID],
+                p.[Title],
+                p.[Slug],
+                p.[FeaturedImage],
+                s.[MetaDescription],
+                p.[CreatedAt],
+                p.[PublishedAt],
+                u.[UserName] AS AuthorName,
+                c.[Name] AS CommunityName,
+                c.[Slug] AS CommunitySlug,
+                (SELECT COUNT(*) FROM Reactions r WHERE r.PostID = p.PostID) AS TotalReactions,
+                (SELECT COUNT(*) FROM Reactions r WHERE r.PostID = p.PostID AND r.ReactionType = 'Like') AS LikeCount,
+                (SELECT COUNT(*) FROM Reactions r WHERE r.PostID = p.PostID AND r.ReactionType = 'Love') AS LoveCount
+            FROM Posts p
+            LEFT JOIN PostSEO s ON p.[PostID] = s.[PostID]
+            LEFT JOIN AspNetUsers u ON p.[UserId] = u.[Id]
+            LEFT JOIN Communities c ON p.[CommunityID] = c.[CommunityID]
+            ORDER BY p.[CreatedAt] DESC";
+
+                var dataTable = await _db.ExecuteQueryAsync(sql);
+
+                var posts = new List<PostViewModelDisplay>();
+
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    var post = new PostViewModelDisplay
+                    {
+                        PostID = Convert.ToInt32(row["PostID"]),
+                        Title = row["Title"].ToString(),
+                        Slug = row["Slug"].ToString(),
+                        FeaturedImage = row["FeaturedImage"] as string,
+                        Description = row["MetaDescription"] as string,
+                        AuthorName = row["AuthorName"].ToString(),
+                        CommunityName = row["CommunityName"].ToString(),
+                        CommunitySlug = row["CommunitySlug"].ToString(),
+                        CreatedTime = FormatTimeAgo(row["CreatedAt"] as DateTime?),
+                        PublishedTime = FormatTimeAgo(row["PublishedAt"] as DateTime?),
+                        Reactions = new ReactionSummary
+                        {
+                            TotalReactions = Convert.ToInt32(row["TotalReactions"]),
+                            LikeCount = Convert.ToInt32(row["LikeCount"]),
+                            LoveCount = Convert.ToInt32(row["LoveCount"])
+                        }
+                    };
+
+                    posts.Add(post);
+                }
+
+                return posts;
+            }
+            catch (Exception ex)
+            {
+            
+                throw;
+            }
+        }
+        // Helper method to format time ago
+        private string FormatTimeAgo(DateTime? dateTime)
+        {
+            if (!dateTime.HasValue) return "Not available";
+
+            var now = DateTime.UtcNow;
+            var diff = now - dateTime.Value;
+
+            return diff.TotalMinutes switch
+            {
+                < 1 => "Just now",
+                < 60 => $"{(int)diff.TotalMinutes} minute{(diff.TotalMinutes > 1 ? "s" : "")} ago",
+                < 1440 => $"{(int)diff.TotalHours} hour{(diff.TotalHours > 1 ? "s" : "")} ago",
+                < 525600 => $"{(int)diff.TotalDays} day{(diff.TotalDays > 1 ? "s" : "")} ago",
+                _ => $"{(int)(diff.TotalDays / 365)} year{(diff.TotalDays >= 730 ? "s" : "")} ago"
+            };
         }
 
         public Task<IEnumerable<Post>> GetByCommunityIdAsync(int communityId)

@@ -11,19 +11,21 @@ namespace gsmsharing.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly ICategoryRepository _categoryService;
         private readonly AIContentGenerator _contentGenerator;
-        public HomeController(ILogger<HomeController> logger, ICategoryRepository categoryService, AIContentGenerator contentGenerator)
+        private readonly IPostRepository postRepository;
+        public HomeController(ILogger<HomeController> logger, ICategoryRepository categoryService, AIContentGenerator contentGenerator, IPostRepository postRepository)
         {
             _logger = logger;
             _categoryService = categoryService;
             _contentGenerator = contentGenerator;
+            this.postRepository = postRepository;
         }
 
         public async Task<IActionResult> IndexAsync()
         {
-           
+            var post = await postRepository.GetAllAsync();
             var categorySelectList = await _categoryService.CreateCategorySelectListAsync();
             ViewBag.Categories = categorySelectList;
-            return View();
+            return View(post);
         }
 
         public IActionResult Privacy()

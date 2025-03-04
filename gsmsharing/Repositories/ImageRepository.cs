@@ -18,7 +18,7 @@ namespace gsmsharing.Repositories
             _logger = logger;
         }
 
-        public async Task<FileUploadResult> SaveImageAsync(IFormFile file, string directory = "images")
+        public async Task<FileUploadResult> SaveImageAsync(IFormFile file, string directory = "uploads")
         {
             try
             {

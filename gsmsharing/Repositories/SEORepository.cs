@@ -222,6 +222,7 @@ namespace gsmsharing.Repositories
             post.OgTitle = SlugGenerator.ShortenTitle(post.Title);
             post.OgDescription = SlugGenerator.ShortenDescription(post.MetaDescription);
             post.OgImage = post.FeaturedImage;
+            
 
 
             // Assuming the Post model might not have all these properties,
@@ -236,9 +237,9 @@ namespace gsmsharing.Repositories
                     { "@OgTitle", post.OgTitle ?? (object)DBNull.Value },
                     { "@OgDescription", post.OgDescription ?? (object)DBNull.Value },
                     { "@OgImage", post.FeaturedImage ?? (object)DBNull.Value },
-                    { "@TwitterCard", GetPropertyValueOrDefault(post, "TwitterCard") },
-                    { "@TwitterTitle", GetPropertyValueOrDefault(post, "TwitterTitle") },
-                    { "@TwitterDescription", GetPropertyValueOrDefault(post, "TwitterDescription") },
+                    { "@TwitterCard", "summary" },
+                    { "@TwitterTitle", post.OgTitle ?? (Object)DBNull.Value },
+                    { "@TwitterDescription", post.OgDescription ?? (object) DBNull.Value  },
                     { "@TwitterImage",  post.FeaturedImage ?? (object)DBNull.Value },
                     { "@CanonicalURL", GetPropertyValueOrDefault(post, "CanonicalURL") },
                     { "@Robots", "index, follow" }

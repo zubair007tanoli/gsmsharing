@@ -1,4 +1,5 @@
 ﻿using gsmsharing.Models;
+using gsmsharing.ViewModels;
 
 namespace gsmsharing.Interfaces
 {
@@ -6,7 +7,7 @@ namespace gsmsharing.Interfaces
     {
         Task<Post> GetByIdAsync(int id);
         Task<Post> GetBySlugAsync(string slug);
-        Task<IEnumerable<Post>> GetAllAsync();
+        Task<IEnumerable<PostViewModelDisplay>> GetAllAsync();
         Task<IEnumerable<Post>> GetByCommunityIdAsync(int communityId);
         Task<IEnumerable<Post>> GetByUserIdAsync(string userId);
         Task<int> CreateAsync(Post post);    

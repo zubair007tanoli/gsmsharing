@@ -1,4 +1,4 @@
-﻿@model IEnumerable<gsmsharing.Models.Category>
+﻿@model IEnumerable<gsmsharing.ViewModels.PostViewModelDisplay>
 @{
     ViewData["Title"] = "Home";
 }
@@ -31,62 +31,66 @@
         <div class="tab-content p-3">
             <!-- Recent Posts Tab -->
             <div class="tab-pane fade show active" id="recentTab" role="tabpanel">
-                <div class="post-card border shadow-sm">
-                    <div class="d-flex gap-3">
-                        <!-- Thumbnail -->
-                        <div class="d-none d-sm-block">
-                            <img src="https://via.placeholder.com/140" class="thumbnail rounded" alt="Post Thumbnail">
-                        </div>
-
-                        <!-- Post Content -->
-                        <div class="flex-grow-1">
-                            <!-- Post Header -->
-                            <div class="post-meta mb-2">
-                                <a href="#" class="community-badge me-1">r/iPhoneUnlocking</a>
-                                <span>•</span>
-                                <span class="ms-1">Posted by</span>
-                                <a href="#" class="text-decoration-none ms-1">u/AlexTech</a>
-                                <span class="ms-1">2 hours ago</span>
+                @foreach (var item in Model)
+                {
+                    <div class="post-card border shadow-sm">
+                        <div class="d-flex gap-3">
+                            <!-- Thumbnail -->
+                            <div class="d-none d-sm-block">
+                                <img src="@item.FeaturedImage" class="thumbnail rounded" alt="Post Thumbnail">
                             </div>
 
-                            <!-- Post Title -->
-                            <h3 class="post-title mb-2">New iPhone 15 Unlock Method Found</h3>
+                            <!-- Post Content -->
+                            <div class="flex-grow-1">
+                                <!-- Post Header -->
+                                <div class="post-meta mb-2">
+                                    <a href="#" class="community-badge me-1">r/iPhoneUnlocking</a>
+                                    <span>•</span>
+                                    <span class="ms-1">Posted by</span>
+                                    <a href="#" class="text-decoration-none ms-1">u/AlexTech</a>
+                                    <span class="ms-1">2 hours ago</span>
+                                </div>
 
-                            <!-- Post Description -->
-                            <p class="post-meta mb-2">Just discovered a new method for unlocking the latest iPhone 15 series. This works for all carriers and doesn't require any special hardware...</p>
+                                <!-- Post Title -->
+                                <h3 class="post-title mb-2">New iPhone 15 Unlock Method Found</h3>
 
-                            <!-- Tags -->
-                            <div class="mb-2">
-                                <span class="badge bg-primary rounded-pill">Unlocking</span>
-                                <span class="badge bg-secondary rounded-pill">iPhone 15</span>
-                            </div>
+                                <!-- Post Description -->
+                                <p class="post-meta mb-2">Just discovered a new method for unlocking the latest iPhone 15 series. This works for all carriers and doesn't require any special hardware...</p>
 
-                            <!-- Post Actions -->
-                            <div class="post-actions d-flex align-items-center gap-2">
-                                <button type="button">
-                                    <i class="fas fa-arrow-up me-1"></i>
-                                    Like
-                                </button>
-                                <button type="button">
-                                    <i class="fas fa-arrow-down me-1"></i>
-                                    Dislike
-                                </button>
-                                <button type="button">
-                                    <i class="fas fa-comment-alt me-1"></i>
-                                    45 Comments
-                                </button>
-                                <button type="button">
-                                    <i class="fas fa-share me-1"></i>
-                                    Share
-                                </button>
-                                <div class="views-count ms-auto">
-                                    <i class="fas fa-eye me-1"></i>
-                                    1.2k views
+                                <!-- Tags -->
+                                <div class="mb-2">
+                                    <span class="badge bg-primary rounded-pill">Unlocking</span>
+                                    <span class="badge bg-secondary rounded-pill">iPhone 15</span>
+                                </div>
+
+                                <!-- Post Actions -->
+                                <div class="post-actions d-flex align-items-center gap-2">
+                                    <button type="button">
+                                        <i class="fas fa-arrow-up me-1"></i>
+                                        Like
+                                    </button>
+                                    <button type="button">
+                                        <i class="fas fa-arrow-down me-1"></i>
+                                        Dislike
+                                    </button>
+                                    <button type="button">
+                                        <i class="fas fa-comment-alt me-1"></i>
+                                        45 Comments
+                                    </button>
+                                    <button type="button">
+                                        <i class="fas fa-share me-1"></i>
+                                        Share
+                                    </button>
+                                    <div class="views-count ms-auto">
+                                        <i class="fas fa-eye me-1"></i>
+                                        1.2k views
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                }
+              
             </div>
 
             <!-- Trending Tab -->
