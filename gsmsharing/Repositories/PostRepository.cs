@@ -63,9 +63,9 @@ namespace gsmsharing.Repositories
                 {
                     { "@UserId", post.UserId },
                     { "@Title", post.Title },
-                    { "@Slug", post.Slug },                    
+                    { "@Slug", post.Slug },
                     { "@Content", post.Content },
-                    { "@FeaturedImage", (object)post.FeaturedImage ?? DBNull.Value },             
+                    { "@FeaturedImage", (object)post.FeaturedImage ?? DBNull.Value },
                     { "@PostStatus", post.PostStatus ?? "draft" },
                     { "@AllowComments", post.AllowComments ?? true },
                     { "@CommunityID", (object)post.CommunityID ?? DBNull.Value },
@@ -74,14 +74,14 @@ namespace gsmsharing.Repositories
                 };
 
                 return await _db.ExecuteScalarAsync<int>(sql, parameters);
-            }       
-            
-                catch (Exception ex)
-                {
-                    ex.Message.ToString();                
-                    throw;
-                }
-       
+            }
+
+            catch (Exception ex)
+            {
+                ex.Message.ToString();
+                throw;
+            }
+
         }
 
         public Task DeleteAsync(int id)
@@ -94,34 +94,37 @@ namespace gsmsharing.Repositories
             try
             {
                 const string sql = @"
-            SELECT 
-                p.[PostID],
-                p.[Title],
-                p.[Slug],
-                p.[FeaturedImage],
-                p.[ViewCount],
-                s.[MetaDescription],
-                s.[MetaKeywords],
-                p.[CreatedAt],
-                p.[PublishedAt],
-                u.[UserName] AS AuthorName,
-                c.[Name] AS CommunityName,
-                c.[Slug] AS CommunitySlug,
-                (SELECT COUNT(*) FROM Reactions r WHERE r.PostID = p.PostID) AS TotalReactions,
-                (SELECT COUNT(*) FROM Reactions r WHERE r.PostID = p.PostID AND r.ReactionType = 'Like') AS LikeCount,
-                (SELECT COUNT(*) FROM Reactions r WHERE r.PostID = p.PostID AND r.ReactionType = 'Love') AS LoveCount
-            FROM Posts p
-            LEFT JOIN PostSEO s ON p.[PostID] = s.[PostID]
-            LEFT JOIN AspNetUsers u ON p.[UserId] = u.[Id]
-            LEFT JOIN Communities c ON p.[CommunityID] = c.[CommunityID]
-            ORDER BY p.[CreatedAt] DESC";
+        SELECT 
+            p.[PostID],
+            p.[Title],
+            p.[Slug],
+            p.[FeaturedImage],
+            p.[ViewCount],
+            s.[MetaDescription],
+            s.[MetaKeywords],
+            p.[CreatedAt],
+            p.[PublishedAt],
+            u.[UserName] AS AuthorName,
+            c.[Name] AS CommunityName,
+            c.[Slug] AS CommunitySlug,
+            (SELECT COALESCE(SUM(PostLikes), 0) FROM Reactions r WHERE r.PostID = p.PostID) AS TotalLikes,
+            (SELECT COALESCE(SUM(PostDisLikes), 0) FROM Reactions r WHERE r.PostID = p.PostID) AS TotalDislikes,
+            (SELECT COUNT(*) FROM Comments cm WHERE cm.PostID = p.PostID AND cm.IsApproved = 1) AS TotalComments
+        FROM Posts p
+        LEFT JOIN PostSEO s ON p.[PostID] = s.[PostID]
+        LEFT JOIN AspNetUsers u ON p.[UserId] = u.[Id]
+        LEFT JOIN Communities c ON p.[CommunityID] = c.[CommunityID]
+        ORDER BY p.[CreatedAt] DESC";
 
                 var dataTable = await _db.ExecuteQueryAsync(sql);
-
                 var posts = new List<PostViewModelDisplay>();
 
                 foreach (DataRow row in dataTable.Rows)
                 {
+                    var totalLikes = Convert.ToInt32(row["TotalLikes"]);
+                    var totalDislikes = Convert.ToInt32(row["TotalDislikes"]);
+                    var totalComments = Convert.ToInt32(row["TotalComments"]);
+
                     var post = new PostViewModelDisplay
                     {
                         PostID = Convert.ToInt32(row["PostID"]),
@@ -138,12 +141,14 @@ namespace gsmsharing.Repositories
                         PublishedTime = FormatTimeAgo(row["PublishedAt"] as DateTime?),
                         Reactions = new ReactionSummary
                         {
-                            TotalReactions = Convert.ToInt32(row["TotalReactions"]),
-                            LikeCount = Convert.ToInt32(row["LikeCount"]),
-                            LoveCount = Convert.ToInt32(row["LoveCount"])
-                        }
+                            TotalReactions = totalLikes + totalDislikes,
+                            LikeCount = totalLikes,
+                            DislikeCount = totalDislikes,
+                            FormattedLikeCount = FormatLikeCount(totalLikes),
+                            FormattedDislikeCount = FormatLikeCount(totalDislikes)
+                        },
+                        CommentCount = FormatLikeCount(totalComments)
                     };
-
                     posts.Add(post);
                 }
 
@@ -151,19 +156,37 @@ namespace gsmsharing.Repositories
             }
             catch (Exception ex)
             {
-            
-                throw;
+               
+                return Enumerable.Empty<PostViewModelDisplay>();
             }
         }
-            public static string FormatViewCount(int viewCount)
-    {
-        if (viewCount < 1000)
-            return viewCount.ToString();
 
-        // Round to one decimal place for k notation
-        double formattedCount = Math.Floor(viewCount / 100.0) / 10.0;
-        return $"{formattedCount:0.#}k";
-    }
+        public static string FormatViewCount(int viewCount)
+        {
+            if (viewCount < 1000)
+                return viewCount.ToString();
+
+            // Round to one decimal place for k notation
+            double formattedCount = Math.Floor(viewCount / 100.0) / 10.0;
+            return $"{formattedCount:0.#}k";
+        }
+
+     
+            /// <summary>
+            /// Converts like count to k notation for counts greater than 1000
+            /// </summary>
+            /// <param name="likeCount">Total number of likes</param>
+            /// <returns>Formatted like count string</returns>
+            public static string FormatLikeCount(int likeCount)
+            {
+                if (likeCount < 1000)
+                    return likeCount.ToString();
+
+                // Round to one decimal place for k notation
+                double formattedCount = Math.Floor(likeCount / 100.0) / 10.0;
+                return $"{formattedCount:0.#}k";
+            }
+        
         // Helper method to format time ago
         private string FormatTimeAgo(DateTime? dateTime)
         {

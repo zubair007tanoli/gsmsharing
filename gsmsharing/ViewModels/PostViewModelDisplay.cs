@@ -14,6 +14,7 @@
         public string CommunitySlug { get; set; }
         public string CreatedTime { get; set; }
         public string PublishedTime { get; set; }
+        public string CommentCount { get; set; }
         public ReactionSummary Reactions { get; set; }
     }
 }

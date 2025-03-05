@@ -84,15 +84,15 @@
                                 <div class="post-actions d-flex align-items-center gap-2">
                                     <button type="button">
                                         <i class="fas fa-arrow-up me-1"></i>
-                                        Like
+                                        @item.Reactions.FormattedLikeCount Like
                                     </button>
                                     <button type="button">
                                         <i class="fas fa-arrow-down me-1"></i>
-                                        Dislike
+                                          @item.Reactions.FormattedDislikeCount Dislike
                                     </button>
                                     <button type="button">
                                         <i class="fas fa-comment-alt me-1"></i>
-                                        45 Comments
+                                        @item.CommentCount Comments
                                     </button>
                                     <button type="button">
                                         <i class="fas fa-share me-1"></i>
