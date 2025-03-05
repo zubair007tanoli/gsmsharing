@@ -59,10 +59,11 @@ namespace gsmsharing.Repositories
             {
                 if (fileBytes == null || fileBytes.Length == 0)
                     return FileUploadResult.Failure("No file data was provided");
-
+                
                 // Validate file format using ImageSharp
                 using (var image = Image.Load(fileBytes))
                 {
+                  
                     if (image == null)
                         return FileUploadResult.Failure("Invalid image format");
                 }

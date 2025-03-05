@@ -26,6 +26,20 @@
                 </button>
             </li>
         </ul>
+        @* Method to split keywords into multiple tags *@
+        @{
+            Func<string, IEnumerable<string>> ProcessKeywordTags = (keywords) =>
+            {
+                if (string.IsNullOrWhiteSpace(keywords))
+                    return Enumerable.Empty<string>();
+
+                return keywords
+            .Split(new[] { ' ', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(k => k.Trim())
+            .Distinct();
+            };
+
+        }
 
         <!-- Tab Content -->
         <div class="tab-content p-3">
@@ -55,11 +69,14 @@
                                 <h3 class="post-title mb-2">@item.Title</h3>
 
                                 <!-- Post Description -->
-                                <p class="post-meta mb-2">@item.Description</p>
-
+                                <p class="post-meta mb-2">@item.Discription</p>
                                 <!-- Tags -->
-                                <div class="mb-2">
-                                    <span class="badge bg-primary rounded-pill">Unlocking</span>
+                                <div class="tags-container mb-2">
+                                    @foreach (var tag in ProcessKeywordTags(item.Keywords))
+                                    {
+                                        <span class="badge bg-primary rounded-pill me-1">@tag</span>
+                                    }
+                                    @* Optional: Add a static tag if needed *@
                                     <span class="badge bg-secondary rounded-pill">iPhone 15</span>
                                 </div>
 
@@ -83,7 +100,7 @@
                                     </button>
                                     <div class="views-count ms-auto">
                                         <i class="fas fa-eye me-1"></i>
-                                        1.2k views
+                                        @item.ViewCount                                        
                                     </div>
                                 </div>
                             </div>

@@ -99,7 +99,9 @@ namespace gsmsharing.Repositories
                 p.[Title],
                 p.[Slug],
                 p.[FeaturedImage],
+                p.[ViewCount],
                 s.[MetaDescription],
+                s.[MetaKeywords],
                 p.[CreatedAt],
                 p.[PublishedAt],
                 u.[UserName] AS AuthorName,
@@ -126,7 +128,9 @@ namespace gsmsharing.Repositories
                         Title = row["Title"].ToString(),
                         Slug = row["Slug"].ToString(),
                         FeaturedImage = row["FeaturedImage"] as string,
-                        Description = row["MetaDescription"] as string,
+                        ViewCount = FormatViewCount(Convert.ToInt32(row["ViewCount"])),
+                        Discription = row["MetaDescription"] as string,
+                        Keywords = row["MetaKeywords"] as string,
                         AuthorName = row["AuthorName"].ToString(),
                         CommunityName = row["CommunityName"].ToString(),
                         CommunitySlug = row["CommunitySlug"].ToString(),
@@ -151,6 +155,15 @@ namespace gsmsharing.Repositories
                 throw;
             }
         }
+            public static string FormatViewCount(int viewCount)
+    {
+        if (viewCount < 1000)
+            return viewCount.ToString();
+
+        // Round to one decimal place for k notation
+        double formattedCount = Math.Floor(viewCount / 100.0) / 10.0;
+        return $"{formattedCount:0.#}k";
+    }
         // Helper method to format time ago
         private string FormatTimeAgo(DateTime? dateTime)
         {
