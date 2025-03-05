@@ -41,15 +41,16 @@
                 IsFeatured = false
             };
 
-            // Handle featured image if it exists in the ViewModel
-            if (!string.IsNullOrEmpty(viewModel.FeaturedImagePath))
-            {
-                post.FeaturedImage = viewModel.FeaturedImagePath;
-            }
-            else if (!string.IsNullOrEmpty(viewModel.FeaturedImageUrl))
-            {
-                post.FeaturedImage = viewModel.FeaturedImageUrl;
-            }
+            //// Handle featured image if it exists in the ViewModel
+            //if (!string.IsNullOrEmpty(viewModel.FeaturedImagePath))
+            //{
+            //    post.FeaturedImage = viewModel.FeaturedImagePath;
+            //}
+            //else if (!string.IsNullOrEmpty(viewModel.FeaturedImageUrl))
+            //{
+            //    post.FeaturedImage = viewModel.FeaturedImageUrl;
+            //}
+            post.FeaturedImage = viewModel.FeaturedImageUrl;
 
             return post;
         }
