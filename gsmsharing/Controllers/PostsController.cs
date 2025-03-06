@@ -73,6 +73,13 @@ namespace gsmsharing.Controllers
             return RedirectToAction("Create");
         }
 
+
+        [HttpPost]
+        public async Task<IActionResult> GetPost()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateCommunity(CreatePostAndCommunityViewModel postViewModel)
         {
