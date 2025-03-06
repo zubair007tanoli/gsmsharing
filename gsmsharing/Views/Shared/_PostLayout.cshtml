@@ -25,7 +25,7 @@
     @* @await Component.InvokeAsync("FeaturedTop") *@
     <!-- Main Content -->
     <div class="container-fluid py-2 mt-2">
-      
+
         <div class="row g-4">
             <!-- Left Sidebar -->
             <div class="col-lg-3 d-none d-lg-block">
@@ -46,15 +46,15 @@
                 <!-- Categories -->
                 @* @await Component.InvokeAsync("LayoutSideCategory") *@
                 <!-- Categories Ends-->
-
                 <!-- Categories -->
                 @await Component.InvokeAsync("LayoutSideCategoryCout")
-               
+
             </div>
 
             <!-- Main Content Column -->
             <div class="col-lg-6">
                 <main role="main" class="pb-3">
+                    <h2>Post Layout</h2>
                     @RenderBody()
                 </main>
 
