@@ -1,0 +1,193 @@
+﻿@model gsmsharing.ViewModels.PostViewModelDisplay
+@{
+    ViewData["Title"] = "GetPost";
+    Layout = "~/Views/Shared/_PostLayout.cshtml";
+}
+@section Resources {
+    <link rel="stylesheet" href="~/css/GetPostStyles.css" asp-append-version="true" />
+}
+
+  <div class="container">
+        <div class="post-container">
+            <!-- Main Post -->
+            <div class="post-card p-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill bg-secondary">r/webdesign</span>
+                    <span class="post-time">Posted by u/ui_designer • 4h ago</span>
+                </div>
+                
+                <h3 class="h5 fw-bold mb-3">Modern Dashboard Design Patterns</h3>
+                
+                <!-- Featured Image -->
+                <img src="https://source.unsplash.com/random/800x400" class="post-image" alt="Featured post image">
+
+                <div class="post-content mb-3">
+                    <p class="mb-0">Exploring the latest trends in dashboard design systems and data visualization...</p>
+                </div>
+
+                <!-- Post Actions -->
+                <div class="d-flex align-items-center gap-2 post-actions">
+                    <button class="like-btn" onclick="handleReaction(this, 'like')">
+                        <i class="far fa-thumbs-up"></i>
+                        <span class="engagement-count">1.8k</span>
+                    </button>
+                    <button class="dislike-btn" onclick="handleReaction(this, 'dislike')">
+                        <i class="far fa-thumbs-down"></i>
+                        <span class="engagement-count">32</span>
+                    </button>
+                    <button class="btn-action">
+                        <i class="far fa-comment-alt"></i>
+                        <span>142 Comments</span>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn-action" data-bs-toggle="dropdown">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <ul class="dropdown-menu share-dropdown">
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fab fa-facebook me-2"></i>Facebook
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fab fa-twitter me-2"></i>Twitter
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fab fa-linkedin me-2"></i>LinkedIn
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-link me-2"></i>Copy Link
+                            </a></li>
+                        </ul>
+                    </div>
+                    <button class="btn-action">
+                        <i class="far fa-bookmark"></i>
+                        <span>Save</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Comment Form -->
+            <div class="post-card p-3 mt-3">
+                <div class="d-flex gap-3">
+                    <img src="https://i.pravatar.cc/32" class="user-avatar" alt="User">
+                    <div class="flex-grow-1">
+                        <textarea class="form-control w-100" rows="2" placeholder="What are your thoughts?"></textarea>
+                        <div class="d-flex justify-content-end mt-2">
+                            <button class="btn btn-primary px-3">Comment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+        <!-- Updated Comments Section -->
+        <div class="mt-3 comments-section">
+            <!-- Parent Comment -->
+            <div class="comment-card">
+                <div class="d-flex align-items-start">
+                    <img src="https://i.pravatar.cc/32" class="user-avatar" alt="User">
+                    <div class="comment-body">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="fw-bold me-2">u/ux_researcher</span>
+                            <span class="post-time text-muted">• 2h ago</span>
+                        </div>
+                        <p class="mb-2">Great overview! Would love to see more examples of accessibility-focused dashboards.</p>
+                        <img src="https://source.unsplash.com/random/400x200" class="user-image" alt="Comment image">
+
+                        <div class="d-flex align-items-center gap-2 post-actions">
+                            <button class="like-btn" onclick="handleReaction(this, 'like')">
+                                <i class="far fa-thumbs-up"></i>
+                                <span class="engagement-count">328</span>
+                            </button>
+                            <button class="dislike-btn" onclick="handleReaction(this, 'dislike')">
+                                <i class="far fa-thumbs-down"></i>
+                                <span class="engagement-count">8</span>
+                            </button>
+                            <button class="btn-action" onclick="toggleReply(this)">
+                                Reply
+                            </button>
+                        </div>
+
+                        <!-- Nested Comments -->
+                        <div class="nested-comment">
+                            <div class="comment-card">
+                                <div class="d-flex align-items-start">
+                                    <img src="https://i.pravatar.cc/32" class="user-avatar" alt="User">
+                                    <div class="comment-body">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <span class="fw-bold me-2">u/accessibility_expert</span>
+                                            <span class="post-time text-muted">• 1h ago</span>
+                                        </div>
+                                        <p class="mb-2">Here's a great example of contrast ratios in dashboard components:</p>
+                                        <img src="https://source.unsplash.com/random/400x201" class="user-image" alt="Nested comment image">
+
+                                        <div class="d-flex align-items-center gap-2 post-actions">
+                                            <button class="like-btn" onclick="handleReaction(this, 'like')">
+                                                <i class="far fa-thumbs-up"></i>
+                                                <span class="engagement-count">89</span>
+                                            </button>
+                                            <button class="dislike-btn" onclick="handleReaction(this, 'dislike')">
+                                                <i class="far fa-thumbs-down"></i>
+                                            </button>
+                                            <button class="btn-action" onclick="toggleReply(this)">
+                                                Reply
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+<script>
+    function handleReaction(button, type) {
+        const countSpan = button.querySelector('.engagement-count');
+        let currentCount = parseInt(countSpan.textContent) || 0;
+        const isActive = button.classList.contains('active');
+
+        const parent = button.closest('.post-actions');
+        parent.querySelectorAll('.like-btn, .dislike-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        if (!isActive) {
+            button.classList.add('active');
+            countSpan.textContent = currentCount + 1;
+            const icon = button.querySelector('i');
+            icon.classList.replace('far', 'fas');
+        } else {
+            countSpan.textContent = Math.max(currentCount - 1, 0);
+            const icon = button.querySelector('i');
+            icon.classList.replace('fas', 'far');
+        }
+    }
+
+    function toggleReply(button) {
+        const commentCard = button.closest('.comment-card');
+        const existingForm = commentCard.querySelector('.reply-form');
+
+        existingForm ? existingForm.remove() :
+        commentCard.insertAdjacentHTML('beforeend', `
+            <div class="reply-form mt-2">
+                <div class="d-flex gap-2">
+                    <img src="https://i.pravatar.cc/28" class="user-avatar" alt="User">
+                    <textarea class="form-control" rows="1" placeholder="Write a reply..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-2">
+                    <button class="btn btn-sm btn-light" onclick="cancelReply(this)">Cancel</button>
+                    <button class="btn btn-sm btn-primary">Reply</button>
+                </div>
+            </div>
+        `);
+    }
+
+    function cancelReply(button) {
+        button.closest('.reply-form').remove();
+    }
+</script>
+

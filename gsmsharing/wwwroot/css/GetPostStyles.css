@@ -1,0 +1,152 @@
+﻿:root {
+    --like-color: #0079d3;
+    --dislike-color: #ff4500;
+    --action-hover: #f6f7f8;
+    --border-color: #e0e0e0;
+    --text-secondary: #6c757d;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.post-container {
+    max-width: 740px;
+    margin: 0 auto;
+    padding-top: 2rem;
+}
+
+.post-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s ease;
+}
+
+    .post-card:hover {
+        transform: translateY(-2px);
+    }
+
+.post-time {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.post-actions button {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: none;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+    .post-actions button:hover {
+        background: var(--action-hover);
+    }
+
+.like-btn.active {
+    color: var(--like-color);
+    border-color: var(--like-color);
+}
+
+.dislike-btn.active {
+    color: var(--dislike-color);
+    border-color: var(--dislike-color);
+}
+
+    .like-btn.active i,
+    .dislike-btn.active i {
+        color: inherit;
+    }
+
+.comment-form textarea {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.875rem;
+    min-height: 100px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+}
+
+/* Updated CSS for Reddit-style comments */
+.comment-card {
+    margin-bottom: 12px;
+    position: relative;
+    padding-left: 24px;
+}
+
+    .comment-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 32px;
+        bottom: 0;
+        width: 2px;
+        background-color: #e0e0e0;
+    }
+
+.nested-comment {
+    margin-left: 24px;
+    position: relative;
+}
+
+    .nested-comment .comment-card::before {
+        left: -24px;
+    }
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+}
+
+.post-actions {
+    margin-top: 8px;
+}
+
+    .post-actions button {
+        border: none;
+        background: none;
+        padding: 4px 8px;
+        color: #878a8c;
+        font-size: 12px;
+        font-weight: 700;
+        transition: background-color 0.2s;
+    }
+
+        .post-actions button:hover {
+            background-color: #f6f7f8;
+            border-radius: 2px;
+        }
+
+.like-btn.active {
+    color: var(--like-color);
+}
+
+.dislike-btn.active {
+    color: var(--dislike-color);
+}
+
+.engagement-count {
+    margin-left: 4px;
+    font-weight: 400;
+}
+
+.user-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 4px;
+    margin: 8px 0;
+    cursor: pointer;
+}

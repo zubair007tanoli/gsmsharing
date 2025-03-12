@@ -74,7 +74,7 @@ namespace gsmsharing.Controllers
         }
 
 
-        [HttpPost]
+        [HttpGet]
         public async Task<IActionResult> GetPost()
         {
             return View();
