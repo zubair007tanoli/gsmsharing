@@ -20,6 +20,11 @@ namespace gsmsharing.Controllers
             this.postRepository = postRepository;
         }
 
+        public IActionResult IndexPage()
+        {
+            return View();
+        }
+
         public async Task<IActionResult> IndexAsync()
         {
             var post = await postRepository.GetAllAsync();
