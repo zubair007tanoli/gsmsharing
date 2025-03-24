@@ -5,7 +5,7 @@ namespace gsmsharing.Interfaces
 {
     public interface IPostRepository
     {
-        Task<Post> GetByIdAsync(int id);
+        Task<PostViewModelWithSEO> GetByIdAsync(int id);
         Task<Post> GetBySlugAsync(string slug);
         Task<IEnumerable<PostViewModelDisplay>> GetAllAsync();
         Task<IEnumerable<Post>> GetByCommunityIdAsync(int communityId);

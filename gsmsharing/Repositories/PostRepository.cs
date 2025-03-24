@@ -156,7 +156,7 @@ namespace gsmsharing.Repositories
             }
             catch (Exception ex)
             {
-               
+
                 return Enumerable.Empty<PostViewModelDisplay>();
             }
         }
@@ -171,22 +171,22 @@ namespace gsmsharing.Repositories
             return $"{formattedCount:0.#}k";
         }
 
-     
-            /// <summary>
-            /// Converts like count to k notation for counts greater than 1000
-            /// </summary>
-            /// <param name="likeCount">Total number of likes</param>
-            /// <returns>Formatted like count string</returns>
-            public static string FormatLikeCount(int likeCount)
-            {
-                if (likeCount < 1000)
-                    return likeCount.ToString();
 
-                // Round to one decimal place for k notation
-                double formattedCount = Math.Floor(likeCount / 100.0) / 10.0;
-                return $"{formattedCount:0.#}k";
-            }
-        
+        /// <summary>
+        /// Converts like count to k notation for counts greater than 1000
+        /// </summary>
+        /// <param name="likeCount">Total number of likes</param>
+        /// <returns>Formatted like count string</returns>
+        public static string FormatLikeCount(int likeCount)
+        {
+            if (likeCount < 1000)
+                return likeCount.ToString();
+
+            // Round to one decimal place for k notation
+            double formattedCount = Math.Floor(likeCount / 100.0) / 10.0;
+            return $"{formattedCount:0.#}k";
+        }
+
         // Helper method to format time ago
         private string FormatTimeAgo(DateTime? dateTime)
         {
@@ -210,10 +210,133 @@ namespace gsmsharing.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<Post> GetByIdAsync(int id)
+    
+        public async Task<PostViewModelWithSEO> GetByIdAsync(int postId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                const string sql = @"
+SELECT 
+    p.[PostID],
+    p.[UserId],
+    p.[Title],
+    p.[Slug],
+    p.[Content],
+    p.[FeaturedImage],
+    p.[ViewCount],
+    p.[PostStatus],
+    p.[IsPromoted],
+    p.[IsFeatured],
+    p.[AllowComments],
+    p.[CreatedAt],
+    p.[UpdatedAt],
+    p.[PublishedAt],
+    p.[CommunityID],
+    s.[SEOId],
+    s.[MetaTitle],
+    s.[MetaDescription],
+    s.[MetaKeywords],
+    s.[OgTitle],
+    s.[OgDescription],
+    s.[OgImage],
+    s.[TwitterCard],
+    s.[TwitterTitle],
+    s.[TwitterDescription],
+    s.[TwitterImage],
+    s.[CanonicalURL],
+    s.[Robots],
+    s.[Schema],
+    u.[UserName] AS AuthorName,
+    c.[Name] AS CommunityName,
+    c.[Slug] AS CommunitySlug,
+    (SELECT COALESCE(SUM(PostLikes), 0) FROM Reactions r WHERE r.PostID = p.PostID) AS TotalLikes,
+    (SELECT COALESCE(SUM(PostDisLikes), 0) FROM Reactions r WHERE r.PostID = p.PostID) AS TotalDislikes,
+    (SELECT COUNT(*) FROM Comments cm WHERE cm.PostID = p.PostID AND cm.IsApproved = 1) AS TotalComments
+FROM Posts p
+LEFT JOIN PostSEO s ON p.[PostID] = s.[PostID]
+LEFT JOIN AspNetUsers u ON p.[UserId] = u.[Id]
+LEFT JOIN Communities c ON p.[CommunityID] = c.[CommunityID]
+WHERE p.[PostID] = @PostId";
+
+                var parameters = new Dictionary<string, object>
+        {
+            { "@PostId", postId }
+        };
+
+                // Get the DataTable from the database
+                var dataTable = await _db.ExecuteQueryAsync(sql, parameters);
+
+                if (dataTable == null || dataTable.Rows.Count == 0)
+                {
+                    return null;
+                }
+
+                var row = dataTable.Rows[0];
+                var totalLikes = Convert.ToInt32(row["TotalLikes"]);
+                var totalDislikes = Convert.ToInt32(row["TotalDislikes"]);
+                var totalComments = Convert.ToInt32(row["TotalComments"]);
+
+                var post = new PostViewModelWithSEO
+                {
+                    PostID = Convert.ToInt32(row["PostID"]),
+                    UserId = row["UserId"].ToString(),
+                    Title = row["Title"].ToString(),
+                    Slug = row["Slug"].ToString(),
+                    Content = row["Content"].ToString(),
+                    FeaturedImage = row["FeaturedImage"] as string,
+                    ViewCount = Convert.ToInt32(row["ViewCount"]),
+                    FormattedViewCount = FormatViewCount(Convert.ToInt32(row["ViewCount"])),
+                    PostStatus = row["PostStatus"].ToString(),
+                    IsPromoted = Convert.ToBoolean(row["IsPromoted"]),
+                    IsFeatured = Convert.ToBoolean(row["IsFeatured"]),
+                    AllowComments = Convert.ToBoolean(row["AllowComments"]),
+                    CreatedAt = row["CreatedAt"] as DateTime?,
+                    UpdatedAt = row["UpdatedAt"] as DateTime?,
+                    PublishedAt = row["PublishedAt"] as DateTime?,
+                    CommunityID = Convert.ToInt32(row["CommunityID"]),
+                    CreatedTime = FormatTimeAgo(row["CreatedAt"] as DateTime?),
+                    PublishedTime = FormatTimeAgo(row["PublishedAt"] as DateTime?),
+                    AuthorName = row["AuthorName"].ToString(),
+                    CommunityName = row["CommunityName"].ToString(),
+                    CommunitySlug = row["CommunitySlug"].ToString(),
+                    Reactions = new ReactionSummary
+                    {
+                        TotalReactions = totalLikes + totalDislikes,
+                        LikeCount = totalLikes,
+                        DislikeCount = totalDislikes,
+                        FormattedLikeCount = FormatLikeCount(totalLikes),
+                        FormattedDislikeCount = FormatLikeCount(totalDislikes)
+                    },
+                    CommentCount = FormatLikeCount(totalComments),
+
+                    // SEO Properties
+                    SEOId = row["SEOId"] != DBNull.Value ? Convert.ToInt32(row["SEOId"]) : 0,
+                    MetaTitle = row["MetaTitle"] as string,
+                    MetaDescription = row["MetaDescription"] as string,
+                    MetaKeywords = row["MetaKeywords"] as string,
+                    OgTitle = row["OgTitle"] as string,
+                    OgDescription = row["OgDescription"] as string,
+                    OgImage = row["OgImage"] as string,
+                    TwitterCard = row["TwitterCard"] as string,
+                    TwitterTitle = row["TwitterTitle"] as string,
+                    TwitterDescription = row["TwitterDescription"] as string,
+                    TwitterImage = row["TwitterImage"] as string,
+                    CanonicalURL = row["CanonicalURL"] as string,
+                    Robots = row["Robots"] as string,
+                    Schema = row["Schema"] as string
+                };
+
+                return post;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception properly
+                Console.WriteLine($"Error retrieving post with SEO data: {ex.Message}");
+                return null;
+            }
         }
+
+
 
         public Task<Post> GetBySlugAsync(string slug)
         {

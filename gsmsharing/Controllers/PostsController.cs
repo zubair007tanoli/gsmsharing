@@ -75,9 +75,10 @@ namespace gsmsharing.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> GetPost()
+        public async Task<IActionResult> GetPost(int id)
         {
-            return View();
+            var resp = await _postRepository.GetByIdAsync(14);
+            return View(resp);
         }
 
         [HttpPost]
