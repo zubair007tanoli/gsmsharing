@@ -20,7 +20,7 @@
             border-radius: 4px;
             box-shadow: var(--card-shadow);
             margin-bottom: 16px;
-            overflow: hidden;
+            overflow: hidden;   
             border: 1px solid var(--border-color);
         }
 
@@ -88,6 +88,7 @@
         }
 
         /* Post Card */
+/*
         .post-card {
             background: white;
             border-radius: 4px;
@@ -96,6 +97,7 @@
             overflow: hidden;
             border: 1px solid var(--border-color);
         }
+            */
 
         .post-header {
             padding: 12px 16px;
@@ -219,7 +221,7 @@
             color: var(--text-muted);
             border: 1px solid rgba(120, 124, 126, 0.2);
         }
-
+        /*
         .post-actions {
             display: flex;
             align-items: center;
@@ -260,7 +262,7 @@
         .engagement-count {
             font-weight: 600;
         }
-
+        */
         .trending-topics {
             list-style-type: none;
             padding: 0;

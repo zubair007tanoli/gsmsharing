@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gsmsharing", "gsmsharing\gs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocScanner", "DocScanner\DocScanner.csproj", "{B8091418-19A7-4D90-B8B0-24FA14C5B6C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GsmsharingLib", "GsmsharingLib\GsmsharingLib.csproj", "{960300A4-CA3B-4237-B7A4-926DF6FAE663}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B8091418-19A7-4D90-B8B0-24FA14C5B6C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8091418-19A7-4D90-B8B0-24FA14C5B6C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8091418-19A7-4D90-B8B0-24FA14C5B6C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{960300A4-CA3B-4237-B7A4-926DF6FAE663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{960300A4-CA3B-4237-B7A4-926DF6FAE663}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{960300A4-CA3B-4237-B7A4-926DF6FAE663}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{960300A4-CA3B-4237-B7A4-926DF6FAE663}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

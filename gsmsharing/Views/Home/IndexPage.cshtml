@@ -1,0 +1,491 @@
+﻿
+@{
+    ViewData["Title"] = "IndexPage";
+    Layout = "~/Views/Shared/_LayoutReddit.cshtml";
+}
+
+<div class="content-container">
+    <!-- Mobile Ad - Only visible on mobile -->
+    <div class="ad-unit d-none mobile-ad mb-3">
+        <div class="ad-label">Advertisement</div>
+        <div class="ad-container large-mobile">
+            <!-- AdSense Mobile Banner (320x100) -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <!-- Replace this comment with your AdSense code for mobile banner ad -->
+        </div>
+    </div>
+
+    <!-- Create Post Card -->
+    <div class="create-post-card">
+        <img src="https://i.pravatar.cc/150?img=12" alt="User" class="user-avatar">
+        <div class="create-post-input" data-bs-toggle="modal" data-bs-target="#createPostModal">Create Post</div>
+        <div class="create-post-actions">
+            <button class="create-post-action" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-type="image">
+                <i class="far fa-image"></i>
+            </button>
+            <button class="create-post-action" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-type="link">
+                <i class="fas fa-link"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="best">
+            <i class="fas fa-rocket"></i>
+            Best
+        </button>
+        <button class="filter-tab" data-filter="hot">
+            <i class="fas fa-fire"></i>
+            Hot
+        </button>
+        <button class="filter-tab" data-filter="new">
+            <i class="fas fa-certificate"></i>
+            New
+        </button>
+        <button class="filter-tab" data-filter="rising">
+            <i class="fas fa-arrow-trend-up"></i>
+            Rising
+        </button>
+        <button class="filter-tab" data-filter="top">
+            <i class="fas fa-chart-line"></i>
+            Top
+        </button>
+        <button class="filter-tab" data-filter="controversial">
+            <i class="fas fa-comment-alt"></i>
+            Controversial
+        </button>
+    </div>
+
+    <!-- Post 1 - Image Post -->
+    <div class="post-card">
+        <div class="post-content-Landing">
+            <div class="post-main-Landing">
+                <div class="post-meta">
+                    <a href="#" class="community-badge">r/technology</a>
+                    <span>•</span>
+                    <span>
+                        Posted by
+                        <a href="#" class="community-badge" style="font-weight: 400;">u/techreview</a>
+                        <span>5 hours ago</span>
+                    </span>
+                    <span class="post-type-indicator image">Image</span>
+                </div>
+                <h2 class="post-title-Landing">
+                    <a href="#">iPhone 15 Pro Max Battery Life Exceeds Expectations in Latest Tests</a>
+                </h2>
+                <div class="post-body-Landing">
+                    <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=1000" alt="iPhone 15 Pro Max" class="post-image-Landing">
+                </div>
+                <div class="post-actions">
+                    <div class="reaction-buttons">
+                        <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="reaction-count">1.8k</span>
+                        </button>
+                        <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="reaction-count">32</span>
+                        </button>
+                    </div>
+                    <div class="post-stats">
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i>
+                            <span>142 Comments</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post 2 - Text Post -->
+    <div class="post-card">
+        <div class="post-content">
+            <div class="post-main">
+                <div class="post-meta">
+                    <a href="#" class="community-badge">r/programming</a>
+                    <span>•</span>
+                    <span>
+                        Posted by
+                        <a href="#" class="community-badge" style="font-weight: 400;">u/devmaster</a>
+                        <span>8 hours ago</span>
+                    </span>
+                    <span class="post-type-indicator discussion">Discussion</span>
+                </div>
+                <h2 class="post-title">
+                    <a href="#">What's your favorite programming language in 2023 and why?</a>
+                </h2>
+                <div class="post-body">
+                    I've been coding in Python for years but recently started exploring Rust and TypeScript. Curious what others are using these days and what benefits you're seeing with your language of choice.
+                </div>
+                <div class="post-actions">
+                    <div class="reaction-buttons">
+                        <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="reaction-count">956</span>
+                        </button>
+                        <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="reaction-count">48</span>
+                        </button>
+                    </div>
+                    <div class="post-stats">
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i>
+                            <span>328 Comments</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-feed Ad - High RPM Placement -->
+    <div class="in-feed-ad">
+        <div class="ad-label">Advertisement</div>
+        <div class="ad-container rectangle">
+            <!-- AdSense In-article ad (336x280) -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <!-- Replace this comment with your AdSense code for in-article ad -->
+        </div>
+    </div>
+
+    <!-- Post 3 - Link Post -->
+    <div class="post-card">
+        <div class="post-content">
+            <div class="post-main">
+                <div class="post-meta">
+                    <a href="#" class="community-badge">r/science</a>
+                    <span>•</span>
+                    <span>
+                        Posted by
+                        <a href="#" class="community-badge" style="font-weight: 400;">u/sciencenews</a>
+                        <span>12 hours ago</span>
+                    </span>
+                    <span class="post-type-indicator link">Link</span>
+                </div>
+                <div class="post-link">
+                    <i class="fas fa-link"></i>
+                    <a href="#">nature.com</a>
+                </div>
+                <h2 class="post-title">
+                    <a href="#">New Study Reveals Breakthrough in Quantum Computing Error Correction</a>
+                </h2>
+                <div class="post-body">
+                    <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=500" alt="Quantum Computer" class="post-image">
+                </div>
+                <div class="post-actions">
+                    <div class="reaction-buttons">
+                        <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="reaction-count">3.2k</span>
+                        </button>
+                        <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="reaction-count">76</span>
+                        </button>
+                    </div>
+                    <div class="post-stats">
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i>
+                            <span>187 Comments</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post 4 - Video Post -->
+    <div class="post-card">
+        <div class="post-content">
+            <div class="post-main">
+                <div class="post-meta">
+                    <a href="#" class="community-badge">r/gaming</a>
+                    <span>•</span>
+                    <span>
+                        Posted by
+                        <a href="#" class="community-badge" style="font-weight: 400;">u/gamerhero</a>
+                        <span>3 hours ago</span>
+                    </span>
+                    <span class="post-type-indicator video">Video</span>
+                </div>
+                <h2 class="post-title">
+                    <a href="#">This new GTA 6 trailer analysis reveals hidden details you definitely missed</a>
+                </h2>
+                <div class="post-body">
+                    <img src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?q=80&w=1000" alt="Video Game" class="post-image">
+                </div>
+                <div class="post-actions">
+                    <div class="reaction-buttons">
+                        <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="reaction-count">5.7k</span>
+                        </button>
+                        <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="reaction-count">124</span>
+                        </button>
+                    </div>
+                    <div class="post-stats">
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i>
+                            <span>842 Comments</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post 5 - Text Post -->
+    <div class="post-card">
+        <div class="post-content">
+            <div class="post-main">
+                <div class="post-meta">
+                    <a href="#" class="community-badge">r/movies</a>
+                    <span>•</span>
+                    <span>
+                        Posted by
+                        <a href="#" class="community-badge" style="font-weight: 400;">u/filmcritic</a>
+                        <span>6 hours ago</span>
+                    </span>
+                    <span class="post-type-indicator discussion">Discussion</span>
+                </div>
+                <h2 class="post-title">
+                    <a href="#">Unpopular Opinion: Dune Part Two is better than the first movie</a>
+                </h2>
+                <div class="post-body">
+                    Just saw Dune Part Two and I have to say it surpasses the first film in almost every way. The character development, action sequences, and visual effects are all significantly improved. What do you think?
+                </div>
+                <div class="post-actions">
+                    <div class="reaction-buttons">
+                        <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="reaction-count">1.3k</span>
+                        </button>
+                        <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="reaction-count">215</span>
+                        </button>
+                    </div>
+                    <div class="post-stats">
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i>
+                            <span>476 Comments</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-feed Ad between posts - High engagement placement -->
+    <div class="in-feed-ad">
+        <div class="ad-label">Advertisement</div>
+        <div class="ad-container medium-rectangle">
+            <!-- AdSense In-feed ad (300x250) -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <!-- Replace this comment with your AdSense code for in-feed ad -->
+        </div>
+    </div>
+
+    <!-- Post 6 - Image Post -->
+    <div class="post-card-Landing">
+        <div class="post-content-Landing">
+            <div class="post-main-Landing">
+                <div class="post-meta">
+                    <a href="#" class="community-badge">r/apple</a>
+                    <span>•</span>
+                    <span>
+                        Posted by
+                        <a href="#" class="community-badge" style="font-weight: 400;">u/appleinsider</a>
+                        <span>1 day ago</span>
+                    </span>
+                    <span class="post-type-indicator image">Image</span>
+                </div>
+                <h2 class="post-title-Landing">
+                    <a href="#">First look at Apple's new M3 MacBook Air - Thinner, faster, and longer battery life</a>
+                </h2>
+                <div class="post-body-Landing">
+                    <img src="https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=1000" alt="MacBook Air" class="post-image">
+                </div>
+                <div class="post-actions">
+                    <div class="reaction-buttons">
+                        <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="reaction-count">8.9k</span>
+                        </button>
+                        <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="reaction-count">143</span>
+                        </button>
+                    </div>
+                    <div class="post-stats">
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i>
+                            <span>1.2k Comments</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i>
+                            <span>Share</span>
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Ad - High RPM Placement -->
+    <div class="ad-unit">
+        <div class="ad-label">Advertisement</div>
+        <div class="ad-container leaderboard">
+            <!-- AdSense Large Rectangle (336x280) -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <!-- Replace this comment with your AdSense code for bottom ad -->
+        </div>
+    </div>
+</div>
+<!-- Create Post Modal -->
+<div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPostModalLabel">Create a Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Post Type Selector -->
+                <div class="post-type-selector">
+                    <button class="post-type-option active" data-post-type="text">
+                        <i class="fas fa-font"></i>
+                        Text
+                    </button>
+                    <button class="post-type-option" data-post-type="image">
+                        <i class="far fa-image"></i>
+                        Image
+                    </button>
+                    <button class="post-type-option" data-post-type="link">
+                        <i class="fas fa-link"></i>
+                        Link
+                    </button>
+                    <button class="post-type-option" data-post-type="video">
+                        <i class="fas fa-video"></i>
+                        Video
+                    </button>
+                </div>
+
+                <!-- Community Selector -->
+                <div class="community-selector">
+                    <label for="community-select" class="post-form-label">Choose a community</label>
+                    <select id="community-select" class="post-form-input">
+                        <option value="technology">r/technology</option>
+                        <option value="programming">r/programming</option>
+                        <option value="gaming">r/gaming</option>
+                        <option value="movies">r/movies</option>
+                        <option value="science">r/science</option>
+                        <option value="apple">r/apple</option>
+                    </select>
+                </div>
+
+                <!-- Post Form -->
+                <div id="post-form-container">
+                    <!-- Title (common for all post types) -->
+                    <label for="post-title" class="post-form-label">Title</label>
+                    <input type="text" id="post-title" class="post-form-input" placeholder="Title">
+
+                    <!-- Text Post Content -->
+                    <div id="text-post-content">
+                        <label for="post-text" class="post-form-label">Text (optional)</label>
+                        <textarea id="post-text" class="post-form-input post-form-textarea" placeholder="Text (optional)"></textarea>
+                    </div>
+
+                    <!-- Image Post Content -->
+                    <div id="image-post-content" style="display: none;">
+                        <div class="file-upload-container">
+                            <div class="file-upload-icon">
+                                <i class="far fa-image"></i>
+                            </div>
+                            <div class="file-upload-text">Drag and drop images or</div>
+                            <button class="btn btn-outline-primary">Upload</button>
+                            <input type="file" id="image-upload" style="display: none;" accept="image/*">
+                            <div class="file-upload-subtext">Supported formats: JPG, PNG, GIF</div>
+                        </div>
+                    </div>
+
+                    <!-- Link Post Content -->
+                    <div id="link-post-content" style="display: none;">
+                        <label for="post-link" class="post-form-label">URL</label>
+                        <input type="url" id="post-link" class="post-form-input" placeholder="URL">
+                    </div>
+
+                    <!-- Video Post Content -->
+                    <div id="video-post-content" style="display: none;">
+                        <div class="file-upload-container">
+                            <div class="file-upload-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="file-upload-text">Drag and drop video or</div>
+                            <button class="btn btn-outline-primary">Upload</button>
+                            <input type="file" id="video-upload" style="display: none;" accept="video/*">
+                            <div class="file-upload-subtext">Supported formats: MP4, MOV, AVI (max 100MB)</div>
+                        </div>
+                    </div>
+
+                    <!-- Tags -->
+                    <label for="post-tags" class="post-form-label">Tags (optional)</label>
+                    <input type="text" id="post-tags" class="post-form-input" placeholder="Add up to 5 tags, separated by commas">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="post-cancel-btn" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="post-submit-btn">Post</button>
+            </div>
+        </div>
+    </div>
+</div>

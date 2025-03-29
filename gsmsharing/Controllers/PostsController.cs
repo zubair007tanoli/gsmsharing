@@ -81,6 +81,11 @@ namespace gsmsharing.Controllers
             return View(resp);
         }
 
+        public IActionResult Post()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateCommunity(CreatePostAndCommunityViewModel postViewModel)
         {

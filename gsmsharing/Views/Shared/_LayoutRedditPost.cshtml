@@ -1,0 +1,394 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - gsmsharing</title>
+    <meta name="monetag" content="30676d5e8900908d4f346e12d291fbb6">
+    <script type="importmap"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    @* Resources *@
+    <link rel="stylesheet" href="~/css/GsmMainStyle.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Reddit/Landing.css" />
+    <link rel="stylesheet" href="~/css/Reddit/Customs.css" />
+    @RenderSection("Resources", required: false)
+    @RenderSection("customStyle", required: false)
+    @* Favicon *@
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png">
+</head>
+<body>
+    <partial name="_Header.cshtml" />
+
+    @* @await Component.InvokeAsync("FeaturedTop") *@
+    <!-- Main Content -->
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="container">
+            <!-- Top Leaderboard Ad - High RPM Placement -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="ad-unit">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container leaderboard">
+                            <!-- AdSense Leaderboard (728x90) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for leaderboard ad -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Left Sidebar - Navigation and Trending -->
+                <div class="col-lg-3 left-sidebar">
+                    <div class="sidebar">
+                        <!-- Navigation Links -->
+                        <div class="sidebar-card">
+                            <div class="sidebar-content">
+                                <div class="list-group list-group-flush">
+                                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                        <i class="fas fa-fire me-2 text-danger"></i>
+                                        Popular
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                        <i class="fas fa-arrow-trend-up me-2 text-primary"></i>
+                                        Rising
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                        <i class="fas fa-certificate me-2 text-warning"></i>
+                                        New
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                        <i class="fas fa-comments me-2 text-success"></i>
+                                        Discussions
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trending Topics - Content-relevant for better ad targeting -->
+                        <div class="sidebar-card">
+                            <div class="sidebar-header">
+                                Trending Topics
+                            </div>
+                            <div class="sidebar-content">
+                                <ul class="trending-topics">
+                                    <li>
+                                        <a href="#">
+                                            <span class="trending-number">1</span>
+                                            iPhone 15 Battery Life
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#">
+                                            <span class="trending-number">2</span>
+                                            iOS 17 Features
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#">
+                                            <span class="trending-number">3</span>
+                                            Apple A17 Pro Chip
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#">
+                                            <span class="trending-number">4</span>
+                                            USB-C vs Lightning
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#">
+                                            <span class="trending-number">5</span>
+                                            Best iPhone Accessories
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Left Sidebar Ad - Medium Rectangle -->
+                        <div class="ad-unit sticky-ad">
+                            <div class="ad-label">Advertisement</div>
+                            <div class="ad-container medium-rectangle">
+                                <!-- AdSense Medium Rectangle (300x250) -->
+                                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                                <!-- Replace this comment with your AdSense code for medium rectangle ad -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Column -->
+                <div class="col-lg-6 col-md-8">
+                   @RenderBody()
+                </div>
+
+                <!-- Right Sidebar - High RPM Ad Placements -->
+                <div class="col-lg-3 col-md-4 right-sidebar">
+                    <div class="sidebar">
+                        <!-- Sticky Ad - Highest RPM Placement -->
+                        <div class="ad-unit sticky-ad">
+                            <div class="ad-label">Advertisement</div>
+                            <div class="ad-container rectangle">
+                                <!-- AdSense Large Rectangle (336x280) -->
+                                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                                <!-- Replace this comment with your AdSense code for sticky ad -->
+                            </div>
+                        </div>
+
+                        <!-- Community Card -->
+                        <div class="sidebar-card">
+                            <div class="sidebar-header">
+                                r/technology
+                            </div>
+                            <div class="sidebar-content">
+                                <p>A place to discuss the latest advancements in technology and gadgets.</p>
+                                <button class="btn btn-primary sidebar-button">Join</button>
+                                <button class="btn btn-outline-primary sidebar-button">Create Post</button>
+
+                                <hr>
+
+                                <div class="community-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div>
+                                            <div class="stat-value">2.4m</div>
+                                            <div>Members</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-signal"></i>
+                                        </div>
+                                        <div>
+                                            <div class="stat-value">12.5k</div>
+                                            <div>Online</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-birthday-cake"></i>
+                                        </div>
+                                        <div>
+                                            <div>Created Jan 25, 2008</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Newsletter Signup - Email Collection for Remarketing -->
+                        <div class="sidebar-card">
+                            <div class="sidebar-content">
+                                <div class="sidebar-title">Tech Newsletter</div>
+                                <p>Get the latest tech news and reviews delivered to your inbox weekly.</p>
+                                <form class="newsletter-form">
+                                    <input type="email" class="form-control newsletter-input" placeholder="Your email address">
+                                    <button type="submit" class="btn btn-primary sidebar-button">Subscribe</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Related Posts - Content-relevant for better ad targeting -->
+                        <div class="sidebar-card">
+                            <div class="sidebar-content">
+                                <div class="sidebar-title">Related Posts</div>
+                                <ul class="related-posts">
+                                    <li>
+                                        <a href="#">iPhone 15 vs iPhone 14: Is it Worth the Upgrade?</a>
+                                        <div class="related-post-meta">
+                                            <i class="far fa-comment-alt"></i> 87 comments
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <a href="#">Best USB-C Accessories for Your New iPhone 15</a>
+                                        <div class="related-post-meta">
+                                            <i class="far fa-comment-alt"></i> 54 comments
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <a href="#">iOS 17 Hidden Features You Might Have Missed</a>
+                                        <div class="related-post-meta">
+                                            <i class="far fa-comment-alt"></i> 112 comments
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <a href="#">Apple's A17 Pro: The First 3nm Chip Explained</a>
+                                        <div class="related-post-meta">
+                                            <i class="far fa-comment-alt"></i> 76 comments
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Second Ad Unit - Medium RPM Placement -->
+                        <div class="ad-unit">
+                            <div class="ad-label">Advertisement</div>
+                            <div class="ad-container medium-rectangle">
+                                <!-- AdSense Medium Rectangle (300x250) -->
+                                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                                <!-- Replace this comment with your AdSense code for second sidebar ad -->
+                            </div>
+                        </div>
+
+                        <!-- Community Rules -->
+                        <div class="sidebar-card">
+                            <div class="sidebar-content">
+                                <div class="sidebar-title">Community Rules</div>
+                                <ol class="community-rules">
+                                    <li>Be respectful to others</li>
+                                    <li>No editorialized titles</li>
+                                    <li>No commercial promotion</li>
+                                    <li>Posts must be about technology</li>
+                                    <li>No low quality content</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - gsmsharing - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle post reactions (like/dislike)
+        function handleReaction(button, type) {
+            const countSpan = button.querySelector('.reaction-count');
+            let currentCount = parseInt(countSpan.textContent.replace(/[^\d]/g, '')) || 0;
+            const isActive = button.classList.contains('active');
+
+            const parent = button.closest('.reaction-buttons');
+            parent.querySelectorAll('.like-btn, .dislike-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            if (!isActive) {
+                button.classList.add('active');
+                countSpan.textContent = type === 'like'
+                    ? (currentCount + 1 >= 1000 ? (currentCount + 1) / 1000 + 'k' : currentCount + 1)
+                    : (currentCount + 1);
+                const icon = button.querySelector('i');
+                icon.classList.replace('far', 'fas');
+            } else {
+                countSpan.textContent = type === 'like'
+                    ? (Math.max(currentCount - 1, 0) >= 1000 ? (Math.max(currentCount - 1, 0)) / 1000 + 'k' : Math.max(currentCount - 1, 0))
+                    : Math.max(currentCount - 1, 0);
+                const icon = button.querySelector('i');
+                icon.classList.replace('fas', 'far');
+            }
+        }
+
+        // Handle comment reactions (like/dislike)
+        function handleCommentReaction(button, type) {
+            const isActive = button.classList.contains('active');
+            const countSpan = button.querySelector('span');
+            let currentCount = parseInt(countSpan.textContent) || 0;
+
+            // If this is a dislike button with no count shown, we'll just toggle the active state
+            const isDislikeWithNoCount = type === 'dislike' && countSpan.textContent === '';
+
+            // Get the parent actions container
+            const actionsContainer = button.closest('.comment-actions');
+
+            // If clicking like, remove active from dislike and vice versa
+            if (type === 'like') {
+                const dislikeBtn = actionsContainer.querySelector('.comment-action:nth-child(2)');
+                if (dislikeBtn.classList.contains('active')) {
+                    dislikeBtn.classList.remove('active');
+                }
+            } else {
+                const likeBtn = actionsContainer.querySelector('.comment-action:nth-child(1)');
+                if (likeBtn.classList.contains('active')) {
+                    likeBtn.classList.remove('active');
+                    const likeCount = parseInt(likeBtn.querySelector('span').textContent) || 0;
+                    likeBtn.querySelector('span').textContent = Math.max(likeCount - 1, 0);
+                }
+            }
+
+            // Toggle active state
+            if (isActive) {
+                button.classList.remove('active');
+                if (!isDislikeWithNoCount) {
+                    countSpan.textContent = Math.max(currentCount - 1, 0);
+                }
+            } else {
+                button.classList.add('active');
+                if (!isDislikeWithNoCount) {
+                    countSpan.textContent = currentCount + 1;
+                }
+            }
+        }
+
+        // Global variable to track the currently open reply form
+        let currentOpenReplyForm = null;
+
+        // Toggle reply form
+        function toggleReply(button) {
+            const commentCard = button.closest('.comment-card') || button.closest('.nested-comment');
+            const existingForm = commentCard.querySelector('.reply-form');
+
+            // If there's already an open reply form elsewhere, close it
+            if (currentOpenReplyForm && currentOpenReplyForm !== existingForm) {
+                currentOpenReplyForm.remove();
+                currentOpenReplyForm = null;
+            }
+
+            // If this comment already has a reply form open, just close it
+            if (existingForm) {
+                existingForm.remove();
+                currentOpenReplyForm = null;
+            } else {
+                // Otherwise, create a new reply form
+                const replyForm = document.createElement('div');
+                replyForm.className = 'reply-form';
+                replyForm.innerHTML = `
+                    <div class="d-flex gap-2">
+                        <img src="https://i.pravatar.cc/150?img=12" class="user-avatar" alt="User">
+                        <div class="flex-grow-1">
+                            <textarea class="comment-input" rows="2" placeholder="Write a reply..."></textarea>
+                            <div class="d-flex justify-content-end gap-2 mt-2">
+                                <button class="btn btn-light" onclick="cancelReply(this)">Cancel</button>
+                                <button class="btn comment-button">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Find the comment actions div and insert the reply form after it
+                const commentActions = button.closest('.comment-actions');
+                commentActions.insertAdjacentElement('afterend', replyForm);
+
+                // Set focus on the textarea
+                replyForm.querySelector('textarea').focus();
+
+                // Update the global variable to track this open form
+                currentOpenReplyForm = replyForm;
+            }
+        }
+
+        function cancelReply(button) {
+            const replyForm = button.closest('.reply-form');
+            replyForm.remove();
+            currentOpenReplyForm = null;
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
