@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-adsense-account" content="ca-pub-5934633595595089">
+    <title>DiscussionSpot - Home</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link href="~/css/v2/navbarstyle.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/v2/dark-mode.css">
+    <link rel="stylesheet" href="~/css/v2/modern-style.css">
+    @await RenderSectionAsync("customFiles", required: false)
+</head>
+<body>
+    <header class="main-header sticky-top">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a href="index.html" class="logo me-3">
+                    <div class="logo-icon">D</div>
+                    <span class="logo-text d-none d-sm-inline">iscussion<b>Spot</b></span>
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="categories.html">
+                                <i class="fas fa-th-large"></i> <span>Categories</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="forums.html">
+                                <i class="fas fa-comments"></i> <span>Forums</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="popular.html">
+                                <i class="fas fa-fire"></i> <span>Popular</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="recent.html">
+                                <i class="fas fa-clock"></i> <span>Recent</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="members.html">
+                                <i class="fas fa-users"></i> <span>Members</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Combined right-side elements into one container -->
+                    <div class="navbar-right">
+                        <div class="search-container">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search forums...">
+                            <button class="search-btn"><i class="fas fa-search"></i></button>
+                        </div>
+
+                        <div class="nav-actions">
+                            <div class="action-icon dark-mode-toggle" title="Toggle Dark Mode">
+                                <i class="fas fa-moon"></i>
+                                <i class="fas fa-sun"></i>
+                            </div>
+
+                            <!-- Notification Dropdown -->
+                            <div class="dropdown">
+                                <a href="#" class="action-icon notification-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                    <i class="fas fa-bell"></i>
+                                    <span class="notification-badge">3</span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end notification-dropdown">
+                                    <div class="notification-header">
+                                        <span><i class="fas fa-bell me-1"></i> Notifications</span>
+                                        <span class="badge bg-danger rounded-pill">3</span>
+                                    </div>
+                                    <div class="notification-list">
+                                        <div class="notification-item unread">
+                                            <div class="notification-title">Your post received a reply</div>
+                                            <div class="notification-text">John Doe commented on your thread "How to improve..."</div>
+                                            <div class="notification-info">
+                                                <span><i class="far fa-clock me-1"></i>10 minutes ago</span>
+                                                <a href="#" class="text-primary">View</a>
+                                            </div>
+                                        </div>
+                                        <div class="notification-item unread">
+                                            <div class="notification-title">New private message</div>
+                                            <div class="notification-text">Sarah sent you a message: "Thanks for your help with..."</div>
+                                            <div class="notification-info">
+                                                <span><i class="far fa-clock me-1"></i>1 hour ago</span>
+                                                <a href="#" class="text-primary">Read</a>
+                                            </div>
+                                        </div>
+                                        <div class="notification-item unread">
+                                            <div class="notification-title">Thread approved</div>
+                                            <div class="notification-text">Your thread "Best practices for..." has been approved</div>
+                                            <div class="notification-info">
+                                                <span><i class="far fa-clock me-1"></i>3 hours ago</span>
+                                                <a href="#" class="text-primary">View</a>
+                                            </div>
+                                        </div>
+                                        <div class="notification-item">
+                                            <div class="notification-title">Weekly digest available</div>
+                                            <div class="notification-text">Your weekly forum digest is ready to view</div>
+                                            <div class="notification-info">
+                                                <span><i class="far fa-clock me-1"></i>1 day ago</span>
+                                                <a href="#" class="text-primary">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="notification-footer">
+                                        <a href="notifications.html" class="text-primary">View all notifications</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- User Dropdown - Show when logged in -->
+                            <div class="dropdown user-dropdown">
+                                <button class="user-btn" type="button" data-bs-toggle="dropdown">
+                                    <div class="avatar">JD</div>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                    <li><a class="dropdown-item" href="bookmarks.html"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                </ul>
+                            </div>
+
+                            <!-- Authentication buttons - show when logged out -->
+                            <div class="auth-btns">
+                                <a href="login.html" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-sign-in-alt"></i> <span>Login</span>
+                                </a>
+                                <a href="register.html" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-user-plus"></i> <span>Register</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+
+    <!-- Online Users Modal -->
+    <div class="modal fade" id="onlineUsersModal" tabindex="-1" aria-labelledby="onlineUsersModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="onlineUsersModalLabel">Online Users (17)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Search users..." id="searchOnlineUsers">
+                    </div>
+
+                    <div class="online-users-list">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar-wrapper me-2">
+                                        <div class="user-avatar">JD</div>
+                                        <span class="status-indicator online"></span>
+                                    </div>
+                                    <div>
+                                        <div><a href="profile.html?user=janedev">JaneDev</a></div>
+                                        <small class="text-muted">Technology</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar-wrapper me-2">
+                                        <div class="user-avatar">GM</div>
+                                        <span class="status-indicator online"></span>
+                                    </div>
+                                    <div>
+                                        <div><a href="profile.html?user=gamemaster99">GameMaster99</a></div>
+                                        <small class="text-muted">Gaming</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar-wrapper me-2">
+                                        <div class="user-avatar">SA</div>
+                                        <span class="status-indicator online"></span>
+                                    </div>
+                                    <div>
+                                        <div><a href="profile.html?user=seriesaddict">SeriesAddict</a></div>
+                                        <small class="text-muted">General</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- More users... -->
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar-wrapper me-2">
+                                        <div class="user-avatar">CW</div>
+                                        <span class="status-indicator online"></span>
+                                    </div>
+                                    <div>
+                                        <div><a href="profile.html?user=codewizard">CodeWizard</a></div>
+                                        <small class="text-muted">Technology</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Additional users would be listed here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="main-footer mt-4 py-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <h3 class="h5 mb-3">About ForumHub</h3>
+                    <p class="text-muted">A community-driven platform for discussions on various topics. Join us to share your thoughts and connect with like-minded people.</p>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h3 class="h5 mb-3">Quick Links</h3>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="about.html" class="text-decoration-none">About Us</a></li>
+                        <li class="mb-2"><a href="contact.html" class="text-decoration-none">Contact</a></li>
+                        <li class="mb-2"><a href="privacy.html" class="text-decoration-none">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="terms.html" class="text-decoration-none">Terms of Service</a></li>
+                        <li><a href="faq.html" class="text-decoration-none">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
+                    <h3 class="h5 mb-3">Connect With Us</h3>
+                    <div class="social-icons d-flex gap-2">
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-discord"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-reddit"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <h3 class="h5 mb-3">Newsletter</h3>
+                    <p class="text-muted small mb-2">Subscribe to our newsletter for updates</p>
+                    <form>
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="Your email address">
+                            <button class="btn btn-primary" type="submit">Subscribe</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="border-top mt-4 pt-3 text-center text-muted">
+                <p class="small mb-0">&copy; 2023 ForumHub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/dark-mode.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

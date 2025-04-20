@@ -1,0 +1,1019 @@
+﻿
+@{
+    ViewData["Title"] = "Posts";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    :root {
+        --primary-color: #0079d3;
+        --primary-hover: #1484d4;
+        --secondary-color: #1a1a1b;
+        --bg-light: #f8f9fa;
+        --bg-dark: #e9ebee;
+        --border-color: #edeff1;
+        --text-color: #1c1c1c;
+        --text-light: #787c7e;
+        --text-lighter: #b2b2b2;
+        --card-bg: #ffffff;
+    }
+
+    body {
+        background-color: var(--bg-light);
+        color: var(--text-color);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Layout */
+    .container-fluid {
+        max-width: 1200px;
+    }
+
+    /* Sidebars */
+    .sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    .sidebar-card {
+        background-color: var(--card-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .sidebar-content {
+        padding: 12px;
+    }
+
+    /* Left Sidebar */
+    .community-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+        .community-item:last-child {
+            border-bottom: none;
+        }
+
+    .community-number {
+        width: 20px;
+        text-align: center;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-right: 8px;
+    }
+
+    .community-name {
+        font-size: 14px;
+        color: var(--text-color);
+        text-decoration: none;
+    }
+
+        .community-name:hover {
+            text-decoration: underline;
+        }
+
+    /* Right Sidebar */
+    .community-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .community-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 10px;
+    }
+
+    .community-title {
+        font-weight: 600;
+    }
+
+    .community-description {
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    .sidebar-button {
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .community-stats {
+        display: flex;
+        margin: 12px 0;
+    }
+
+    .stat-item {
+        flex: 1;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    .community-rules {
+        padding-left: 16px;
+        font-size: 13px;
+    }
+
+        .community-rules li {
+            margin-bottom: 6px;
+        }
+
+    /* Post Container */
+    .post-container {
+        max-width: 740px;
+        margin: 0 auto;
+    }
+
+    /* User Avatar */
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
+        .user-avatar.small {
+            width: 24px;
+            height: 24px;
+            font-size: 10px;
+        }
+
+        .user-avatar.large {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+        }
+
+    .user-avatar-img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        display: none;
+    }
+
+    /* Post Header */
+    .post-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .post-user-info {
+        font-size: 12px;
+    }
+
+    .post-username {
+        font-weight: 600;
+        color: var(--text-color);
+        text-decoration: none;
+    }
+
+        .post-username:hover {
+            text-decoration: underline;
+        }
+
+    .post-community {
+        color: var(--text-color);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .post-community:hover {
+            text-decoration: underline;
+        }
+
+    .post-time {
+        color: var(--text-light);
+    }
+
+    /* Post Content */
+    .post-content-card {
+        background-color: var(--card-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 16px;
+    }
+
+    .post-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 16px 16px 8px;
+        line-height: 1.4;
+    }
+
+    .post-body {
+        padding: 0 16px 16px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+        .post-body p {
+            margin-bottom: 12px;
+        }
+
+    .post-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        margin: 8px 0;
+    }
+
+    .post-embed {
+        margin: 12px 0;
+    }
+
+        .post-embed iframe {
+            width: 100%;
+            min-height: 400px;
+            border: none;
+            border-radius: 4px;
+        }
+
+    .post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 12px 16px;
+    }
+
+    .post-tag {
+        font-size: 12px;
+        padding: 4px 8px;
+        background-color: var(--bg-dark);
+        border-radius: 20px;
+        color: var(--text-color);
+    }
+
+    /* Post Actions */
+    .post-actions {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        background-color: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .vote-buttons {
+        display: flex;
+        align-items: center;
+        margin-right: 16px;
+    }
+
+    .vote-button {
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        color: var(--text-light);
+        cursor: pointer;
+    }
+
+        .vote-button:hover {
+            color: var(--primary-color);
+        }
+
+    .vote-count {
+        font-weight: 600;
+        margin: 0 4px;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .action-button {
+        background: none;
+        border: none;
+        padding: 6px 12px;
+        color: var(--text-light);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .action-button:hover {
+            background-color: var(--bg-dark);
+            border-radius: 4px;
+        }
+
+    /* Comments Section */
+    .comments-container {
+        background-color: var(--card-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+
+    .comments-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .comments-title {
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .sort-dropdown {
+        background: none;
+        border: none;
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    /* Comment */
+    .comment {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+        .comment:last-child {
+            border-bottom: none;
+        }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .comment-author {
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-color);
+        text-decoration: none;
+    }
+
+        .comment-author:hover {
+            text-decoration: underline;
+        }
+
+    .comment-time {
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    .comment-body {
+        font-size: 14px;
+        line-height: 1.6;
+        margin-left: 40px;
+        margin-bottom: 8px;
+    }
+
+    .comment-actions {
+        display: flex;
+        gap: 8px;
+        margin-left: 40px;
+    }
+
+    .comment-action {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .comment-action:hover {
+            background-color: var(--bg-dark);
+            border-radius: 4px;
+        }
+
+    /* Nested Comments */
+    .nested-comments {
+        margin-left: 24px;
+        border-left: 2px solid var(--border-color);
+        padding-left: 16px;
+    }
+
+    /* Comment Form */
+    .comment-form {
+        padding: 16px;
+        background-color: var(--card-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 16px;
+    }
+
+    .comment-form-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .comment-input {
+        width: 100%;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 12px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 100px;
+        margin-bottom: 12px;
+    }
+
+    .comment-submit {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .comment-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+    /* Premium Promo */
+    .premium-promo {
+        background-color: #ff4500;
+        color: white;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+    }
+
+    .premium-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .premium-button {
+        background-color: white;
+        color: #ff4500;
+        border: none;
+        border-radius: 4px;
+        padding: 8px;
+        font-weight: 600;
+        width: 100%;
+    }
+
+    /* Trending Communities */
+    .trending-community {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+        .trending-community:last-child {
+            border-bottom: none;
+        }
+
+    .trending-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        margin-right: 8px;
+    }
+
+    .trending-name {
+        font-size: 14px;
+        color: var(--text-color);
+        text-decoration: none;
+    }
+
+        .trending-name:hover {
+            text-decoration: underline;
+        }
+
+    @@media (max-width: 992px) {
+        .sidebar
+
+    {
+        display: none;
+    }
+
+    .post-container {
+        max-width: 100%;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .post-embed iframe
+
+    {
+        min-height: 250px;
+    }
+
+    .nested-comments {
+        margin-left: 16px;
+        padding-left: 8px;
+    }
+
+    }
+</style>
+<div class="container-fluid mt-3">
+    <div class="row">
+        <!-- Left Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sidebar">
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-fire me-1"></i> Popular Communities
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="community-item">
+                            <span class="community-number">1</span>
+                            <a href="/r/technology" class="community-name">r/technology</a>
+                        </div>
+                        <div class="community-item">
+                            <span class="community-number">2</span>
+                            <a href="/r/programming" class="community-name">r/programming</a>
+                        </div>
+                        <div class="community-item">
+                            <span class="community-number">3</span>
+                            <a href="/r/gadgets" class="community-name">r/gadgets</a>
+                        </div>
+                        <div class="community-item">
+                            <span class="community-number">4</span>
+                            <a href="/r/apple" class="community-name">r/apple</a>
+                        </div>
+                        <div class="community-item">
+                            <span class="community-number">5</span>
+                            <a href="/r/android" class="community-name">r/android</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="premium-promo">
+                    <div class="premium-title">
+                        <i class="fas fa-reddit-alien me-1"></i> Reddit Premium
+                    </div>
+                    <p class="small">The best Reddit experience, with monthly Coins</p>
+                    <button class="premium-button">Try Now</button>
+                </div>
+
+                <div class="sidebar-card">
+                    <div class="sidebar-content">
+                        <h6 class="fw-bold">Create a post</h6>
+                        <p class="small text-muted">Share your thoughts with the community</p>
+                        <button class="btn btn-primary w-100 btn-sm">Create Post</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-6">
+            <div class="post-container">
+                <!-- Post -->
+                <div class="post-content-card">
+                    <div class="post-header">
+                        <div class="user-avatar" data-userid="123" data-username="techreview">
+                            <img class="user-avatar-img" src="" alt="techreview" onerror="handleAvatarError(this)">
+                            <span>TR</span>
+                        </div>
+                        <div class="post-user-info">
+                            <a href="/user/techreview" class="post-username">techreview</a> •
+                            <a href="/r/technology" class="post-community">r/technology</a> •
+                            <span class="post-time">5 hours ago</span>
+                        </div>
+                    </div>
+
+                    <h1 class="post-title">iPhone 15 Pro Max Battery Life Exceeds Expectations in Latest Tests</h1>
+
+                    <div class="post-body">
+                        <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=1000" alt="iPhone 15 Pro Max" class="post-image">
+
+                        <p>After extensive testing, the iPhone 15 Pro Max has shown remarkable battery performance, lasting up to 16 hours of continuous video playback and over 12 hours of heavy usage. This is a significant improvement over the previous generation and exceeds what many reviewers initially expected.</p>
+
+                        <h2>Performance Improvements</h2>
+
+                        <p>The A17 Pro chip's efficiency improvements, combined with iOS optimizations, have resulted in what might be the best battery life we've seen in a flagship smartphone this year. Apple's claims of "all-day battery life" seem to be an understatement for the Pro Max model.</p>
+
+                        <p>Even with features like the always-on display and ProMotion running, the device manages power consumption impressively well. This is particularly notable considering the brighter display and more powerful GPU in this generation.</p>
+
+                        <h3>Standby Time</h3>
+
+                        <p>In our standby tests, the iPhone 15 Pro Max lost only 2-3% battery overnight (8 hours), which is exceptional for a device with always-on capabilities. This makes it a great option for users who don't want to charge their phones every night.</p>
+
+                        <h2>Charging Capabilities</h2>
+
+                        <p>The switch to USB-C has also brought improved charging speeds. With a compatible 30W charger, we were able to charge the iPhone 15 Pro Max from 0 to 50% in just 30 minutes, and a full charge took about 1 hour and 45 minutes.</p>
+
+                        <div class="post-embed">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+
+                        <p>Wireless charging via MagSafe remains at 15W, but the convenience factor makes it a popular option for many users. Third-party wireless chargers are limited to 7.5W, so keep that in mind when shopping for accessories.</p>
+
+                        <h2>Real-World Usage</h2>
+
+                        <p>In our real-world testing, which included a mix of social media browsing, photography, video recording, gaming, and GPS navigation, the iPhone 15 Pro Max consistently lasted through a full day with 20-30% battery remaining. Power users might still need to top up toward the end of a heavy day, but most users will be more than satisfied.</p>
+
+                        <div class="post-tags">
+                            <span class="post-tag">#iPhone15</span>
+                            <span class="post-tag">#BatteryLife</span>
+                            <span class="post-tag">#Apple</span>
+                            <span class="post-tag">#Review</span>
+                        </div>
+                    </div>
+
+                    <div class="post-actions">
+                        <div class="vote-buttons">
+                            <button class="vote-button">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <span class="vote-count">1.8k</span>
+                            <button class="vote-button">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+
+                        <button class="action-button">
+                            <i class="far fa-comment-alt"></i> 142 Comments
+                        </button>
+                        <button class="action-button">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                        <button class="action-button">
+                            <i class="far fa-bookmark"></i> Save
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Comment Form -->
+                <div class="comment-form">
+                    <div class="comment-form-title">Add a comment</div>
+                    <div class="d-flex gap-3">
+                        <div class="user-avatar large" data-userid="456" data-username="currentuser">
+                            <img class="user-avatar-img" src="" alt="currentuser" onerror="handleAvatarError(this)">
+                            <span>CU</span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <textarea class="comment-input" placeholder="What are your thoughts?"></textarea>
+                            <div class="d-flex justify-content-end">
+                                <button class="comment-submit">Comment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-container">
+                    <div class="comments-header">
+                        <div class="comments-title">142 Comments</div>
+                        <select class="sort-dropdown">
+                            <option>Best</option>
+                            <option>Top</option>
+                            <option>New</option>
+                            <option>Controversial</option>
+                        </select>
+                    </div>
+
+                    <!-- Comment Thread -->
+                    <div class="comment">
+                        <div class="comment-header">
+                            <div class="user-avatar small" data-userid="789" data-username="css_expert">
+                                <img class="user-avatar-img" src="" alt="css_expert" onerror="handleAvatarError(this)">
+                                <span>CE</span>
+                            </div>
+                            <a href="/user/css_expert" class="comment-author">css_expert</a>
+                            <span class="comment-time">3h ago</span>
+                        </div>
+                        <div class="comment-body">
+                            Great overview! The battery life is impressive, especially considering the brighter display. I've been using mine for a week now and haven't had to charge it during the day once.
+                        </div>
+                        <div class="comment-actions">
+                            <button class="comment-action">
+                                <i class="fas fa-arrow-up"></i> 452
+                            </button>
+                            <button class="comment-action">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="comment-action">
+                                <i class="far fa-comment-alt"></i> Reply
+                            </button>
+                        </div>
+
+                        <!-- Nested Comments -->
+                        <div class="nested-comments">
+                            <div class="comment">
+                                <div class="comment-header">
+                                    <div class="user-avatar small" data-userid="101" data-username="design_system">
+                                        <img class="user-avatar-img" src="" alt="design_system" onerror="handleAvatarError(this)">
+                                        <span>DS</span>
+                                    </div>
+                                    <a href="/user/design_system" class="comment-author">design_system</a>
+                                    <span class="comment-time">1h ago</span>
+                                </div>
+                                <div class="comment-body">
+                                    Agreed! I'm coming from the 13 Pro and the difference is noticeable. The A17 Pro is incredibly efficient.
+                                </div>
+                                <div class="comment-actions">
+                                    <button class="comment-action">
+                                        <i class="fas fa-arrow-up"></i> 156
+                                    </button>
+                                    <button class="comment-action">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                    <button class="comment-action">
+                                        <i class="far fa-comment-alt"></i> Reply
+                                    </button>
+                                </div>
+
+                                <!-- Nested Nested Comments -->
+                                <div class="nested-comments">
+                                    <div class="comment">
+                                        <div class="comment-header">
+                                            <div class="user-avatar small" data-userid="102" data-username="tech_enthusiast">
+                                                <img class="user-avatar-img" src="" alt="tech_enthusiast" onerror="handleAvatarError(this)">
+                                                <span>TE</span>
+                                            </div>
+                                            <a href="/user/tech_enthusiast" class="comment-author">tech_enthusiast</a>
+                                            <span class="comment-time">45m ago</span>
+                                        </div>
+                                        <div class="comment-body">
+                                            How's the camera performance compared to the 13 Pro? I'm considering upgrading primarily for the camera improvements.
+                                        </div>
+                                        <div class="comment-actions">
+                                            <button class="comment-action">
+                                                <i class="fas fa-arrow-up"></i> 42
+                                            </button>
+                                            <button class="comment-action">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button class="comment-action">
+                                                <i class="far fa-comment-alt"></i> Reply
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Second Comment -->
+                    <div class="comment">
+                        <div class="comment-header">
+                            <div class="user-avatar small" data-userid="103" data-username="ui_engineer">
+                                <img class="user-avatar-img" src="" alt="ui_engineer" onerror="handleAvatarError(this)">
+                                <span>UE</span>
+                            </div>
+                            <a href="/user/ui_engineer" class="comment-author">ui_engineer</a>
+                            <span class="comment-time">2h ago</span>
+                        </div>
+                        <div class="comment-body">
+                            I'm curious how it performs with gaming. Has anyone tested it with Genshin Impact or other demanding games? My 14 Pro gets quite hot after 30 minutes.
+                        </div>
+                        <div class="comment-actions">
+                            <button class="comment-action">
+                                <i class="fas fa-arrow-up"></i> 89
+                            </button>
+                            <button class="comment-action">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="comment-action">
+                                <i class="far fa-comment-alt"></i> Reply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sidebar">
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-info-circle me-1"></i> About Community
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="community-info">
+                            <div class="community-icon">T</div>
+                            <div>
+                                <div class="community-title">r/technology</div>
+                                <div class="community-description">Technology news and discussion</div>
+                            </div>
+                        </div>
+
+                        <div class="community-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">2.4m</div>
+                                <div class="stat-label">Members</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">12.5k</div>
+                                <div class="stat-label">Online</div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary sidebar-button">Join</button>
+
+                        <hr>
+
+                        <h6 class="fw-bold">Community Rules</h6>
+                        <ol class="community-rules">
+                            <li>Be respectful to others</li>
+                            <li>No editorialized titles</li>
+                            <li>No commercial promotion</li>
+                            <li>Posts must be about technology</li>
+                            <li>No low quality content</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-link me-1"></i> Related Communities
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="trending-community">
+                            <div class="trending-icon">A</div>
+                            <a href="/r/apple" class="trending-name">r/apple</a>
+                        </div>
+                        <div class="trending-community">
+                            <div class="trending-icon">G</div>
+                            <a href="/r/gadgets" class="trending-name">r/gadgets</a>
+                        </div>
+                        <div class="trending-community">
+                            <div class="trending-icon">I</div>
+                            <a href="/r/iphone" class="trending-name">r/iphone</a>
+                        </div>
+                        <div class="trending-community">
+                            <div class="trending-icon">I</div>
+                            <a href="/r/ios" class="trending-name">r/ios</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-certificate me-1"></i> Moderators
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="trending-community">
+                            <div class="trending-icon">T</div>
+                            <a href="/user/tech_mod" class="trending-name">u/tech_mod</a>
+                        </div>
+                        <div class="trending-community">
+                            <div class="trending-icon">G</div>
+                            <a href="/user/gadget_guru" class="trending-name">u/gadget_guru</a>
+                        </div>
+                        <div class="trending-community">
+                            <div class="trending-icon">S</div>
+                            <a href="/user/science_geek" class="trending-name">u/science_geek</a>
+                        </div>
+                        <div class="trending-community">
+                            <div class="trending-icon">F</div>
+                            <a href="/user/future_tech" class="trending-name">u/future_tech</a>
+                        </div>
+                        <a href="#" class="small text-primary">View All Moderators</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Handle avatar image loading errors
+    function handleAvatarError(imgElement) {
+        imgElement.style.display = 'none';
+        const avatarContainer = imgElement.parentElement;
+        const initialsSpan = avatarContainer.querySelector('span');
+        initialsSpan.style.display = 'flex';
+
+        // Generate initials from username if not already set
+        const username = avatarContainer.getAttribute('data-username');
+        if (username && initialsSpan.textContent.length <= 2) {
+            const names = username.split('_');
+            let initials = '';
+            for (let i = 0; i < Math.min(2, names.length); i++) {
+                initials += names[i].charAt(0).toUpperCase();
+            }
+            initialsSpan.textContent = initials;
+        }
+    }
+
+    // Load user avatars from database (simulated)
+    document.addEventListener('DOMContentLoaded', function() {
+        const avatars = document.querySelectorAll('.user-avatar');
+
+        avatars.forEach(avatar => {
+            const userId = avatar.getAttribute('data-userid');
+            const username = avatar.getAttribute('data-username');
+            const imgElement = avatar.querySelector('.user-avatar-img');
+            const initialsSpan = avatar.querySelector('span');
+
+            // In a real app, you would fetch this from your database
+            // const avatarUrl = `/api/users/${userId}/avatar`;
+
+            // For demo purposes, we'll randomly decide whether to show an image
+            if (Math.random() > 0.5) {
+                // Simulate loading an avatar image
+                imgElement.src = `https://i.pravatar.cc/150?u=${userId}`;
+                imgElement.style.display = 'block';
+                initialsSpan.style.display = 'none';
+            } else {
+                // No avatar found - show initials
+                imgElement.style.display = 'none';
+                initialsSpan.style.display = 'flex';
+
+                // Generate initials from username
+                const names = username.split('_');
+                let initials = '';
+                for (let i = 0; i < Math.min(2, names.length); i++) {
+                    initials += names[i].charAt(0).toUpperCase();
+                }
+                initialsSpan.textContent = initials;
+            }
+        });
+
+        // Voting functionality
+        document.querySelectorAll('.vote-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const voteCount = this.parentElement.querySelector('.vote-count');
+                let count = parseInt(voteCount.textContent.replace(/,/g, ''));
+
+                if (this.classList.contains('active')) {
+                    this.classList.remove('active');
+                    voteCount.textContent = (count - 1).toLocaleString();
+                } else {
+                    // Remove active class from sibling buttons
+                    this.parentElement.querySelectorAll('.vote-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    voteCount.textContent = (count + 1).toLocaleString();
+                }
+            });
+        });
+
+        // Comment submission
+        document.querySelector('.comment-submit').addEventListener('click', function() {
+            const commentInput = document.querySelector('.comment-input');
+            if (commentInput.value.trim() !== '') {
+                alert('Comment submitted! In a real app, this would be sent to your server.');
+                commentInput.value = '';
+            }
+        });
+    });
+</script>
+

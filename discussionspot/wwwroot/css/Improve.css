@@ -1,0 +1,236 @@
+/* Improved spacing and visual separation for better readability */
+/* General spacing improvements */
+.container {
+    max-width: 1440px;
+    /* Increased from 1280px */
+}
+
+.main-container {
+
+    /* Increased from 1.5rem */
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Post item improvements */
+.post-item-detailed {
+    padding: 10px;
+    /* Increased from 1.5rem */
+    margin-bottom: 5px;
+    /* Added margin between posts */
+    border: 1px solid var(--border-color);
+    /* Added border */
+    box-shadow: var(--shadow-sm);
+    /* Added subtle shadow by default */
+}
+
+    .post-item-detailed:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+.post-stats {
+    gap: 1rem;
+    /* Increased from 0.5rem */
+    padding-right: 1.5rem;
+    /* Added padding */
+    border-right: 1px solid var(--border-color);
+    /* Added separator */
+}
+
+.stat-box {
+    padding: 0.75rem;
+    /* Increased from 0.5rem */
+    min-width: 5.5rem;
+    /* Set minimum width */
+}
+
+.post-main-content {
+    padding-left: 0.5rem;
+    /* Added padding */
+}
+
+    .post-main-content h3 {
+        font-size: 1.25rem;
+        /* Increased from 1.125rem */
+        margin-bottom: 0.75rem;
+        /* Increased from 0.5rem */
+    }
+
+.post-excerpt {
+    line-height: 1.6;
+    /* Improved line height */
+    margin-bottom: 1rem;
+    /* Added margin */
+}
+
+.post-meta {
+    margin-top: 1.25rem;
+    /* Increased from 0.75rem */
+    padding-top: 1rem;
+    /* Added padding */
+    border-top: 1px solid var(--border-light);
+    /* Added separator */
+}
+
+/* Category section improvements */
+.category-section {
+    margin-bottom: 0.1rem;
+    /* Increased from 2rem */
+    padding-bottom: 10px;
+    /* Increased from 2rem */
+}
+
+.category-header-row {
+    background-color:var(--border-light)
+    margin-bottom: 1rem;
+    /* Increased from 1rem */
+    padding: 0.75rem;
+    /* Added padding */
+    border-bottom: 2px solid var(--border-color);
+    /* Added thicker border */
+}
+
+.category-header-info {
+    gap: 1.5rem;
+    /* Increased from 1rem */
+}
+
+.category-posts {
+    gap: 1.5rem;
+    /* Increased from 1rem */
+}
+
+/* Trending section improvements */
+.trending-topics {
+    margin-top: 2rem;
+    padding: 2rem;
+    background-color: var(--bg-light);
+    border-radius: var(--radius-lg);
+}
+
+.trending-grid {
+    gap: 1.5rem;
+    /* Increased from 1rem */
+    margin-top: 1.5rem;
+    /* Increased from 1rem */
+}
+
+.trending-item {
+    padding: 2rem;
+    /* Increased from 1.5rem */
+    border: 1px solid var(--border-color);
+    /* Added border */
+}
+
+/* Sidebar improvements */
+.sidebar,
+.right-sidebar {
+    padding: 2px;
+    /* Added padding */
+}
+
+.sidebar-section {
+    padding: 1.5rem;
+    /* Increased from 1rem */
+    margin-bottom: 1rem;
+    /* Added margin between sections */
+}
+
+/* Profile edit page improvements */
+.profile-edit-container {
+    gap: 2rem;
+    /* Increased from 1.5rem */
+}
+
+.edit-section {
+    margin-bottom: 3rem;
+    /* Increased from 2rem */
+    padding-bottom: 3rem;
+    /* Increased from 2rem */
+}
+
+.form-row {
+    gap: 2rem;
+    /* Increased from 1.5rem */
+}
+
+.form-group {
+    margin-bottom: 2rem;
+    /* Increased from 1.5rem */
+}
+
+/* Add alternating background colors for better visual separation */
+.post-item-detailed:nth-child(odd) {
+    background-color: var(--bg-light);
+}
+
+.post-item-detailed:nth-child(even) {
+    background-color: var(--bg-color);
+}
+
+/* Add these new variables for lighter borders */
+:root {
+    --border-light: rgba(229, 231, 235, 0.5);
+    --bg-highlight: #f8fafc;
+}
+
+/* Add more distinct visual cues */
+.category-icon.medium {
+    width: 4rem;
+    /* Increased from 3.5rem */
+    height: 4rem;
+    /* Increased from 3.5rem */
+    font-size: 1.5rem;
+    /* Increased from 1.25rem */
+    box-shadow: var(--shadow-sm);
+}
+
+/* Improve readability of text */
+.post-excerpt {
+    font-size: 1rem;
+    /* Increased from 0.875rem */
+    color: var(--text-color);
+    /* Darker than var(--text-light) */
+}
+
+/* Add visual dividers between major sections */
+main > section:not(:last-child) {
+    position: relative;
+}
+
+    main > section:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        bottom: -1.5rem;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--border-color), transparent);
+    }
+
+/* Mobile responsiveness adjustments */
+@media (max-width: 992px) {
+    .post-item-detailed {
+        padding: 1.5rem;
+    }
+
+    .post-stats {
+        padding-right: 0;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+@media (max-width: 768px) {
+    .category-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .trending-item {
+        padding: 1.5rem;
+    }
+}

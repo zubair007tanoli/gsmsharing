@@ -17,13 +17,13 @@
     --comment-border: #edeff1;
     --button-hover: rgba(26, 26, 27, 0.1);
 }
-
+/*
 body {
     background-color: #dae0e6;
     color: var(--text-dark);
     font-family: 'Segoe UI', Arial, sans-serif;
 }
-
+    */
 /* Header/Navbar 
 .navbar {
     background-color: white;

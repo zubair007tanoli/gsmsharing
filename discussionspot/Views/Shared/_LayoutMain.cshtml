@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiscussionSpot</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/v2/dark-mode.css">
+    <link rel="stylesheet" href="~/css/v2/modern-style.css">
+    @await RenderSectionAsync("customFiles", required:false)
+</head>
+<body>
+    <header class="main-header sticky-top">
+        <div class="container">
+            <div class="row align-items-center py-2">
+                <div class="col-auto d-lg-none">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+
+                <div class="col-auto">
+                    <a href="index.html" class="logo d-flex align-items-center">
+                        <div class="logo-icon">D</div>
+                        <span class="logo-text d-none d-sm-inline">iscussion<b>Spot</b></span>
+                    </a>
+                </div>
+
+                <div class="col-lg-auto collapse navbar-collapse" id="navbarNav">
+                    <nav class="main-nav">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item"><a class="nav-link" href="categories.html">Categories</a></li>
+                            <li class="nav-item"><a class="nav-link" href="popular.html">Popular</a></li>
+                            <li class="nav-item"><a class="nav-link" href="recent.html">Recent</a></li>
+                            <li class="nav-item"><a class="nav-link" href="members.html">Members</a></li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <div class="col-md ms-auto">
+                    <div class="d-flex align-items-center justify-content-end">
+                        <div class="search-container me-2 d-none d-md-block">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search forums...">
+                            <button class="search-btn"><i class="fas fa-search"></i></button>
+                        </div>
+
+                        <div class="user-actions d-flex align-items-center">
+                            <div class="dark-mode-toggle me-2" title="Toggle Dark Mode">
+                                <i class="fas fa-moon"></i>
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <a href="#" class="notification-btn me-2 position-relative">
+                                <i class="fas fa-bell"></i>
+                                <span class="notification-badge">3</span>
+                            </a>
+                            <div class="dropdown">
+                                <button class="user-btn" type="button" data-bs-toggle="dropdown">
+                                    <div class="avatar">JD</div>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                    <li><a class="dropdown-item" href="bookmarks.html"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                </ul>
+                            </div>
+                            <a href="login.html" class="btn btn-outline-primary btn-sm ms-3">Login</a>
+                            <a href="register.html" class="btn btn-primary btn-sm ms-2">Register</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+
+    <footer class="main-footer mt-4 py-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <h3 class="h5 mb-3">About ForumHub</h3>
+                    <p class="text-muted">A community-driven platform for discussions on various topics. Join us to share your thoughts and connect with like-minded people.</p>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h3 class="h5 mb-3">Quick Links</h3>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="about.html" class="text-decoration-none">About Us</a></li>
+                        <li class="mb-2"><a href="contact.html" class="text-decoration-none">Contact</a></li>
+                        <li class="mb-2"><a href="privacy.html" class="text-decoration-none">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="terms.html" class="text-decoration-none">Terms of Service</a></li>
+                        <li><a href="faq.html" class="text-decoration-none">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
+                    <h3 class="h5 mb-3">Connect With Us</h3>
+                    <div class="social-icons d-flex gap-2">
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-discord"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-reddit"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <h3 class="h5 mb-3">Newsletter</h3>
+                    <p class="text-muted small mb-2">Subscribe to our newsletter for updates</p>
+                    <form>
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="Your email address">
+                            <button class="btn btn-primary" type="submit">Subscribe</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="border-top mt-4 pt-3 text-center text-muted">
+                <p class="small mb-0">&copy; 2023 ForumHub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/Dark-mode.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -125,7 +125,7 @@
         }
 
         .post-content {
-            padding: 16px;
+            padding: 1px;
         }
 
         .post-title {
@@ -357,7 +357,7 @@
 
         /* Comment Section */
         .comment-input-container {
-            padding: 16px;
+            padding: 1px;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -418,7 +418,7 @@
         }
 
         .comments-container {
-            padding: 16px;
+            padding: 1px;
         }
 
         .comment-card {

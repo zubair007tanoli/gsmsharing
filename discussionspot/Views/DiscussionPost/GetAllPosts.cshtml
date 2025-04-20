@@ -1,0 +1,728 @@
+﻿
+@{
+    ViewData["Title"] = "GetAllPosts";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/css/v2/All_Posts.css" rel="stylesheet" />
+
+
+<main class="container py-4">
+    <div class="row">
+        <!-- Left Sidebar - Categories & Filters -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sticky-top" style="top: 80px; z-index:1;">
+                <!-- Create Post Button -->
+                <div class="mb-3">
+                    <a href="create-post.html" class="btn btn-primary w-100">
+                        <i class="fas fa-plus-circle me-2" aria-hidden="true"></i> Create Post
+                    </a>
+                </div>
+
+                <!-- Popular Categories -->
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h3 class="h6 mb-0">Popular Categories</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <img src="https://placehold.co/24" alt="Web Development" class="category-icon rounded-circle me-2">
+                                    <div>
+                                        <div class="category-name text-body">Web Development</div>
+                                        <div class="small text-muted">125k members</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <img src="https://placehold.co/24" alt="JavaScript" class="category-icon rounded-circle me-2">
+                                    <div>
+                                        <div class="category-name text-body">JavaScript</div>
+                                        <div class="small text-muted">98k members</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <img src="https://placehold.co/24" alt="UI Design" class="category-icon rounded-circle me-2">
+                                    <div>
+                                        <div class="category-name text-body">UI Design</div>
+                                        <div class="small text-muted">76k members</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <img src="https://placehold.co/24" alt="Python" class="category-icon rounded-circle me-2">
+                                    <div>
+                                        <div class="category-name text-body">Python</div>
+                                        <div class="small text-muted">112k members</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <img src="https://placehold.co/24" alt="Machine Learning" class="category-icon rounded-circle me-2">
+                                    <div>
+                                        <div class="category-name text-body">Machine Learning</div>
+                                        <div class="small text-muted">89k members</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none text-primary">
+                                    <i class="fas fa-plus-circle me-2" aria-hidden="true"></i> Browse More Categories
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Nested Categories -->
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h3 class="h6 mb-0">Browse by Category</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush nested-categories">
+                            <li class="list-group-item py-2">
+                                <div class="category-parent">
+                                    <a href="#" class="d-flex align-items-center text-decoration-none">
+                                        <i class="fas fa-laptop-code me-2 text-primary"></i>
+                                        <span class="category-name text-body">Programming</span>
+                                        <i class="fas fa-chevron-down ms-auto category-toggle"></i>
+                                    </a>
+                                </div>
+                                <ul class="category-children">
+                                    <li><a href="#" class="category-child">JavaScript</a></li>
+                                    <li><a href="#" class="category-child">Python</a></li>
+                                    <li><a href="#" class="category-child">Java</a></li>
+                                    <li><a href="#" class="category-child">C++</a></li>
+                                </ul>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <div class="category-parent">
+                                    <a href="#" class="d-flex align-items-center text-decoration-none">
+                                        <i class="fas fa-palette me-2 text-success"></i>
+                                        <span class="category-name text-body">Design</span>
+                                        <i class="fas fa-chevron-down ms-auto category-toggle"></i>
+                                    </a>
+                                </div>
+                                <ul class="category-children">
+                                    <li><a href="#" class="category-child">UI Design</a></li>
+                                    <li><a href="#" class="category-child">Graphic Design</a></li>
+                                    <li><a href="#" class="category-child">UX Research</a></li>
+                                </ul>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <div class="category-parent">
+                                    <a href="#" class="d-flex align-items-center text-decoration-none">
+                                        <i class="fas fa-server me-2 text-danger"></i>
+                                        <span class="category-name text-body">DevOps</span>
+                                        <i class="fas fa-chevron-down ms-auto category-toggle"></i>
+                                    </a>
+                                </div>
+                                <ul class="category-children">
+                                    <li><a href="#" class="category-child">Docker</a></li>
+                                    <li><a href="#" class="category-child">Kubernetes</a></li>
+                                    <li><a href="#" class="category-child">CI/CD</a></li>
+                                </ul>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <div class="category-parent">
+                                    <a href="#" class="d-flex align-items-center text-decoration-none">
+                                        <i class="fas fa-mobile-alt me-2 text-info"></i>
+                                        <span class="category-name text-body">Mobile Dev</span>
+                                        <i class="fas fa-chevron-down ms-auto category-toggle"></i>
+                                    </a>
+                                </div>
+                                <ul class="category-children">
+                                    <li><a href="#" class="category-child">iOS</a></li>
+                                    <li><a href="#" class="category-child">Android</a></li>
+                                    <li><a href="#" class="category-child">React Native</a></li>
+                                    <li><a href="#" class="category-child">Flutter</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h3 class="h6 mb-0">Filters</h3>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="mb-3">
+                            <label for="timeFilter" class="form-label small">Time Period</label>
+                            <select class="form-select form-select-sm" id="timeFilter">
+                                <option value="today">Today</option>
+                                <option value="week" selected>This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small d-block">Post Type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="textPostsCheck" checked>
+                                <label class="form-check-label" for="textPostsCheck">
+                                    Text Posts
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="imagePostsCheck" checked>
+                                <label class="form-check-label" for="imagePostsCheck">
+                                    Image Posts
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="videoPostsCheck" checked>
+                                <label class="form-check-label" for="videoPostsCheck">
+                                    Video Posts
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="linkPostsCheck" checked>
+                                <label class="form-check-label" for="linkPostsCheck">
+                                    Link Posts
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary w-100">Apply Filters</button>
+                    </div>
+                </div>
+
+                <!-- Ad Space -->
+                <div class="ad-container mb-3 d-none d-xl-block">
+                    <div class="ad-label small text-muted text-center mb-1">ADVERTISEMENT</div>
+                    <div class="ad-unit ad-sidebar">
+                        <img src="https://placehold.co/300x250" alt="Advertisement" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Column - Posts Feed -->
+        <div class="col-lg-6 col-md-8">
+            <!-- Feed Header with Sorting Options -->
+            <div class="feed-header mb-3">
+                <div class="card">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex">
+                                <div class="btn-group me-2" role="group" aria-label="View options">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary active" aria-label="Card view">
+                                        <i class="fas fa-th-large" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Compact view">
+                                        <i class="fas fa-list" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Sort: Hot
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item active" href="#"><i class="fas fa-fire me-2" aria-hidden="true"></i>Hot</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-arrow-up me-2" aria-hidden="true"></i>Top</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-clock me-2" aria-hidden="true"></i>New</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-bolt me-2" aria-hidden="true"></i>Rising</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-comment-dots me-2" aria-hidden="true"></i>Most Comments</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <a href="create-post.html" class="btn btn-primary btn-sm d-none d-sm-inline-block">
+                                <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> Create Post
+                            </a>
+                            <a href="create-post.html" class="btn btn-primary btn-sm d-sm-none" aria-label="Create Post">
+                                <i class="fas fa-plus-circle" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts Feed -->
+            <div class="posts-feed">
+                <!-- Post 1 -->
+                <div class="card post-card mb-3">
+                    <div class="card-body p-3">
+                        <div class="d-flex">
+                            <!-- Post Thumbnail -->
+                            <div class="post-thumbnail me-3">
+                                <a href="view-post.html">
+                                    <img src="https://placehold.co/100" alt="Post thumbnail" class="rounded">
+                                </a>
+                            </div>
+
+                            <!-- Post Content -->
+                            <div class="post-content">
+                                <div class="post-header mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <a href="community.html?c=webdevelopment" class="community-link me-2">
+                                            <img src="https://placehold.co/20" alt="Web Development" class="community-icon-sm rounded-circle me-1">
+                                            r/webdevelopment
+                                        </a>
+                                        <span class="post-meta">
+                                            Posted by
+                                            <a href="profile.html?u=johndoe" class="author-link">u/johndoe</a>
+                                            <span class="post-time">15 hours ago</span>
+                                        </span>
+                                    </div>
+                                    <h2 class="post-title h5 mt-2">
+                                        <a href="view-post.html" class="text-decoration-none text-body">How to Build a Responsive Website in 2023</a>
+                                    </h2>
+                                </div>
+
+                                <p class="post-excerpt text-muted small">Creating responsive websites has become essential in today's multi-device world. This guide will walk you through the process of building a modern, responsive website that works seamlessly across all devices...</p>
+
+                                <!-- Post Footer -->
+                                <div class="post-footer d-flex flex-wrap align-items-center">
+                                    <div class="post-votes me-3">
+                                        <button class="vote-btn upvote me-1" aria-label="Like">
+                                            <i class="fas fa-thumbs-up" aria-hidden="true"></i>
+                                        </button>
+                                        <span class="vote-count" aria-live="polite">78</span>
+                                        <button class="vote-btn downvote ms-1" aria-label="Dislike">
+                                            <i class="fas fa-thumbs-down" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+
+                                    <a href="view-post.html#comments" class="btn btn-sm btn-action me-2" aria-label="32 Comments">
+                                        <i class="fas fa-comment-alt me-1" aria-hidden="true"></i> 32
+                                    </a>
+
+                                    <div class="dropdown share-dropdown me-2">
+                                        <button class="btn btn-sm btn-action share-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Share">
+                                            <i class="fas fa-share-alt me-1" aria-hidden="true"></i> 14
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item social-share-btn" data-platform="facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i> Facebook</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="twitter"><i class="fab fa-twitter" aria-hidden="true"></i> Twitter</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="linkedin"><i class="fab fa-linkedin-in" aria-hidden="true"></i> LinkedIn</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="reddit"><i class="fab fa-reddit-alien" aria-hidden="true"></i> Reddit</button></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="email"><i class="fas fa-envelope" aria-hidden="true"></i> Email</button></li>
+                                            <li><button class="dropdown-item copy-link-btn"><i class="fas fa-link" aria-hidden="true"></i> Copy Link</button></li>
+                                        </ul>
+                                    </div>
+
+                                    <button class="btn btn-sm btn-action me-2" aria-label="Save">
+                                        <i class="fas fa-bookmark me-1" aria-hidden="true"></i> Save
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-action" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More options">
+                                            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag me-2" aria-hidden="true"></i>Report</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye-slash me-2" aria-hidden="true"></i>Hide</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post 2 -->
+                <div class="card post-card mb-3">
+                    <div class="card-body p-3">
+                        <div class="d-flex">
+                            <!-- Post Thumbnail -->
+                            <div class="post-thumbnail me-3">
+                                <a href="view-post.html">
+                                    <div class="code-thumbnail">
+                                        <i class="fas fa-code" aria-hidden="true"></i>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <!-- Post Content -->
+                            <div class="post-content">
+                                <div class="post-header mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <a href="community.html?c=javascript" class="community-link me-2">
+                                            <img src="https://placehold.co/20" alt="JavaScript" class="community-icon-sm rounded-circle me-1">
+                                            r/javascript
+                                        </a>
+                                        <span class="post-meta">
+                                            Posted by
+                                            <a href="profile.html?u=jsdev" class="author-link">u/jsdev</a>
+                                            <span class="post-time">2 days ago</span>
+                                        </span>
+                                    </div>
+                                    <h2 class="post-title h5 mt-2">
+                                        <a href="view-post.html" class="text-decoration-none text-body">Understanding JavaScript Promises and Async/Await</a>
+                                    </h2>
+                                </div>
+
+                                <p class="post-excerpt text-muted small">Promises and async/await are fundamental concepts in modern JavaScript that help manage asynchronous operations. In this post, I'll explain how they work and provide practical examples of when to use each approach...</p>
+
+                                <!-- Post Footer -->
+                                <div class="post-footer d-flex flex-wrap align-items-center">
+                                    <div class="post-votes me-3">
+                                        <button class="vote-btn upvote me-1" aria-label="Like">
+                                            <i class="fas fa-thumbs-up" aria-hidden="true"></i>
+                                        </button>
+                                        <span class="vote-count" aria-live="polite">45</span>
+                                        <button class="vote-btn downvote ms-1" aria-label="Dislike">
+                                            <i class="fas fa-thumbs-down" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+
+                                    <a href="view-post.html#comments" class="btn btn-sm btn-action me-2" aria-label="18 Comments">
+                                        <i class="fas fa-comment-alt me-1" aria-hidden="true"></i> 18
+                                    </a>
+
+                                    <div class="dropdown share-dropdown me-2">
+                                        <button class="btn btn-sm btn-action share-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Share">
+                                            <i class="fas fa-share-alt me-1" aria-hidden="true"></i> 8
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item social-share-btn" data-platform="facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i> Facebook</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="twitter"><i class="fab fa-twitter" aria-hidden="true"></i> Twitter</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="linkedin"><i class="fab fa-linkedin-in" aria-hidden="true"></i> LinkedIn</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="reddit"><i class="fab fa-reddit-alien" aria-hidden="true"></i> Reddit</button></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="email"><i class="fas fa-envelope" aria-hidden="true"></i> Email</button></li>
+                                            <li><button class="dropdown-item copy-link-btn"><i class="fas fa-link" aria-hidden="true"></i> Copy Link</button></li>
+                                        </ul>
+                                    </div>
+
+                                    <button class="btn btn-sm btn-action me-2" aria-label="Save">
+                                        <i class="fas fa-bookmark me-1" aria-hidden="true"></i> Save
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-action" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More options">
+                                            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag me-2" aria-hidden="true"></i>Report</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye-slash me-2" aria-hidden="true"></i>Hide</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post 3 -->
+                <div class="card post-card mb-3">
+                    <div class="card-body p-3">
+                        <div class="d-flex">
+                            <!-- Post Thumbnail -->
+                            <div class="post-thumbnail me-3">
+                                <a href="view-post.html">
+                                    <img src="https://placehold.co/100" alt="UI Design Trends" class="rounded">
+                                </a>
+                            </div>
+
+                            <!-- Post Content -->
+                            <div class="post-content">
+                                <div class="post-header mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <a href="community.html?c=uidesign" class="community-link me-2">
+                                            <img src="https://placehold.co/20" alt="UI Design" class="community-icon-sm rounded-circle me-1">
+                                            r/uidesign
+                                        </a>
+                                        <span class="post-meta">
+                                            Posted by
+                                            <a href="profile.html?u=designguru" class="author-link">u/designguru</a>
+                                            <span class="post-time">3 days ago</span>
+                                        </span>
+                                    </div>
+                                    <h2 class="post-title h5 mt-2">
+                                        <a href="view-post.html" class="text-decoration-none text-body">5 UI Design Trends to Watch in 2023</a>
+                                    </h2>
+                                </div>
+
+                                <p class="post-excerpt text-muted small">UI design is constantly evolving. Here are 5 trends that are dominating the design landscape in 2023: Glassmorphism, Dark Mode, Neumorphism, Microinteractions, and Voice User Interfaces...</p>
+
+                                <!-- Post Footer -->
+                                <div class="post-footer d-flex flex-wrap align-items-center">
+                                    <div class="post-votes me-3">
+                                        <button class="vote-btn upvote me-1" aria-label="Like">
+                                            <i class="fas fa-thumbs-up" aria-hidden="true"></i>
+                                        </button>
+                                        <span class="vote-count" aria-live="polite">32</span>
+                                        <button class="vote-btn downvote ms-1" aria-label="Dislike">
+                                            <i class="fas fa-thumbs-down" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+
+                                    <a href="view-post.html#comments" class="btn btn-sm btn-action me-2" aria-label="24 Comments">
+                                        <i class="fas fa-comment-alt me-1" aria-hidden="true"></i> 24
+                                    </a>
+
+                                    <div class="dropdown share-dropdown me-2">
+                                        <button class="btn btn-sm btn-action share-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Share">
+                                            <i class="fas fa-share-alt me-1" aria-hidden="true"></i> 11
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item social-share-btn" data-platform="facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i> Facebook</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="twitter"><i class="fab fa-twitter" aria-hidden="true"></i> Twitter</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="linkedin"><i class="fab fa-linkedin-in" aria-hidden="true"></i> LinkedIn</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="reddit"><i class="fab fa-reddit-alien" aria-hidden="true"></i> Reddit</button></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="email"><i class="fas fa-envelope" aria-hidden="true"></i> Email</button></li>
+                                            <li><button class="dropdown-item copy-link-btn"><i class="fas fa-link" aria-hidden="true"></i> Copy Link</button></li>
+                                        </ul>
+                                    </div>
+
+                                    <button class="btn btn-sm btn-action me-2" aria-label="Save">
+                                        <i class="fas fa-bookmark me-1" aria-hidden="true"></i> Save
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-action" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More options">
+                                            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag me-2" aria-hidden="true"></i>Report</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye-slash me-2" aria-hidden="true"></i>Hide</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ad Space - In-feed -->
+                <div class="ad-container mb-3">
+                    <div class="ad-label small text-muted text-center mb-1">ADVERTISEMENT</div>
+                    <div class="ad-unit ad-banner">
+                        <img src="https://placehold.co/728x90" alt="Advertisement" class="img-fluid">
+                    </div>
+                </div>
+
+                <!-- Post 4 -->
+                <div class="card post-card mb-3">
+                    <div class="card-body p-3">
+                        <div class="d-flex">
+                            <!-- Post Thumbnail -->
+                            <div class="post-thumbnail me-3">
+                                <a href="view-post.html">
+                                    <div class="poll-thumbnail">
+                                        <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <!-- Post Content -->
+                            <div class="post-content">
+                                <div class="post-header mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <a href="community.html?c=webdevelopment" class="community-link me-2">
+                                            <img src="https://placehold.co/20" alt="Web Development" class="community-icon-sm rounded-circle me-1">
+                                            r/webdevelopment
+                                        </a>
+                                        <span class="post-meta">
+                                            Posted by
+                                            <a href="profile.html?u=webdev101" class="author-link">u/webdev101</a>
+                                            <span class="post-time">4 days ago</span>
+                                        </span>
+                                    </div>
+                                    <h2 class="post-title h5 mt-2">
+                                        <a href="view-post.html" class="text-decoration-none text-body">What's your favorite CSS framework in 2023?</a>
+                                    </h2>
+                                </div>
+
+                                <p class="post-excerpt text-muted small">With so many CSS frameworks available today, I'm curious which one the community prefers. Vote for your favorite and share your experiences in the comments!</p>
+
+                                <!-- Post Footer -->
+                                <div class="post-footer d-flex flex-wrap align-items-center">
+                                    <div class="post-votes me-3">
+                                        <button class="vote-btn upvote me-1" aria-label="Like">
+                                            <i class="fas fa-thumbs-up" aria-hidden="true"></i>
+                                        </button>
+                                        <span class="vote-count" aria-live="polite">27</span>
+                                        <button class="vote-btn downvote ms-1" aria-label="Dislike">
+                                            <i class="fas fa-thumbs-down" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+
+                                    <a href="view-post.html#comments" class="btn btn-sm btn-action me-2" aria-label="42 Comments">
+                                        <i class="fas fa-comment-alt me-1" aria-hidden="true"></i> 42
+                                    </a>
+
+                                    <div class="dropdown share-dropdown me-2">
+                                        <button class="btn btn-sm btn-action share-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Share">
+                                            <i class="fas fa-share-alt me-1" aria-hidden="true"></i> 6
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item social-share-btn" data-platform="facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i> Facebook</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="twitter"><i class="fab fa-twitter" aria-hidden="true"></i> Twitter</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="linkedin"><i class="fab fa-linkedin-in" aria-hidden="true"></i> LinkedIn</button></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="reddit"><i class="fab fa-reddit-alien" aria-hidden="true"></i> Reddit</button></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><button class="dropdown-item social-share-btn" data-platform="email"><i class="fas fa-envelope" aria-hidden="true"></i> Email</button></li>
+                                            <li><button class="dropdown-item copy-link-btn"><i class="fas fa-link" aria-hidden="true"></i> Copy Link</button></li>
+                                        </ul>
+                                    </div>
+
+                                    <button class="btn btn-sm btn-action me-2" aria-label="Save">
+                                        <i class="fas fa-bookmark me-1" aria-hidden="true"></i> Save
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-action" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More options">
+                                            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag me-2" aria-hidden="true"></i>Report</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye-slash me-2" aria-hidden="true"></i>Hide</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                        </li>
+                        <li class="page-item active" aria-current="page">
+                            <a class="page-link" href="#">1</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">3</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+
+        <!-- Right Sidebar - Community Info & Trending -->
+        <div class="col-lg-3 col-md-4 d-none d-md-block">
+            <div class="sticky-top" style="top: 80px;z-index:1;">
+                <!-- About Community -->
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h3 class="h6 mb-0">About Community</h3>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="text-center mb-3">
+                            <img src="https://placehold.co/80" alt="Web Development" class="community-icon rounded-circle mb-2">
+                            <h4 class="h6 mb-1">r/webdevelopment</h4>
+                            <p class="small text-muted mb-0">125k members • 2.5k online</p>
+                        </div>
+                        <p class="small mb-3">A place for web developers to share resources, ask questions, and discuss the latest trends in web development.</p>
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="text-center">
+                                <div class="h5 mb-0">125k</div>
+                                <div class="small text-muted">Members</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="h5 mb-0">2.5k</div>
+                                <div class="small text-muted">Online</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="h5 mb-0">2018</div>
+                                <div class="small text-muted">Created</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100 mb-2">Join Community</button>
+                        <button class="btn btn-outline-secondary btn-sm w-100">Create Post</button>
+                    </div>
+                </div>
+
+                <!-- Community Rules -->
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h3 class="h6 mb-0">Community Rules</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item py-2">
+                                <div class="d-flex">
+                                    <span class="me-2">1.</span>
+                                    <div>
+                                        <div class="fw-medium">Be respectful and helpful</div>
+                                        <div class="small text-muted">Treat others with respect and focus on helping each other.</div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <div class="d-flex">
+                                    <span class="me-2">2.</span>
+                                    <div>
+                                        <div class="fw-medium">No self-promotion</div>
+                                        <div class="small text-muted">Don't post solely to promote your own content.</div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <div class="d-flex">
+                                    <span class="me-2">3.</span>
+                                    <div>
+                                        <div class="fw-medium">Use descriptive titles</div>
+                                        <div class="small text-muted">Make your post titles clear and descriptive.</div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Moderators -->
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h3 class="h6 mb-0">Moderators</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <div class="avatar avatar-sm me-2">WD</div>
+                                    <div class="text-body">u/webdev_mod</div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none">
+                                    <div class="avatar avatar-sm me-2">JS</div>
+                                    <div class="text-body">u/javascript_guru</div>
+                                </a>
+                            </li>
+                            <li class="list-group-item py-2">
+                                <a href="#" class="d-flex align-items-center text-decoration-none text-primary">
+                                    <i class="fas fa-envelope me-2" aria-hidden="true"></i> Message the mods
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Additional Ad Space - Sidebar Bottom -->
+                <div class="ad-container mb-3">
+                    <div class="ad-label small text-muted text-center mb-1">ADVERTISEMENT</div>
+                    <div class="ad-unit ad-rectangle">
+                        <img src="https://placehold.co/300x250" alt="Advertisement" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+
+@section Scripts {
+
+
+ }

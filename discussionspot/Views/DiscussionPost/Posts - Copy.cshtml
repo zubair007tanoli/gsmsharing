@@ -1,0 +1,1860 @@
+﻿
+@{
+    ViewData["Title"] = "Posts";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    :root {
+        --primary-color: #0079d3;
+        --secondary-color: #1a1a1b;
+        --accent-color: #ff4500;
+        --success-color: #46d160;
+        --warning-color: #ffa500;
+        --danger-color: #ff585b;
+        --light-bg: #f8f9fa;
+        --lighter-bg: #ffffff;
+        --border-color: #edeff1;
+        --text-dark: #1a1a1b;
+        --text-muted: #787c7e;
+        --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --like-color: #ff4500;
+        --dislike-color: #7193ff;
+        --action-hover: #f6f7f8;
+        --comment-border: #edeff1;
+        --button-hover: rgba(26, 26, 27, 0.1);
+    }
+
+
+
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+
+    /* Main Content */
+    .main-container {
+        padding: 20px 0;
+    }
+
+    .content-container {
+        max-width: 740px;
+        margin: 0 auto;
+    }
+
+    /* Sidebar */
+
+
+    .sidebar-card {
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 16px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .sidebar-header {
+        padding: 12px 16px;
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+
+    .sidebar-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--text-dark);
+    }
+
+    .sidebar-button {
+        width: 100%;
+        padding: 8px 0;
+        margin-bottom: 8px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .community-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+
+    .stat-icon {
+        width: 20px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .community-rules {
+        padding-left: 20px;
+        margin-bottom: 0;
+    }
+
+        .community-rules li {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+    /* Post Card */
+    .post-card {
+        background: white;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+    }
+
+        .post-card:hover {
+            border-color: #c8cbcd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+    .post-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    .post-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .community-badge {
+        font-weight: 700;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+        .community-badge:hover {
+            text-decoration: underline;
+        }
+
+    .post-content {
+        padding: 16px;
+    }
+
+    .post-main {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .post-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-dark);
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .post-title a {
+            color: var(--text-dark);
+            text-decoration: none;
+        }
+
+            .post-title a:hover {
+                color: var(--primary-color);
+            }
+
+    .post-body {
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+        color: var(--text-dark);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+    }
+
+    .post-image {
+        max-width: 100%;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        max-height: 500px;
+        object-fit: contain;
+    }
+
+    .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .tag-badge {
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 12px;
+        border-radius: 100px;
+        background-color: #f2f8fc;
+        color: var(--primary-color);
+        border: 1px solid rgba(0, 121, 211, 0.2);
+    }
+
+        .tag-badge.secondary {
+            background-color: #f6f7f8;
+            color: var(--text-muted);
+            border: 1px solid rgba(120, 124, 126, 0.2);
+        }
+
+    .post-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 8px 16px;
+        background-color: #f9fafb;
+        border-top: 1px solid var(--border-color);
+        justify-content: space-between;
+    }
+
+    .action-button {
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+        .action-button:hover {
+            background: var(--button-hover);
+            color: var(--text-dark);
+        }
+
+    .like-btn.active {
+        color: var(--like-color);
+    }
+
+    .dislike-btn.active {
+        color: var(--dislike-color);
+    }
+
+    .engagement-count {
+        font-weight: 600;
+    }
+
+    /* Ad Units Styling */
+    .ad-unit {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .ad-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 0;
+        background-color: rgba(0,0,0,0.02);
+    }
+
+    .ad-container {
+        padding: 8px;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .ad-container.rectangle {
+            min-height: 250px;
+        }
+
+        .ad-container.leaderboard {
+            min-height: 90px;
+        }
+
+        .ad-container.skyscraper {
+            min-height: 600px;
+        }
+
+        .ad-container.medium-rectangle {
+            min-height: 250px;
+        }
+
+        .ad-container.large-mobile {
+            min-height: 100px;
+        }
+
+    .sticky-ad {
+        position: sticky;
+        top: 80px;
+    }
+
+
+    .newsletter-form {
+        margin-top: 12px;
+    }
+
+    .newsletter-input {
+        border-radius: 4px;
+        font-size: 14px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+    }
+
+    .related-posts {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+
+        .related-posts a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-size: 14px;
+            display: block;
+            line-height: 1.4;
+        }
+
+            .related-posts a:hover {
+                color: var(--primary-color);
+            }
+
+    .related-post-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .in-feed-ad {
+        padding: 16px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        margin: 16px 0;
+        border: 1px solid var(--border-color);
+    }
+
+
+
+    .community-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 8px;
+        background-color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+    }
+
+    .community-members {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: auto;
+    }
+
+    .post-type-indicator {
+        margin-left: 8px;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background-color: #f2f8fc;
+        color: var(--primary-color);
+    }
+
+        .post-type-indicator.video {
+            background-color: #fef2f2;
+            color: #ef4444;
+        }
+
+        .post-type-indicator.link {
+            background-color: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .post-type-indicator.image {
+            background-color: #f5f3ff;
+            color: #8b5cf6;
+        }
+
+        .post-type-indicator.discussion {
+            background-color: #fff7ed;
+            color: #f97316;
+        }
+
+    .post-link {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+        .post-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+            .post-link a:hover {
+                text-decoration: underline;
+            }
+
+        .post-link i {
+            margin-right: 4px;
+        }
+
+    .filter-tabs {
+        display: flex;
+        overflow-x: auto;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+    }
+
+    .filter-tab {
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        border: none;
+        background: none;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        border-bottom: 2px solid transparent;
+    }
+
+        .filter-tab:hover {
+            color: var(--text-dark);
+            background-color: var(--light-bg);
+        }
+
+        .filter-tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .filter-tab i {
+            margin-right: 8px;
+        }
+
+    .create-post-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+    }
+
+    .create-post-input {
+        flex-grow: 1;
+        padding: 8px 16px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background-color: var(--light-bg);
+        font-size: 14px;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+
+        .create-post-input:hover {
+            border-color: var(--primary-color);
+            background-color: white;
+        }
+
+    .create-post-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .create-post-action {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 18px;
+        padding: 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+        .create-post-action:hover {
+            color: var(--primary-color);
+            background-color: var(--light-bg);
+        }
+
+
+    .reaction-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .reaction-button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+
+        .reaction-button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .reaction-button.like-btn.active {
+            color: var(--like-color);
+        }
+
+        .reaction-button.dislike-btn.active {
+            color: var(--dislike-color);
+        }
+
+        .reaction-button i {
+            font-size: 16px;
+        }
+
+    .reaction-count {
+        font-weight: 600;
+    }
+
+    .post-stats {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 1200px) {
+        .left-sidebar
+
+    {
+        display: block;
+    }
+
+    }
+
+    @@media (max-width: 992px) {
+        .right-sidebar
+
+    {
+        display: none;
+    }
+
+    .content-container {
+        max-width: 100%;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .post-actions
+
+    {
+        overflow-x: auto;
+        justify-content: space-between;
+    }
+
+    .action-button {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .navbar-brand span {
+        display: none;
+    }
+
+    .search-form {
+        max-width: 200px;
+    }
+
+    .mobile-ad {
+        display: block !important;
+    }
+
+    .post-thumbnail {
+        width: 80px;
+        height: 60px;
+    }
+
+    .left-sidebar {
+        display: none;
+    }
+
+    }
+</style>
+<style>
+
+    .community-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+
+    .stat-icon {
+        width: 20px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .community-rules {
+        padding-left: 20px;
+        margin-bottom: 0;
+    }
+
+        .community-rules li {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+    .post-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    .post-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .community-badge {
+        font-weight: 700;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+        .community-badge:hover {
+            text-decoration: underline;
+        }
+
+    .post-content {
+        padding: 16px;
+    }
+
+    .post-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--text-dark);
+        line-height: 1.3;
+    }
+
+
+    .post-body p {
+        margin-bottom: 1rem;
+    }
+
+    .post-body h2 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 1.5rem 0 1rem;
+    }
+
+    .post-body h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 1.2rem 0 0.8rem;
+    }
+
+    .post-body ul, .post-body ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+
+    .post-body li {
+        margin-bottom: 0.5rem;
+    }
+
+    .post-body blockquote {
+        border-left: 4px solid var(--border-color);
+        padding-left: 1rem;
+        margin-left: 0;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .post-body a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+        .post-body a:hover {
+            text-decoration: underline;
+        }
+
+    .post-image {
+        max-width: 100%;
+        border-radius: 4px;
+        margin-bottom: 16px;
+    }
+
+    .post-video {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        aspect-ratio: 16/9;
+    }
+
+    .tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .tag-badge {
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 12px;
+        border-radius: 100px;
+        background-color: #f2f8fc;
+        color: var(--primary-color);
+        border: 1px solid rgba(0, 121, 211, 0.2);
+    }
+
+        .tag-badge.secondary {
+            background-color: #f6f7f8;
+            color: var(--text-muted);
+            border: 1px solid rgba(120, 124, 126, 0.2);
+        }
+
+    .post-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 8px 16px;
+        background-color: #f9fafb;
+        border-top: 1px solid var(--border-color);
+        justify-content: space-between;
+    }
+
+    .action-button {
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+        .action-button:hover {
+            background: var(--button-hover);
+            color: var(--text-dark);
+        }
+
+    .like-btn.active {
+        color: var(--like-color);
+    }
+
+    .dislike-btn.active {
+        color: var(--dislike-color);
+    }
+
+    .engagement-count {
+        font-weight: 600;
+    }
+
+    .trending-topics {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .trending-topics li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+            .trending-topics li:last-child {
+                border-bottom: none;
+            }
+
+        .trending-topics a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-size: 14px;
+            display: block;
+        }
+
+            .trending-topics a:hover {
+                color: var(--primary-color);
+            }
+
+    .trending-number {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        background-color: var(--light-bg);
+        border-radius: 50%;
+        text-align: center;
+        line-height: 24px;
+        margin-right: 8px;
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--primary-color);
+    }
+
+    .newsletter-form {
+        margin-top: 12px;
+    }
+
+    .newsletter-input {
+        border-radius: 4px;
+        font-size: 14px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+    }
+
+    .related-posts {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .related-posts li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+            .related-posts li:last-child {
+                border-bottom: none;
+            }
+
+        .related-posts a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-size: 14px;
+            display: block;
+            line-height: 1.4;
+        }
+
+            .related-posts a:hover {
+                color: var(--primary-color);
+            }
+
+    .related-post-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .in-feed-ad {
+        padding: 16px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        margin: 16px 0;
+        border: 1px solid var(--border-color);
+    }
+
+    /* Comment Section */
+    .comment-input-container {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .comment-input {
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 12px;
+        font-size: 14px;
+        width: 100%;
+        resize: vertical;
+        background-color: #f6f7f8;
+        transition: all 0.2s ease;
+    }
+
+        .comment-input:focus {
+            border-color: var(--primary-color);
+            background-color: white;
+            box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.1);
+            outline: none;
+        }
+
+    .comment-button {
+        font-weight: 600;
+        font-size: 12px;
+        padding: 6px 16px;
+        border-radius: 100px;
+        transition: all 0.2s ease;
+        background-color: var(--primary-color);
+        border: none;
+        color: white;
+    }
+
+        .comment-button:hover {
+            background-color: #0061a9;
+        }
+
+    .comments-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .comments-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .sort-dropdown {
+        font-size: 12px;
+        color: var(--primary-color);
+        font-weight: 600;
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .comments-container {
+        padding: 16px;
+    }
+
+    .comment-card {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--comment-border);
+    }
+
+        .comment-card:last-child {
+            border-bottom: none;
+        }
+
+    .comment-author {
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-dark);
+    }
+
+    .comment-time {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .comment-text {
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 8px 0;
+    }
+
+    .comment-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .comment-action {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+    }
+
+        .comment-action:hover {
+            background-color: var(--button-hover);
+            color: var(--text-dark);
+        }
+
+        .comment-action.active {
+            color: var(--like-color);
+        }
+
+        .comment-action.dislike.active {
+            color: var(--dislike-color);
+        }
+
+    .reply-form {
+        margin-left: 36px;
+        margin-top: 12px;
+    }
+
+    /* Nested comments styling */
+    .nested-comment {
+        padding-left: 24px;
+        border-left: 2px solid var(--comment-border);
+        margin-left: 14px;
+        margin-top: 12px;
+    }
+
+        .nested-comment .nested-comment {
+            margin-left: 10px;
+        }
+
+
+    .post-stats {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    .post-link-preview {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        margin-bottom: 16px;
+        text-decoration: none;
+        color: var(--text-dark);
+        background-color: var(--light-bg);
+    }
+
+        .post-link-preview:hover {
+            border-color: var(--primary-color);
+            background-color: white;
+        }
+
+    .post-link-thumbnail {
+        width: 80px;
+        height: 80px;
+        border-radius: 4px;
+        object-fit: cover;
+        margin-right: 12px;
+    }
+
+    .post-link-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .post-link-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .post-link-description {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .post-link-domain {
+        font-size: 12px;
+        color: var(--primary-color);
+    }
+
+    .post-embed {
+        margin-bottom: 16px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+        .post-embed iframe {
+            width: 100%;
+            border: none;
+        }
+
+    .post-gallery {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .post-gallery-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+        .post-gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .post-gallery-more {
+        position: absolute;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 600;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 1200px) {
+        .left-sidebar
+
+    {
+        display: block;
+    }
+
+    }
+
+    @@media (max-width: 992px) {
+        .right-sidebar
+
+    {
+        display: none;
+    }
+
+    .content-container {
+        max-width: 100%;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .post-actions
+
+    {
+        overflow-x: auto;
+        justify-content: space-between;
+    }
+
+    .action-button {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .navbar-brand span {
+        display: none;
+    }
+
+    .search-form {
+        max-width: 200px;
+    }
+
+    .mobile-ad {
+        display: block !important;
+    }
+
+    .post-gallery {
+        grid-template-columns: 1fr;
+    }
+
+    .left-sidebar {
+        display: none;
+    }
+
+    }
+</style>
+<!-- Main Content -->
+<div class="main-container">
+    <div class="container">
+        <!-- Top Leaderboard Ad - High RPM Placement -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="ad-unit">
+                    <div class="ad-label">Advertisement</div>
+                    <div class="ad-container leaderboard">
+                        <!-- AdSense Leaderboard (728x90) -->
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                        <!-- Replace this comment with your AdSense code for leaderboard ad -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Sidebar - Navigation and Trending -->
+            <div class="col-lg-3 left-sidebar">
+                <div class="sidebar">
+                    <!-- Navigation Links -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-content">
+                            <div class="list-group list-group-flush">
+                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                    <i class="fas fa-fire me-2 text-danger"></i>
+                                    Popular
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                    <i class="fas fa-arrow-trend-up me-2 text-primary"></i>
+                                    Rising
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                    <i class="fas fa-certificate me-2 text-warning"></i>
+                                    New
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                                    <i class="fas fa-comments me-2 text-success"></i>
+                                    Discussions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trending Topics - Content-relevant for better ad targeting -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-header">
+                            Trending Topics
+                        </div>
+                        <div class="sidebar-content">
+                            <ul class="trending-topics">
+                                <li>
+                                    <a href="#">
+                                        <span class="trending-number">1</span>
+                                        iPhone 15 Battery Life
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#">
+                                        <span class="trending-number">2</span>
+                                        iOS 17 Features
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#">
+                                        <span class="trending-number">3</span>
+                                        Apple A17 Pro Chip
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#">
+                                        <span class="trending-number">4</span>
+                                        USB-C vs Lightning
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#">
+                                        <span class="trending-number">5</span>
+                                        Best iPhone Accessories
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Left Sidebar Ad - Medium Rectangle -->
+                    <div class="ad-unit sticky-ad">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container medium-rectangle">
+                            <!-- AdSense Medium Rectangle (300x250) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for medium rectangle ad -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Column -->
+            <div class="col-lg-6 col-md-8">
+                <div class="content-container">
+                    <!-- Mobile Ad - Only visible on mobile -->
+                    <div class="ad-unit d-none mobile-ad mb-3">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container large-mobile">
+                            <!-- AdSense Mobile Banner (320x100) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for mobile banner ad -->
+                        </div>
+                    </div>
+
+                    <!-- Post -->
+                    <div class="post-card">
+                        <div class="post-header">
+                            <div class="post-meta">
+                                <a href="#" class="community-badge">r/technology</a>
+                                <span>•</span>
+                                <span>
+                                    Posted by
+                                    <a href="#" class="community-badge" style="font-weight: 400;">u/techreview</a>
+                                    <span>5 hours ago</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="post-content">
+                            <h1 class="post-title">iPhone 15 Pro Max Battery Life Exceeds Expectations in Latest Tests</h1>
+
+                            <div class="post-body">
+                                <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=1000" alt="iPhone 15 Pro Max" class="post-image">
+
+                                <p>After extensive testing, the iPhone 15 Pro Max has shown remarkable battery performance, lasting up to 16 hours of continuous video playback and over 12 hours of heavy usage. This is a significant improvement over the previous generation and exceeds what many reviewers initially expected.</p>
+
+                                <h2>Performance Improvements</h2>
+
+                                <p>The A17 Pro chip's efficiency improvements, combined with iOS optimizations, have resulted in what might be the best battery life we've seen in a flagship smartphone this year. Apple's claims of "all-day battery life" seem to be an understatement for the Pro Max model.</p>
+
+                                <p>Even with features like the always-on display and ProMotion running, the device manages power consumption impressively well. This is particularly notable considering the brighter display and more powerful GPU in this generation.</p>
+
+                                <h3>Standby Time</h3>
+
+                                <p>In our standby tests, the iPhone 15 Pro Max lost only 2-3% battery overnight (8 hours), which is exceptional for a device with always-on capabilities. This makes it a great option for users who don't want to charge their phones every night.</p>
+
+                                <h2>Charging Capabilities</h2>
+
+                                <p>The switch to USB-C has also brought improved charging speeds. With a compatible 30W charger, we were able to charge the iPhone 15 Pro Max from 0 to 50% in just 30 minutes, and a full charge took about 1 hour and 45 minutes.</p>
+
+                                <div class="post-embed">
+                                    <iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>
+
+                                <p>Wireless charging via MagSafe remains at 15W, but the convenience factor makes it a popular option for many users. Third-party wireless chargers are limited to 7.5W, so keep that in mind when shopping for accessories.</p>
+
+                                <h2>Real-World Usage</h2>
+
+                                <p>In our real-world testing, which included a mix of social media browsing, photography, video recording, gaming, and GPS navigation, the iPhone 15 Pro Max consistently lasted through a full day with 20-30% battery remaining. Power users might still need to top up toward the end of a heavy day, but most users will be more than satisfied.</p>
+
+                                <a href="https://www.apple.com/iphone-15-pro/" class="post-link-preview">
+                                    <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=200" alt="Apple iPhone 15 Pro" class="post-link-thumbnail">
+                                    <div class="post-link-content">
+                                        <div class="post-link-title">iPhone 15 Pro and iPhone 15 Pro Max - Apple</div>
+                                        <div class="post-link-description">The iPhone 15 Pro and iPhone 15 Pro Max. Forged in titanium and featuring the groundbreaking A17 Pro chip, a customizable Action button, and the most powerful iPhone camera system ever.</div>
+                                        <div class="post-link-domain">apple.com</div>
+                                    </div>
+                                </a>
+
+                                <h2>Photo Gallery</h2>
+
+                                <div class="post-gallery">
+                                    <div class="post-gallery-item">
+                                        <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=500" alt="iPhone 15 Pro Max Front">
+                                    </div>
+                                    <div class="post-gallery-item">
+                                        <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=500" alt="iPhone 15 Pro Max Back">
+                                    </div>
+                                    <div class="post-gallery-item">
+                                        <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=500" alt="iPhone 15 Pro Max Side">
+                                    </div>
+                                    <div class="post-gallery-item">
+                                        <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=500" alt="iPhone 15 Pro Max Camera">
+                                        <div class="post-gallery-more">+3</div>
+                                    </div>
+                                </div>
+
+                                <p>Overall, the iPhone 15 Pro Max sets a new standard for battery life in premium smartphones. If battery endurance is a priority for you, this is definitely the iPhone model to choose in 2023.</p>
+                            </div>
+
+                            <div class="tags-container">
+                                <span class="tag-badge">iPhone15</span>
+                                <span class="tag-badge">BatteryLife</span>
+                                <span class="tag-badge">Apple</span>
+                                <span class="tag-badge secondary">Review</span>
+                            </div>
+                        </div>
+                        <div class="post-actions">
+                            <div class="reaction-buttons">
+                                <button class="reaction-button like-btn" onclick="handleReaction(this, 'like')">
+                                    <i class="far fa-thumbs-up"></i>
+                                    <span class="reaction-count">1.8k</span>
+                                </button>
+                                <button class="reaction-button dislike-btn" onclick="handleReaction(this, 'dislike')">
+                                    <i class="far fa-thumbs-down"></i>
+                                    <span class="reaction-count">32</span>
+                                </button>
+                            </div>
+                            <div class="post-stats">
+                                <button class="action-button">
+                                    <i class="far fa-comment-alt"></i>
+                                    <span>142 Comments</span>
+                                </button>
+                                <button class="action-button">
+                                    <i class="fas fa-share"></i>
+                                    <span>Share</span>
+                                </button>
+                                <button class="action-button">
+                                    <i class="far fa-bookmark"></i>
+                                    <span>Save</span>
+                                </button>
+                                <button class="action-button d-none d-md-flex">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- In-feed Ad - High RPM Placement -->
+                    <div class="in-feed-ad">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container rectangle">
+                            <!-- AdSense In-article ad (336x280) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for in-article ad -->
+                        </div>
+                    </div>
+
+                    <!-- Comment Section -->
+                    <div class="post-card">
+                        <!-- Comment Input -->
+                        <div class="comment-input-container">
+                            <div class="d-flex gap-3">
+                                <img src="https://i.pravatar.cc/150?img=12" class="user-avatar" alt="User">
+                                <div class="flex-grow-1">
+                                    <textarea class="comment-input" rows="3" placeholder="What are your thoughts?"></textarea>
+                                    <div class="d-flex justify-content-end mt-2">
+                                        <button class="btn comment-button">Comment</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comments Header -->
+                        <div class="comments-header">
+                            <span class="comments-title">All Comments (142)</span>
+                            <div class="d-flex align-items-center">
+                                <span class="me-2" style="font-size: 12px; color: var(--text-muted);">Sort by:</span>
+                                <select class="sort-dropdown">
+                                    <option>Best</option>
+                                    <option>Top</option>
+                                    <option>New</option>
+                                    <option>Controversial</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Comments Container -->
+                        <div class="comments-container">
+                            <!-- Comment 1 -->
+                            <div class="comment-card">
+                                <div class="d-flex gap-2">
+                                    <img src="https://i.pravatar.cc/150?img=3" class="user-avatar" alt="User">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <span class="comment-author">u/css_expert</span>
+                                            <span class="comment-time">• 3h ago</span>
+                                        </div>
+                                        <p class="comment-text">Great overview! The battery life is impressive, especially considering the brighter display. I've been using mine for a week now and haven't had to charge it during the day once.</p>
+                                        <div class="comment-actions">
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                <i class="fas fa-arrow-up"></i>
+                                                <span>452</span>
+                                            </button>
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button class="comment-action" onclick="toggleReply(this)">
+                                                <i class="far fa-comment-alt"></i>
+                                                <span>Reply</span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Nested Comment -->
+                                        <div class="nested-comment">
+                                            <div class="d-flex gap-2">
+                                                <img src="https://i.pravatar.cc/150?img=5" class="user-avatar" alt="User">
+                                                <div class="flex-grow-1">
+                                                    <div>
+                                                        <span class="comment-author">u/design_system</span>
+                                                        <span class="comment-time">• 1h ago</span>
+                                                    </div>
+                                                    <p class="comment-text">Agreed! I'm coming from the 13 Pro and the difference is noticeable. The A17 Pro is incredibly efficient.</p>
+                                                    <div class="comment-actions">
+                                                        <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                            <i class="fas fa-arrow-up"></i>
+                                                            <span>156</span>
+                                                        </button>
+                                                        <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                            <i class="fas fa-arrow-down"></i>
+                                                        </button>
+                                                        <button class="comment-action" onclick="toggleReply(this)">
+                                                            <i class="far fa-comment-alt"></i>
+                                                            <span>Reply</span>
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Nested Nested Comment -->
+                                                    <div class="nested-comment">
+                                                        <div class="d-flex gap-2">
+                                                            <img src="https://i.pravatar.cc/150?img=8" class="user-avatar" alt="User">
+                                                            <div class="flex-grow-1">
+                                                                <div>
+                                                                    <span class="comment-author">u/tech_enthusiast</span>
+                                                                    <span class="comment-time">• 45m ago</span>
+                                                                </div>
+                                                                <p class="comment-text">How's the camera performance compared to the 13 Pro? I'm considering upgrading primarily for the camera improvements.</p>
+                                                                <div class="comment-actions">
+                                                                    <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                                        <i class="fas fa-arrow-up"></i>
+                                                                        <span>42</span>
+                                                                    </button>
+                                                                    <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                                        <i class="fas fa-arrow-down"></i>
+                                                                    </button>
+                                                                    <button class="comment-action" onclick="toggleReply(this)">
+                                                                        <i class="far fa-comment-alt"></i>
+                                                                        <span>Reply</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- In-feed Ad between comments - High engagement placement -->
+                            <div class="in-feed-ad">
+                                <div class="ad-label">Advertisement</div>
+                                <div class="ad-container medium-rectangle">
+                                    <!-- AdSense In-feed ad (300x250) -->
+                                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                                    <!-- Replace this comment with your AdSense code for in-feed ad -->
+                                </div>
+                            </div>
+
+                            <!-- Comment 2 -->
+                            <div class="comment-card">
+                                <div class="d-flex gap-2">
+                                    <img src="https://i.pravatar.cc/150?img=7" class="user-avatar" alt="User">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <span class="comment-author">u/ui_engineer</span>
+                                            <span class="comment-time">• 2h ago</span>
+                                        </div>
+                                        <p class="comment-text">I'm curious how it performs with gaming. Has anyone tested it with Genshin Impact or other demanding games? My 14 Pro gets quite hot after 30 minutes.</p>
+                                        <div class="comment-actions">
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                <i class="fas fa-arrow-up"></i>
+                                                <span>89</span>
+                                            </button>
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button class="comment-action" onclick="toggleReply(this)">
+                                                <i class="far fa-comment-alt"></i>
+                                                <span>Reply</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Comment 3 -->
+                            <div class="comment-card">
+                                <div class="d-flex gap-2">
+                                    <img src="https://i.pravatar.cc/150?img=9" class="user-avatar" alt="User">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <span class="comment-author">u/tech_reviewer</span>
+                                            <span class="comment-time">• 4h ago</span>
+                                        </div>
+                                        <p class="comment-text">The USB-C port is the real game changer for me. One cable for everything now! And fast charging is noticeably better than my old iPhone.</p>
+                                        <div class="comment-actions">
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                <i class="fas fa-arrow-up"></i>
+                                                <span>215</span>
+                                            </button>
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button class="comment-action" onclick="toggleReply(this)">
+                                                <i class="far fa-comment-alt"></i>
+                                                <span>Reply</span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Nested Comment -->
+                                        <div class="nested-comment">
+                                            <div class="d-flex gap-2">
+                                                <img src="https://i.pravatar.cc/150?img=11" class="user-avatar" alt="User">
+                                                <div class="flex-grow-1">
+                                                    <div>
+                                                        <span class="comment-author">u/gadget_lover</span>
+                                                        <span class="comment-time">• 3h ago</span>
+                                                    </div>
+                                                    <p class="comment-text">What charging speeds are you getting with USB-C? And which charger are you using?</p>
+                                                    <div class="comment-actions">
+                                                        <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                            <i class="fas fa-arrow-up"></i>
+                                                            <span>67</span>
+                                                        </button>
+                                                        <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                            <i class="fas fa-arrow-down"></i>
+                                                        </button>
+                                                        <button class="comment-action" onclick="toggleReply(this)">
+                                                            <i class="far fa-comment-alt"></i>
+                                                            <span>Reply</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Comment 4 -->
+                            <div class="comment-card">
+                                <div class="d-flex gap-2">
+                                    <img src="https://i.pravatar.cc/150?img=15" class="user-avatar" alt="User">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <span class="comment-author">u/battery_expert</span>
+                                            <span class="comment-time">• 5h ago</span>
+                                        </div>
+                                        <p class="comment-text">I've been testing battery degradation on iPhones for years. The 15 Pro Max seems to have better battery health retention than previous models. After a month of heavy use, my battery health is still at 100%, whereas my 14 Pro was at 98% by this point last year.</p>
+                                        <div class="comment-actions">
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                <i class="fas fa-arrow-up"></i>
+                                                <span>324</span>
+                                            </button>
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button class="comment-action" onclick="toggleReply(this)">
+                                                <i class="far fa-comment-alt"></i>
+                                                <span>Reply</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Comment 5 -->
+                            <div class="comment-card">
+                                <div class="d-flex gap-2">
+                                    <img src="https://i.pravatar.cc/150?img=20" class="user-avatar" alt="User">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <span class="comment-author">u/android_fan</span>
+                                            <span class="comment-time">• 1h ago</span>
+                                        </div>
+                                        <p class="comment-text">As someone who's used Android for years, I'm genuinely impressed with these battery results. How does it compare to the latest Samsung or Google phones?</p>
+                                        <div class="comment-actions">
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'like')">
+                                                <i class="fas fa-arrow-up"></i>
+                                                <span>78</span>
+                                            </button>
+                                            <button class="comment-action" onclick="handleCommentReaction(this, 'dislike')">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button class="comment-action" onclick="toggleReply(this)">
+                                                <i class="far fa-comment-alt"></i>
+                                                <span>Reply</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Ad - High RPM Placement -->
+                    <div class="ad-unit">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container leaderboard">
+                            <!-- AdSense Large Rectangle (336x280) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for bottom ad -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar - High RPM Ad Placements -->
+            <div class="col-lg-3 col-md-4 right-sidebar">
+                <div class="sidebar">
+                    <!-- Sticky Ad - Highest RPM Placement -->
+                    <div class="ad-unit sticky-ad">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container rectangle">
+                            <!-- AdSense Large Rectangle (336x280) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for sticky ad -->
+                        </div>
+                    </div>
+
+                    <!-- Community Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-header">
+                            r/technology
+                        </div>
+                        <div class="sidebar-content">
+                            <p>A place to discuss the latest advancements in technology and gadgets.</p>
+                            <button class="btn btn-primary sidebar-button">Join</button>
+                            <button class="btn btn-outline-primary sidebar-button">Create Post</button>
+
+                            <hr>
+
+                            <div class="community-stats">
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value">2.4m</div>
+                                        <div>Members</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-signal"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value">12.5k</div>
+                                        <div>Online</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-birthday-cake"></i>
+                                    </div>
+                                    <div>
+                                        <div>Created Jan 25, 2008</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Newsletter Signup - Email Collection for Remarketing -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-content">
+                            <div class="sidebar-title">Tech Newsletter</div>
+                            <p>Get the latest tech news and reviews delivered to your inbox weekly.</p>
+                            <form class="newsletter-form">
+                                <input type="email" class="form-control newsletter-input" placeholder="Your email address">
+                                <button type="submit" class="btn btn-primary sidebar-button">Subscribe</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Related Posts - Content-relevant for better ad targeting -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-content">
+                            <div class="sidebar-title">Related Posts</div>
+                            <ul class="related-posts">
+                                <li>
+                                    <a href="#">iPhone 15 vs iPhone 14: Is it Worth the Upgrade?</a>
+                                    <div class="related-post-meta">
+                                        <i class="far fa-comment-alt"></i> 87 comments
+                                    </div>
+                                </li>
+                                <li>
+                                    <a href="#">Best USB-C Accessories for Your New iPhone 15</a>
+                                    <div class="related-post-meta">
+                                        <i class="far fa-comment-alt"></i> 54 comments
+                                    </div>
+                                </li>
+                                <li>
+                                    <a href="#">iOS 17 Hidden Features You Might Have Missed</a>
+                                    <div class="related-post-meta">
+                                        <i class="far fa-comment-alt"></i> 112 comments
+                                    </div>
+                                </li>
+                                <li>
+                                    <a href="#">Apple's A17 Pro: The First 3nm Chip Explained</a>
+                                    <div class="related-post-meta">
+                                        <i class="far fa-comment-alt"></i> 76 comments
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Second Ad Unit - Medium RPM Placement -->
+                    <div class="ad-unit">
+                        <div class="ad-label">Advertisement</div>
+                        <div class="ad-container medium-rectangle">
+                            <!-- AdSense Medium Rectangle (300x250) -->
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                            <!-- Replace this comment with your AdSense code for second sidebar ad -->
+                        </div>
+                    </div>
+
+                    <!-- Community Rules -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-content">
+                            <div class="sidebar-title">Community Rules</div>
+                            <ol class="community-rules">
+                                <li>Be respectful to others</li>
+                                <li>No editorialized titles</li>
+                                <li>No commercial promotion</li>
+                                <li>Posts must be about technology</li>
+                                <li>No low quality content</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
