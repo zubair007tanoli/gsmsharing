@@ -14,5 +14,14 @@ namespace discussionspot.Controllers
         {
             return View();
         }
+
+        public IActionResult CreatePost()
+        {
+            return View();
+        }
+        public IActionResult EditPost()
+        {
+            return View();
+        }
     }
 }

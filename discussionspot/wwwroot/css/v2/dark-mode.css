@@ -479,3 +479,6 @@ body.dark-mode {
         background-color: transparent;
         color: var(--primary-color);
     }
+body.dark-mode .text-body{
+    color:#fff !important;
+}

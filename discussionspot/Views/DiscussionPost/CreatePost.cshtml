@@ -1,0 +1,195 @@
+﻿
+@{
+    ViewData["Title"] = "CreatePost";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+  <style>
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+    }
+    .tag {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .tag .remove-tag {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .nav-tabs .nav-link.active {
+      background-color: var(--primary-color);
+      color: #fff !important;
+    }
+    .sidebar-section {
+      margin-bottom: 1rem;
+    }
+    .ad-banner {
+      background-color: var(--bg-light);
+      border: 1px dashed var(--border-color);
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    .dark-mode .ad-banner {
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      border-color: var(--border-color);
+    }
+  </style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 col-12">
+            <div class="card p-4 mb-4">
+                <h5 class="mb-3">Create Post</h5>
+                <form id="createPostForm">
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1 me-2">
+                            <label class="form-label">Community</label>
+                            <select class="form-select" required>
+                                <option selected disabled>Select Community</option>
+                                <option>Technology</option>
+                                <option>Gaming</option>
+                                <option>Science</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-outline-success mt-4">+ Create</button>
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3" id="postTypeTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab">Text</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image" type="button" role="tab">Image/Video</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="link-tab" data-bs-toggle="tab" data-bs-target="#link" type="button" role="tab">Link</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="poll-tab" data-bs-toggle="tab" data-bs-target="#poll" type="button" role="tab">Poll</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mb-3" id="postTypeContent">
+                        <div class="tab-pane fade show active" id="text" role="tabpanel">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control mb-3" maxlength="300" required />
+                            <label class="form-label">Content</label>
+                            <textarea class="form-control" rows="6"></textarea>
+                        </div>
+                        <div class="tab-pane fade" id="image" role="tabpanel">
+                            <label class="form-label">Upload Media</label>
+                            <input type="file" class="form-control" multiple />
+                        </div>
+                        <div class="tab-pane fade" id="link" role="tabpanel">
+                            <label class="form-label">URL</label>
+                            <input type="url" class="form-control" placeholder="https://example.com" />
+                        </div>
+                        <div class="tab-pane fade" id="poll" role="tabpanel">
+                            <label class="form-label">Poll Options</label>
+                            <input type="text" class="form-control mb-2" placeholder="Option 1" />
+                            <input type="text" class="form-control mb-2" placeholder="Option 2" />
+                            <button class="btn btn-sm btn-outline-secondary">+ Add Option</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tags</label>
+                        <input type="text" class="form-control" id="postTags" placeholder="Type and press Enter" />
+                        <div class="tag-container mt-2" id="tagList"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary">Save Draft</button>
+                        <button type="submit" class="btn btn-primary">Post</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-4 col-12">
+            <div class="sidebar-section card p-3">
+                <h6>Posting Rules</h6>
+                <ul class="small ps-3">
+                    <li>Be respectful</li>
+                    <li>No spam or self-promotion</li>
+                    <li>Use relevant tags</li>
+                    <li>Follow community rules</li>
+                </ul>
+            </div>
+            <div class="sidebar-section card p-3 ad-banner">
+                <strong>Ad Banner</strong>
+                <p>Promote your community or product here.</p>
+                <a href="#" class="btn btn-sm btn-outline-primary">Advertise</a>
+            </div>
+            <div class="sidebar-section card p-3">
+                <h6>Tips</h6>
+                <p class="small text-muted">Use concise titles and detailed content to attract more readers. Engage with your community by replying to comments.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    <script>
+        const toggle = document.getElementById('themeToggle');
+        const moon = toggle.querySelector('.fa-moon');
+        const sun = toggle.querySelector('.fa-sun');
+        toggle.addEventListener('click', () => {
+          document.body.classList.toggle('dark-mode');
+          moon.classList.toggle('d-none');
+          sun.classList.toggle('d-none');
+        });
+
+        const tagInput = document.getElementById('postTags');
+        const tagList = document.getElementById('tagList');
+        let tags = [];
+
+        tagInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = tagInput.value.trim();
+            if (value && !tags.includes(value) && tags.length < 5) {
+              tags.push(value);
+              renderTags();
+              tagInput.value = '';
+            }
+          }
+        });
+
+        function renderTags() {
+          tagList.innerHTML = '';
+          tags.forEach((tag) => {
+            const span = document.createElement('span');
+            span.className = 'tag';
+            span.innerHTML = `${tag}<button type="button" class="remove-tag" data-tag="${tag}">&times;</button>`;
+            tagList.appendChild(span);
+          });
+        }
+
+        tagList.addEventListener('click', function (e) {
+          if (e.target.classList.contains('remove-tag')) {
+            const tag = e.target.getAttribute('data-tag');
+            tags = tags.filter((t) => t !== tag);
+            renderTags();
+          }
+        });
+    </script>
+}
+
+
+
