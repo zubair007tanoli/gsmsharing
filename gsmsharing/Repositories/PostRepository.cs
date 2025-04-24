@@ -259,9 +259,9 @@ LEFT JOIN Communities c ON p.[CommunityID] = c.[CommunityID]
 WHERE p.[PostID] = @PostId";
 
                 var parameters = new Dictionary<string, object>
-        {
-            { "@PostId", postId }
-        };
+                {
+                    { "@PostId", postId }
+                };
 
                 // Get the DataTable from the database
                 var dataTable = await _db.ExecuteQueryAsync(sql, parameters);

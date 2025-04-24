@@ -482,3 +482,7 @@ body.dark-mode {
 body.dark-mode .text-body{
     color:#fff !important;
 }
+input::placeholder {
+    color: red;
+    opacity: 1; /* For Firefox */
+}

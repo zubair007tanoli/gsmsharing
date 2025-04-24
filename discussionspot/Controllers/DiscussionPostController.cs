@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using discussionspot.ViewModels;
+using Microsoft.AspNetCore.Mvc;
 
 namespace discussionspot.Controllers
 {
@@ -14,8 +15,14 @@ namespace discussionspot.Controllers
         {
             return View();
         }
-
+        [HttpGet]
         public IActionResult CreatePost()
+        {
+            PostCreateViewModel model = new();
+            return View(model);
+        }
+        [HttpPost]
+        public IActionResult CreatePost(PostCreateViewModel model)
         {
             return View();
         }

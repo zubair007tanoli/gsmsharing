@@ -1,18 +1,20 @@
-﻿namespace discussionspot.Interfaces
+﻿using discussionspot.ViewModels;
+
+namespace discussionspot.Interfaces
 {
     public interface IPostTasks
     {
-        public Task<Boolean> CreatePostAsync(PostViewModel postViewModel);
-        public Task<Boolean> UpdatePostAsync(PostViewModel postViewModel);
+        public Task<Boolean> CreatePostAsync(PostCreateViewModel postViewModel);
+        public Task<Boolean> UpdatePostAsync(PostCreateViewModel postViewModel);
         public Task<Boolean> DeletePostAsync(int postId);
-        public Task<PostViewModel> GetPostByIdAsync(int postId);
-        public Task<List<PostViewModel>> GetPostsByUserIdAsync(string userId);
-        public Task<List<PostViewModel>> GetPostsByCommunityIdAsync(int communityId);
-        public Task<List<PostViewModel>> GetPostsByCategoryIdAsync(int categoryId);
-        public Task<List<PostViewModel>> GetPostsBySearchTermAsync(string searchTerm);
-        public Task<List<PostViewModel>> GetPostsByStatusAsync(string status);
-        public Task<List<PostViewModel>> GetPostsByTypeAsync(string type);
-        public Task<List<PostViewModel>> GetPostsByPaginationAsync(int pageNumber, int pageSize);
+        public Task<PostCreateViewModel> GetPostByIdAsync(int postId);
+        public Task<List<PostCreateViewModel>> GetPostsByUserIdAsync(string userId);
+        public Task<List<PostCreateViewModel>> GetPostsByCommunityIdAsync(int communityId);
+        public Task<List<PostCreateViewModel>> GetPostsByCategoryIdAsync(int categoryId);
+        public Task<List<PostCreateViewModel>> GetPostsBySearchTermAsync(string searchTerm);
+        public Task<List<PostCreateViewModel>> GetPostsByStatusAsync(string status);
+        public Task<List<PostCreateViewModel>> GetPostsByTypeAsync(string type);
+        public Task<List<PostCreateViewModel>> GetPostsByPaginationAsync(int pageNumber, int pageSize);
 
 
     }

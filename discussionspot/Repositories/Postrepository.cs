@@ -1,10 +1,11 @@
 ﻿using discussionspot.Interfaces;
+using discussionspot.ViewModels;
 
 namespace discussionspot.Repositories
 {
     public class Postrepository : IPostTasks
     {
-        public Task<bool> CreatePostAsync(PostViewModel postViewModel)
+        public Task<bool> CreatePostAsync(PostCreateViewModel postViewModel)
         {
             throw new NotImplementedException();
         }
@@ -14,47 +15,47 @@ namespace discussionspot.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<PostViewModel> GetPostByIdAsync(int postId)
+        public Task<PostCreateViewModel> GetPostByIdAsync(int postId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsByCategoryIdAsync(int categoryId)
+        public Task<List<PostCreateViewModel>> GetPostsByCategoryIdAsync(int categoryId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsByCommunityIdAsync(int communityId)
+        public Task<List<PostCreateViewModel>> GetPostsByCommunityIdAsync(int communityId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsByPaginationAsync(int pageNumber, int pageSize)
+        public Task<List<PostCreateViewModel>> GetPostsByPaginationAsync(int pageNumber, int pageSize)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsBySearchTermAsync(string searchTerm)
+        public Task<List<PostCreateViewModel>> GetPostsBySearchTermAsync(string searchTerm)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsByStatusAsync(string status)
+        public Task<List<PostCreateViewModel>> GetPostsByStatusAsync(string status)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsByTypeAsync(string type)
+        public Task<List<PostCreateViewModel>> GetPostsByTypeAsync(string type)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<PostViewModel>> GetPostsByUserIdAsync(string userId)
+        public Task<List<PostCreateViewModel>> GetPostsByUserIdAsync(string userId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> UpdatePostAsync(PostViewModel postViewModel)
+        public Task<bool> UpdatePostAsync(PostCreateViewModel postViewModel)
         {
             throw new NotImplementedException();
         }
