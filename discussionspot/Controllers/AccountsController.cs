@@ -4,7 +4,12 @@ namespace discussionspot.Controllers
 {
     public class AccountsController : Controller
     {
-        public IActionResult Index()
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        public IActionResult Register()
         {
             return View();
         }
