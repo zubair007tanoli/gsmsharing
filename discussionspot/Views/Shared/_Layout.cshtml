@@ -70,7 +70,8 @@
                                 <i class="fas fa-moon"></i>
                                 <i class="fas fa-sun"></i>
                             </div>
-
+                            @if (User.Identity.IsAuthenticated)
+                            {
                             <!-- Notification Dropdown -->
                             <div class="dropdown">
                                 <a href="#" class="action-icon notification-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside">
@@ -121,30 +122,35 @@
                                     </div>
                                 </div>
                             </div>
+                           
+                                <!-- User Dropdown - Show when logged in -->
+                                <div class="dropdown user-dropdown">
+                                    <button class="user-btn" type="button" data-bs-toggle="dropdown">
+                                        <div class="avatar">JD</div>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                        <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                        <li><a class="dropdown-item" href="bookmarks.html"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                    </ul>
+                                </div>
+                            }else
+                            {
+                                <!-- Authentication buttons - show when logged out -->
+                                <div class="auth-btns">
+                                    <a asp-action="Login" asp-controller="Accounts" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-sign-in-alt"></i> <span>Login</span>
+                                    </a>
+                                    <a asp-action="Register" asp-controller="Accounts" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-user-plus"></i> <span>Register</span>
+                                    </a>
+                                </div>
+                            }
+                          
 
-                            <!-- User Dropdown - Show when logged in -->
-                            <div class="dropdown user-dropdown">
-                                <button class="user-btn" type="button" data-bs-toggle="dropdown">
-                                    <div class="avatar">JD</div>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                    <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
-                                    <li><a class="dropdown-item" href="bookmarks.html"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                                </ul>
-                            </div>
-
-                            <!-- Authentication buttons - show when logged out -->
-                            <div class="auth-btns">
-                                <a href="login.html" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-sign-in-alt"></i> <span>Login</span>
-                                </a>
-                                <a href="register.html" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-user-plus"></i> <span>Register</span>
-                                </a>
-                            </div>
+                          
                         </div>
                     </div>
                 </div>
