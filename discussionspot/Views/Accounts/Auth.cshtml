@@ -1,0 +1,480 @@
+﻿@model discussionspot.ViewModels.AuthViewModel
+@{
+    ViewData["Title"] = "Auth";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .auth-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: stretch;
+    }
+
+    .auth-image {
+        background-image: url('https://source.unsplash.com/random/1200x800/?discussion,community');
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    .auth-image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+        .auth-image-overlay h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-image-overlay p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+    .auth-form-container {
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .auth-logo {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+        .auth-logo img {
+            height: 60px;
+        }
+
+    .auth-tabs {
+        display: flex;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .auth-tab {
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        position: relative;
+        color: var(--text-light);
+    }
+
+        .auth-tab.active {
+            color: var(--primary-color);
+        }
+
+            .auth-tab.active::after {
+                content: '';
+                position: absolute;
+                bottom: -1px;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background-color: var(--primary-color);
+            }
+
+    .auth-form {
+        display: none;
+    }
+
+        .auth-form.active {
+            display: block;
+        }
+
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+
+        .form-floating > label {
+            color: var(--text-light);
+        }
+
+    .form-control {
+        background-color: var(--bg-light);
+        border-color: var(--border-color);
+        color: var(--text-color);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    }
+
+        .form-control:focus {
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+        }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+    .social-login {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .social-login-title {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+        .social-login-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 42%;
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        .social-login-title::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 42%;
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+    .social-login-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .btn-social {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        color: white;
+        transition: all 0.2s ease;
+    }
+
+        .btn-social:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+    .btn-google {
+        background-color: #DB4437;
+    }
+
+    .btn-facebook {
+        background-color: #4267B2;
+    }
+
+    .btn-twitter {
+        background-color: #1DA1F2;
+    }
+
+    .btn-github {
+        background-color: #333;
+    }
+
+    .btn-microsoft {
+        background-color: #00A4EF;
+    }
+
+    .auth-footer {
+        margin-top: auto;
+        text-align: center;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .validation-summary-errors {
+        color: #dc3545;
+        margin-bottom: 1rem;
+    }
+
+        .validation-summary-errors ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+    .field-validation-error {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+
+    .input-validation-error {
+        border-color: #dc3545;
+    }
+
+        .input-validation-error:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+        }
+
+    .form-check-input {
+        background-color: var(--bg-light);
+        border-color: var(--border-color);
+    }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+    @@media (max-width: 991.98px) {
+        .auth-container
+
+    {
+        flex-direction: column;
+    }
+
+    .auth-image {
+        min-height: 300px;
+    }
+
+    }
+</style>
+<div class="container">
+    <div class="row">
+        <div class="col-8 offset-2">
+            <div class="auth-container">
+                <!-- Left Column - Image -->
+                <div class="col-lg-6 auth-image">
+                    <div class="auth-image-overlay">
+                        <h1>Welcome to DiscussionSpot</h1>
+                        <p>Join our community to discuss topics that matter to you. Connect with like-minded individuals and share your thoughts in a respectful environment.</p>
+                    </div>
+                </div>
+
+                <!-- Right Column - Auth Forms -->
+                <div class="col-lg-6 auth-form-container">
+                    <div class="auth-logo">
+                        <img src="/placeholder.svg?height=60&width=200" alt="DiscussionSpot Logo">
+                    </div>
+
+                    <div class="auth-tabs">
+                        <div class="auth-tab active" id="loginTab">Sign In</div>
+                        <div class="auth-tab" id="registerTab">Register</div>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="auth-form active" asp-controller="Account" asp-action="Login" method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="loginEmail" asp-for="LoginModel.Email" placeholder="Email" required>
+                            <label for="loginEmail">Email</label>
+                            <span asp-validation-for="LoginModel.Email" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="loginPassword" asp-for="LoginModel.Password" placeholder="Password" required>
+                            <label for="loginPassword">Password</label>
+                            <span asp-validation-for="LoginModel.Password" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="rememberMe" asp-for="LoginModel.RememberMe">
+                                <label class="form-check-label" for="rememberMe">
+                                    Remember me
+                                </label>
+                            </div>
+                            <a href="/Account/ForgotPassword" class="text-decoration-none">Forgot password?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+
+                        <div class="social-login">
+                            <div class="social-login-title">
+                                <span>Or sign in with</span>
+                            </div>
+
+                            <div class="social-login-buttons">
+                                <a href="/Account/ExternalLogin?provider=Google&returnUrl=@Model.ReturnUrl" class="btn-social btn-google">
+                                    <i class="fab fa-google"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=Facebook&returnUrl=@Model.ReturnUrl" class="btn-social btn-facebook">
+                                    <i class="fab fa-facebook-f"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=Twitter&returnUrl=@Model.ReturnUrl" class="btn-social btn-twitter">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=GitHub&returnUrl=@Model.ReturnUrl" class="btn-social btn-github">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=Microsoft&returnUrl=@Model.ReturnUrl" class="btn-social btn-microsoft">
+                                    <i class="fab fa-microsoft"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="registerForm" class="auth-form" asp-controller="Account" asp-action="Register" method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="registerDisplayName" asp-for="RegisterModel.DisplayName" placeholder="Display Name" required>
+                            <label for="registerDisplayName">Display Name</label>
+                            <span asp-validation-for="RegisterModel.DisplayName" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="registerEmail" asp-for="RegisterModel.Email" placeholder="Email" required>
+                            <label for="registerEmail">Email</label>
+                            <span asp-validation-for="RegisterModel.Email" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="registerPassword" asp-for="RegisterModel.Password" placeholder="Password" required>
+                            <label for="registerPassword">Password</label>
+                            <span asp-validation-for="RegisterModel.Password" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <input type="password" class="form-control" id="registerConfirmPassword" asp-for="RegisterModel.ConfirmPassword" placeholder="Confirm Password" required>
+                            <label for="registerConfirmPassword">Confirm Password</label>
+                            <span asp-validation-for="RegisterModel.ConfirmPassword" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="agreeTerms" name="AgreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                I agree to the <a href="/terms" class="text-decoration-none">Terms of Service</a> and <a href="/privacy" class="text-decoration-none">Privacy Policy</a>
+                            </label>
+                            <span class="field-validation-error" data-valmsg-for="AgreeTerms" data-valmsg-replace="true"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">Create Account</button>
+
+                        <div class="social-login">
+                            <div class="social-login-title">
+                                <span>Or register with</span>
+                            </div>
+
+                            <div class="social-login-buttons">
+                                <a href="/Account/ExternalLogin?provider=Google&returnUrl=@Model.ReturnUrl" class="btn-social btn-google">
+                                    <i class="fab fa-google"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=Facebook&returnUrl=@Model.ReturnUrl" class="btn-social btn-facebook">
+                                    <i class="fab fa-facebook-f"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=Twitter&returnUrl=@Model.ReturnUrl" class="btn-social btn-twitter">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=GitHub&returnUrl=@Model.ReturnUrl" class="btn-social btn-github">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                <a href="/Account/ExternalLogin?provider=Microsoft&returnUrl=@Model.ReturnUrl" class="btn-social btn-microsoft">
+                                    <i class="fab fa-microsoft"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="auth-footer mt-4">
+                        <p>&copy; @DateTime.Now.Year DiscussionSpot. All rights reserved.</p>
+                        <div>
+                            <a href="/terms" class="text-decoration-none me-3">Terms</a>
+                            <a href="/privacy" class="text-decoration-none me-3">Privacy</a>
+                            <a href="/help" class="text-decoration-none">Help</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Dark Mode Toggle -->
+<button id="darkModeToggle" class="btn btn-sm position-fixed top-0 end-0 m-3">
+    <i class="fas fa-moon"></i>
+</button>
+
+<!-- jQuery (required for validation) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- jQuery Validation Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JavaScript -->
+<script>
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const body = document.body;
+
+    // Check for saved theme preference or use preferred color scheme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        body.classList.add('dark-mode');
+        darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+
+        if (body.classList.contains('dark-mode')) {
+            darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // Auth Tabs
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    loginTab.addEventListener('click', () => {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.classList.add('active');
+        registerForm.classList.remove('active');
+    });
+
+    registerTab.addEventListener('click', () => {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        registerForm.classList.add('active');
+        loginForm.classList.remove('active');
+    });
+</script>
