@@ -25,7 +25,7 @@ body.dark-mode {
     }
 
         body.dark-mode a:hover {
-            color: var(--primary-hover);
+            color: #fff;
         }
 
     /* Header */
