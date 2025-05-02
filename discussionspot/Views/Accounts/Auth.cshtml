@@ -259,6 +259,8 @@
 
     }
 </style>
+
+
 <div class="container">
     <div class="row">
         <div class="col-8 offset-2">
@@ -283,11 +285,14 @@
                     </div>
 
                     <!-- Login Form -->
-                    <form id="loginForm" class="auth-form active" asp-controller="Account" asp-action="Login" method="post">
+                    <form id="loginForm" class="auth-form active" asp-controller="Accounts" asp-action="Login" method="post">
                         <input type="hidden" asp-for="ReturnUrl" />
 
                         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-
+                        @if (ViewData["UserLoginError"] != null)
+                        {
+                            <span class="text-danger">@ViewData["UserLoginError"]</span>
+                        }
                         <div class="form-floating mb-3">
                             <input type="email" class="form-control" id="loginEmail" asp-for="LoginModel.Email" placeholder="Email" required>
                             <label for="loginEmail">Email</label>
@@ -342,7 +347,10 @@
                         <input type="hidden" asp-for="ReturnUrl" />
 
                         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-
+                        @if (ViewData["EmailError"] != null)
+                        {
+                            <span class="text-danger">@ViewData["EmailError"]</span>
+                        }
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="registerDisplayName" asp-for="RegisterModel.DisplayName" placeholder="Display Name" required>
                             <label for="registerDisplayName">Display Name</label>

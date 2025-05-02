@@ -50,7 +50,7 @@ namespace discussionspot.Controllers
         //}
 
         [HttpGet]
-        [AllowAnonymous]
+        [AllowAnonymous]        
         public IActionResult Auth(string returnUrl = null)
         {
             var model = new AuthViewModel
@@ -59,7 +59,34 @@ namespace discussionspot.Controllers
             };
             return View(model);
         }
+     
+        [HttpPost]
+        public async Task<IActionResult> Login([Bind(Prefix = "LoginModel")]LoginViewModel loginViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var LoginUser = await userManager.FindByEmailAsync(loginViewModel.Email);
 
+                if (LoginUser != null && await userManager.CheckPasswordAsync(LoginUser, loginViewModel.Password))
+                {
+                    var Results = await signInManager.PasswordSignInAsync(LoginUser, loginViewModel.Password, loginViewModel.RememberMe, lockoutOnFailure: false);
+                    if (Results.Succeeded)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                }
+                else
+                {
+                    ViewData["UserLoginError"] = "User Not Found Please Register First";
+                    return View(loginViewModel);
+                }
+                // If we got this far, something failed
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            }
+
+            return View(loginViewModel);
+        }
         [HttpGet]
         public IActionResult Register(string? returnUrl)
         {
@@ -67,7 +94,7 @@ namespace discussionspot.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(RegisterViewModel registerViewModel, string returnUrl)
+        public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")]RegisterViewModel registerViewModel, string returnUrl)
         {
             if (ModelState.IsValid)
             {
@@ -78,7 +105,7 @@ namespace discussionspot.Controllers
                 var CheckEmail = await userManager.FindByEmailAsync(user.Email);
                 if (CheckEmail != null)
                 {
-                    ViewData["EmailError"] = "This Email is already Exist";
+                    ViewData["EmailError"] = "This Email already Exist";
 
                     return View(registerViewModel);
                 }
@@ -314,36 +341,6 @@ namespace discussionspot.Controllers
         public IActionResult ResetPasswordConfirmation()
         {
             return View(); // Redirect to login          
-        }
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            LoginViewModel loginViewModel = new();
-            return View(loginViewModel);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel loginViewModel)
-        {
-            if (ModelState.IsValid)
-            {
-                var LoginUser = await userManager.FindByEmailAsync(loginViewModel.Email);
-
-                if (LoginUser != null && await userManager.CheckPasswordAsync(LoginUser, loginViewModel.Password))
-                {
-                    var Results = await signInManager.PasswordSignInAsync(LoginUser, loginViewModel.Password, loginViewModel.RememberMe, lockoutOnFailure: false);
-                    if (Results.Succeeded)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-
-                }
-                // If we got this far, something failed
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-            }
-
-            return View(loginViewModel);
         }
 
         [Authorize]
