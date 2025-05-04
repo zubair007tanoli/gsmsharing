@@ -353,489 +353,473 @@
     }
 
     @@media (max-width: 992px) {
-        .right-sidebar
-
-    {
-        margin-top: 20px;
-    }
-
+        .right-sidebar {
+            margin-top: 20px;
+        }
     }
 
     @@media (max-width: 768px) {
-        .left-sidebar
+        .left-sidebar {
+            margin-bottom: 20px;
+        }
 
-    {
-        margin-bottom: 20px;
-    }
+        .post-type-tabs {
+            flex-wrap: wrap;
+        }
 
-    .post-type-tabs {
-        flex-wrap: wrap;
-    }
-
-    .post-type-tab {
-        flex: 1 0 auto;
-        text-align: center;
-        justify-content: center;
-    }
-
+        .post-type-tab {
+            flex: 1 0 auto;
+            text-align: center;
+            justify-content: center;
+        }
     }
 </style>
 
 <!-- Main Content -->
 <main class="py-4">
-    <div class="container create-post-container">
-        <div class="row">
-            <!-- Left Sidebar - Community Selection & Rules -->
-            <div class="col-lg-3 left-sidebar">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Create a Post</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="communitySelect" class="form-label">Choose a community <span class="text-danger">*</span></label>
-                            <div class="community-selector">
-                                <input type="text" class="form-control" id="communitySelect" placeholder="Search communities" required>
-                                <div class="error-feedback">Please select a community</div>
-                                <div class="community-dropdown" id="communityDropdown">
-                                    <div class="community-item">
-                                        <div class="community-icon">T</div>
-                                        <div>
-                                            <div>r/Technology</div>
-                                            <small>1.2M members</small>
-                                        </div>
-                                    </div>
-                                    <div class="community-item">
-                                        <div class="community-icon">G</div>
-                                        <div>
-                                            <div>r/Gaming</div>
-                                            <small>3.4M members</small>
-                                        </div>
-                                    </div>
-                                    <div class="community-item">
-                                        <div class="community-icon">P</div>
-                                        <div>
-                                            <div>r/Programming</div>
-                                            <small>2.1M members</small>
-                                        </div>
-                                    </div>
-                                    <div class="community-item">
-                                        <div class="community-icon">A</div>
-                                        <div>
-                                            <div>r/AskDiscussionSpot</div>
-                                            <small>5.6M members</small>
-                                        </div>
-                                    </div>
-                                    <div class="community-item">
-                                        <div class="community-icon">M</div>
-                                        <div>
-                                            <div>r/Movies</div>
-                                            <small>1.8M members</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+    <form asp-action="CreatePost" asp-controller="DiscussionPost" method="post" enctype="multipart/form-data">
+        <div class="container create-post-container">
+            <div class="row">
+                <!-- Left Sidebar - Community Selection & Rules -->
+                <div class="col-lg-3 left-sidebar">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Create a Post</h5>
                         </div>
-                        <div class="d-grid">
-                            <a href="create-community.html" class="btn btn-outline-primary" id="createCommunityBtn">
-                                <i class="fas fa-plus me-2"></i> Create Community
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card rules-card">
-                    <div class="card-header">
-                        <h5 class="mb-0" id="communityRulesTitle">Community Rules</h5>
-                    </div>
-                    <div class="card-body p-0" id="communityRulesContainer">
-                        <div class="no-communities" id="noCommunitySelected">
-                            <i class="fas fa-users-slash"></i>
-                            <p>Select a community to see its rules</p>
-                        </div>
-                        <div id="communityRules" style="display: none;">
-                            <div class="rule-item p-3">
-                                <h6>1. Be respectful</h6>
-                                <p class="mb-0 small">Treat others with respect. No personal attacks, harassment, or hate speech.</p>
-                            </div>
-                            <div class="rule-item p-3">
-                                <h6>2. No spam</h6>
-                                <p class="mb-0 small">Don't spam the community with repetitive content or self-promotion.</p>
-                            </div>
-                            <div class="rule-item p-3">
-                                <h6>3. Stay on topic</h6>
-                                <p class="mb-0 small">Posts must be related to the community topic and contribute to discussion.</p>
-                            </div>
-                            <div class="rule-item p-3">
-                                <h6>4. No NSFW content</h6>
-                                <p class="mb-0 small">Keep content appropriate for all audiences unless the community allows it.</p>
-                            </div>
-                            <div class="rule-item p-3">
-                                <h6>5. No misinformation</h6>
-                                <p class="mb-0 small">Verify facts before posting. Don't spread false information.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Middle Column - Post Creation Form -->
-            <div class="col-lg-6">
-                <!-- Post Type Tabs -->
-                <div class="card mb-4">
-                    <div class="card-body p-2">
-                        <div class="d-flex post-type-tabs">
-                            <div class="post-type-tab active" data-type="text">
-                                <i class="fas fa-font"></i>
-                                <span>Text</span>
-                            </div>
-                            <div class="post-type-tab" data-type="image">
-                                <i class="fas fa-image"></i>
-                                <span>Image</span>
-                            </div>
-                            <div class="post-type-tab" data-type="video">
-                                <i class="fas fa-video"></i>
-                                <span>Video</span>
-                            </div>
-                            <div class="post-type-tab" data-type="link">
-                                <i class="fas fa-link"></i>
-                                <span>Link</span>
-                            </div>
-                            <div class="post-type-tab" data-type="poll">
-                                <i class="fas fa-poll"></i>
-                                <span>Poll</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Post Creation Form -->
-                <div class="card">
-                    <div class="card-body">
-                        <form id="postForm" novalidate>
-                            <input type="hidden" id="postType" name="postType" value="text">
-                            <input type="hidden" id="communityId" name="communityId" value="">
-                            <input type="hidden" id="slug" name="slug" value="">
-
-                            <!-- Title (Common for all post types) -->
+                        <div class="card-body">
                             <div class="mb-3">
-                                <label for="postTitle" class="form-label">Title <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="postTitle" name="title" placeholder="Title" maxlength="300" required>
-                                <div class="error-feedback">Please enter a title (max 300 characters)</div>
-                                <div class="form-text text-end">
-                                    <span id="titleCharCount">0</span>/300
+                                <label asp-for="CommunityId" class="form-label">Choose a community <span class="text-danger">*</span></label>
+                                <div class="community-selector">
+                                    <select asp-for="CommunityId" asp-items="Model.Communities" class="form-control" id="communitySelect" required>
+                                        <option value="">-- Select a community --</option>
+                                    </select>
+                                    <div class="error-feedback">Please select a community</div>
+                                    <div class="community-dropdown" id="communityDropdown">
+                                        <!-- This will be populated by JavaScript -->
+                                    </div>
                                 </div>
                             </div>
+                            <div class="d-grid">
+                                <a href="create-community.html" class="btn btn-outline-primary" id="createCommunityBtn">
+                                    <i class="fas fa-plus me-2"></i> Create Community
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
-                            <!-- Text Post Form -->
-                            <div class="form-section active" id="textPostForm">
+                    <div class="card rules-card">
+                        <div class="card-header">
+                            <h5 class="mb-0" id="communityRulesTitle">Community Rules</h5>
+                        </div>
+                        <div class="card-body p-0" id="communityRulesContainer">
+                            <div class="no-communities" id="noCommunitySelected">
+                                <i class="fas fa-users-slash"></i>
+                                <p>Select a community to see its rules</p>
+                            </div>
+                            <div id="communityRules" style="display: none;">
+                                <div class="rule-item p-3">
+                                    <h6>1. Be respectful</h6>
+                                    <p class="mb-0 small">Treat others with respect. No personal attacks, harassment, or hate speech.</p>
+                                </div>
+                                <div class="rule-item p-3">
+                                    <h6>2. No spam</h6>
+                                    <p class="mb-0 small">Don't spam the community with repetitive content or self-promotion.</p>
+                                </div>
+                                <div class="rule-item p-3">
+                                    <h6>3. Stay on topic</h6>
+                                    <p class="mb-0 small">Posts must be related to the community topic and contribute to discussion.</p>
+                                </div>
+                                <div class="rule-item p-3">
+                                    <h6>4. No NSFW content</h6>
+                                    <p class="mb-0 small">Keep content appropriate for all audiences unless the community allows it.</p>
+                                </div>
+                                <div class="rule-item p-3">
+                                    <h6>5. No misinformation</h6>
+                                    <p class="mb-0 small">Verify facts before posting. Don't spread false information.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Column - Post Creation Form -->
+                <div class="col-lg-6">
+                    <!-- Post Type Tabs -->
+                    <div class="card">
+                        <div class="card-body p-2">
+                            <div class="d-flex post-type-tabs">
+                                @foreach (var postType in Model.PostTypes)
+                                {
+                                    <div class="post-type-tab @(postType.Value == Model.PostType ? "active" : "")" data-type="@postType.Value">
+                                        <i class="fas @(postType.Value == "text" ? "fa-font" :
+                                            postType.Value == "image" ? "fa-image" :
+                                            postType.Value == "video" ? "fa-video" :
+                                            postType.Value == "link" ? "fa-link" :
+                                            "fa-poll")"></i>
+                                        <span>@postType.Text</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post Creation Form -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="postForm" novalidate>
+                                <input type="hidden" asp-for="PostType" id="postType">
+
+                                <!-- Title (Common for all post types) -->
                                 <div class="mb-3">
-                                    <label class="form-label">Content</label>
-                                    <div class="formatting-toolbar">
-                                        <div class="formatting-button" title="Bold" data-format="bold">
-                                            <i class="fas fa-bold"></i>
+                                    <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" asp-for="Title" placeholder="Title" maxlength="300" required>
+                                    <div class="error-feedback">Please enter a title (max 300 characters)</div>
+                                    <div class="form-text text-end">
+                                        <span id="titleCharCount">0</span>/300
+                                    </div>
+                                </div>
+
+                                <!-- Text Post Form -->
+                                <div class="form-section @(Model.PostType == "text" ? "active" : "")" id="textPostForm">
+                                    <div class="mb-3">
+                                        <label asp-for="Content" class="form-label">Content</label>
+                                        <div class="formatting-toolbar">
+                                            <div class="formatting-button" title="Bold" data-format="bold">
+                                                <i class="fas fa-bold"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Italic" data-format="italic">
+                                                <i class="fas fa-italic"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Link" data-format="link">
+                                                <i class="fas fa-link"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Bulleted List" data-format="ul">
+                                                <i class="fas fa-list-ul"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Numbered List" data-format="ol">
+                                                <i class="fas fa-list-ol"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Quote" data-format="quote">
+                                                <i class="fas fa-quote-right"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Code" data-format="code">
+                                                <i class="fas fa-code"></i>
+                                            </div>
+                                            <div class="formatting-button" title="Heading" data-format="heading">
+                                                <i class="fas fa-heading"></i>
+                                            </div>
                                         </div>
-                                        <div class="formatting-button" title="Italic" data-format="italic">
-                                            <i class="fas fa-italic"></i>
+                                        <textarea class="form-control content-textarea" asp-for="Content" rows="10" placeholder="Text (optional)"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Image Post Form -->
+                                <div class="form-section @(Model.PostType == "image" ? "active" : "")" id="imagePostForm">
+                                    <div class="mb-3">
+                                        <label asp-for="ImageFiles" class="form-label">Upload Images <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" asp-for="ImageFiles" accept="image/*" multiple>
+                                        <div class="error-feedback">Please upload at least one image</div>
+                                        <div class="form-text">You can upload up to 20 images (10MB max per image)</div>
+                                    </div>
+                                    <div id="imagePreviewContainer">
+                                        <img src="/placeholder.svg" id="imagePreview" class="media-preview">
+                                    </div>
+                                    <div class="mb-3 mt-3">
+                                        <label asp-for="ImageCaption" class="form-label">Caption (optional)</label>
+                                        <input type="text" class="form-control" asp-for="ImageCaption" placeholder="Add a caption to your image">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="imageAltText" class="form-label">Alt Text (for accessibility)</label>
+                                        <input type="text" class="form-control" id="imageAltText" name="mediaAltText" placeholder="Describe your image for visually impaired users">
+                                    </div>
+                                </div>
+
+                                <!-- Video Post Form -->
+                                <div class="form-section @(Model.PostType == "video" ? "active" : "")" id="videoPostForm">
+                                    <div class="mb-3">
+                                        <label for="videoUpload" class="form-label">Upload Video <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" id="videoUpload" name="videoFile" accept="video/*">
+                                        <div class="error-feedback">Please upload a video</div>
+                                        <div class="form-text">Maximum file size: 100MB</div>
+                                    </div>
+                                    <div id="videoPreviewContainer">
+                                        <video controls id="videoPreview" class="media-preview"></video>
+                                    </div>
+                                    <div class="mb-3 mt-3">
+                                        <label for="videoCaption" class="form-label">Caption (optional)</label>
+                                        <input type="text" class="form-control" id="videoCaption" name="videoCaption" placeholder="Add a caption to your video">
+                                    </div>
+                                </div>
+
+                                <!-- Link Post Form -->
+                                <div class="form-section @(Model.PostType == "link" ? "active" : "")" id="linkPostForm">
+                                    <div class="mb-3">
+                                        <label asp-for="Url" class="form-label">URL <span class="text-danger">*</span></label>
+                                        <input type="url" class="form-control" asp-for="Url" placeholder="https://example.com">
+                                        <div class="error-feedback">Please enter a valid URL</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label asp-for="Content" class="form-label">Description (optional)</label>
+                                        <textarea class="form-control" asp-for="Content" rows="4" placeholder="Add context or description for this link"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Poll Post Form -->
+                                <div class="form-section @(Model.PostType == "poll" ? "active" : "")" id="pollPostForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Poll Options <span class="text-danger">*</span></label>
+                                        <div id="pollOptionsContainer">
+                                            @if (Model.PollOptions != null && Model.PollOptions.Any())
+                                            {@for (int i = 0; i < Model.PollOptions.Count; i++)
+                                                {
+                                                    <div class="poll-option">
+
+
+                                                        <input asp-for="PollOptions[i]" class="form-control poll-option-input" placeholder="Option @(i+1)">
+
+
+                                                        <span asp-validation-for="PollOptions[i]" class="text-danger"></span>
+
+
+                                                        <button type="button" class="btn btn-sm btn-outline-danger remove-option" @(i < 2 ? "disabled" : "")>
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <div class="poll-option">
+
+
+                                                    <input type="text" class="form-control poll-option-input" name="PollOptions[0]" placeholder="Option 1">
+
+
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-option" disabled>
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+
+
+                                                <div class="poll-option">
+
+                                                    <input type="text" class="form-control poll-option-input" name="PollOptions[1]" placeholder="Option 2">
+
+
+                                                    <button type"button" class="btn btn-sm btn-outline-danger remove-option" disabled>
+
+                                                        <i class="fas fa-times"></i>
+
+                                                    </button>
+
+
+                                                </div>
+
+                                            }
+
                                         </div>
-                                        <div class="formatting-button" title="Link" data-format="link">
-                                            <i class="fas fa-link"></i>
+                                        <div class="error-feedback">Please enter at least 2 poll options</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addPollOption">
+                                            <i class="fas fa-plus me-1"></i> Add Option
+                                        </button>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Poll Settings</label>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" asp-for="AllowMultipleChoices" id="allowMultipleChoices">
+                                            <label class="form-check-label" for="allowMultipleChoices">
+                                                Allow users to select multiple options
+                                            </label>
                                         </div>
-                                        <div class="formatting-button" title="Bulleted List" data-format="ul">
-                                            <i class="fas fa-list-ul"></i>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" asp-for="ShowResultsBeforeVoting" id="showResultsBeforeVoting">
+                                            <label class="form-check-label" for="showResultsBeforeVoting">
+                                                Show results before voting
+                                            </label>
                                         </div>
-                                        <div class="formatting-button" title="Numbered List" data-format="ol">
-                                            <i class="fas fa-list-ol"></i>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="pollExpiration" name="hasPollExpiration">
+                                            <label class="form-check-label" for="pollExpiration">
+                                                Set poll expiration
+                                            </label>
                                         </div>
-                                        <div class="formatting-button" title="Quote" data-format="quote">
-                                            <i class="fas fa-quote-right"></i>
-                                        </div>
-                                        <div class="formatting-button" title="Code" data-format="code">
-                                            <i class="fas fa-code"></i>
-                                        </div>
-                                        <div class="formatting-button" title="Heading" data-format="heading">
-                                            <i class="fas fa-heading"></i>
+                                        <div class="input-group mt-2" id="pollExpirationGroup" style="display: none;">
+                                            <input type="datetime-local" class="form-control" asp-for="PollEndsAt" id="pollEndsAt">
                                         </div>
                                     </div>
-                                    <textarea class="form-control content-textarea" id="textContent" name="content" rows="10" placeholder="Text (optional)"></textarea>
                                 </div>
-                            </div>
 
-                            <!-- Image Post Form -->
-                            <div class="form-section" id="imagePostForm">
+                                <!-- Tags (Common for all post types) -->
                                 <div class="mb-3">
-                                    <label for="imageUpload" class="form-label">Upload Images <span class="text-danger">*</span></label>
-                                    <input type="file" class="form-control" id="imageUpload" name="mediaFiles" accept="image/*" multiple>
-                                    <div class="error-feedback">Please upload at least one image</div>
-                                    <div class="form-text">You can upload up to 20 images (10MB max per image)</div>
-                                </div>
-                                <div id="imagePreviewContainer">
-                                    <img src="/placeholder.svg" id="imagePreview" class="media-preview">
-                                </div>
-                                <div class="mb-3 mt-3">
-                                    <label for="imageCaption" class="form-label">Caption (optional)</label>
-                                    <input type="text" class="form-control" id="imageCaption" name="mediaCaption" placeholder="Add a caption to your image">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="imageAltText" class="form-label">Alt Text (for accessibility)</label>
-                                    <input type="text" class="form-control" id="imageAltText" name="mediaAltText" placeholder="Describe your image for visually impaired users">
-                                </div>
-                            </div>
-
-                            <!-- Video Post Form -->
-                            <div class="form-section" id="videoPostForm">
-                                <div class="mb-3">
-                                    <label for="videoUpload" class="form-label">Upload Video <span class="text-danger">*</span></label>
-                                    <input type="file" class="form-control" id="videoUpload" name="mediaFiles" accept="video/*">
-                                    <div class="error-feedback">Please upload a video</div>
-                                    <div class="form-text">Maximum file size: 100MB</div>
-                                </div>
-                                <div id="videoPreviewContainer">
-                                    <video controls id="videoPreview" class="media-preview"></video>
-                                </div>
-                                <div class="mb-3 mt-3">
-                                    <label for="videoCaption" class="form-label">Caption (optional)</label>
-                                    <input type="text" class="form-control" id="videoCaption" name="mediaCaption" placeholder="Add a caption to your video">
-                                </div>
-                            </div>
-
-                            <!-- Link Post Form -->
-                            <div class="form-section" id="linkPostForm">
-                                <div class="mb-3">
-                                    <label for="linkUrl" class="form-label">URL <span class="text-danger">*</span></label>
-                                    <input type="url" class="form-control" id="linkUrl" name="linkUrl" placeholder="https://example.com">
-                                    <div class="error-feedback">Please enter a valid URL</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Description (optional)</label>
-                                    <textarea class="form-control" id="linkDescription" name="content" rows="4" placeholder="Add context or description for this link"></textarea>
-                                </div>
-                            </div>
-
-                            <!-- Poll Post Form -->
-                            <div class="form-section" id="pollPostForm">
-                                <div class="mb-3">
-                                    <label class="form-label">Poll Options <span class="text-danger">*</span></label>
-                                    <div id="pollOptionsContainer">
-                                        <div class="poll-option">
-                                            <input type="text" class="form-control poll-option-input" name="pollOptions[]" placeholder="Option 1" required>
-                                            <button type="button" class="btn btn-sm btn-outline-danger remove-option" disabled>
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                        <div class="poll-option">
-                                            <input type="text" class="form-control poll-option-input" name="pollOptions[]" placeholder="Option 2" required>
-                                            <button type="button" class="btn btn-sm btn-outline-danger remove-option" disabled>
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
+                                    <label asp-for="TagsString" class="form-label">Tags</label>
+                                    <div class="tag-input-container" id="tagContainer">
+                                        <input type="text" class="tag-input" asp-for="TagsString" id="tagInput" placeholder="Add tags (press Enter to add)">
                                     </div>
-                                    <div class="error-feedback">Please enter at least 2 poll options</div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addPollOption">
-                                        <i class="fas fa-plus me-1"></i> Add Option
+                                    <div class="form-text">Add up to 5 tags to help categorize your post</div>
+                                </div>
+
+                                <!-- Post Options (Common for all post types) -->
+                                <div class="nsfw-spoiler-options">
+                                    <label class="option-toggle">
+                                        <span class="toggle-switch">
+                                            <input type="checkbox" asp-for="IsNSFW" id="nsfwToggle">
+                                            <span class="toggle-slider"></span>
+                                        </span>
+                                        <span>NSFW</span>
+                                    </label>
+                                    <label class="option-toggle">
+                                        <span class="toggle-switch">
+                                            <input type="checkbox" asp-for="IsSpoiler" id="spoilerToggle">
+                                            <span class="toggle-slider"></span>
+                                        </span>
+                                        <span>Spoiler</span>
+                                    </label>
+                                    <label class="option-toggle">
+                                        <span class="toggle-switch">
+                                            <input type="checkbox" asp-for="IsPined" id="pinToggle">
+                                            <span class="toggle-slider"></span>
+                                        </span>
+                                        <span>Pin to Profile</span>
+                                    </label>
+                                    <label class="option-toggle">
+                                        <span class="toggle-switch">
+                                            <input type="checkbox" asp-for="IsCommentAllowed" id="disableCommentsToggle">
+                                            <span class="toggle-slider"></span>
+                                        </span>
+                                        <span>Allow Comments</span>
+                                    </label>
+                                </div>
+
+                                <!-- Post Preview -->
+                                <div class="post-preview mt-4" id="postPreview">
+                                    <h6 class="text-muted mb-2">Post Preview</h6>
+                                    <div class="preview-community" id="previewCommunity">
+                                        <div class="preview-community-icon" id="previewCommunityIcon">r/</div>
+                                        <span id="previewCommunityName">Community</span>
+                                    </div>
+                                    <div class="preview-title" id="previewTitle">Your post title will appear here</div>
+                                    <div class="preview-tags" id="previewTags"></div>
+                                    <div class="preview-content" id="previewContent">Your post content will appear here</div>
+                                    <div class="preview-meta">
+                                        <span><i class="fas fa-user me-1"></i> Posted by TestUser</span>
+                                        <span><i class="fas fa-comments me-1"></i> 0 comments</span>
+                                        <span id="previewNSFW" style="display: none;"><i class="fas fa-exclamation-triangle me-1"></i> NSFW</span>
+                                        <span id="previewSpoiler" style="display: none;"><i class="fas fa-eye-slash me-1"></i> Spoiler</span>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Buttons -->
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="button" class="btn btn-outline-secondary" id="saveAsDraft">
+                                        <i class="fas fa-save me-1"></i> Save as Draft
                                     </button>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Poll Settings</label>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="allowMultipleChoices" name="allowMultipleChoices">
-                                        <label class="form-check-label" for="allowMultipleChoices">
-                                            Allow users to select multiple options
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="showResultsBeforeVoting" name="showResultsBeforeVoting" checked>
-                                        <label class="form-check-label" for="showResultsBeforeVoting">
-                                            Show results before voting
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="pollExpiration" name="pollExpiration">
-                                        <label class="form-check-label" for="pollExpiration">
-                                            Set poll expiration
-                                        </label>
-                                    </div>
-                                    <div class="input-group mt-2" id="pollExpirationGroup" style="display: none;">
-                                        <input type="number" class="form-control" id="pollDuration" name="pollDuration" min="1" value="7">
-                                        <select class="form-select" id="pollDurationType" name="pollDurationType">
-                                            <option value="hours">Hours</option>
-                                            <option value="days" selected>Days</option>
-                                            <option value="weeks">Weeks</option>
-                                        </select>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary me-2" id="previewBtn">
+                                            <i class="fas fa-eye me-1"></i> Preview
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" id="submitPost">
+                                            <i class="fas fa-paper-plane me-1"></i> Post
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- Tags (Common for all post types) -->
+                <!-- Right Sidebar - SEO & Posting Tips -->
+                <div class="col-lg-3 right-sidebar">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">SEO Settings</h5>
+                        </div>
+                        <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label">Tags</label>
-                                <div class="tag-input-container" id="tagContainer">
-                                    <input type="text" class="tag-input" id="tagInput" placeholder="Add tags (press Enter to add)">
-                                </div>
-                                <div class="form-text">Add up to 5 tags to help categorize your post</div>
+                                <label for="metaTitle" class="form-label">Meta Title</label>
+                                <input type="text" class="form-control" id="metaTitle" name="metaTitle" placeholder="Custom title for search engines">
+                                <div class="form-text">Leave blank to use post title</div>
                             </div>
-
-                            <!-- Post Options (Common for all post types) -->
-                            <div class="nsfw-spoiler-options">
-                                <label class="option-toggle">
-                                    <span class="toggle-switch">
-                                        <input type="checkbox" id="nsfwToggle" name="isNSFW">
-                                        <span class="toggle-slider"></span>
-                                    </span>
-                                    <span>NSFW</span>
-                                </label>
-                                <label class="option-toggle">
-                                    <span class="toggle-switch">
-                                        <input type="checkbox" id="spoilerToggle" name="isSpoiler">
-                                        <span class="toggle-slider"></span>
-                                    </span>
-                                    <span>Spoiler</span>
-                                </label>
-                                <label class="option-toggle">
-                                    <span class="toggle-switch">
-                                        <input type="checkbox" id="pinToggle" name="isPinned">
-                                        <span class="toggle-slider"></span>
-                                    </span>
-                                    <span>Pin to Profile</span>
-                                </label>
-                                <label class="option-toggle">
-                                    <span class="toggle-switch">
-                                        <input type="checkbox" id="disableCommentsToggle" name="disableComments">
-                                        <span class="toggle-slider"></span>
-                                    </span>
-                                    <span>Disable Comments</span>
-                                </label>
+                            <div class="mb-3">
+                                <label for="metaDescription" class="form-label">Meta Description</label>
+                                <textarea class="form-control" id="metaDescription" name="metaDescription" rows="3" placeholder="Brief description for search results"></textarea>
+                                <div class="form-text">Recommended: 150-160 characters</div>
                             </div>
-
-                            <!-- Post Preview -->
-                            <div class="post-preview mt-4" id="postPreview">
-                                <h6 class="text-muted mb-2">Post Preview</h6>
-                                <div class="preview-community" id="previewCommunity">
-                                    <div class="preview-community-icon" id="previewCommunityIcon">r/</div>
-                                    <span id="previewCommunityName">Community</span>
-                                </div>
-                                <div class="preview-title" id="previewTitle">Your post title will appear here</div>
-                                <div class="preview-tags" id="previewTags"></div>
-                                <div class="preview-content" id="previewContent">Your post content will appear here</div>
-                                <div class="preview-meta">
-                                    <span><i class="fas fa-user me-1"></i> Posted by TestUser</span>
-                                    <span><i class="fas fa-comments me-1"></i> 0 comments</span>
-                                    <span id="previewNSFW" style="display: none;"><i class="fas fa-exclamation-triangle me-1"></i> NSFW</span>
-                                    <span id="previewSpoiler" style="display: none;"><i class="fas fa-eye-slash me-1"></i> Spoiler</span>
-                                </div>
+                            <div class="mb-3">
+                                <label for="ogImage" class="form-label">Social Media Image</label>
+                                <input type="file" class="form-control" id="ogImage" name="ogImage" accept="image/*">
+                                <div class="form-text">Recommended size: 1200x630 pixels</div>
                             </div>
-
-                            <!-- Submit Buttons -->
-                            <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-outline-secondary" id="saveAsDraft">
-                                    <i class="fas fa-save me-1"></i> Save as Draft
-                                </button>
-                                <div>
-                                    <button type="button" class="btn btn-outline-primary me-2" id="previewBtn">
-                                        <i class="fas fa-eye me-1"></i> Preview
-                                    </button>
-                                    <button type="submit" class="btn btn-primary" id="submitPost">
-                                        <i class="fas fa-paper-plane me-1"></i> Post
-                                    </button>
-                                </div>
+                            <div class="mb-3">
+                                <label for="keywords" class="form-label">Keywords</label>
+                                <input type="text" class="form-control" name="keywords" placeholder="Comma-separated keywords">
                             </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Sidebar - SEO & Posting Tips -->
-            <div class="col-lg-3 right-sidebar">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">SEO Settings</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="metaTitle" class="form-label">Meta Title</label>
-                            <input type="text" class="form-control" id="metaTitle" name="metaTitle" placeholder="Custom title for search engines">
-                            <div class="form-text">Leave blank to use post title</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="metaDescription" class="form-label">Meta Description</label>
-                            <textarea class="form-control" id="metaDescription" name="metaDescription" rows="3" placeholder="Brief description for search results"></textarea>
-                            <div class="form-text">Recommended: 150-160 characters</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="ogImage" class="form-label">Social Media Image</label>
-                            <input type="file" class="form-control" id="ogImage" name="ogImage" accept="image/*">
-                            <div class="form-text">Recommended size: 1200x630 pixels</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="keywords" class="form-label">Keywords</label>
-                            <input type="text" class="form-control" id="keywords" name="keywords" placeholder="Comma-separated keywords">
                         </div>
                     </div>
-                </div>
 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Posting Tips</h5>
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Posting Tips</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Use a clear, descriptive title
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Add relevant tags to increase visibility
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Include high-quality images or videos
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Format your text for readability
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Respond to comments to boost engagement
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                Use a clear, descriptive title
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                Add relevant tags to increase visibility
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                Include high-quality images or videos
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                Format your text for readability
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                Respond to comments to boost engagement
-                            </li>
-                        </ul>
-                    </div>
-                </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Community Guidelines</h5>
-                    </div>
-                    <div class="card-body">
-                        <p>Before posting, please ensure your content:</p>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-exclamation-circle text-warning me-2"></i>
-                                Follows community-specific rules
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-exclamation-circle text-warning me-2"></i>
-                                Doesn't contain personal information
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-exclamation-circle text-warning me-2"></i>
-                                Respects copyright and intellectual property
-                            </li>
-                            <li class="list-group-item bg-transparent">
-                                <i class="fas fa-exclamation-circle text-warning me-2"></i>
-                                Is free from hate speech and harassment
-                            </li>
-                        </ul>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Community Guidelines</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Before posting, please ensure your content:</p>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                    Follows community-specific rules
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                    Doesn't contain personal information
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                    Respects copyright and intellectual property
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                    Is free from hate speech and harassment
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 </main>
 
 
-@section Scripts{
+@section Scripts {
     <!-- Custom JavaScript -->
     <script>
         // // Dark Mode Toggle
@@ -937,7 +921,7 @@
         });
 
         // Title character count
-        const postTitle = document.getElementById('postTitle');
+        const postTitle = document.getElementById('Title');
         const titleCharCount = document.getElementById('titleCharCount');
         const slug = document.getElementById('slug');
 
@@ -1127,7 +1111,7 @@
         });
 
         // Tags input
-        const tagInput = document.getElementById('tagInput');
+        const tagInput = document.getElementById('tag-input');
         const tagContainer = document.getElementById('tagContainer');
         const previewTags = document.getElementById('previewTags');
         let tags = [];

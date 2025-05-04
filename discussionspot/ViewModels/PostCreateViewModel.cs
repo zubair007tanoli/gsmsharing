@@ -34,16 +34,26 @@ namespace discussionspot.ViewModels
         [Display(Name = "Mark as Spoiler")]
         public bool IsSpoiler { get; set; }
 
+        [Display(Name = "Mark as Pin")]
+        public bool IsPined { get; set; }
+
+        [Display(Name = "Allow Comments")]
+        public bool IsCommentAllowed { get; set; }
+
         // Media uploads
         [Display(Name = "Images")]
         public List<IFormFile> ImageFiles { get; set; }
+
+       
+        [Display(Name = "Image Caption")]
+        public string ImageCaption { get; set; }
 
         // For poll posts
         [Display(Name = "Create Poll")]
         public bool HasPoll { get; set; }
 
         [Display(Name = "Poll Options")]
-        public List<string> PollOptions { get; set; }
+        public List<string> PollOptions { get; set; } = new List<string>();
 
         [Display(Name = "Allow Multiple Choices")]
         public bool AllowMultipleChoices { get; set; }

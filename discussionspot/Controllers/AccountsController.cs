@@ -87,12 +87,7 @@ namespace discussionspot.Controllers
 
             return View(loginViewModel);
         }
-        [HttpGet]
-        public IActionResult Register(string? returnUrl)
-        {
-            return View();
-        }
-
+     
         [HttpPost]
         public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")]RegisterViewModel registerViewModel, string returnUrl)
         {
