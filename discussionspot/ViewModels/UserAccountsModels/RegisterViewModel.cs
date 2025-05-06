@@ -5,26 +5,29 @@ namespace discussionspot.ViewModels.UserAccountsModels
     public class RegisterViewModel
     {
         [Required]
-        [StringLength(100, ErrorMessage = "Display name must be between 3 and 100 characters.", MinimumLength = 3)]
-        public string DisplayName { get; set; }
-
-        [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        [Display(Name = "Email")]
+        public string Email { get; set; } = string.Empty;
 
         [Required]
-        [DataType(DataType.Password)]
-        [StringLength(100, ErrorMessage = "Password must be at least 6 characters.", MinimumLength = 6)]
-        public string Password { get; set; }
+        [StringLength(100, MinimumLength = 3)]
+        [Display(Name = "Display Name")]
+        public string DisplayName { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]
-        [Compare("Password", ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; }
+        [Display(Name = "Password")]
+        public string Password { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "You must agree to the Terms of Service and Privacy Policy")]
-        public bool AgreeTerms { get; set; }
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
 
-        public string ReturnUrl { get; set; } = "/Home/Index";
+        /// <summary>
+        /// Return URL after successful registration
+        /// </summary>
+        public string? ReturnUrl { get; set; }
     }
 }

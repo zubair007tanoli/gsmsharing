@@ -1,5 +1,6 @@
 using discussionspot.Data;
 using discussionspot.Models;
+using discussionspot.Models.Domain;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

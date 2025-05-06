@@ -2,7 +2,7 @@
 
 namespace discussionspot.ViewModels
 {
-    public class AuthViewModel
+    public class AuthPageViewModel
     {
         public LoginViewModel LoginModel { get; set; } = new LoginViewModel();
         public RegisterViewModel RegisterModel { get; set; } = new RegisterViewModel();

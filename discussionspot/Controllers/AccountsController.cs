@@ -1,4 +1,5 @@
 ﻿using discussionspot.Models;
+using discussionspot.Models.Domain;
 using discussionspot.ViewModels;
 using discussionspot.ViewModels.UserAccountsModels;
 using Microsoft.AspNetCore.Authorization;

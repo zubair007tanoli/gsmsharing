@@ -14,5 +14,9 @@ namespace discussionspot.ViewModels.UserAccountsModels
 
         [Display(Name = "Remember Me")]
         public bool RememberMe { get; set; } = false;
+        /// <summary>
+        /// Return URL after successful login
+        /// </summary>
+        public string? ReturnUrl { get; set; }
     }
 }

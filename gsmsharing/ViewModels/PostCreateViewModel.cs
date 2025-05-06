@@ -1,23 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
-namespace discussionspot.ViewModels
+namespace gsmsharing.ViewModels
 {
     /// <summary>
     /// View model for creating a post
     /// </summary>
     public class PostCreateViewModel
     {
-        public PostCreateViewModel()
-        {
-            // Initialize default values
-            PostType = "text";
-            IsCommentAllowed = true;
-
-            // Initialize collections
-            InitializePostTypes();
-        }
-
         // Basic post information
         [Required]
         [StringLength(300, MinimumLength = 3)]
@@ -40,12 +30,6 @@ namespace discussionspot.ViewModels
         [Display(Name = "URL")]
         public string? Url { get; set; } // For link posts
 
-        // Additional URL property that matches the view
-        [Url]
-        [StringLength(2048)]
-        [Display(Name = "External URL")]
-        public string? ExternalUrl { get; set; } // Matches the view
-
         // Post settings
         [Display(Name = "NSFW")]
         public bool IsNSFW { get; set; } = false;
@@ -54,7 +38,7 @@ namespace discussionspot.ViewModels
         public bool IsSpoiler { get; set; } = false;
 
         [Display(Name = "Pinned")]
-        public bool IsPinned { get; set; } = false;
+        public bool IsPined { get; set; } = false;
 
         [Display(Name = "Allow Comments")]
         public bool IsCommentAllowed { get; set; } = true;
@@ -67,14 +51,6 @@ namespace discussionspot.ViewModels
         [Display(Name = "Image Caption")]
         public string? ImageCaption { get; set; }
 
-        // Video post properties
-        [Display(Name = "Video")]
-        public IFormFile? VideoFile { get; set; }
-
-        [StringLength(500)]
-        [Display(Name = "Video Caption")]
-        public string? VideoCaption { get; set; }
-
         // Poll post properties
         [Display(Name = "Has Poll")]
         public bool HasPoll { get; set; } = false;
@@ -84,9 +60,6 @@ namespace discussionspot.ViewModels
 
         [Display(Name = "Multiple Choices")]
         public bool AllowMultipleChoices { get; set; } = false;
-
-        [Display(Name = "Show Results Before Voting")]
-        public bool ShowResultsBeforeVoting { get; set; } = true;
 
         [Display(Name = "Poll End Date")]
         public DateTime? PollEndsAt { get; set; }
@@ -107,10 +80,6 @@ namespace discussionspot.ViewModels
         [StringLength(500)]
         [Display(Name = "Keywords")]
         public string? Keywords { get; set; }
-
-        // Social media image
-        [Display(Name = "Social Media Image")]
-        public IFormFile? OgImageFile { get; set; }
 
         // For select lists and dropdowns
         [Display(Name = "Communities")]
@@ -135,18 +104,6 @@ namespace discussionspot.ViewModels
                 new SelectListItem { Value = "video", Text = "Video Post" },
                 new SelectListItem { Value = "poll", Text = "Poll Post" }
             };
-        }
-
-        /// <summary>
-        /// Initialize communities dropdown. This would be populated from database.
-        /// </summary>
-        public void InitializeCommunities(IEnumerable<dynamic> communitiesFromDatabase)
-        {
-            Communities = communitiesFromDatabase.Select(c => new SelectListItem
-            {
-                Value = c.Id.ToString(),
-                Text = c.Name
-            }).ToList();
         }
     }
 }

@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="Views\DiscussionPost\CreatePost - Copy %282%29.shtml" />
+    <Content Include="Views\DiscussionPost\CreatePost - Copy %283%29.shtml" />
+    <Content Include="Views\DiscussionPost\CreatePost - Copy.shtml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="bootstrap" Version="5.3.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />

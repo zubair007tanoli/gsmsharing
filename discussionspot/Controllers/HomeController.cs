@@ -1,4 +1,5 @@
 using discussionspot.Models;
+using discussionspot.Models.Domain;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
