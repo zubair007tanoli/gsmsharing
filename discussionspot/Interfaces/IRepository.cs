@@ -2,10 +2,6 @@
 
 namespace discussionspot.Interfaces
 {
-    /// <summary>
-    /// Generic repository interface for data access operations
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type</typeparam>
     public interface IRepository<TEntity> where TEntity : class
     {
         // Query methods

@@ -1,5 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace discussionspot.ViewModels
 {
@@ -122,6 +126,16 @@ namespace discussionspot.ViewModels
         // Return URL - Used primarily for redirecting
         public string? ReturnUrl { get; set; }
 
+        // For multiple image/video uploads
+        [Display(Name = "Media Files")]
+        public List<IFormFile>? MediaFiles { get; set; }
+
+        // For handling poll configuration
+        public PollConfigurationViewModel? PollConfiguration { get; set; }
+
+        // For creating post slugs automatically
+        public string? Slug { get; set; }
+
         /// <summary>
         /// Initializes post type options
         /// </summary>
@@ -147,6 +161,44 @@ namespace discussionspot.ViewModels
                 Value = c.Id.ToString(),
                 Text = c.Name
             }).ToList();
+        }
+
+        /// <summary>
+        /// Method to generate slug from title
+        /// </summary>
+        public void GenerateSlug()
+        {
+            if (!string.IsNullOrEmpty(Title))
+            {
+                Slug = Title.ToLower()
+                    .Replace(" ", "-")
+                    .Replace("_", "-")
+                    .Replace(".", "")
+                    .Replace(",", "")
+                    .Replace("!", "")
+                    .Replace("?", "")
+                    .Replace(":", "")
+                    .Replace(";", "")
+                    .Replace("\"", "")
+                    .Replace("'", "")
+                    .Replace("(", "")
+                    .Replace(")", "");
+            }
+        }
+
+        /// <summary>
+        /// Method to parse tags from string
+        /// </summary>
+        public List<string> GetTagsList()
+        {
+            if (string.IsNullOrEmpty(TagsString))
+                return new List<string>();
+
+            return TagsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Take(5) // Limit to 5 tags
+                .ToList();
         }
     }
 }

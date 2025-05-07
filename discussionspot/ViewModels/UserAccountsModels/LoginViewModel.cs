@@ -12,11 +12,9 @@ namespace discussionspot.ViewModels.UserAccountsModels
         [DataType(DataType.Password)]
         public string Password { get; set; }
 
-        [Display(Name = "Remember Me")]
+        [Display(Name = "Remember me?")]
         public bool RememberMe { get; set; } = false;
-        /// <summary>
-        /// Return URL after successful login
-        /// </summary>
-        public string? ReturnUrl { get; set; }
+
+        public string ReturnUrl { get; set; }
     }
 }
