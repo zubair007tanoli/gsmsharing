@@ -336,11 +336,7 @@
     }
 </style>
 
-
-@section Styles {
-    <link href="~/css/createPost.css" rel="stylesheet" />
-}
-
+<!-- Main Content -->
 <main class="py-4">
     <div class="container create-post-container">
         <!-- Validation Summary -->
@@ -517,71 +513,33 @@
                                 <div class="mb-3">
                                     <label class="form-label">Poll Options <span class="text-danger">*</span></label>
                                     <div id="pollOptionsContainer">
-                                        
-@if(Model.PollOptions != null && Model.PollOptions.Any())
-                                    
-{
-@for(int i =0; i < Model.PollOptions.Count; i++)                                      
-{                                                
-<div class="poll-option mb-2">
-                                              
-<input type="text" class="form-control poll-option-input "name="PollOptions[@i]" value="@Model.PollOptions[i]"placeholder="Option @(i+1)">
-
-                                                    
-<button type="button" class="btn btn-sm btn-outline-danger remove-option" @(i<2? "disabled":"")>                                                        
-<i class="fas fa-times"></i>
-
-                                                    
-</button>
-
-                                                
-</div>
-
-                                            
-}                                    
-}
-                                    
-else
-                                       
-{                                            
-<div class="poll-option mb-2">
-
-                                                
-<input type="text" class="form-control poll-option-input" name="PollOptions[0]" placeholder="Option 1">
-
-                                                
-<button type="button"class="btn btn-sm btn-outline-danger remove-option" disabled>
-
-                                                    
-<i class="fas fa-times"></i>
-
-                                                
-</button>
-
-                                            
-</div>
-
-                                            
-<div class="poll-option mb-2">
-
-                                                
-<input type="text" class="form-control poll-option-input"
- 
-name="PollOptions[1]"
- 
-placeholder="Option 2">
-
-                                                
-<button type="button" class="btn btn-sm btn-outline-danger remove-option" disabled>
-                                                 
-<i class="fas fa-times"></i>                                               
-</button>
-
-                                            
-</div>
-                                       
-}
-
+                                        @if (Model.PollOptions != null && Model.PollOptions.Any())
+                                        {
+                                            @for (int i = 0; i < Model.PollOptions.Count; i++)
+                                            {
+                                                <div class="poll-option">
+                                                    <input asp-for="PollOptions[i]" class="form-control poll-option-input" placeholder="Option @(i+1)">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-option" @(i < 2 ? "disabled" : "")>
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="poll-option">
+                                                <input type="text" class="form-control poll-option-input" name="PollOptions[0]" placeholder="Option 1">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-option" disabled>
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            <div class="poll-option">
+                                                <input type="text" class="form-control poll-option-input" name="PollOptions[1]" placeholder="Option 2">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-option" disabled>
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addPollOption">
                                         <i class="fas fa-plus me-1"></i> Add Option
@@ -736,18 +694,6 @@ placeholder="Option 2">
                             <ul class="list-group list-group-flush">
                                 <li class="list-group-item bg-transparent">
                                     <i class="fas fa-check-circle text-success me-2"></i>
-                                    Use a clear, descriptive title
-                                </li>
-                                <li class="list-group-item bg-transparent">
-                                    <i class="fas fa-check-circle text-success me-2"></i>
-                                    Add relevant tags to increase visibility
-                                </li>
-                                <li class="list-group-item bg-transparent">
-                                    <i class="fas fa-check-circle text-success me-2"></i>
-                                    Include high-quality images or videos
-                                </li>
-                                <li class="list-group-item bg-transparent">
-                                    <i class="fas fa-check-circle text-success me-2"></i>
                                     Respond to comments to boost engagement
                                 </li>
                             </ul>
@@ -792,539 +738,483 @@ placeholder="Option 2">
 
     <!-- Custom JavaScript for Post Creation -->
     <script>
-                document.addEventListener('DOMContentLoaded', function() {
-            // Elements
-            const postTypeInput = document.getElementById('postTypeInput');
-            const titleInput = document.getElementById('Title');
-            const contentTextarea = document.getElementById('contentTextarea');
-            const titleCharCount = document.getElementById('titleCharCount');
-            const communitySelect = document.getElementById('communitySelect');
-            const communityRules = document.getElementById('communityRules');
-            const noCommunitySelected = document.getElementById('noCommunitySelected');
-            const communityRulesTitle = document.getElementById('communityRulesTitle');
-            const postTypeTabs = document.querySelectorAll('.post-type-tab');
-            const formSections = document.querySelectorAll('.form-section');
-            const imageUpload = document.getElementById('imageUpload');
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            const videoUpload = document.getElementById('videoUpload');
-            const videoPreview = document.getElementById('videoPreview');
-            const nsfwToggle = document.getElementById('nsfwToggle');
-            const spoilerToggle = document.getElementById('spoilerToggle');
-            const previewNSFW = document.getElementById('previewNSFW');
-            const previewSpoiler = document.getElementById('previewSpoiler');
-            const previewTitle = document.getElementById('previewTitle');
-            const previewContent = document.getElementById('previewContent');
-            const previewCommunityName = document.getElementById('previewCommunityName');
-            const previewCommunityIcon = document.getElementById('previewCommunityIcon');
-            const previewTags = document.getElementById('previewTags');
-            const tagInput = document.getElementById('tagInput');
-            const tagContainer = document.getElementById('tagContainer');
-            const tagStringInput = document.getElementById('tagStringInput');
-            const previewBtn = document.getElementById('previewBtn');
-            const pollExpiration = document.getElementById('pollExpiration');
-            const pollExpirationGroup = document.getElementById('pollExpirationGroup');
-            const addPollOption = document.getElementById('addPollOption');
-            const pollOptionsContainer = document.getElementById('pollOptionsContainer');
-            const metaTitle = document.getElementById('metaTitle');
-            const metaDescription = document.getElementById('metaDescription');
-            const keywords = document.getElementById('keywords');
-            const metaTitleInput = document.getElementById('metaTitleInput');
-            const metaDescriptionInput = document.getElementById('metaDescriptionInput');
-            const keywordsInput = document.getElementById('keywordsInput');
-            const saveAsDraftBtn = document.getElementById('saveAsDraftBtn');
-            const formattingButtons = document.querySelectorAll('.formatting-button');
+        $(document).ready(function () {
+            // Initialize tags array and post type
+            let tags = [];
 
-            // Initialize character count
-            if (titleInput) {
-                titleCharCount.textContent = titleInput.value.length.toString();
-                titleInput.addEventListener('input', function() {
-                    titleCharCount.textContent = titleInput.value.length.toString();
-                    updatePreview();
-                });
-            }
+            // Initialize character counters
+            updateCharCount('#Title', '#titleCharCount', 300);
 
-            // Post type tabs
-            postTypeTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and sections
-                    postTypeTabs.forEach(t => t.classList.remove('active'));
-                    formSections.forEach(s => s.classList.remove('active'));
+            // Initialize post type from model
+            const initialPostType = '@Model.PostType';
+            $('#postTypeInput').val(initialPostType);
 
-                    // Add active class to clicked tab and corresponding section
-                    tab.classList.add('active');
-                    const type = tab.getAttribute('data-type');
-                    document.getElementById(`${type}PostForm`).classList.add('active');
+            // Handle post type tab clicks
+            $('.post-type-tab').on('click', function() {
+                // Remove active class from all tabs and sections
+                $('.post-type-tab').removeClass('active');
+                $('.form-section').removeClass('active');
 
-                    // Update hidden input
-                    postTypeInput.value = type;
+                // Add active class to clicked tab and corresponding section
+                $(this).addClass('active');
+                const type = $(this).data('type');
+                $('#' + type + 'PostForm').addClass('active');
 
-                    // Update preview based on post type
-                    updatePreview();
-                });
+                // Update hidden input
+                $('#postTypeInput').val(type);
+
+                // Update preview
+                updatePreview();
             });
 
-            // Community selection
-            if (communitySelect) {
-                communitySelect.addEventListener('change', function() {
-                    const selectedCommunity = this.options[this.selectedIndex];
-                    if (selectedCommunity && selectedCommunity.value) {
-                        // In a real implementation, you would fetch community rules from server
-                        // For this example, we'll just update the UI
-                        noCommunitySelected.style.display = 'none';
-                        communityRules.style.display = 'block';
-                        communityRulesTitle.textContent = `${selectedCommunity.text} Rules`;
+            // Character count for title field
+            $('#Title').on('input', function() {
+                updateCharCount('#Title', '#titleCharCount', 300);
+                updatePreviewTitle();
+            });
 
-                        // Update preview
-                        previewCommunityName.textContent = selectedCommunity.text;
-                        previewCommunityIcon.textContent = selectedCommunity.text.charAt(0).toUpperCase();
+            // Content textarea handlers for text posts
+            $('#contentTextarea').on('input', function() {
+                updatePreviewContent();
+            });
 
-                        // Load rules (in a real implementation)
-                        loadCommunityRules(selectedCommunity.value);
-                    } else {
-                        noCommunitySelected.style.display = 'block';
-                        communityRules.style.display = 'none';
-                        communityRulesTitle.textContent = 'Community Rules';
-                        previewCommunityName.textContent = 'Community';
-                        previewCommunityIcon.textContent = 'r/';
-                    }
-                });
-            }
+            // Formatting toolbar handlers
+            $('.formatting-button').on('click', function() {
+                const format = $(this).data('format');
+                const textarea = document.getElementById('contentTextarea');
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const selectedText = textarea.value.substring(start, end);
+                let replacement = '';
 
-            // Content textarea
-            if (contentTextarea) {
-                contentTextarea.addEventListener('input', updatePreview);
-            }
-
-            // Image upload preview
-            if (imageUpload) {
-                imageUpload.addEventListener('change', function(e) {
-                    imagePreviewContainer.innerHTML = '';
-                    if (e.target.files.length > 0) {
-                        for (let i = 0; i < e.target.files.length; i++) {
-                            const file = e.target.files[i];
-                            if (file.type.startsWith('image/')) {
-                                const reader = new FileReader();
-                                reader.onload = function(event) {
-                                    const img = document.createElement('img');
-                                    img.src = event.target.result;
-                                    img.classList.add('img-thumbnail', 'mb-2', 'me-2');
-                                    img.style.maxHeight = '200px';
-                                    img.style.maxWidth = '200px';
-                                    imagePreviewContainer.appendChild(img);
-                                };
-                                reader.readAsDataURL(file);
-                            }
-                        }
-                        updatePreview();
-                    }
-                });
-            }
-
-            // Video upload preview
-            if (videoUpload) {
-                videoUpload.addEventListener('change', function(e) {
-                    if (e.target.files.length > 0) {
-                        const file = e.target.files[0];
-                        if (file.type.startsWith('video/')) {
-                            const url = URL.createObjectURL(file);
-                            videoPreview.src = url;
-                            videoPreview.classList.remove('d-none');
-                            updatePreview();
-                        }
-                    } else {
-                        videoPreview.src = '';
-                        videoPreview.classList.add('d-none');
-                    }
-                });
-            }
-
-            // NSFW and Spoiler toggles
-            if (nsfwToggle) {
-                nsfwToggle.addEventListener('change', function() {
-                    previewNSFW.style.display = this.checked ? 'inline-block' : 'none';
-                });
-            }
-
-            if (spoilerToggle) {
-                spoilerToggle.addEventListener('change', function() {
-                    previewSpoiler.style.display = this.checked ? 'inline-block' : 'none';
-                });
-            }
-
-            // Tags input
-            if (tagInput) {
-                const tags = [];
-
-                // Update tag string input value
-                function updateTagsString() {
-                    tagStringInput.value = tags.join(', ');
-                    updatePreviewTags();
+                switch (format) {
+                    case 'bold':
+                        replacement = `**${selectedText}**`;
+                        break;
+                    case 'italic':
+                        replacement = `*${selectedText}*`;
+                        break;
+                    case 'link':
+                        replacement = selectedText ? `[${selectedText}](url)` : '[Link text](url)';
+                        break;
+                    case 'ul':
+                        replacement = selectedText ? selectedText.split('\\n').map(line => `* ${line}`).join('\\n') : '* List item';
+                        break;
+                    case 'ol':
+                        replacement = selectedText ? selectedText.split('\\n').map((line, i) => `${i+1}. ${line}`).join('\\n') : '1. List item';
+                        break;
+                    case 'quote':
+                        replacement = selectedText ? selectedText.split('\\n').map(line => `> ${line}`).join('\\n') : '> Quote';
+                        break;
+                    case 'code':
+                        replacement = selectedText ? `\`\`\`\\n${selectedText}\\n\`\`\`` : '```\\ncode\\n```';
+                        break;
+                    case 'heading':
+                        replacement = selectedText ? `# ${selectedText}` : '# Heading';
+                        break;
                 }
 
-                // Update preview tags
-                function updatePreviewTags() {
-                    previewTags.innerHTML = '';
-                    tags.forEach(tag => {
-                        const tagSpan = document.createElement('span');
-                        tagSpan.classList.add('preview-tag');
-                        tagSpan.textContent = tag;
-                        previewTags.appendChild(tagSpan);
-                    });
+                textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+                textarea.focus();
+                textarea.selectionStart = start + replacement.length;
+                textarea.selectionEnd = start + replacement.length;
+
+                // Update preview
+                updatePreviewContent();
+            });
+
+            // Image upload handling
+            $('#imageUpload').on('change', function(e) {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    $('#imagePreviewContainer').empty();
+
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const reader = new FileReader();
+
+                        reader.onload = function(e) {
+                            const imgWrap = $('<div>').addClass('position-relative mb-2');
+                            const img = $('<img>')
+                                .attr('src', e.target.result)
+                                .addClass('img-fluid rounded')
+                                .css('max-height', '200px')
+                                .appendTo(imgWrap);
+
+                            $('#imagePreviewContainer').append(imgWrap);
+                        }
+
+                        reader.readAsDataURL(file);
+                    }
+
+                    // Update preview
+                    updatePreview();
+                }
+            });
+
+            // Video upload handling
+            $('#videoUpload').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    $('#videoPreview')
+                        .attr('src', url)
+                        .removeClass('d-none');
+
+                    // Update preview
+                    updatePreview();
+                }
+            });
+
+            // Poll option handling
+            $('#addPollOption').on('click', function() {
+                const optionCount = $('#pollOptionsContainer .poll-option').length + 1;
+                const newOption = $('<div>').addClass('poll-option');
+
+                newOption.html(`
+                    <input type="text" class="form-control poll-option-input" name="PollOptions[${optionCount - 1}]" placeholder="Option ${optionCount}">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `);
+
+                $('#pollOptionsContainer').append(newOption);
+
+                // Enable remove buttons if there are more than 2 options
+                if ($('#pollOptionsContainer .poll-option').length > 2) {
+                    $('.remove-option').prop('disabled', false);
                 }
 
-                // Add tag
-                tagInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && this.value.trim() !== '') {
-                        e.preventDefault();
-
-                        const tagText = this.value.trim();
-                        if (!tags.includes(tagText) && tags.length < 5) {
-                            tags.push(tagText);
-
-                            const tagElement = document.createElement('div');
-                            tagElement.className = 'tag';
-                            tagElement.innerHTML = `
-                                ${tagText}
-                                <i class="fas fa-times" data-tag="${tagText}"></i>
-                            `;
-
-                            tagContainer.insertBefore(tagElement, this);
-                            this.value = '';
-
-                            updateTagsString();
-                        }
-                    }
-                });
-
-                // Remove tag when clicked
-                tagContainer.addEventListener('click', function(e) {
-                    if (e.target.tagName === 'I') {
-                        const tagToRemove = e.target.getAttribute('data-tag');
-                        const index = tags.indexOf(tagToRemove);
-                        if (index !== -1) {
-                            tags.splice(index, 1);
-                            e.target.parentElement.remove();
-                            updateTagsString();
-                        }
-                    }
-                });
-            }
-
-            // Poll expiration toggle
-            if (pollExpiration) {
-                pollExpiration.addEventListener('change', function() {
-                    pollExpirationGroup.style.display = this.checked ? 'flex' : 'none';
-                });
-            }
-
-            // Add poll option
-            if (addPollOption) {
-                addPollOption.addEventListener('click', function() {
-                    const optionCount = pollOptionsContainer.children.length + 1;
-                    if (optionCount <= 10) { // Limit to 10 options
-                        const newOption = document.createElement('div');
-                        newOption.className = 'poll-option mb-2';
-                        newOption.innerHTML = `
-                            <input type="text" class="form-control poll-option-input" name="PollOptions[${optionCount-1}]" placeholder="Option ${optionCount}">
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-option">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        `;
-                        pollOptionsContainer.appendChild(newOption);
-
-                        // Enable remove buttons if there are more than 2 options
-                        const removeButtons = document.querySelectorAll('.remove-option');
-                        if (pollOptionsContainer.children.length > 2) {
-                            removeButtons.forEach(btn => btn.disabled = false);
-                        }
-
-                        updatePreview();
-                    }
-                });
-            }
+                // Update preview
+                updatePreview();
+            });
 
             // Remove poll option
-            if (pollOptionsContainer) {
-                pollOptionsContainer.addEventListener('click', function(e) {
-                    if (e.target.closest('.remove-option')) {
-                        const button = e.target.closest('.remove-option');
-                        const option = button.parentElement;
+            $('#pollOptionsContainer').on('click', '.remove-option', function() {
+                // Only remove if there are more than 2 options
+                if ($('#pollOptionsContainer .poll-option').length > 2) {
+                    $(this).closest('.poll-option').remove();
 
-                        // Only remove if there are more than 2 options
-                        if (pollOptionsContainer.children.length > 2) {
-                            option.remove();
+                    // Update placeholders and names
+                    $('#pollOptionsContainer .poll-option').each(function(index) {
+                        $(this).find('input').attr('name', `PollOptions[${index}]`);
+                        $(this).find('input').attr('placeholder', `Option ${index + 1}`);
+                    });
 
-                            // Update placeholder texts
-                            const options = pollOptionsContainer.querySelectorAll('.poll-option-input');
-                            options.forEach((input, index) => {
-                                input.placeholder = `Option ${index + 1}`;
-                                input.name = `PollOptions[${index}]`;
-                            });
+                    // Disable remove buttons if only 2 options remain
+                    if ($('#pollOptionsContainer .poll-option').length <= 2) {
+                        $('.remove-option').prop('disabled', true);
+                    }
 
-                            // Disable remove buttons if only 2 options remain
-                            if (pollOptionsContainer.children.length <= 2) {
-                                const removeButtons = pollOptionsContainer.querySelectorAll('.remove-option');
-                                removeButtons.forEach(btn => btn.disabled = true);
-                            }
+                    // Update preview
+                    updatePreview();
+                }
+            });
 
-                            updatePreview();
+            // Poll expiration toggle
+            $('#pollExpiration').on('change', function() {
+                $('#pollExpirationGroup').toggle($(this).is(':checked'));
+            });
+
+            // Tags input
+            $('#tagInput').on('keydown', function(e) {
+                if (e.key === 'Enter' && $(this).val().trim() !== '') {
+                    e.preventDefault();
+
+                    // Only allow up to 5 tags
+                    if (tags.length < 5) {
+                        const tagText = $(this).val().trim();
+
+                        // Check if tag already exists
+                        if (!tags.includes(tagText)) {
+                            tags.push(tagText);
+
+                            const tagElement = $('<div>').addClass('tag').html(`
+                                ${tagText}
+                                <i class="fas fa-times" data-tag="${tagText}"></i>
+                            `);
+
+                            tagElement.insertBefore($(this));
+                            $(this).val('');
+
+                            // Update hidden field
+                            updateTagsField();
+
+                            // Update preview tags
+                            updatePreviewTags();
                         }
                     }
-                });
-            }
+                }
+            });
 
-            // SEO fields
-            if (metaTitle && metaTitleInput) {
-                metaTitle.addEventListener('input', function() {
-                    metaTitleInput.value = this.value;
-                });
-            }
+            // Remove tag when clicked
+            $('#tagContainer').on('click', '.tag i', function() {
+                const tagToRemove = $(this).data('tag');
+                tags = tags.filter(tag => tag !== tagToRemove);
+                $(this).parent().remove();
 
-            if (metaDescription && metaDescriptionInput) {
-                metaDescription.addEventListener('input', function() {
-                    metaDescriptionInput.value = this.value;
-                });
-            }
+                // Update hidden field
+                updateTagsField();
 
-            if (keywords && keywordsInput) {
-                keywords.addEventListener('input', function() {
-                    keywordsInput.value = this.value;
-                });
-            }
+                // Update preview tags
+                updatePreviewTags();
+            });
 
-            // Text formatting buttons
-            formattingButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    if (!contentTextarea) return;
+            // NSFW and Spoiler toggles
+            $('#nsfwToggle').on('change', function() {
+                $('#previewNSFW').toggle($(this).is(':checked'));
+            });
 
-                    const format = button.getAttribute('data-format');
-                    const start = contentTextarea.selectionStart;
-                    const end = contentTextarea.selectionEnd;
-                    const selectedText = contentTextarea.value.substring(start, end);
-                    let replacement = '';
+            $('#spoilerToggle').on('change', function() {
+                $('#previewSpoiler').toggle($(this).is(':checked'));
+            });
 
-                    switch (format) {
-                        case 'bold':
-                            replacement = `**${selectedText}**`;
-                            break;
-                        case 'italic':
-                            replacement = `*${selectedText}*`;
-                            break;
-                        case 'link':
-                            replacement = selectedText ? `[${selectedText}](url)` : '[Link text](url)';
-                            break;
-                        case 'ul':
-                            replacement = selectedText ? selectedText.split('\n').map(line => `* ${line}`).join('\n') : '* List item';
-                            break;
-                        case 'ol':
-                            replacement = selectedText ? selectedText.split('\n').map((line, i) => `${i+1}. ${line}`).join('\n') : '1. List item';
-                            break;
-                        case 'quote':
-                            replacement = selectedText ? selectedText.split('\n').map(line => `> ${line}`).join('\n') : '> Quote';
-                            break;
-                        case 'code':
-                            replacement = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\ncode\n```';
-                            break;
-                        case 'heading':
-                            replacement = selectedText ? `# ${selectedText}` : '# Heading';
-                            break;
-                    }
+            // Community select handling (fetching rules)
+            $('#communitySelect').on('change', function() {
+                const communityId = $(this).val();
 
-                    contentTextarea.value = contentTextarea.value.substring(0, start) + replacement + contentTextarea.value.substring(end);
-                    contentTextarea.focus();
-                    contentTextarea.selectionStart = start + replacement.length;
-                    contentTextarea.selectionEnd = start + replacement.length;
+                if (communityId) {
+                    // Show loading indication
+                    $('#communityRulesTitle').text('Loading community rules...');
+                    $('#noCommunitySelected').hide();
+                    $('#communityRules').html('<div class="p-3 text-center"><div class="spinner-border text-primary" role="status"></div></div>').show();
 
-                    updatePreview();
-                });
+                    // In a real application, you would fetch rules from server
+                    // For demo purposes, we'll simulate a server request
+                    setTimeout(function() {
+                        fetchCommunityRules(communityId);
+                    }, 500);
+
+                    // Update community preview
+                    const communityName = $('#communitySelect option:selected').text();
+                    $('#previewCommunityName').text(communityName);
+                    $('#previewCommunityIcon').text(communityName.charAt(0));
+                } else {
+                    // Reset rules display
+                    $('#communityRulesTitle').text('Community Rules');
+                    $('#noCommunitySelected').show();
+                    $('#communityRules').hide();
+
+                    // Reset preview
+                    $('#previewCommunityName').text('Community');
+                    $('#previewCommunityIcon').text('r/');
+                }
             });
 
             // Preview button
-            if (previewBtn) {
-                previewBtn.addEventListener('click', function() {
-                    updatePreview();
-                    document.getElementById('postPreview').scrollIntoView({ behavior: 'smooth' });
-                });
-            }
+            $('#previewBtn').on('click', function() {
+                updatePreview();
+                $('#postPreview')[0].scrollIntoView({ behavior: 'smooth' });
+            });
 
-            // Save as draft button
-            if (saveAsDraftBtn) {
-                saveAsDraftBtn.addEventListener('click', function() {
-                    saveDraft();
-                });
-            }
-
-            // Update preview function
-            function updatePreview() {
-                // Set title
-                if (titleInput) {
-                    previewTitle.textContent = titleInput.value || 'Your post title will appear here';
-                }
-
-                // Set content based on post type
-                const activeType = document.querySelector('.post-type-tab.active')?.getAttribute('data-type') || 'text';
-
-                switch (activeType) {
-                    case 'text':
-                        if (contentTextarea) {
-                            let formattedContent = contentTextarea.value || 'Your post content will appear here';
-
-                            // Simple markdown-like formatting for preview
-                            formattedContent = formattedContent
-                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                .replace(/# (.*?)(\n|$)/g, '<h3>$1</h3>')
-                                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
-                                .replace(/> (.*?)(\n|$)/g, '<blockquote>$1</blockquote>')
-                                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-                                .replace(/`(.*?)`/g, '<code>$1</code>')
-                                .replace(/\n/g, '<br>');
-
-                            previewContent.innerHTML = formattedContent;
-                        }
-                        break;
-
-                    case 'image':
-                        if (imageUpload && imageUpload.files.length > 0) {
-                            const imageCount = imageUpload.files.length;
-                            previewContent.innerHTML = `<p><em>${imageCount} image${imageCount > 1 ? 's' : ''} selected</em></p>`;
-                            if (document.getElementById('ImageCaption')?.value) {
-                                previewContent.innerHTML += `<p>${document.getElementById('ImageCaption').value}</p>`;
-                            }
-                        } else {
-                            previewContent.innerHTML = 'No image selected';
-                        }
-                        break;
-
-                    case 'video':
-                        if (videoUpload && videoUpload.files.length > 0) {
-                            previewContent.innerHTML = '<p><em>Video selected</em></p>';
-                            if (document.getElementById('VideoCaption')?.value) {
-                                previewContent.innerHTML += `<p>${document.getElementById('VideoCaption').value}</p>`;
-                            }
-                        } else {
-                            previewContent.innerHTML = 'No video selected';
-                        }
-                        break;
-
-                    case 'link':
-                        const linkUrl = document.getElementById('linkUrl')?.value;
-                        const linkDesc = document.getElementById('linkDescription')?.value;
-
-                        if (linkUrl) {
-                            previewContent.innerHTML = `<p><a href="${linkUrl}" target="_blank">${linkUrl}</a></p>`;
-                            if (linkDesc) {
-                                previewContent.innerHTML += `<p>${linkDesc}</p>`;
-                            }
-                        } else {
-                            previewContent.innerHTML = 'No link provided';
-                        }
-                        break;
-
-                    case 'poll':
-                        let pollContent = '<div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px; margin-bottom: 10px;"><h6>Poll</h6>';
-
-                        const pollOptions = pollOptionsContainer.querySelectorAll('.poll-option-input');
-                        pollOptions.forEach((option, index) => {
-                            if (option.value) {
-                                pollContent += `
-                                    <div style="margin-bottom: 8px;">
-                                        <div style="display: flex; align-items: center;">
-                                            <input type="${document.getElementById('allowMultipleChoices')?.checked ? 'checkbox' : 'radio'}"
-                                                name="pollPreview" style="margin-right: 8px;" disabled>
-                                            <label>${option.value}</label>
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                        });
-
-                        pollContent += '<button style="width: 100%; padding: 6px; margin-top: 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px;" disabled>Vote</button>';
-
-                        if (document.getElementById('pollExpiration')?.checked) {
-                            const pollEndsAt = document.getElementById('pollEndsAt')?.value;
-                            if (pollEndsAt) {
-                                const endDate = new Date(pollEndsAt);
-                                const now = new Date();
-                                const diffTime = Math.abs(endDate - now);
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                                pollContent += `<div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-light);">Poll closes in ${diffDays} day${diffDays > 1 ? 's' : ''}</div>`;
-                            }
-                        }
-
-                        pollContent += '</div>';
-                        previewContent.innerHTML = pollContent;
-                        break;
-                }
-            }
-
-            // Function to load community rules (would be implemented with an actual API call)
-            function loadCommunityRules(communityId) {
-                // This would be an AJAX call to fetch rules from the server
-                // For demo purposes, we'll just display some sample rules
-                communityRules.innerHTML = `
-                    <div class="rule-item p-3">
-                        <h6>1. Be respectful</h6>
-                        <p class="mb-0 small">Treat others with respect. No personal attacks, harassment, or hate speech.</p>
-                    </div>
-                    <div class="rule-item p-3">
-                        <h6>2. No spam</h6>
-                        <p class="mb-0 small">Don't spam the community with repetitive content or self-promotion.</p>
-                    </div>
-                    <div class="rule-item p-3">
-                        <h6>3. Stay on topic</h6>
-                        <p class="mb-0 small">Posts must be related to the community topic and contribute to discussion.</p>
-                    </div>
-                `;
-            }
-
-            // Function to save post as draft
-            function saveDraft() {
-                // Validate minimum requirements
-                if (!titleInput || !titleInput.value.trim()) {
+            // Save as draft
+            $('#saveAsDraftBtn').on('click', function() {
+                if ($('#Title').val().trim() === '') {
+                    $('#Title').addClass('is-invalid');
                     alert('Please enter a title for your draft');
                     return;
                 }
 
-                // Get active post type
-                const activeType = document.querySelector('.post-type-tab.active')?.getAttribute('data-type') || 'text';
-
-                // Collect form data
-                const draftData = {
-                    title: titleInput.value,
-                    postType: activeType,
-                    content: contentTextarea?.value || '',
-                    communityId: communitySelect?.value || null,
-                    communityName: communitySelect?.options[communitySelect.selectedIndex]?.text || null,
-                    tags: tagStringInput?.value.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
-                    url: document.getElementById('linkUrl')?.value || null,
-                    isNSFW: nsfwToggle?.checked || false,
-                    isSpoiler: spoilerToggle?.checked || false,
-                    hasPoll: activeType === 'poll',
-                    pollOptions: Array.from(pollOptionsContainer?.querySelectorAll('.poll-option-input') || [])
-                        .map(input => input.value)
-                        .filter(value => value.trim() !== ''),
-                    allowMultipleChoices: document.getElementById('allowMultipleChoices')?.checked || false,
-                    pollExpiresAt: document.getElementById('pollExpiration')?.checked ?
-                        document.getElementById('pollEndsAt')?.value : null,
-                    savedAt: new Date().toISOString()
-                };
-
-                // In a real application, you would save this to localStorage or send to server
-                // For demo purposes, we'll just display confirmation and log the data
-                console.log('Draft saved:', draftData);
-
-                // Store in localStorage
-                const drafts = JSON.parse(localStorage.getItem('postDrafts') || '[]');
-                drafts.push(draftData);
-                localStorage.setItem('postDrafts', JSON.stringify(drafts));
-
+                // In a real application, you would save to localStorage or server
+                // For demo purposes, we'll just show an alert
                 alert('Post saved as draft');
+            });
+
+            // Form submission handling
+            $('#postForm').on('submit', function(e) {
+                // Pre-submission tasks
+
+                // Update hidden SEO fields
+                $('#metaTitleInput').val($('#metaTitle').val());
+                $('#metaDescriptionInput').val($('#metaDescription').val());
+                $('#keywordsInput').val($('#keywords').val());
+
+                // Force-update tags field
+                updateTagsField();
+
+                // Validation is handled by jQuery Validation
+            });
+
+            // Helper functions
+            function updateCharCount(inputSelector, countSelector, maxChars) {
+                const length = $(inputSelector).val().length;
+                $(countSelector).text(length);
+
+                if (length > maxChars) {
+                    $(countSelector).addClass('text-danger');
+                } else {
+                    $(countSelector).removeClass('text-danger');
+                }
+            }
+
+            function updateTagsField() {
+                $('#tagStringInput').val(tags.join(','));
+            }
+
+            function updatePreviewTitle() {
+                const title = $('#Title').val();
+                $('#previewTitle').text(title || 'Your post title will appear here');
+            }
+
+            function updatePreviewTags() {
+                $('#previewTags').empty();
+
+                tags.forEach(tag => {
+                    const tagElement = $('<div>').addClass('preview-tag').text(tag);
+                    $('#previewTags').append(tagElement);
+                });
+            }
+
+            function updatePreviewContent() {
+                const activeType = $('.post-type-tab.active').data('type');
+                let content = '';
+
+                switch (activeType) {
+                    case 'text':
+                        content = formatMarkdown($('#contentTextarea').val());
+                        break;
+                    case 'image':
+                        if ($('#imagePreviewContainer img').length > 0) {
+                            content = '<div class="d-flex flex-wrap gap-2">';
+                            $('#imagePreviewContainer img').each(function() {
+                                content += `<img src="${$(this).attr('src')}" class="img-fluid rounded" style="max-height: 150px;">`;
+                            });
+                            content += '</div>';
+
+                            const caption = $('#ImageCaption').val();
+                            if (caption) {
+                                content += `<p class="mt-2">${caption}</p>`;
+                            }
+                        } else {
+                            content = 'No images selected';
+                        }
+                        break;
+                    case 'video':
+                        if (!$('#videoPreview').hasClass('d-none')) {
+                            content = `<video controls class="img-fluid rounded"><source src="${$('#videoPreview').attr('src')}"></video>`;
+
+                            const caption = $('#VideoCaption').val();
+                            if (caption) {
+                                content += `<p class="mt-2">${caption}</p>`;
+                            }
+                        } else {
+                            content = 'No video selected';
+                        }
+                        break;
+                    case 'link':
+                        const url = $('#linkUrl').val();
+                        const description = $('#linkDescription').val();
+
+                        if (url) {
+                            content = `<div class="p-3 border rounded">
+                                <a href="${url}" target="_blank" class="d-block mb-1 text-primary">${url}</a>`;
+
+                            if (description) {
+                                content += `<p class="mb-0 small">${description}</p>`;
+                            }
+
+                            content += '</div>';
+                        } else {
+                            content = 'No link provided';
+                        }
+                        break;
+                    case 'poll':
+                        content = '<div class="border rounded p-3">';
+                        content += '<h6 class="mb-3">Poll</h6>';
+
+                        $('#pollOptionsContainer .poll-option-input').each(function(index) {
+                            const optionText = $(this).val() || `Option ${index + 1}`;
+                            content += `
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="${$('#allowMultipleChoices').is(':checked') ? 'checkbox' : 'radio'}"
+                                                   id="pollPreview${index}" name="pollPreview" disabled>
+                                            <label class="form-check-label" for="pollPreview${index}">
+                                                ${optionText}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        content += '<button class="btn btn-primary btn-sm w-100 mt-2" disabled>Vote</button>';
+
+                        if ($('#pollExpiration').is(':checked') && $('#pollEndsAt').val()) {
+                            const date = new Date($('#pollEndsAt').val());
+                            content += `<div class="small text-muted mt-2">Poll closes on ${date.toLocaleString()}</div>`;
+                        }
+
+                        content += '</div>';
+                        break;
+                }
+
+                $('#previewContent').html(content || 'Your post content will appear here');
+            }
+
+            function formatMarkdown(text) {
+                if (!text) return '';
+
+                // Simple markdown formatting for preview
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/# (.*?)(\n|$)/g, '<h3>$1</h3>')
+                    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+                    .replace(/> (.*?)(\n|$)/g, '<blockquote class="blockquote ps-3 border-start border-2">$1</blockquote>')
+                    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                    .replace(/`(.*?)`/g, '<code>$1</code>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            function updatePreview() {
+                updatePreviewTitle();
+                updatePreviewContent();
+                updatePreviewTags();
+            }
+
+            function fetchCommunityRules(communityId) {
+                // In a real application, you would fetch data from server
+                // For demo purposes, we'll simulate community rules
+
+                // Get community name
+                const communityName = $('#communitySelect option:selected').text();
+
+                // Update title
+                $('#communityRulesTitle').text(`${communityName} Rules`);
+
+                // Generate demo rules based on community ID
+                const rules = [
+                    { title: "Be respectful", description: "Treat others with respect. No personal attacks, harassment, or hate speech." },
+                    { title: "Stay on topic", description: "Posts must be related to the community topic and contribute to discussion." },
+                    { title: "No spam", description: "Don't spam the community with repetitive content or self-promotion." },
+                    { title: "Credit sources", description: "Always provide credit for content that isn't yours." },
+                    { title: "Follow site rules", description: "All Reddit content policy rules apply in this community." }
+                ];
+
+                // Render rules
+                let rulesHtml = '';
+
+                rules.forEach((rule, index) => {
+                    rulesHtml += `
+                        <div class="rule-item p-3">
+                            <h6>${index + 1}. ${rule.title}</h6>
+                            <p class="mb-0 small">${rule.description}</p>
+                        </div>
+                    `;
+                });
+
+                $('#communityRules').html(rulesHtml);
             }
 
             // Initialize preview on page load
             updatePreview();
+
+            // Initialize community rules if a community is already selected
+            if ($('#communitySelect').val()) {
+                fetchCommunityRules($('#communitySelect').val());
+            }
         });
     </script>
 }
