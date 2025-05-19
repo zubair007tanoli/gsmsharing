@@ -1,4 +1,4 @@
-﻿using discussionspot.ViewModels;
+﻿using discussionspot.Models.ViewModels;
 
 namespace discussionspot.Interfaces
 {

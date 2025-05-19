@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Controllers\DiscussionPostController - Copy.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Views\DiscussionPost\CreatePost - Copy %282%29.shtml" />
     <Content Include="Views\DiscussionPost\CreatePost - Copy %283%29.shtml" />
     <Content Include="Views\DiscussionPost\CreatePost - Copy.shtml" />
@@ -26,8 +30,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Areas\Admin\" />
+    <Folder Include="Areas\API\" />
     <Folder Include="Extensions\" />
-    <Folder Include="Services\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="Middleware\" />
+    <Folder Include="Models\Dtos\" />
+    <Folder Include="ViewComponents\" />
+    <Folder Include="Utilities\" />
   </ItemGroup>
 
 </Project>

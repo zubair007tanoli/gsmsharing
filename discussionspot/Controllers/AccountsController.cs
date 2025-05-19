@@ -1,12 +1,10 @@
-﻿using discussionspot.Models;
-using discussionspot.Models.Domain;
-using discussionspot.ViewModels;
-using discussionspot.ViewModels.UserAccountsModels;
+﻿using discussionspot.Models.Domain;
+using discussionspot.Models.ViewModels;
+using discussionspot.Models.ViewModels.UserAccountsModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
 using System.Net;
 using System.Security.Claims;
 

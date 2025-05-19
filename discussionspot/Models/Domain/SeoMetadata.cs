@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using discussionspot.Data;
-using discussionspot.Data.discussionspot.Data;
 
 namespace discussionspot.Models.Domain
 {

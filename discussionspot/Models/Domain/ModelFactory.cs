@@ -1,5 +1,5 @@
 ﻿using discussionspot.Data;
-using discussionspot.Data.discussionspot.Data;
+
 using System.Security.Claims;
 
 namespace discussionspot.Models.Domain

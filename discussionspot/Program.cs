@@ -1,7 +1,8 @@
 using discussionspot.Data;
-using discussionspot.Data.discussionspot.Data;
-using discussionspot.Models;
+using discussionspot.Interfaces;
 using discussionspot.Models.Domain;
+using discussionspot.Repositories;
+using discussionspot.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,31 @@ builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.Applic
     options.AccessDeniedPath = "/Account/AccessDenied"; // Optional: Path for access denied 
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
 });
+
+//Regiserter interfaces and repositories
+builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<ICommunityService, CommunityService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICommunityRepository, CommunityRepository>();
+builder.Services.AddScoped<ICommunityMemberRepository, CommunityMemberRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<IMediaRepository, MediaRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
+builder.Services.AddScoped<IPostTagRepository, PostTagRepository>();
+builder.Services.AddScoped<IPostVoteRepository, PostVoteRepository>();
+builder.Services.AddScoped<IPollOptionRepository, PollOptionRepository>();
+builder.Services.AddScoped<IPollVoteRepository, PollVoteRepository>();
+builder.Services.AddScoped<IPollConfigurationRepository, PollConfigurationRepository>();
+builder.Services.AddScoped<IAwardRepository, AwardRepository>();
+builder.Services.AddScoped<IPostAwardRepository, PostAwardRepository>();
+builder.Services.AddScoped<ICommentAwardRepository, CommentAwardRepository>();
+builder.Services.AddScoped<ISeoMetadataRepository, SeoMetadataRepository>();
+builder.Services.AddScoped<ICommunityService, CommunityService>();
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

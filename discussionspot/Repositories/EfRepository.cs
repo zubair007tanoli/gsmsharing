@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Linq;
 using discussionspot.Data;
-using discussionspot.Data.discussionspot.Data;
+
 
 namespace discussionspot.Repositories
 {
