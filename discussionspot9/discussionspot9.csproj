@@ -23,4 +23,15 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Areas\Identity\Pages\" />
+    <Folder Include="Data\DbContext\" />
+    <Folder Include="Data\SqlScripts\" />
+    <Folder Include="Data\Repositories\" />
+    <Folder Include="Models\ViewModels\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="Database\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>
