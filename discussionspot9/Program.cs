@@ -1,12 +1,20 @@
-using DiscussionSpot9.Data.DbContext;
+
+using discussionspot9.Data.DbContext;
+using discussionspot9.Services;
+using DiscussionSpot9.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DiscussionspotConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DiscussionspotConnection"));
+    options.ConfigureWarnings(warnings =>
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+});
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
@@ -16,8 +24,12 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
-// Add services to the container.
+
 builder.Services.AddControllersWithViews();
+
+//Interfaces & Repositories
+builder.Services.AddScoped<IUserService, UserService>();
+
 
 var app = builder.Build();
 

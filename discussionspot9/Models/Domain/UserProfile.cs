@@ -1,4 +1,6 @@
-﻿namespace discussionspot9.Models.Domain
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace discussionspot9.Models.Domain
 {
     public class UserProfile
     {
@@ -13,5 +15,8 @@
         public DateTime LastActive { get; set; }
         public int KarmaPoints { get; set; }
         public bool IsVerified { get; set; }
+
+        // Navigation property
+        public virtual IdentityUser User { get; set; } = null!;
     }
 }
