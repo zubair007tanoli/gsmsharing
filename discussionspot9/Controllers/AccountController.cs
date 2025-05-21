@@ -20,7 +20,7 @@ namespace DiscussionSpot9.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Auth(string returnUrl = null)
+        public IActionResult Auth(string? returnUrl = null)
         {
             var model = new AuthViewModel
             {
@@ -43,20 +43,20 @@ namespace DiscussionSpot9.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterViewModel model, string? returnUrl = null)
+        public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")] RegisterViewModel registerViewModelRegisterViewModel, string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
 
             if (!ModelState.IsValid)
             {
-                return View(model);
+                return View(registerViewModelRegisterViewModel);
             }
 
-            var result = await _userService.RegisterUserAsync(model);
+            var result = await _userService.RegisterUserAsync(registerViewModelRegisterViewModel);
 
             if (result.Succeeded)
             {
-                TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {model.DisplayName}! Your account has been created successfully.";
+                TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {registerViewModelRegisterViewModel.DisplayName}! Your account has been created successfully.";
 
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
@@ -70,7 +70,7 @@ namespace DiscussionSpot9.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            return View(model);
+            return View(registerViewModelRegisterViewModel);
         }
         #endregion
 
@@ -89,22 +89,22 @@ namespace DiscussionSpot9.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login([Bind(Prefix = "LoginModel")] LoginViewModel loginViewModel)
         {
             if (!ModelState.IsValid)
             {
-                return View(model);
+                return View(loginViewModel);
             }
 
-            var result = await _userService.LoginUserAsync(model);
+            var result = await _userService.LoginUserAsync(loginViewModel);
 
             if (result.Succeeded)
             {
                 TempData["SuccessMessage"] = "Welcome back!";
 
-                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                if (!string.IsNullOrEmpty(loginViewModel.ReturnUrl) && Url.IsLocalUrl(loginViewModel.ReturnUrl))
                 {
-                    return Redirect(model.ReturnUrl);
+                    return Redirect(loginViewModel.ReturnUrl);
                 }
                 return RedirectToAction("Index", "Home");
             }
@@ -122,7 +122,7 @@ namespace DiscussionSpot9.Controllers
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
             }
 
-            return View(model);
+            return View(loginViewModel);
         }
         #endregion
 

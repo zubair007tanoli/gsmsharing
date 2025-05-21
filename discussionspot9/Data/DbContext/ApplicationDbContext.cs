@@ -117,7 +117,10 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.CreatorId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasCheckConstraint("CK_Community_Type", "CommunityType IN ('public', 'private', 'restricted')");
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Community_Type", "CommunityType IN ('public', 'private', 'restricted')");
+                });
             });
             #endregion
 
@@ -140,8 +143,8 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.CommunityId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasCheckConstraint("CK_CommunityMember_Role", "Role IN ('member', 'moderator', 'admin')");
-                entity.HasCheckConstraint("CK_CommunityMember_NotificationPreference", "NotificationPreference IN ('all', 'important', 'none')");
+                entity.ToTable(t => { t.HasCheckConstraint("CK_CommunityMember_Role", "Role IN ('member', 'moderator', 'admin')"); });
+                entity.ToTable(t => { t.HasCheckConstraint("CK_CommunityMember_NotificationPreference", "NotificationPreference IN ('all', 'important', 'none')"); });
             });
             #endregion
 
@@ -188,8 +191,11 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.CommunityId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasCheckConstraint("CK_Post_Type", "PostType IN ('text', 'link', 'image', 'video', 'poll')");
-                entity.HasCheckConstraint("CK_Post_Status", "Status IN ('published', 'removed', 'deleted', 'archived')");
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Post_Type", "PostType IN ('text', 'link', 'image', 'video', 'poll')");
+                    t.HasCheckConstraint("CK_Post_Status", "Status IN ('published', 'removed', 'deleted', 'archived')");
+                });
             });
             #endregion
 
@@ -223,7 +229,7 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.PostId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasCheckConstraint("CK_Media_Type", "MediaType IN ('image', 'video', 'document', 'audio')");
+                entity.ToTable(t => { t.HasCheckConstraint("CK_Media_Type", "MediaType IN ('image', 'video', 'document', 'audio')"); });
             });
             #endregion
 
@@ -280,7 +286,7 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.PostId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasCheckConstraint("CK_PostVote_Type", "VoteType IN (-1, 1)");
+                entity.ToTable(t => { t.HasCheckConstraint("CK_PostVote_Type", "VoteType IN (-1, 1)"); });
             });
 
             builder.Entity<CommentVote>(entity =>
@@ -299,13 +305,21 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.CommentId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasCheckConstraint("CK_CommentVote_Type", "VoteType IN (-1, 1)");
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_CommentVote_Type", "VoteType IN (-1, 1)");
+                });
             });
             #endregion
 
             #region SEO Configuration
             builder.Entity<SeoMetadata>(entity =>
             {
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_SeoMetadata_EntityType", "EntityType IN ('community', 'post')");
+                });
+
                 entity.HasKey(e => new { e.EntityType, e.EntityId });
                 entity.Property(e => e.EntityType).HasMaxLength(20);
                 entity.Property(e => e.MetaTitle).HasMaxLength(200);
@@ -322,8 +336,6 @@ namespace discussionspot9.Data.DbContext
                 entity.Property(e => e.StructuredData).HasColumnType("NVARCHAR(MAX)");
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
-
-                entity.HasCheckConstraint("CK_SeoMetadata_EntityType", "EntityType IN ('community', 'post')");
             });
             #endregion
 
@@ -498,8 +510,8 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey<PollConfiguration>(e => e.PostId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasCheckConstraint("CK_PollConfiguration_MinOptions", "MinOptions >= 2");
-                entity.HasCheckConstraint("CK_PollConfiguration_MaxOptions", "MaxOptions >= MinOptions");
+                entity.ToTable(t => { t.HasCheckConstraint("CK_PollConfiguration_MinOptions", "MinOptions >= 2"); });
+                entity.ToTable(t => { t.HasCheckConstraint("CK_PollConfiguration_MaxOptions", "MaxOptions >= MinOptions"); });
             });
             #endregion
 

@@ -49,8 +49,8 @@ namespace discussionspot.Controllers
         //}
 
         [HttpGet]
-        [AllowAnonymous]        
-        public IActionResult Auth(string returnUrl = null)
+        [AllowAnonymous]
+        public IActionResult Auth(string? returnUrl = null)
         {
             var model = new AuthViewModel
             {
