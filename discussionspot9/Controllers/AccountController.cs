@@ -18,6 +18,16 @@ namespace DiscussionSpot9.Controllers
             _userManager = userManager;
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Auth(string returnUrl = null)
+        {
+            var model = new AuthViewModel
+            {
+                ReturnUrl = returnUrl ?? Url.Content("~/")
+            };
+            return View(model);
+        }
         #region Registration
         [HttpGet]
         public IActionResult Register(string? returnUrl = null)

@@ -1,0 +1,488 @@
+﻿/* Dark Mode Styles for ForumHub */
+
+/* Dark Mode Variables */
+body.dark-mode {
+    --bg-color: #1f2937;
+    --bg-light: #111827;
+    --bg-dark: #374151;
+    --text-color: #f9fafb;
+    --text-light: #d1d5db;
+    --border-color: #4b5563;
+    --primary-color: #818cf8;
+    --primary-hover: #a5b4fc;
+    --navbar-bg: #111827;
+    --navbar-border: #374151;
+}
+
+/* Base Elements */
+body.dark-mode {
+    background-color: var(--bg-light);
+    color: var(--text-color);
+}
+
+    body.dark-mode a {
+        color: var(--text-light);
+    }
+
+        body.dark-mode a:hover {
+            color: #fff;
+        }
+
+    /* Header */
+    body.dark-mode .main-header {
+        background-color: var(--navbar-bg);
+        border-color: var(--navbar-border);
+    }
+
+    body.dark-mode .logo-icon {
+        background-color: var(--primary-color);
+    }
+
+    body.dark-mode .nav-link {
+        color: var(--text-color);
+    }
+
+        body.dark-mode .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+    /* Search */
+    body.dark-mode .search-container input {
+        background-color: var(--bg-dark);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    body.dark-mode .search-btn {
+        color: var(--text-light);
+    }
+
+    /* Cards */
+    body.dark-mode .card {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .card-header {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-color: var(--border-color);
+    }
+
+    /* Category Cards */
+    body.dark-mode .category-card {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .category-icon {
+        background-color: var(--bg-dark);
+    }
+
+    /* Post Items */
+    body.dark-mode .post-item {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    /* Topic Tags */
+    body.dark-mode .topic-count {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+    }
+
+    body.dark-mode .post-tag {
+        background-color: var(--bg-dark);
+    }
+
+        body.dark-mode .post-tag.technology {
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+
+        body.dark-mode .post-tag.gaming {
+            background-color: rgba(139, 92, 246, 0.2);
+        }
+
+        body.dark-mode .post-tag.creative-arts {
+            background-color: rgba(236, 72, 153, 0.2);
+        }
+
+        body.dark-mode .post-tag.general {
+            background-color: rgba(99, 102, 241, 0.2);
+        }
+
+    /* Active Category */
+    body.dark-mode .active-category {
+        background-color: var(--bg-dark);
+        color: var(--text-color);
+    }
+
+        body.dark-mode .active-category:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+    /* More Users */
+    body.dark-mode .more-users {
+        background-color: var(--bg-dark);
+        color: var(--text-color);
+    }
+
+    /* Footer */
+    body.dark-mode .main-footer {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .social-icons a {
+        background-color: var(--bg-dark);
+        color: var(--text-color);
+    }
+
+        body.dark-mode .social-icons a:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+    /* Form Elements */
+    body.dark-mode .form-control {
+        background-color: var(--bg-dark);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+        body.dark-mode .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+        }
+
+    body.dark-mode .input-group-text {
+        background-color: var(--bg-dark);
+        border-color: var(--border-color);
+        color: var(--text-light);
+    }
+
+    /* Buttons */
+    body.dark-mode .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+        body.dark-mode .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+    body.dark-mode .btn-outline-secondary {
+        color: var(--text-color);
+        border-color: var(--border-color);
+    }
+
+        body.dark-mode .btn-outline-secondary:hover {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+    /* Dropdown Menu */
+    body.dark-mode .dropdown-menu {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .dropdown-item {
+        color: var(--text-color);
+    }
+
+        body.dark-mode .dropdown-item:hover {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+        }
+
+    body.dark-mode .dropdown-divider {
+        border-color: var(--border-color);
+    }
+
+    /* Modal */
+    body.dark-mode .modal-content {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .modal-header,
+    body.dark-mode .modal-footer {
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    /* List Group */
+    body.dark-mode .list-group-item {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    /* Scrollbar */
+    body.dark-mode ::-webkit-scrollbar-track {
+        background: var(--bg-dark);
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+    }
+
+        body.dark-mode ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+/* Dark Mode Toggle Animation */
+.dark-mode-toggle {
+    cursor: pointer;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+    .dark-mode-toggle:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+body.dark-mode .dark-mode-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode-toggle i {
+    font-size: 1.25rem;
+    transition: transform 0.5s ease;
+}
+
+body.dark-mode .dark-mode-toggle .fa-moon {
+    display: none;
+}
+
+body.dark-mode .dark-mode-toggle .fa-sun {
+    display: inline-block;
+    color: #fbbf24;
+}
+
+.dark-mode-toggle .fa-sun {
+    display: none;
+}
+
+.dark-mode-toggle .fa-moon {
+    display: inline-block;
+    color: #6366f1;
+}
+
+/* Dark Mode Transition */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card,
+.main-header,
+.main-footer,
+.form-control,
+.btn,
+.dropdown-menu {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+/* Add these rules to dark-mode.css */
+
+/* Base text colors */
+body.dark-mode {
+    color: var(--text-color);
+}
+
+    /* Override Bootstrap's text utilities */
+    body.dark-mode .text-muted {
+        color: var(--text-light) !important;
+    }
+
+    body.dark-mode .text-dark {
+        color: var(--text-color) !important;
+    }
+
+    /* Card text colors */
+    body.dark-mode .card,
+    body.dark-mode .card-title,
+    body.dark-mode .card-text {
+        color: var(--text-color);
+    }
+
+    /* Form text colors */
+    body.dark-mode .form-control,
+    body.dark-mode .form-label,
+    body.dark-mode .input-group-text {
+        color: var(--text-color);
+    }
+
+    /* List items */
+    body.dark-mode .list-group-item {
+        color: var(--text-color);
+    }
+
+    /* Footer text */
+    body.dark-mode .main-footer,
+    body.dark-mode .main-footer a:not(.btn) {
+        color: var(--text-color);
+    }
+
+    /* Badges */
+    body.dark-mode .badge {
+        color: white;
+    }
+
+    /* Override any direct color usage */
+    body.dark-mode small,
+    body.dark-mode .small {
+        color: var(--text-light);
+    }
+
+    /*x2*/
+/* Posts.cshtml Dark Mode Additions - Add to dark-mode.css */
+
+/* Connect Posts.cshtml variables with dark mode */
+body.dark-mode {
+    /* Add these to your existing dark-mode variables */
+    --card-bg: var(--bg-color);
+    --text-lighter: #9ca3af;
+}
+
+    /* Post-specific elements not covered in main dark-mode.css */
+    body.dark-mode .sidebar-card,
+    body.dark-mode .post-content-card,
+    body.dark-mode .comments-container,
+    body.dark-mode .comment-form {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    /* Community-specific elements */
+    body.dark-mode .community-item {
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .community-number,
+    body.dark-mode .community-description,
+    body.dark-mode .trending-name,
+    body.dark-mode .stat-label {
+        color: var(--text-light);
+    }
+
+    /* Premium promo - unique to Posts.cshtml */
+    body.dark-mode .premium-promo {
+        background-color: #7e2d00; /* Darker shade of orange */
+    }
+
+    body.dark-mode .premium-button {
+        background-color: white;
+        color: #7e2d00;
+    }
+
+    /* Comment section */
+    body.dark-mode .comments-header,
+    body.dark-mode .comment {
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .comment-input {
+        background-color: var(--bg-dark);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    body.dark-mode .comment-body,
+    body.dark-mode .comment-author {
+        color: var(--text-color);
+    }
+
+    body.dark-mode .comment-time {
+        color: var(--text-light);
+    }
+
+    body.dark-mode .comment-action {
+        color: var(--text-light);
+    }
+
+        body.dark-mode .comment-action:hover {
+            color: var(--primary-hover);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+    /* Nested comments */
+    body.dark-mode .nested-comments {
+        border-color: var(--border-color);
+    }
+
+    /* Post elements */
+    body.dark-mode .post-header {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .post-title,
+    body.dark-mode .post-body,
+    body.dark-mode .post-username,
+    body.dark-mode .post-community {
+        color: var(--text-color);
+    }
+
+    body.dark-mode .post-time {
+        color: var(--text-light);
+    }
+
+    body.dark-mode .post-tag {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+    }
+
+    /* Post actions */
+    body.dark-mode .post-actions {
+        background-color: var(--bg-color);
+        border-color: var(--border-color);
+    }
+
+    body.dark-mode .vote-button,
+    body.dark-mode .action-button {
+        color: var(--text-light);
+    }
+
+        body.dark-mode .vote-button:hover,
+        body.dark-mode .action-button:hover {
+            color: var(--primary-hover);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+    /* Community sidebar elements */
+    body.dark-mode .community-title {
+        color: var(--text-color);
+    }
+
+    body.dark-mode .community-rules li {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+    }
+
+    body.dark-mode .trending-community {
+        border-color: var(--border-color);
+    }
+
+    /* Sort dropdown */
+    body.dark-mode .sort-dropdown {
+        background-color: transparent;
+        color: var(--primary-color);
+    }
+body.dark-mode .text-body{
+    color:#fff !important;
+}
+input::placeholder {
+    color: red;
+    opacity: 1; /* For Firefox */
+}
