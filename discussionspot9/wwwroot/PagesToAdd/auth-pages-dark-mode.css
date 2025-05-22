@@ -1,0 +1,165 @@
+/* Auth Pages Dark Mode Styles - Add to dark-mode.css */
+
+/* Auth Card */
+body.dark-mode .auth-card,
+body.dark-mode .error-card {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Input Groups */
+body.dark-mode .input-group {
+    background-color: var(--bg-dark);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .input-group .form-control {
+    background-color: transparent;
+    color: var(--text-color);
+}
+
+body.dark-mode .input-group:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+body.dark-mode .input-group-text,
+body.dark-mode .toggle-password {
+    color: var(--text-light);
+}
+
+/* Form Elements */
+body.dark-mode .form-group label {
+    color: var(--text-color);
+}
+
+body.dark-mode .form-control::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}
+
+/* Auth Headers */
+body.dark-mode .auth-header h2,
+body.dark-mode .error-title,
+body.dark-mode .site-name {
+    color: var(--text-color);
+}
+
+body.dark-mode .auth-header p,
+body.dark-mode .error-message {
+    color: var(--text-light);
+}
+
+/* Password Strength Meter */
+body.dark-mode .password-strength-meter {
+    background-color: var(--border-color);
+}
+
+body.dark-mode .password-strength-meter-fill.weak {
+    background-color: #ef4444;
+}
+
+body.dark-mode .password-strength-meter-fill.medium {
+    background-color: #f59e0b;
+}
+
+body.dark-mode .password-strength-meter-fill.strong {
+    background-color: #10b981;
+}
+
+body.dark-mode .password-strength-text {
+    color: var(--text-light);
+}
+
+/* Password Requirements */
+body.dark-mode .password-requirement {
+    color: var(--text-light);
+}
+
+body.dark-mode .password-requirement.met {
+    color: #10b981;
+}
+
+/* Alerts */
+body.dark-mode .alert-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+body.dark-mode .alert-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+/* Success Message */
+body.dark-mode .success-message h3 {
+    color: var(--text-color);
+}
+
+body.dark-mode .success-message p {
+    color: var(--text-light);
+}
+
+body.dark-mode .success-message .email-highlight {
+    color: var(--text-color);
+}
+
+/* Success Icon */
+body.dark-mode .success-icon {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+/* Error Icon */
+body.dark-mode .error-icon {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Back Link */
+body.dark-mode .back-link {
+    color: var(--text-color);
+}
+
+body.dark-mode .back-link:hover {
+    color: var(--primary-color);
+}
+
+/* Auth Footer */
+body.dark-mode .auth-footer {
+    color: var(--text-light);
+}
+
+body.dark-mode .auth-footer a {
+    color: var(--primary-color);
+}
+
+body.dark-mode .auth-footer a:hover {
+    color: var(--primary-hover);
+}
+
+/* Toast Notifications */
+body.dark-mode .toast {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+body.dark-mode .toast-header {
+    background-color: var(--bg-dark);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+body.dark-mode .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Fix placeholder color */
+body.dark-mode input::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}

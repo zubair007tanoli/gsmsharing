@@ -140,13 +140,18 @@
                             {
                                 <!-- Authentication buttons - show when logged out -->
                                 <div class="auth-btns">
-                                    <a asp-action="Login" asp-controller="Accounts" class="btn btn-outline-primary btn-sm">
+                                @*     <a asp-action="Login" asp-controller="Accounts" class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-sign-in-alt"></i> <span>Login</span>
                                     </a>
                                     <a asp-action="Login" asp-controller="Accounts" class="btn btn-primary btn-sm">
                                         <i class="fas fa-user-plus"></i> <span>Register</span>
+                                    </a> *@
+                                      <a asp-action="Auth" asp-controller="Account" class="btn btn-primary btn-sm">
+                                       <i class="fas fa-sign-in-alt"></i> <span>Login</span> / <i class="fas fa-user-plus"></i> <span>Register</span>
                                     </a>
                                 </div>
+
+                       
                             }                       
 
                           
