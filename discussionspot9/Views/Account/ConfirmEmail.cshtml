@@ -1,0 +1,200 @@
+﻿
+@{
+    ViewData["Title"] = "Confirm Email";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --secondary-color: #6366f1;
+        --text-color: #1f2937;
+        --text-light: #6b7280;
+        --bg-color: #DFE3EE;
+        --bg-light: #f9fafb;
+        --bg-dark: #f3f4f6;
+        --border-color: #e5e7eb;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --error-color: #ef4444;
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+
+    .verification-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+
+    .verification-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+        .verification-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+    .verification-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .verification-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .verification-body {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .verification-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .verification-text {
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+    }
+
+    .verification-email {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .verification-actions {
+        margin-top: 1.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+    .verification-footer {
+        margin-top: 2rem;
+        text-align: center;
+        color: var(--text-light);
+    }
+
+        .verification-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+            .verification-footer a:hover {
+                text-decoration: underline;
+            }
+
+    @@media (max-width: 767.98px) {
+        .verification-header
+
+    {
+        padding: 1.5rem;
+    }
+
+    .verification-body {
+        padding: 1.5rem;
+    }
+
+    }
+</style>
+
+    <div class="verification-container">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-md-10 offset-md-1 col-lg-8 offset-lg-2 col-xl-6 offset-xl-3">
+                    <div class="verification-card">
+                        <div class="verification-header">
+                            <div class="verification-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <h1>Email Verification</h1>
+                        </div>
+
+                        <div class="verification-body">
+                            <div class="verification-title">Verify Your Email Address</div>
+
+                            <p class="verification-text">
+                                We've sent a verification email to <span class="verification-email">user@example.com</span>.
+                                Please check your inbox and click on the verification link to activate your account.
+                            </p>
+
+                            <div class="alert alert-warning" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                If you don't see the email, please check your spam folder.
+                            </div>
+
+                            <div class="verification-actions">
+                                <button class="btn btn-primary me-2">
+                                    <i class="fas fa-paper-plane me-2"></i>Resend Verification Email
+                                </button>
+                                <a href="/login" class="btn btn-outline-primary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Sign In
+                                </a>
+                            </div>
+
+                            <div class="verification-footer">
+                                <p>Need help? <a href="/contact">Contact Support</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script>
+        // Dark Mode Toggle
+        const darkModeToggle = document.querySelector('.dark-mode-toggle');
+        const body = document.body;
+
+        // Check for saved theme preference or use preferred color scheme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            body.classList.add('dark-mode');
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    </script>
+

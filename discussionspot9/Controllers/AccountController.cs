@@ -215,6 +215,40 @@ namespace DiscussionSpot9.Controllers
 
             return View(model);
         }
+        [HttpGet]
+        public IActionResult ResetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult NewPassword()
+        {
+            return View();
+        }
+        #endregion
+
+        #region Email Confirmation
+
+        [HttpGet]
+        public IActionResult ConfirmEmail()
+        {
+         
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult ConfirmEmail(string userId, string code)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
+            {
+                return NotFound();
+            }
+        
+          
+            return RedirectToAction("Index", "Home");
+        }
+
         #endregion
 
         #region Public Profile View

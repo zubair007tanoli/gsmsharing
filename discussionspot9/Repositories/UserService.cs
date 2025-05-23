@@ -235,6 +235,11 @@ namespace DiscussionSpot9.Services
             };
         }
 
+        object IUserService.ConfirmEmailAsync(string userId, string code)
+        {
+            throw new NotImplementedException();
+        }
+
         //public async Task<UserProfile?> GetUserProfileByDisplayNameAsync(string displayName)
         //{
         //    return await _context.UserProfiles
