@@ -27,7 +27,6 @@
     <Folder Include="Areas\Identity\Pages\" />
     <Folder Include="Data\SqlScripts\" />
     <Folder Include="Data\Repositories\" />
-    <Folder Include="Helpers\" />
     <Folder Include="Database\" />
   </ItemGroup>
 

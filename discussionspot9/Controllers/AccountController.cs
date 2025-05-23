@@ -7,16 +7,10 @@ using System.Security.Claims;
 
 namespace DiscussionSpot9.Controllers
 {
-    public class AccountController : Controller
+    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager) : Controller
     {
-        private readonly IUserService _userService;
-        private readonly UserManager<IdentityUser> _userManager;
-
-        public AccountController(IUserService userService, UserManager<IdentityUser> userManager)
-        {
-            _userService = userService;
-            _userManager = userManager;
-        }
+        private readonly IUserService _userService = userService;
+        private readonly UserManager<IdentityUser> _userManager = userManager;
 
         [HttpGet]
         [AllowAnonymous]
@@ -233,7 +227,7 @@ namespace DiscussionSpot9.Controllers
         [HttpGet]
         public IActionResult ConfirmEmail()
         {
-         
+
             return View();
         }
 
@@ -244,8 +238,8 @@ namespace DiscussionSpot9.Controllers
             {
                 return NotFound();
             }
-        
-          
+
+
             return RedirectToAction("Index", "Home");
         }
 
