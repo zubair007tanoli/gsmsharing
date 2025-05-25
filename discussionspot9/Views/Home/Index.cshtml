@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["Title"] = "Index";
+﻿@model discussionspot9.Models.ViewModels.HomePage.HomePageViewModel
+@using discussionspot9.Helpers
+@{
+    ViewData["Title"] = "Home - DiscussionSpot";
 }
 
 <main class="container py-4">
@@ -15,450 +17,312 @@
         </div>
     </section>
 
-    <!-- Random Posts Section (Added above categories as requested) -->
-    <section class="random-posts-section mb-4">
-        <div class="section-header d-flex justify-content-between align-items-center mb-3">
-            <h2>Random Discussions</h2>
-            <a href="random.html" class="view-all">View all</a>
-        </div>
+    @if (Model?.RandomPosts?.Any() == true)
+    {
+        <!-- Random Posts Section -->
+        <section class="random-posts-section mb-4">
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h2>Random Discussions</h2>
+                <a href="@Url.All()" class="view-all">View all</a>
+            </div>
 
-        <div class="row">
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 random-post-card">
-                    <div class="card-body">
-                        <div class="post-tags mb-2">
-                            <span class="post-tag technology">Technology</span>
-                        </div>
-                        <h3 class="card-title h5"><a href="post.html?id=5">Best mechanical keyboards for programmers</a></h3>
-                        <div class="post-meta">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-2">TG</div>
-                                <span class="small">TechGuru</span>
-                            </div>
-                            <div class="mt-2 small text-muted">
-                                <i class="fas fa-comment me-1"></i> 47 replies
+            <div class="row">
+                @foreach (var post in Model.RandomPosts)
+                {
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 random-post-card">
+                            <div class="card-body">
+                                <div class="post-tags mb-2">
+                                    <span class="post-tag @post.CategoryCssClass">@post.CategoryName</span>
+                                </div>
+                                <h3 class="card-title h5">
+                                    <a href="@post.PostUrl">@post.Title</a>
+                                </h3>
+                                <div class="post-meta">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar avatar-sm me-2">@post.AuthorInitials</div>
+                                        <span class="small">@post.AuthorDisplayName</span>
+                                    </div>
+                                    <div class="mt-2 small text-muted">
+                                        <i class="fas fa-comment me-1"></i> @post.CommentCount replies
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
-
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 random-post-card">
-                    <div class="card-body">
-                        <div class="post-tags mb-2">
-                            <span class="post-tag creative-arts">Creative Arts</span>
-                        </div>
-                        <h3 class="card-title h5"><a href="post.html?id=6">Favorite drawing tablets for beginners</a></h3>
-                        <div class="post-meta">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-2">CA</div>
-                                <span class="small">CreativeArtist</span>
-                            </div>
-                            <div class="mt-2 small text-muted">
-                                <i class="fas fa-comment me-1"></i> 32 replies
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 random-post-card">
-                    <div class="card-body">
-                        <div class="post-tags mb-2">
-                            <span class="post-tag gaming">Gaming</span>
-                        </div>
-                        <h3 class="card-title h5"><a href="post.html?id=7">Most anticipated game releases of 2023</a></h3>
-                        <div class="post-meta">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-2">GF</div>
-                                <span class="small">GameFanatic</span>
-                            </div>
-                            <div class="mt-2 small text-muted">
-                                <i class="fas fa-comment me-1"></i> 65 replies
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 random-post-card">
-                    <div class="card-body">
-                        <div class="post-tags mb-2">
-                            <span class="post-tag general">General</span>
-                        </div>
-                        <h3 class="card-title h5"><a href="post.html?id=8">Best productivity apps in 2023</a></h3>
-                        <div class="post-meta">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-2">PG</div>
-                                <span class="small">ProductivityGuru</span>
-                            </div>
-                            <div class="mt-2 small text-muted">
-                                <i class="fas fa-comment me-1"></i> 28 replies
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
+    }
 
     <div class="row">
         <div class="col-lg-8">
-            <!-- Categories Section -->
-            <section class="categories-section mb-4">
-                <div class="section-header d-flex justify-content-between align-items-center mb-3">
-                    <h2>Categories</h2>
-                    <a href="categories.html" class="view-all">View all</a>
-                </div>
+            @if (Model?.Categories?.Any() == true)
+            {
+                <!-- Categories Section -->
+                <section class="categories-section mb-4">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                        <h2>Categories</h2>
+                        <a href="@Url.Communities()" class="view-all">View all</a>
+                    </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <a href="category.html?id=general" class="card category-card h-100">
-                            <div class="card-body d-flex">
-                                <div class="category-icon me-3">
-                                    <i class="fas fa-comments"></i>
-                                </div>
-                                <div class="category-content">
-                                    <h3 class="h5 mb-1">General Discussion</h3>
-                                    <p class="small text-muted mb-2">Talk about anything related to our community</p>
-                                    <div class="category-meta">
-                                        <span class="topic-count">1243 topics</span>
-                                        <div class="category-stats mt-1">
-                                            <span class="small text-muted me-3"><i class="fas fa-file-alt me-1"></i> 8765 posts</span>
-                                            <span class="small text-muted"><i class="fas fa-user-clock me-1"></i> Active now</span>
+                    <div class="row">
+                        @foreach (var category in Model.Categories)
+                        {
+                            <div class="col-md-6 mb-3">
+                                <a href="@category.CategoryUrl" class="card category-card h-100">
+                                    <div class="card-body d-flex">
+                                        <div class="category-icon me-3">
+                                            <i class="@category.IconClass"></i>
+                                        </div>
+                                        <div class="category-content">
+                                            <h3 class="h5 mb-1">@category.Name</h3>
+                                            <p class="small text-muted mb-2">@category.Description</p>
+                                            <div class="category-meta">
+                                                <span class="topic-count">@category.FormattedTopicCount topics</span>
+                                                <div class="category-stats mt-1">
+                                                    <span class="small text-muted me-3">
+                                                        <i class="fas fa-file-alt me-1"></i> @category.FormattedPostCount posts
+                                                    </span>
+                                                    @if (category.IsActiveNow)
+                                                    {
+                                                        <span class="small text-muted">
+                                                            <i class="fas fa-user-clock me-1"></i> Active now
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="small text-muted">
+                                                            <i class="fas fa-clock me-1"></i> @category.LastActivityText
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
-                        </a>
+                        }
+                    </div>
+                </section>
+            }
+
+            @if (Model?.RecentPosts?.Any() == true)
+            {
+                <!-- Recent Discussions Section -->
+                <section class="recent-posts-section mb-4">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                        <h2>Recent Discussions</h2>
+                        <a href="@Url.All(sort: "recent")" class="view-all">View all</a>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <a href="category.html?id=technology" class="card category-card h-100">
-                            <div class="card-body d-flex">
-                                <div class="category-icon me-3">
-                                    <i class="fas fa-laptop"></i>
-                                </div>
-                                <div class="category-content">
-                                    <h3 class="h5 mb-1">Technology</h3>
-                                    <p class="small text-muted mb-2">Discuss the latest tech trends and news</p>
-                                    <div class="category-meta">
-                                        <span class="topic-count">876 topics</span>
-                                        <div class="category-stats mt-1">
-                                            <span class="small text-muted me-3"><i class="fas fa-file-alt me-1"></i> 5432 posts</span>
-                                            <span class="small text-muted"><i class="fas fa-user-clock me-1"></i> Active now</span>
+                    <div class="posts-list">
+                        @foreach (var post in Model.RecentPosts)
+                        {
+                            <div class="card post-item mb-3">
+                                <div class="card-body d-flex">
+                                    <div class="post-votes text-center me-3">
+                                        <span class="vote-count @post.VoteCountCssClass">@post.FormattedVoteCount</span>
+                                        <span class="vote-label small text-muted">votes</span>
+                                    </div>
+                                    <div class="post-content">
+                                        <div class="post-tags mb-2">
+                                            <span class="post-tag @post.CategoryCssClass">@post.CategoryName</span>
+                                            @if (post.IsPinned)
+                                            {
+                                                <span class="badge bg-primary">Pinned</span>
+                                            }
+                                            @if (post.IsLocked)
+                                            {
+                                                <span class="badge bg-secondary">Locked</span>
+                                            }
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <a href="category.html?id=gaming" class="card category-card h-100">
-                            <div class="card-body d-flex">
-                                <div class="category-icon me-3">
-                                    <i class="fas fa-gamepad"></i>
-                                </div>
-                                <div class="category-content">
-                                    <h3 class="h5 mb-1">Gaming</h3>
-                                    <p class="small text-muted mb-2">Share gaming experiences and find teammates</p>
-                                    <div class="category-meta">
-                                        <span class="topic-count">654 topics</span>
-                                        <div class="category-stats mt-1">
-                                            <span class="small text-muted me-3"><i class="fas fa-file-alt me-1"></i> 4321 posts</span>
-                                            <span class="small text-muted"><i class="fas fa-user-clock me-1"></i> Active now</span>
+                                        <h3 class="post-title h5">
+                                            <a href="@post.PostUrl">@post.Title</a>
+                                        </h3>
+                                        <p class="post-excerpt text-muted small">@post.Excerpt</p>
+                                        <div class="post-meta d-flex justify-content-between align-items-center">
+                                            <div class="post-author d-flex align-items-center">
+                                                <div class="avatar avatar-sm me-2">@post.AuthorInitials</div>
+                                                <a href="@post.AuthorUrl" class="small">@post.AuthorDisplayName</a>
+                                            </div>
+                                            <div class="post-stats small text-muted">
+                                                <span class="me-2">
+                                                    <i class="fas fa-comment me-1"></i> @post.FormattedCommentCount
+                                                </span>
+                                                <span class="me-2">
+                                                    <i class="fas fa-eye me-1"></i> @post.FormattedViewCount
+                                                </span>
+                                                <span>
+                                                    <i class="fas fa-clock me-1"></i> @post.TimeAgo
+                                                </span>
+                                            </div>
                                         </div>
+                                        @if (post.HasTags)
+                                        {
+                                            <div class="post-tags-list mt-2">
+                                                @foreach (var tag in post.DisplayTags)
+                                                {
+                                                    <span class="badge bg-light text-dark me-1">@tag</span>
+                                                }
+                                                @if (post.HasMoreTags)
+                                                {
+                                                    <span class="badge bg-light text-dark">+@(post.Tags.Count - 3)</span>
+                                                }
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
-                        </a>
+                        }
                     </div>
-
-                    <div class="col-md-6 mb-3">
-                        <a href="category.html?id=creative-arts" class="card category-card h-100">
-                            <div class="card-body d-flex">
-                                <div class="category-icon me-3">
-                                    <i class="fas fa-palette"></i>
-                                </div>
-                                <div class="category-content">
-                                    <h3 class="h5 mb-1">Creative Arts</h3>
-                                    <p class="small text-muted mb-2">Showcase your artwork, music, and creative projects</p>
-                                    <div class="category-meta">
-                                        <span class="topic-count">432 topics</span>
-                                        <div class="category-stats mt-1">
-                                            <span class="small text-muted me-3"><i class="fas fa-file-alt me-1"></i> 3210 posts</span>
-                                            <span class="small text-muted"><i class="fas fa-user-clock me-1"></i> Active now</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Recent Discussions Section -->
-            <section class="recent-posts-section mb-4">
-                <div class="section-header d-flex justify-content-between align-items-center mb-3">
-                    <h2>Recent Discussions</h2>
-                    <a href="recent.html" class="view-all">View all</a>
-                </div>
-
-                <div class="posts-list">
-                    <div class="card post-item mb-3">
-                        <div class="card-body d-flex">
-                            <div class="post-votes text-center me-3">
-                                <span class="vote-count">42</span>
-                                <span class="vote-label small text-muted">votes</span>
-                            </div>
-                            <div class="post-content">
-                                <div class="post-tags mb-2">
-                                    <span class="post-tag technology">Technology</span>
-                                </div>
-                                <h3 class="post-title h5"><a href="post.html?id=1">What programming language should I learn in 2023?</a></h3>
-                                <p class="post-excerpt text-muted small">I'm new to programming and want to start learning. Should I go with Python, JavaScript, or something else? I've heard good things about both but I'm not sure which would be better for a beginner with no prior experience.</p>
-                                <div class="post-meta d-flex justify-content-between align-items-center">
-                                    <div class="post-author d-flex align-items-center">
-                                        <div class="avatar avatar-sm me-2">JD</div>
-                                        <a href="profile.html?user=janedev" class="small">JaneDev</a>
-                                    </div>
-                                    <div class="post-stats small text-muted">
-                                        <span class="me-2"><i class="fas fa-comment me-1"></i> 24</span>
-                                        <span class="me-2"><i class="fas fa-eye me-1"></i> 156</span>
-                                        <span><i class="fas fa-clock me-1"></i> 2h ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card post-item mb-3">
-                        <div class="card-body d-flex">
-                            <div class="post-votes text-center me-3">
-                                <span class="vote-count">38</span>
-                                <span class="vote-label small text-muted">votes</span>
-                            </div>
-                            <div class="post-content">
-                                <div class="post-tags mb-2">
-                                    <span class="post-tag gaming">Gaming</span>
-                                </div>
-                                <h3 class="post-title h5"><a href="post.html?id=2">Best gaming console for casual gamers?</a></h3>
-                                <p class="post-excerpt text-muted small">Looking for recommendations on a gaming console that's good for casual gaming and has family-friendly titles. I'm considering Nintendo Switch, PS5, or Xbox Series X but not sure which would be best for our family.</p>
-                                <div class="post-meta d-flex justify-content-between align-items-center">
-                                    <div class="post-author d-flex align-items-center">
-                                        <div class="avatar avatar-sm me-2">GM</div>
-                                        <a href="profile.html?user=gamemaster99" class="small">GameMaster99</a>
-                                    </div>
-                                    <div class="post-stats small text-muted">
-                                        <span class="me-2"><i class="fas fa-comment me-1"></i> 31</span>
-                                        <span class="me-2"><i class="fas fa-eye me-1"></i> 876</span>
-                                        <span><i class="fas fa-clock me-1"></i> 5h ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card post-item">
-                        <div class="card-body d-flex">
-                            <div class="post-votes text-center me-3">
-                                <span class="vote-count">29</span>
-                                <span class="vote-label small text-muted">votes</span>
-                            </div>
-                            <div class="post-content">
-                                <div class="post-tags mb-2">
-                                    <span class="post-tag creative-arts">Creative Arts</span>
-                                </div>
-                                <h3 class="post-title h5"><a href="post.html?id=3">Tips for improving your digital art skills</a></h3>
-                                <p class="post-excerpt text-muted small">I've been doing digital art for about 6 months now and feel like I've hit a plateau. What are some exercises or techniques that helped you improve your skills? Any recommended courses or YouTube channels?</p>
-                                <div class="post-meta d-flex justify-content-between align-items-center">
-                                    <div class="post-author d-flex align-items-center">
-                                        <div class="avatar avatar-sm me-2">CA</div>
-                                        <a href="profile.html?user=creativeart" class="small">CreativeArt</a>
-                                    </div>
-                                    <div class="post-stats small text-muted">
-                                        <span class="me-2"><i class="fas fa-comment me-1"></i> 18</span>
-                                        <span class="me-2"><i class="fas fa-eye me-1"></i> 245</span>
-                                        <span><i class="fas fa-clock me-1"></i> 1d ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                </section>
+            }
         </div>
 
         <div class="col-lg-4">
             <!-- Sidebar -->
             <div class="sidebar">
-                <!-- Trending Topics Section -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="h5 mb-0">Trending Topics</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="trending-topics">
-                            <div class="trending-topic mb-3 pb-3 border-bottom">
-                                <div class="topic-tags mb-2">
-                                    <span class="post-tag technology">Technology</span>
-                                    <span class="topic-status hot">Hot</span>
-                                </div>
-                                <h3 class="h6"><a href="post.html?id=1">Announcing the new iPhone 15 Pro - First impressions</a></h3>
-                                <div class="topic-meta small text-muted">
-                                    <span><i class="fas fa-comment me-1"></i> 156 replies</span>
-                                </div>
-                            </div>
-
-                            <div class="trending-topic mb-3 pb-3 border-bottom">
-                                <div class="topic-tags mb-2">
-                                    <span class="post-tag gaming">Gaming</span>
-                                    <span class="topic-status hot">Hot</span>
-                                </div>
-                                <h3 class="h6"><a href="post.html?id=2">The best games of 2023 so far - Community poll</a></h3>
-                                <div class="topic-meta small text-muted">
-                                    <span><i class="fas fa-comment me-1"></i> 98 replies</span>
-                                </div>
-                            </div>
-
-                            <div class="trending-topic mb-3 pb-3 border-bottom">
-                                <div class="topic-tags mb-2">
-                                    <span class="post-tag creative-arts">Creative Arts</span>
-                                </div>
-                                <h3 class="h6"><a href="post.html?id=3">Tips for improving your digital art skills</a></h3>
-                                <div class="topic-meta small text-muted">
-                                    <span><i class="fas fa-comment me-1"></i> 76 replies</span>
-                                </div>
-                            </div>
-
-                            <div class="trending-topic">
-                                <div class="topic-tags mb-2">
-                                    <span class="post-tag general">General</span>
-                                </div>
-                                <h3 class="h6"><a href="post.html?id=4">What books are you currently reading?</a></h3>
-                                <div class="topic-meta small text-muted">
-                                    <span><i class="fas fa-comment me-1"></i> 112 replies</span>
-                                </div>
+                @if (Model?.Sidebar?.HasTrendingTopics == true)
+                {
+                    <!-- Trending Topics Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h2 class="h5 mb-0">Trending Topics</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="trending-topics">
+                                @foreach (var topic in Model.Sidebar.TrendingTopics)
+                                {
+                                    <div class="trending-topic mb-3 pb-3 border-bottom">
+                                        <div class="topic-tags mb-2">
+                                            <span class="post-tag @topic.CategoryCssClass">@topic.CategoryName</span>
+                                            @if (topic.IsHot)
+                                            {
+                                                <span class="topic-status hot">Hot</span>
+                                            }
+                                        </div>
+                                        <h3 class="h6">
+                                            <a href="@topic.PostUrl">@topic.ShortTitle</a>
+                                        </h3>
+                                        <div class="topic-meta small text-muted">
+                                            <span>
+                                                <i class="fas fa-comment me-1"></i> @topic.FormattedReplyCount replies
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>
-                </div>
+                }
 
-                <!-- Online Users Section (Enhanced) -->
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h2 class="h5 mb-0">Online Now</h2>
-                        <span class="badge bg-success">17 users</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="online-users-section">
-                            <div class="active-users mb-3">
-                                <div class="d-flex flex-wrap gap-2 mb-2">
-                                    <div class="user-avatar-wrapper" data-bs-toggle="tooltip" title="JaneDev - Active in Technology">
-                                        <div class="user-avatar">JD</div>
-                                        <span class="status-indicator online"></span>
+                @if (Model?.Sidebar?.HasOnlineUsers == true)
+                {
+                    <!-- Online Users Section -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h2 class="h5 mb-0">Online Now</h2>
+                            <span class="badge bg-success">@Model.Sidebar.OnlineUsers.TotalOnline users</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="online-users-section">
+                                @if (Model.Sidebar.OnlineUsers.HasVisibleUsers)
+                                {
+                                    <div class="active-users mb-3">
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            @foreach (var user in Model.Sidebar.OnlineUsers.VisibleUsers)
+                                            {
+                                                <div class="user-avatar-wrapper" data-bs-toggle="tooltip" title="@user.TooltipText">
+                                                    <div class="user-avatar">@user.Initials</div>
+                                                    <span class="status-indicator @user.StatusIndicatorClass"></span>
+                                                </div>
+                                            }
+                                            @if (Model.Sidebar.OnlineUsers.HasHiddenUsers)
+                                            {
+                                                <div class="user-avatar more-users" data-bs-toggle="modal" data-bs-target="#onlineUsersModal">
+                                                    @Model.Sidebar.OnlineUsers.HiddenUsersText
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="small text-muted">
+                                            <i class="fas fa-chart-line me-1"></i>
+                                            Peak today: @Model.Sidebar.OnlineUsers.PeakToday users at @Model.Sidebar.OnlineUsers.PeakTimeText
+                                        </div>
                                     </div>
-                                    <div class="user-avatar-wrapper" data-bs-toggle="tooltip" title="GameMaster99 - Active in Gaming">
-                                        <div class="user-avatar">GM</div>
-                                        <span class="status-indicator online"></span>
-                                    </div>
-                                    <div class="user-avatar-wrapper" data-bs-toggle="tooltip" title="SeriesAddict - Active in General">
-                                        <div class="user-avatar">SA</div>
-                                        <span class="status-indicator online"></span>
-                                    </div>
-                                    <div class="user-avatar-wrapper" data-bs-toggle="tooltip" title="CodeWizard - Active in Technology">
-                                        <div class="user-avatar">CW</div>
-                                        <span class="status-indicator online"></span>
-                                    </div>
-                                    <div class="user-avatar-wrapper" data-bs-toggle="tooltip" title="BookLover - Active in General">
-                                        <div class="user-avatar">BL</div>
-                                        <span class="status-indicator online"></span>
-                                    </div>
-                                    <div class="user-avatar more-users" data-bs-toggle="modal" data-bs-target="#onlineUsersModal">+12</div>
-                                </div>
-                                <div class="small text-muted">
-                                    <i class="fas fa-chart-line me-1"></i> Peak today: 42 users at 3:15 PM
-                                </div>
-                            </div>
+                                }
 
-                            <div class="active-now">
-                                <h6 class="text-muted mb-2">Currently Active In:</h6>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <a href="category.html?id=technology" class="active-category">
-                                        <i class="fas fa-laptop me-1"></i> Technology <span class="small">(8)</span>
-                                    </a>
-                                    <a href="category.html?id=gaming" class="active-category">
-                                        <i class="fas fa-gamepad me-1"></i> Gaming <span class="small">(5)</span>
-                                    </a>
-                                    <a href="category.html?id=general" class="active-category">
-                                        <i class="fas fa-comments me-1"></i> General <span class="small">(4)</span>
-                                    </a>
-                                </div>
+                                @if (Model.Sidebar.OnlineUsers.HasActiveCategories)
+                                {
+                                    <div class="active-now">
+                                        <h6 class="text-muted mb-2">Currently Active In:</h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach (var category in Model.Sidebar.OnlineUsers.ActiveCategories)
+                                            {
+                                                <a href="@Url.Communities()" class="active-category">
+                                                    <i class="fas fa-folder me-1"></i>
+                                                    @category.Key <span class="small">(@category.Value)</span>
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>
-                </div>
+                }
 
-                <!-- Forum Stats Section -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="h5 mb-0">Forum Stats</h2>
+                @if (Model?.Sidebar?.HasForumStats == true)
+                {
+                    <!-- Forum Stats Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h2 class="h5 mb-0">Forum Stats</h2>
+                        </div>
+                        <div class="card-body">
+                            <ul class="stats-list list-unstyled mb-0">
+                                @foreach (var stat in Model.Sidebar.ForumStats.StatItems)
+                                {
+                                    <li class="d-flex align-items-center mb-2">
+                                        <i class="@stat.IconClass me-2 text-primary"></i>
+                                        @stat.Value @stat.Label.ToLower()
+                                    </li>
+                                }
+                            </ul>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <ul class="stats-list list-unstyled mb-0">
-                            <li class="d-flex align-items-center mb-2">
-                                <i class="fas fa-users me-2 text-primary"></i> 12,450 members
-                            </li>
-                            <li class="d-flex align-items-center mb-2">
-                                <i class="fas fa-comments me-2 text-primary"></i> 45,789 posts
-                            </li>
-                            <li class="d-flex align-items-center mb-2">
-                                <i class="fas fa-folder me-2 text-primary"></i> 8 categories
-                            </li>
-                            <li class="d-flex align-items-center">
-                                <i class="fas fa-clock me-2 text-primary"></i> Latest: 2 mins ago
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+                }
 
-                <!-- New Members Section -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="h5 mb-0">New Members</h2>
+                @if (Model?.Sidebar?.HasNewMembers == true)
+                {
+                    <!-- New Members Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="h5 mb-0">New Members</h2>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                @foreach (var member in Model.Sidebar.NewMembers)
+                                {
+                                    <li class="list-group-item px-0 py-2 d-flex align-items-center">
+                                        <div class="avatar me-3">@member.Initials</div>
+                                        <div>
+                                            <div>
+                                                <a href="@member.ProfileUrl">@member.DisplayName</a>
+                                                @if (member.IsVerified)
+                                                {
+                                                    <i class="fas fa-check-circle text-primary ms-1" data-bs-toggle="tooltip" title="Verified"></i>
+                                                }
+                                            </div>
+                                            <small class="text-muted">@member.JoinDateAgo</small>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item px-0 py-2 d-flex align-items-center">
-                                <div class="avatar me-3">TS</div>
-                                <div>
-                                    <div><a href="profile.html?user=techsavvy">TechSavvy</a></div>
-                                    <small class="text-muted">Joined today</small>
-                                </div>
-                            </li>
-                            <li class="list-group-item px-0 py-2 d-flex align-items-center">
-                                <div class="avatar me-3">MG</div>
-                                <div>
-                                    <div><a href="profile.html?user=movieguru">MovieGuru</a></div>
-                                    <small class="text-muted">Joined yesterday</small>
-                                </div>
-                            </li>
-                            <li class="list-group-item px-0 py-2 d-flex align-items-center">
-                                <div class="avatar me-3">FE</div>
-                                <div>
-                                    <div><a href="profile.html?user=fitnessenthusiast">FitnessEnthusiast</a></div>
-                                    <small class="text-muted">Joined 2 days ago</small>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+                }
             </div>
         </div>
     </div>
 </main>
-

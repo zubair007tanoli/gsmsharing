@@ -17,6 +17,5 @@ namespace discussionspot9.Services
         Task<bool> IsDisplayNameTakenAsync(string displayName, string? currentUserId = null);
         Task UpdateLastActiveAsync(string userId);
         Task<UserStatsViewModel?> GetUserStatsAsync(string userId);
-        object ConfirmEmailAsync(string userId, string code);
     }
 }

@@ -1,5 +1,6 @@
 
 using discussionspot9.Data.DbContext;
+using discussionspot9.Interfaces;
 using discussionspot9.Services;
 using DiscussionSpot9.Services;
 using Microsoft.AspNetCore.Identity;
@@ -26,10 +27,11 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 
 //Interfaces & Repositories
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<IHomeService, HomeService>();
 
 var app = builder.Build();
 
