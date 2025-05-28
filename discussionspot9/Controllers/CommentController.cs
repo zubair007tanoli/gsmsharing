@@ -1,5 +1,6 @@
 ﻿using discussionspot9.Interfaces;
-using discussionspot9.Models.ViewModels.Comment;
+using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -54,7 +55,10 @@ namespace discussionspot9.Controllers
                 {
                     // Get the created comment with user info for rendering
                     var comment = await _commentService.GetCommentByIdAsync(result.CommentId);
-
+                    if (comment == null)
+                    {
+                        return Json(new { success = false, message = "Failed to retrieve the created comment." });
+                    }
                     // Render the comment partial view
                     var html = await RenderPartialViewToString("_Comment", comment);
 
@@ -85,6 +89,11 @@ namespace discussionspot9.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User is not authenticated." });
+                }
 
                 var result = await _commentService.VoteCommentAsync(commentId, userId, voteType);
 
@@ -123,6 +132,11 @@ namespace discussionspot9.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User is not authenticated." });
+                }
 
                 // Verify user owns this comment
                 var comment = await _commentService.GetCommentByIdAsync(commentId);
@@ -163,6 +177,11 @@ namespace discussionspot9.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User is not authenticated." });
+                }
 
                 var result = await _commentService.DeleteCommentAsync(commentId, userId);
 
@@ -247,9 +266,22 @@ namespace discussionspot9.Controllers
         private async Task<string> RenderPartialViewToString(string viewName, object model)
         {
             ViewData.Model = model;
-
             using var writer = new StringWriter();
-            var viewResult = ViewEngines.Engines.FindPartialView(ControllerContext, viewName);
+
+            var viewEngine = HttpContext.RequestServices.GetRequiredService<ICompositeViewEngine>();
+            var viewResult = viewEngine.FindView(ControllerContext, viewName, false);
+
+            if (!viewResult.Success)
+            {
+                // Try looking in Shared folder
+                viewResult = viewEngine.FindView(ControllerContext, $"~/Views/Shared/{viewName}.cshtml", false);
+            }
+
+            if (!viewResult.Success || viewResult.View == null)
+            {
+                throw new InvalidOperationException($"View '{viewName}' not found. Searched locations: {string.Join(", ", viewResult.SearchedLocations)}");
+            }
+
             var viewContext = new ViewContext(
                 ControllerContext,
                 viewResult.View,

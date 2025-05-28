@@ -1,0 +1,225 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostDetailPageViewModel
+@using discussionspot9.Helpers
+@{
+    ViewData["Title"] = $"{Model.Post.Title} - DiscussionSpot";
+}
+
+<main class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Post Card -->
+            <article class="card post-detail mb-4">
+                <div class="card-body">
+                    <!-- Post Header -->
+                    <div class="post-header mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <a href="@Url.Community(Model.Post.CommunitySlug)" class="text-decoration-none me-2">
+                                <span class="badge bg-primary">r/@Model.Post.CommunityName</span>
+                            </a>
+                            <span class="text-muted small">
+                                Posted by
+                                <a href="@Model.Post.AuthorUrl" class="text-decoration-none">u/@Model.Post.AuthorDisplayName</a>
+                                <span>@Model.Post.TimeAgo</span>
+                            </span>
+                        </div>
+                        <h1 class="h3">@Model.Post.Title</h1>
+
+                        @if (Model.Post.Tags.Any())
+                        {
+                            <div class="post-tags mt-2">
+                                @foreach (var tag in Model.Post.Tags)
+                                {
+                                    <span class="badge bg-light text-dark me-1">@tag</span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Post Content -->
+                    <div class="post-content mb-4">
+                        @if (Model.Post.PostType == "text")
+                        {
+                            @Html.Raw(Model.Post.Content)
+                        }
+                        else if (Model.Post.PostType == "link")
+                        {
+                            <a href="@Model.Post.Url" target="_blank" class="btn btn-outline-primary mb-3">
+                                <i class="fas fa-external-link-alt me-2"></i>@Model.Post.Url
+                            </a>
+                            @if (!string.IsNullOrEmpty(Model.Post.Content))
+                            {
+                                @Html.Raw(Model.Post.Content)
+                            }
+                        }
+
+                        @if (Model.Post.Media.Any())
+                        {
+                            <div class="post-media">
+                                @foreach (var media in Model.Post.Media)
+                                {
+                                    @if (media.MediaType == "image")
+                                    {
+                                        <img src="@media.Url" alt="@media.Caption" class="img-fluid mb-3" />
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Post Actions -->
+                    <div class="post-actions d-flex align-items-center gap-3 border-top pt-3">
+                        <div class="vote-buttons d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-secondary vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")"
+                                    data-post-id="@Model.Post.PostId" data-vote-type="1">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <span class="vote-count fw-bold">@Model.Post.Score</span>
+                            <button class="btn btn-sm btn-outline-secondary vote-btn downvote @(Model.Post.CurrentUserVote == -1 ? "active" : "")"
+                                    data-post-id="@Model.Post.PostId" data-vote-type="-1">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+
+                        <button class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-comment me-1"></i> @Model.Post.FormattedCommentCount Comments
+                        </button>
+
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-share me-1"></i> Share
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item share-btn" href="#" data-platform="copy"><i class="fas fa-link me-2"></i>Copy Link</a></li>
+                                <li><a class="dropdown-item share-btn" href="#" data-platform="facebook"><i class="fab fa-facebook me-2"></i>Facebook</a></li>
+                                <li><a class="dropdown-item share-btn" href="#" data-platform="twitter"><i class="fab fa-twitter me-2"></i>Twitter</a></li>
+                                <li><a class="dropdown-item share-btn" href="#" data-platform="reddit"><i class="fab fa-reddit me-2"></i>Reddit</a></li>
+                            </ul>
+                        </div>
+
+                        @if (Model.Post.IsCurrentUserAuthor)
+                        {
+                            <div class="ms-auto">
+                                <a href="#" class="btn btn-sm btn-outline-secondary me-1">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <form asp-action="Delete" asp-controller="Post" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="postId" value="@Model.Post.PostId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this post?')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </article>
+
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">Comments (@Model.Post.CommentCount)</h2>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            Sort by: Best
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Best</a></li>
+                            <li><a class="dropdown-item" href="#">Top</a></li>
+                            <li><a class="dropdown-item" href="#">New</a></li>
+                            <li><a class="dropdown-item" href="#">Controversial</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="card-body border-bottom">
+                        <form id="commentForm" class="comment-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="PostId" value="@Model.Post.PostId" />
+                            <div class="mb-3">
+                                <textarea name="Content" class="form-control" rows="3" placeholder="What are your thoughts?" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-comment me-1"></i> Comment
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                <div class="card-body comments-container">
+                    @if (Model.Comments.Any())
+                    {
+                        <div id="commentsList">
+                            <partial name="_CommentsList" model="Model.Comments" />
+                        </div>
+
+                        @if (Model.Comments.Count >= 20)
+                        {
+                            <div class="text-center mt-4">
+                                <button class="btn btn-outline-primary load-more-comments" data-post-id="@Model.Post.PostId" data-page="2">
+                                    Load More Comments
+                                </button>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="far fa-comment fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No comments yet. Be the first to share your thoughts!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <!-- Community Info -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">r/@Model.Post.CommunityName</h3>
+                    </div>
+                    <div class="card-body">
+                        <a href="@Url.Community(Model.Post.CommunitySlug)" class="btn btn-primary w-100 mb-3">
+                            View Community
+                        </a>
+                        <a href="@Url.CreatePost(Model.Post.CommunitySlug)" class="btn btn-outline-primary w-100">
+                            Create Post
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Post Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">Post Stats</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-eye me-2 text-primary"></i>
+                                <strong>@Model.Post.FormattedViewCount</strong> views
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-arrow-up me-2 text-success"></i>
+                                <strong>@($"{(Model.Post.UpvoteCount * 100.0 / Math.Max(Model.Post.UpvoteCount + Model.Post.DownvoteCount, 1)):F0}%")</strong> upvoted
+                            </li>
+                            <li>
+                                <i class="fas fa-clock me-2 text-info"></i>
+                                Posted <strong>@Model.Post.TimeAgo</strong>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/CustomJs/Post_Detail.js"></script>
+}

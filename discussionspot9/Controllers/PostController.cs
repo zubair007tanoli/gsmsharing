@@ -1,5 +1,5 @@
 ﻿using discussionspot9.Interfaces;
-using discussionspot9.Models.ViewModels.Post;
+using discussionspot9.Models.ViewModels.CreativeViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -24,7 +24,10 @@ namespace discussionspot9.Controllers
             _commentService = commentService;
             _logger = logger;
         }
-
+        public IActionResult Test()
+        {
+            return View();
+        }
         /// <summary>
         /// Display all posts with sorting options
         /// </summary>
@@ -75,7 +78,10 @@ namespace discussionspot9.Controllers
                 if (User.Identity?.IsAuthenticated == true)
                 {
                     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    post.CurrentUserVote = await _postService.GetUserVoteAsync(post.PostId, userId);
+                    if (!string.IsNullOrEmpty(userId)) // Ensure userId is not null or empty
+                    {
+                        post.CurrentUserVote = await _postService.GetUserVoteAsync(post.PostId, userId);
+                    }
                 }
 
                 // Load comments
@@ -239,11 +245,16 @@ namespace discussionspot9.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int postId, string returnUrl = null)
+        public async Task<IActionResult> Delete(int postId, string? returnUrl = null)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "You must be logged in to delete a post.";
+                    return RedirectToAction("Index", "Home");
+                }
                 var result = await _postService.DeletePostAsync(postId, userId);
 
                 if (result.Success)

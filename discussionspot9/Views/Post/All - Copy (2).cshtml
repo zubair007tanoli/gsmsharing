@@ -1,0 +1,666 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostListViewModel
+@using discussionspot9.Helpers
+@{
+    ViewData["Title"] = "All Posts - DiscussionSpot";
+    var currentSort = ViewData["CurrentSort"]?.ToString() ?? "hot";
+    var currentTime = ViewData["CurrentTime"]?.ToString() ?? "all";
+}
+
+<style>
+    /* Core Variables */
+    :root {
+        --primary-color: #ff4500;
+        --primary-hover: #ff5414;
+        --secondary-color: #0079d3;
+        --secondary-hover: #1484d7;
+        --text-color: #1c1c1c;
+        --text-light: #787c7e;
+        --text-lighter: #a5a9ab;
+        --bg-color: #ffffff;
+        --bg-light: #f8f9fa;
+        --bg-dark: #dae0e6;
+        --border-color: #edeff1;
+        --upvote-color: #ff4500;
+        --downvote-color: #7193ff;
+        --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --hover-bg: #f6f7f8;
+    }
+
+    /* Dark Mode Variables */
+    body.dark-mode {
+        --text-color: #d7dadc;
+        --text-light: #818384;
+        --text-lighter: #6e7071;
+        --bg-color: #1a1a1b;
+        --bg-light: #272729;
+        --bg-dark: #030303;
+        --border-color: #343536;
+        --hover-bg: #2d2d2e;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+
+    /* Main Content */
+    .main-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px;
+        display: flex;
+        gap: 24px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 270px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-card {
+        background-color: var(--bg-color);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: 500;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-content {
+        padding: 12px 16px;
+    }
+
+    /* Feed Content */
+    .feed-container {
+        flex-grow: 1;
+        max-width: 740px;
+    }
+
+    .feed-header {
+        background-color: var(--bg-color);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 16px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .feed-title {
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 12px;
+    }
+
+    .sort-options {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .sort-option {
+        padding: 8px 12px;
+        border-radius: 9999px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        color: var(--text-color);
+    }
+
+        .sort-option:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+        }
+
+        .sort-option.active {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+    /* Post Card */
+    .post-card {
+        background-color: var(--bg-color);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 10px;
+        overflow: hidden;
+        transition: border-color 0.2s;
+    }
+
+        .post-card:hover {
+            border-color: var(--text-lighter);
+        }
+
+    .post-content {
+        padding: 8px 16px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .post-header {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+    }
+
+    .post-subreddit {
+        font-weight: 700;
+        color: var(--text-color);
+        text-decoration: none;
+        margin-right: 4px;
+    }
+
+        .post-subreddit:hover {
+            text-decoration: underline;
+            color: var(--text-color);
+        }
+
+    .post-author {
+        margin: 0 4px;
+        text-decoration: none;
+        color: var(--text-light);
+    }
+
+        .post-author:hover {
+            text-decoration: underline;
+            color: var(--text-light);
+        }
+
+    .post-time {
+        margin-left: 4px;
+    }
+
+    .post-title {
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+        .post-title a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+            .post-title a:hover {
+                color: var(--text-color);
+            }
+
+    .post-body {
+        margin-bottom: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--text-color);
+        word-break: break-word;
+        max-height: 250px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .post-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .post-action {
+        padding: 8px;
+        border-radius: 2px;
+        background: transparent;
+        border: none;
+        color: var(--text-light);
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+        text-decoration: none;
+    }
+
+        .post-action:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+        }
+
+    .vote-section {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        border-top: 1px solid var(--border-color);
+        margin-top: 8px;
+    }
+
+    .vote-btn {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 16px;
+        padding: 4px;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+    }
+
+        .vote-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .vote-btn.upvote:hover, .vote-btn.upvote.active {
+            color: var(--upvote-color);
+            background-color: rgba(255, 69, 0, 0.1);
+        }
+
+        .vote-btn.downvote:hover, .vote-btn.downvote.active {
+            color: var(--downvote-color);
+            background-color: rgba(113, 147, 255, 0.1);
+        }
+
+    .vote-count {
+        font-weight: 700;
+        font-size: 12px;
+        color: var(--text-color);
+        min-width: 35px;
+        text-align: center;
+        margin: 0 2px;
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+        margin-bottom: 32px;
+    }
+
+    .pagination-button {
+        padding: 8px 16px;
+        border-radius: 4px;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        margin: 0 4px;
+        text-decoration: none;
+    }
+
+        .pagination-button:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+        }
+
+        .pagination-button.active {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+    .empty-state {
+        text-align: center;
+        padding: 48px 16px;
+        background-color: var(--bg-color);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        color: var(--text-light);
+        margin-bottom: 16px;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 960px) {
+        .sidebar
+
+    {
+        display: none;
+    }
+
+    .feed-container {
+        max-width: 100%;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .main-container
+
+    {
+        padding: 12px;
+    }
+
+    .post-title {
+        font-size: 16px;
+    }
+
+    }
+
+    @@media (max-width: 576px) {
+        .post-card
+
+    {
+        border-radius: 0;
+        margin-left: -12px;
+        margin-right: -12px;
+        width: calc(100% + 24px);
+    }
+
+    .feed-header {
+        border-radius: 0;
+        margin-left: -12px;
+        margin-right: -12px;
+        width: calc(100% + 24px);
+    }
+
+    .post-action span {
+        display: none;
+    }
+
+    .post-action {
+        padding: 8px 4px;
+    }
+
+    }
+</style>
+
+<!-- Main Content -->
+<main class="main-container" id="main-content">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+        <!-- Communities Sidebar -->
+        <div class="sidebar-card">
+            <div class="sidebar-content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Popular Communities</h6>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="@Url.CreateCommunity()" class="btn btn-sm btn-outline-primary" title="Create Community">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                    }
+                </div>
+                @if (Model.TrendingCommunities?.Any() == true)
+                {
+                    @foreach (var community in Model.TrendingCommunities.Take(5))
+                    {
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #0079d3; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; margin-right: 8px;">
+                                @community.Name.Substring(0, 1).ToUpper()
+                            </div>
+                            <div class="flex-grow-1">
+                                <div style="font-size: 14px; font-weight: 500;">
+                                    <a href="@Url.Community(community.Slug)" style="color: var(--text-color); text-decoration: none;">
+                                        r/@community.Name
+                                    </a>
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    @community.MemberCount.ToString("N0") members
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-primary" style="padding: 4px 16px; border-radius: 9999px; font-size: 12px; font-weight: 700;">
+                                Join
+                            </button>
+                        </div>
+                    }
+                    <a href="@Url.Communities()" style="display: block; text-align: center; padding: 8px 0; color: var(--secondary-color); font-weight: 600; text-decoration: none;">
+                        View All
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Premium Sidebar -->
+        <div class="sidebar-card">
+            <div class="sidebar-header">
+                DiscussionSpot Premium
+            </div>
+            <div class="sidebar-content">
+                <p>Get an ad-free experience with special benefits, and directly support DiscussionSpot.</p>
+                <button class="btn btn-primary w-100 mt-2">Try Premium</button>
+            </div>
+        </div>
+
+        <!-- Advertisement -->
+        <div class="sidebar-card">
+            <div class="sidebar-content" style="padding: 0;">
+                <div style="background-color: #f8f9fa; padding: 12px; text-align: center;">
+                    <small style="color: var(--text-light); display: block; margin-bottom: 8px;">Advertisement</small>
+                    <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #f0f0f0, #e0e0e0); border-radius: 4px;">
+                        <div style="text-align: center;">
+                            <i class="fas fa-ad fa-2x mb-2" style="color: var(--text-light);"></i>
+                            <div style="color: var(--text-light);">Google AdSense</div>
+                            <div style="color: var(--text-light); font-size: 12px;">300x250</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Feed Content -->
+    <div class="feed-container">
+        <!-- Feed Header -->
+        <div class="feed-header">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="feed-title mb-0">All Posts</h1>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a href="@Url.Communities()" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Create Post
+                    </a>
+                }
+            </div>
+            <div class="sort-options">
+                <a href="@Url.All("hot")" class="sort-option @(currentSort == "hot" ? "active" : "")">
+                    <i class="fas fa-fire"></i>
+                    <span>Hot</span>
+                </a>
+                <a href="@Url.All("new")" class="sort-option @(currentSort == "new" ? "active" : "")">
+                    <i class="fas fa-certificate"></i>
+                    <span>New</span>
+                </a>
+                <a href="@Url.All("top")" class="sort-option @(currentSort == "top" ? "active" : "")">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Top</span>
+                </a>
+                <a href="@Url.All("controversial")" class="sort-option @(currentSort == "controversial" ? "active" : "")">
+                    <i class="fas fa-bolt"></i>
+                    <span>Controversial</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Posts List -->
+        @if (Model.Posts.Any())
+        {
+            @foreach (var post in Model.Posts)
+            {
+                <article class="post-card">
+                    <div class="post-content">
+                        <div class="post-header">
+                            <a href="@Url.Community(post.CommunitySlug)" class="post-subreddit">r/@post.CommunityName</a>
+                            <span>•</span>
+                            <span>Posted by</span>
+                            <a href="@post.AuthorUrl" class="post-author">u/@post.AuthorDisplayName</a>
+                            <span class="post-time">@post.TimeAgo</span>
+                        </div>
+                        <h2 class="post-title">
+                            <a href="@post.PostUrl">@post.Title</a>
+                        </h2>
+
+                        @if (!string.IsNullOrEmpty(post.Excerpt))
+                        {
+                            <div class="post-body">
+                                @post.Excerpt
+                            </div>
+                        }
+
+                        @if (post.Tags.Any())
+                        {
+                            <div class="d-flex gap-1 mb-2">
+                                @foreach (var tag in post.Tags.Take(3))
+                                {
+                                    <span class="badge bg-light text-dark" style="font-size: 10px;">@tag</span>
+                                }
+                            </div>
+                        }
+
+                        <div class="post-actions">
+                            <a href="@post.PostUrl" class="post-action">
+                                <i class="far fa-comment"></i>
+                                <span>@post.FormattedCommentCount Comments</span>
+                            </a>
+                            <button class="post-action">
+                                <i class="fas fa-share"></i>
+                                <span>Share</span>
+                            </button>
+                            <button class="post-action">
+                                <i class="far fa-bookmark"></i>
+                                <span>Save</span>
+                            </button>
+                        </div>
+
+                        <div class="vote-section">
+                            <button class="vote-btn upvote @(post.CurrentUserVote == 1 ? "active" : "")"
+                                    data-post-id="@post.PostId" data-vote-type="1" aria-label="Upvote post">
+                                <i class="fas fa-caret-up"></i>
+                            </button>
+                            <span class="vote-count">@post.FormattedScore</span>
+                            <button class="vote-btn downvote @(post.CurrentUserVote == -1 ? "active" : "")"
+                                    data-post-id="@post.PostId" data-vote-type="-1" aria-label="Downvote post">
+                                <i class="fas fa-caret-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            }
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <div class="pagination">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a href="@Url.All(currentSort)?time=@currentTime&page=@(Model.CurrentPage - 1)"
+                           class="pagination-button" aria-label="Previous page">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    }
+
+                    @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+                    {
+                        <a href="@Url.All(currentSort)?time=@currentTime&page=@i"
+                           class="pagination-button @(i == Model.CurrentPage ? "active" : "")"
+                           aria-label="@(i == Model.CurrentPage ? $"Current page, Page {i}" : $"Go to page {i}")">
+                            @i
+                        </a>
+                    }
+
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <a href="@Url.All(currentSort)?time=@currentTime&page=@(Model.CurrentPage + 1)"
+                           class="pagination-button" aria-label="Next page">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3>No posts found</h3>
+                <p style="color: var(--text-light); margin-bottom: 16px;">
+                    There are no posts to display at the moment.
+                </p>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a href="@Url.Communities()" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Create the first post
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</main>
+
+@section Scripts {
+    <script>
+        // Voting functionality
+        document.querySelectorAll('.vote-btn').forEach(button => {
+            button.addEventListener('click', async function() {
+                if (!@Html.Raw(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false")) {
+                    window.location.href = '@Url.Login()';
+                    return;
+                }
+
+                const postId = this.dataset.postId;
+                const voteType = parseInt(this.dataset.voteType);
+                const voteSection = this.closest('.vote-section');
+                const countElement = voteSection.querySelector('.vote-count');
+                const upvoteBtn = voteSection.querySelector('.upvote');
+                const downvoteBtn = voteSection.querySelector('.downvote');
+
+                try {
+                    const response = await fetch('/Post/Vote', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({ postId: parseInt(postId), voteType })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        countElement.textContent = result.voteCount > 1000 ?
+                            (result.voteCount / 1000).toFixed(1) + 'k' :
+                            result.voteCount.toString();
+
+                        upvoteBtn.classList.toggle('active', result.userVote === 1);
+                        downvoteBtn.classList.toggle('active', result.userVote === -1);
+                    }
+                } catch (error) {
+                    console.error('Voting error:', error);
+                }
+            });
+        });
+    </script>
+}

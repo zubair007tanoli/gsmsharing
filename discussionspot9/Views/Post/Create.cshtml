@@ -1,0 +1,168 @@
+﻿@using discussionspot9.Helpers
+@model discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+@{
+    ViewData["Title"] = $"Create Post - r/{Model.CommunityName}";
+}
+
+<main class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card">
+                <div class="card-header">
+                    <h1 class="h4 mb-0">Create a post in r/@Model.CommunityName</h1>
+                </div>
+                <div class="card-body">
+                    <!-- Post Type Tabs -->
+                    <ul class="nav nav-tabs mb-4" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#textPost" type="button">
+                                <i class="fas fa-align-left me-1"></i> Text
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#linkPost" type="button">
+                                <i class="fas fa-link me-1"></i> Link
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#imagePost" type="button">
+                                <i class="fas fa-image me-1"></i> Image
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pollPost" type="button">
+                                <i class="fas fa-poll me-1"></i> Poll
+                            </button>
+                        </li>
+                    </ul>
+
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="CommunityId" />
+                        <input type="hidden" asp-for="CommunityName" />
+                        <input type="hidden" asp-for="CommunitySlug" />
+                        <input type="hidden" asp-for="PostType" value="text" id="postTypeInput" />
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label">Title</label>
+                            <input asp-for="Title" class="form-control" maxlength="300" required />
+                            <div class="form-text">@Html.DisplayNameFor(m => m.Title) (max 300 characters)</div>
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content mb-3">
+                            <!-- Text Post -->
+                            <div class="tab-pane fade show active" id="textPost">
+                                <div class="mb-3">
+                                    <label asp-for="Content" class="form-label">Text (optional)</label>
+                                    <textarea asp-for="Content" class="form-control" rows="8"></textarea>
+                                    <span asp-validation-for="Content" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- Link Post -->
+                            <div class="tab-pane fade" id="linkPost">
+                                <div class="mb-3">
+                                    <label asp-for="Url" class="form-label">URL</label>
+                                    <input asp-for="Url" type="url" class="form-control" />
+                                    <span asp-validation-for="Url" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- Image Post -->
+                            <div class="tab-pane fade" id="imagePost">
+                                <div class="mb-3">
+                                    <label class="form-label">Upload Image</label>
+                                    <input type="file" class="form-control" accept="image/*" />
+                                    <div class="form-text">Supported formats: JPG, PNG, GIF (max 20MB)</div>
+                                </div>
+                            </div>
+
+                            <!-- Poll Post -->
+                            <div class="tab-pane fade" id="pollPost">
+                                <div id="pollOptions">
+                                    <div class="mb-3">
+                                        <label class="form-label">Options</label>
+                                        <div class="poll-option mb-2">
+                                            <input type="text" name="PollOptions" class="form-control" placeholder="Option 1" />
+                                        </div>
+                                        <div class="poll-option mb-2">
+                                            <input type="text" name="PollOptions" class="form-control" placeholder="Option 2" />
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="addOption">
+                                        <i class="fas fa-plus me-1"></i> Add Option
+                                    </button>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="form-check">
+                                        <input asp-for="AllowMultipleChoices" type="checkbox" class="form-check-input" />
+                                        <label asp-for="AllowMultipleChoices" class="form-check-label"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-3">
+                            <label asp-for="TagsInput" class="form-label">Tags</label>
+                            <input asp-for="TagsInput" class="form-control" placeholder="tag1, tag2, tag3" />
+                            <div class="form-text">Separate tags with commas</div>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input asp-for="IsNSFW" type="checkbox" class="form-check-input" />
+                                    <label asp-for="IsNSFW" class="form-check-label"></label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input asp-for="IsSpoiler" type="checkbox" class="form-check-input" />
+                                    <label asp-for="IsSpoiler" class="form-check-label"></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit -->
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Community(Model.CommunitySlug)" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i> Post
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script>
+        // Handle tab switching
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (e) {
+                const postType = e.target.textContent.trim().toLowerCase();
+                document.getElementById('postTypeInput').value = postType;
+            });
+        });
+
+        // Add poll option
+        let optionCount = 2;
+        document.getElementById('addOption')?.addEventListener('click', function() {
+            if (optionCount < 10) {
+                optionCount++;
+                const pollOptions = document.getElementById('pollOptions');
+                const newOption = document.createElement('div');
+                newOption.className = 'poll-option mb-2';
+                newOption.innerHTML = `<input type="text" name="PollOptions" class="form-control" placeholder="Option ${optionCount}" />`;
+                pollOptions.insertBefore(newOption, this);
+            }
+        });
+    </script>
+}

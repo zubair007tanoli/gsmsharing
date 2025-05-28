@@ -200,10 +200,7 @@ namespace discussionspot9.Services
                 var trendingTask = await GetTrendingTopicsAsync();
                 var onlineUsersTask = await GetOnlineUsersDataAsync();
                 var statsTask = await GetForumStatsAsync();
-                var newMembersTask =await  GetNewMembersAsync();
-
-                
-
+                var newMembersTask =await  GetNewMembersAsync();                
                 return new SidebarViewModel
                 {
                     TrendingTopics = trendingTask,
@@ -222,7 +219,6 @@ namespace discussionspot9.Services
         private async Task<List<TrendingTopicViewModel>> GetTrendingTopicsAsync()
         {
             const string cacheKey = "homepage_trending_topics";
-
             if (_cache.TryGetValue(cacheKey, out List<TrendingTopicViewModel>? cached))
                 return cached!;
 

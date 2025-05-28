@@ -1,0 +1,33 @@
+﻿@model dynamic
+@{
+    var currentPage = Model.CurrentPage;
+    var totalPages = Model.TotalPages;
+}
+
+@if (totalPages > 1)
+{
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            @if (currentPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?page=@(currentPage - 1)">Previous</a>
+                </li>
+            }
+
+            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link" href="?page=@i">@i</a>
+                </li>
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?page=@(currentPage + 1)">Next</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

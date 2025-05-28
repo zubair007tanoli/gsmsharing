@@ -1,0 +1,102 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
+@using discussionspot9.Helpers
+
+<article class="card mb-3 post-card">
+    <div class="card-body">
+        <div class="d-flex">
+            <!-- Vote Section -->
+            <div class="vote-section me-3 text-center">
+                <button class="btn btn-sm btn-link vote-btn upvote @(Model.CurrentUserVote == 1 ? "active" : "")"
+                        data-post-id="@Model.PostId" data-vote-type="1">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <div class="vote-count fw-bold">@Html.FormatCount(Model.Score)</div>
+                <button class="btn btn-sm btn-link vote-btn downvote @(Model.CurrentUserVote == -1 ? "active" : "")"
+                        data-post-id="@Model.PostId" data-vote-type="-1">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+            </div>
+
+            <!-- Post Content -->
+            <div class="flex-grow-1">
+                <!-- Post Header -->
+                <div class="post-header small text-muted mb-1">
+                    <a href="@Url.Community(Model.CommunitySlug)" class="text-decoration-none fw-bold">r/@Model.CommunityName</a>
+                    <span class="mx-1">•</span>
+                    <span>Posted by</span>
+                    <a href="@Url.UserProfile(Model.AuthorDisplayName)" class="text-decoration-none">u/@Model.AuthorDisplayName</a>
+                    <span class="mx-1">@Model.TimeAgo</span>
+                    @if (Model.IsPinned)
+                    {
+                        <span class="badge bg-success ms-2"><i class="fas fa-thumbtack"></i> Pinned</span>
+                    }
+                </div>
+
+                <!-- Post Title -->
+                <h2 class="h5 mb-2">
+                    <a href="@Url.Post(Model.CommunitySlug, Model.Slug)" class="text-decoration-none text-body">@Model.Title</a>
+                </h2>
+
+                <!-- Post Tags -->
+                @if (Model.Tags.Any())
+                {
+                    <div class="post-tags mb-2">
+                        @foreach (var tag in Model.Tags.Take(3))
+                        {
+                            <span class="badge bg-light text-dark me-1">@tag</span>
+                        }
+                    </div>
+                }
+
+                <!-- Post Body/Media -->
+                @if (Model.PostType == "text" && !string.IsNullOrEmpty(Model.Excerpt))
+                {
+                    <p class="text-muted mb-2">@Model.Excerpt</p>
+                }
+                else if (Model.PostType == "image" && !string.IsNullOrEmpty(Model.ThumbnailUrl))
+                {
+                    <div class="post-media mb-2">
+                        <img src="@Model.ThumbnailUrl" alt="Post image" class="img-fluid rounded" style="max-height: 400px;">
+                    </div>
+                }
+                else if (Model.PostType == "link" && !string.IsNullOrEmpty(Model.Url))
+                {
+                    <a href="@Model.Url" target="_blank" class="btn btn-sm btn-outline-primary mb-2">
+                        <i class="fas fa-external-link-alt me-1"></i>@Model.Url
+                    </a>
+                }
+
+                <!-- Post Actions -->
+                <div class="post-actions d-flex align-items-center gap-3 small">
+                    <a href="@Url.Post(Model.CommunitySlug, Model.Slug)" class="text-decoration-none text-muted">
+                        <i class="far fa-comment me-1"></i>@Html.FormatCount(Model.CommentCount) Comments
+                    </a>
+                    <button class="btn btn-sm btn-link text-muted share-btn p-0" data-post-id="@Model.PostId">
+                        <i class="fas fa-share me-1"></i>Share
+                    </button>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <button class="btn btn-sm btn-link text-muted save-btn p-0" data-post-id="@Model.PostId">
+                            <i class="far fa-bookmark me-1"></i>Save
+                        </button>
+                    }
+                    <div class="dropdown d-inline">
+                        <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag me-2"></i>Report</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye-slash me-2"></i>Hide</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item copy-link" href="#" data-url="@Model.PostUrl">
+                                    <i class="fas fa-link me-2"></i>Copy Link
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>

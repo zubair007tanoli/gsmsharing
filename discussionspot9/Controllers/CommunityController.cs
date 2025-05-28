@@ -1,5 +1,5 @@
 ﻿using discussionspot9.Interfaces;
-using discussionspot9.Models.ViewModels.Community;
+using discussionspot9.Models.ViewModels.CreativeViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;

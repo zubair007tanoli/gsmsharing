@@ -1,0 +1,49 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
+@using discussionspot9.Helpers
+
+<div class="card post-card mb-3">
+    <div class="card-body d-flex">
+        <div class="post-votes text-center me-3">
+            <button class="vote-btn upvote @(Model.CurrentUserVote == 1 ? "active" : "")"
+                    data-post-id="@Model.PostId" data-vote-type="1">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <span class="vote-count @Model.VoteCountCssClass">@Model.FormattedScore</span>
+            <button class="vote-btn downvote @(Model.CurrentUserVote == -1 ? "active" : "")"
+                    data-post-id="@Model.PostId" data-vote-type="-1">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+        </div>
+
+        <div class="post-content flex-grow-1">
+            <div class="post-header mb-2">
+                <a href="@Url.Community(Model.CommunitySlug)" class="community-link">
+                    r/@Model.CommunityName
+                </a>
+                <span class="text-muted small mx-1">•</span>
+                <span class="text-muted small">
+                    Posted by <a href="@Model.AuthorUrl">u/@Model.AuthorDisplayName</a>
+                    @Model.TimeAgo
+                </span>
+            </div>
+
+            <h3 class="h5 mb-2">
+                <a href="@Model.PostUrl" class="text-decoration-none">@Model.Title</a>
+            </h3>
+
+            @if (!string.IsNullOrEmpty(Model.Excerpt))
+            {
+                <p class="text-muted small mb-2">@Model.Excerpt</p>
+            }
+
+            <div class="post-footer d-flex align-items-center gap-3">
+                <a href="@Model.PostUrl" class="btn btn-sm btn-link text-muted">
+                    <i class="fas fa-comment me-1"></i>@Model.FormattedCommentCount Comments
+                </a>
+                <button class="btn btn-sm btn-link text-muted share-btn">
+                    <i class="fas fa-share me-1"></i>Share
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

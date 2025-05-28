@@ -1,0 +1,83 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommentViewModel
+
+<div class="comment" data-comment-id="@Model.CommentId">
+    <div class="d-flex gap-3">
+        <div class="comment-voting">
+            <button class="vote-btn comment-upvote @(Model.CurrentUserVote == 1 ? "active" : "")" 
+                    data-comment-id="@Model.CommentId" data-vote-type="1">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <span class="comment-vote-count">@Model.Score</span>
+            <button class="vote-btn comment-downvote @(Model.CurrentUserVote == -1 ? "active" : "")" 
+                    data-comment-id="@Model.CommentId" data-vote-type="-1">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+        </div>
+
+        <div class="comment-content flex-grow-1">
+            <div class="comment-header">
+                <a href="@Model.AuthorUrl" class="comment-author">@Model.AuthorDisplayName</a>
+                <span class="comment-time text-muted">@Model.TimeAgo</span>
+                @if (Model.IsEdited)
+                {
+                    <span class="text-muted">(edited)</span>
+                }
+            </div>
+
+            <div class="comment-body">
+                @if (Model.IsDeleted)
+                {
+                    <em class="text-muted">[deleted]</em>
+                }
+                else
+                {
+                    @Html.Raw(Model.Content)
+                }
+            </div>
+
+            @if (!Model.IsDeleted)
+            {
+                <div class="comment-actions">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <button class="comment-action reply-btn" data-comment-id="@Model.CommentId">
+                            <i class="fas fa-reply"></i> Reply
+                        </button>
+                    }
+
+                    @if (Model.IsCurrentUserAuthor)
+                    {
+                        <button class="comment-action edit-btn" data-comment-id="@Model.CommentId">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="comment-action delete-btn" data-comment-id="@Model.CommentId">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    }
+                </div>
+
+                <div id="reply-form-@Model.CommentId" class="reply-form d-none mt-3">
+                    <form class="reply-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PostId" value="@ViewContext.RouteData.Values["postId"]" />
+                        <input type="hidden" name="ParentCommentId" value="@Model.CommentId" />
+                        <textarea name="Content" class="form-control mb-2" rows="3" required></textarea>
+                        <button type="submit" class="btn btn-sm btn-primary">Reply</button>
+                        <button type="button" class="btn btn-sm btn-secondary cancel-reply-btn" 
+                                data-comment-id="@Model.CommentId">Cancel</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Model.HasChildren)
+    {
+        <div class="replies ms-4 mt-3">
+            @foreach (var child in Model.ChildComments)
+            {
+                <partial name="_Comment" model="child" />
+            }
+        </div>
+    }
+</div>
