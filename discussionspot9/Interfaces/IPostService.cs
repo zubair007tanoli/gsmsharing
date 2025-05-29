@@ -1,4 +1,6 @@
-﻿using discussionspot9.Models.ViewModels.CreativeViewModels;
+﻿using discussionspot9.Models.Domain;
+using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Models.ViewModels.HomePage;
 using discussionspot9.Services.ServiceResults;
 
 namespace discussionspot9.Interfaces
@@ -15,5 +17,9 @@ namespace discussionspot9.Interfaces
         Task<int> GetPostVoteCountAsync(int postId);
         Task IncrementShareCountAsync(int postId);
         Task<ServiceResult> DeletePostAsync(int postId, string userId);
+
+        Task<bool> IsPostSavedByUserAsync(int postId, string userId);
+        Task<SavePostResult> ToggleSavePostAsync(int postId, string userId);
+        Task<List<Models.ViewModels.HomePage.TrendingTopicViewModel>> GetTrendingTopicsAsync();
     }
 }

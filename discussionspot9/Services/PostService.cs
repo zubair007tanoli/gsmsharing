@@ -3,6 +3,7 @@ using discussionspot9.Helpers;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Models.ViewModels.HomePage;
 using discussionspot9.Services.ServiceResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -96,6 +97,82 @@ namespace discussionspot9.Services
                 CurrentSort = sort,
                 CurrentTimeFilter = time
             };
+        }
+
+        // Add these methods to your existing PostService class
+
+        public async Task<bool> IsPostSavedByUserAsync(int postId, string userId)
+        {
+            return await _context.SavedPosts
+                .AnyAsync(sp => sp.PostId == postId && sp.UserId == userId);
+        }
+
+        public async Task<SavePostResult> ToggleSavePostAsync(int postId, string userId)
+        {
+            try
+            {
+                var savedPost = await _context.SavedPosts
+                    .FirstOrDefaultAsync(sp => sp.PostId == postId && sp.UserId == userId);
+
+                if (savedPost != null)
+                {
+                    // Unsave
+                    _context.SavedPosts.Remove(savedPost);
+                    await _context.SaveChangesAsync();
+                    return new SavePostResult { Success = true, IsSaved = false, Message = "Post unsaved" };
+                }
+                else
+                {
+                    // Save
+                    _context.SavedPosts.Add(new SavedPost
+                    {
+                        PostId = postId,
+                        UserId = userId,
+                        SavedAt = DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                    return new SavePostResult { Success = true, IsSaved = true, Message = "Post saved" };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling save status for post {PostId}", postId);
+                return new SavePostResult { Success = false, Message = "An error occurred" };
+            }
+        }
+
+        public async Task<List<TrendingTopicViewModel>> GetTrendingTopicsAsync()
+        {
+            var cacheKey = "trending_topics";
+
+            if (_cache.TryGetValue(cacheKey, out List<TrendingTopicViewModel>? cachedTopics))
+            {
+                return cachedTopics!;
+            }
+
+            // Get trending topics based on recent post activity
+            var startDate = DateTime.UtcNow.AddDays(-7);
+
+            var trendingTopics = await _context.PostTags
+                .Include(pt => pt.Tag)
+                .Include(pt => pt.Post)
+                .Where(pt => pt.Post.CreatedAt >= startDate && pt.Post.Status == "published")
+                .GroupBy(pt => new { pt.Tag.TagId, pt.Tag.Name, pt.Tag.Slug })
+                .Select(g => new TrendingTopicViewModel
+                {
+                    Name = g.Key.Name,
+                    Slug = g.Key.Slug,
+                    PostCount = g.Count(),
+                    TrendingScore = g.Sum(pt => pt.Post.Score) + g.Count() * 10
+                })
+                .OrderByDescending(t => t.TrendingScore)
+                .Take(10)
+                .ToListAsync();
+
+            // Cache for 1 hour
+            _cache.Set(cacheKey, trendingTopics, TimeSpan.FromHours(1));
+
+            return trendingTopics;
         }
         public async Task<PostListViewModel> GetCommunityPostsAsync(int communityId, string sort = "hot", int page = 1)
         {
@@ -399,12 +476,7 @@ namespace discussionspot9.Services
 
         private static PostCardViewModel MapToPostCardViewModel(Post p)
         {
-            // Get author info from UserProfiles
-            var authorProfile = p.User != null ?
-                new { DisplayName = "Unknown", KarmaPoints = 0 } :
-                new { DisplayName = "Unknown", KarmaPoints = 0 };
-
-            return new PostCardViewModel
+            var viewModel = new PostCardViewModel
             {
                 PostId = p.PostId,
                 Title = p.Title,
@@ -422,12 +494,41 @@ namespace discussionspot9.Services
                 IsLocked = p.IsLocked,
                 IsNSFW = p.IsNSFW,
                 IsSpoiler = p.IsSpoiler,
-                AuthorDisplayName = authorProfile.DisplayName,
-                AuthorInitials = GetInitials(authorProfile.DisplayName),
+                AuthorDisplayName = "Unknown", // This should be fetched from UserProfile
+                AuthorInitials = GetInitials("Unknown"),
                 CommunityName = p.Community!.Name,
                 CommunitySlug = p.Community.Slug,
-                Tags = p.PostTags.Select(pt => pt.Tag.Name).ToList()
+                Tags = p.PostTags.Select(pt => pt.Tag.Name).ToList(),
+                IsSavedByUser = false // Will be set in the controller
             };
+
+            // Set media URL for different post types
+            if (p.PostType == "image" || p.PostType == "video")
+            {
+                viewModel.MediaUrl = p.Media?.FirstOrDefault()?.Url ?? p.Url;
+            }
+            else if (p.PostType == "link")
+            {
+                viewModel.LinkUrl = p.Url;
+                if (!string.IsNullOrEmpty(p.Url))
+                {
+                    try
+                    {
+                        viewModel.LinkDomain = new Uri(p.Url).Host;
+                    }
+                    catch
+                    {
+                        viewModel.LinkDomain = "External Link";
+                    }
+                }
+            }
+            else if (p.PostType == "poll" && p.PollOptions?.Any() == true)
+            {
+                viewModel.PollVoteCount = p.PollOptions.Sum(po => po.Votes?.Count ?? 0);
+                viewModel.PollEndsAt = p.PollEndsAt;
+            }
+
+            return viewModel;
         }
 
         private static string GetInitials(string displayName)

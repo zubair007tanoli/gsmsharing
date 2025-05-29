@@ -32,6 +32,7 @@ namespace discussionspot9.Data.DbContext
         public DbSet<PollOption> PollOptions { get; set; }
         public DbSet<PollVote> PollVotes { get; set; }
         public DbSet<PollConfiguration> PollConfigurations { get; set; }
+        public DbSet<SavedPost> SavedPosts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

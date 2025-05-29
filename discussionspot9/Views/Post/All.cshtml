@@ -1,1703 +1,235 @@
 ﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostListViewModel
 @using discussionspot9.Helpers
+@using discussionspot9.Extensions
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject SignInManager<IdentityUser> SignInManager
 @{
     ViewData["Title"] = "All Posts - DiscussionSpot";
     var currentSort = ViewData["CurrentSort"]?.ToString() ?? "hot";
     var currentTime = ViewData["CurrentTime"]?.ToString() ?? "all";
+    var currentPage = ViewData["CurrentPage"] as int? ?? 1;
 }
 
-<style>
-    /* Core Variables */
-    :root {
-        --primary-color: #ff4500;
-        --primary-hover: #ff5414;
-        --secondary-color: #0079d3;
-        --secondary-hover: #1484d7;
-        --text-color: #1c1c1c;
-        --text-light: #787c7e;
-        --text-lighter: #a5a9ab;
-        --bg-color: #ffffff;
-        --bg-light: #f8f9fa;
-        --bg-dark: #dae0e6;
-        --border-color: #edeff1;
-        --upvote-color: #ff4500;
-        --downvote-color: #7193ff;
-        --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        --hover-bg: #f6f7f8;
-        --award-gold: #ffb000;
-        --award-silver: #c0c0c0;
-        --award-platinum: #9be8fa;
-        --nsfw-tag: #ff585b;
-        --spoiler-tag: #ffd635;
-        --oc-tag: #0079d3;
-        --mod-tag: #46d160;
-        --admin-tag: #ff4500;
-    }
-
-
-    /* Main Content */
-    .main-container {
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 20px;
-        display: flex;
-        gap: 24px;
-    }
-
-    /* Sidebar */
-    .sidebar {
-        width: 270px;
-        flex-shrink: 0;
-    }
-
-    .sidebar-card {
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
-
-    .sidebar-header {
-        padding: 12px 16px;
-        font-size: 16px;
-        font-weight: 500;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .sidebar-content {
-        padding: 12px 16px;
-    }
-
-    .sidebar-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .sidebar-list-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-        .sidebar-list-item:last-child {
-            border-bottom: none;
-        }
-
-    .community-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 100%;
-        margin-right: 8px;
-        background-color: #ccc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: 600;
-        color: white;
-    }
-
-    .community-info {
-        flex-grow: 1;
-    }
-
-    .community-name {
-        font-size: 14px;
-        font-weight: 500;
-        margin-bottom: 2px;
-    }
-
-    .community-members {
-        font-size: 12px;
-        color: var(--text-light);
-    }
-
-    .join-button {
-        padding: 4px 16px;
-        border-radius: 9999px;
-        background-color: var(--secondary-color);
-        color: white;
-        font-size: 12px;
-        font-weight: 700;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-
-        .join-button:hover {
-            background-color: var(--secondary-hover);
-        }
-
-        .join-button.joined {
-            background-color: transparent;
-            border: 1px solid var(--text-light);
-            color: var(--text-light);
-        }
-
-            .join-button.joined:hover {
-                border-color: var(--text-color);
-                color: var(--text-color);
-            }
-
-    .view-all {
-        display: block;
-        text-align: center;
-        padding: 8px 0;
-        color: var(--secondary-color);
-        font-weight: 600;
-        text-decoration: none;
-        transition: color 0.2s ease;
-    }
-
-        .view-all:hover {
-            color: var(--secondary-hover);
-        }
-
-    /* Feed Content */
-    .feed-container {
-        flex-grow: 1;
-        max-width: 640px;
-    }
-
-    .feed-header {
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 16px;
-        padding: 10px 12px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .feed-title {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 12px;
-    }
-
-    .sort-options {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        padding-bottom: 4px;
-    }
-
-    .sort-option {
-        padding: 8px 12px;
-        border-radius: 9999px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-        .sort-option:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .sort-option.active {
-            background-color: var(--hover-bg);
-            color: var(--text-color);
-        }
-
-    /* Post Card */
-    .post-card {
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 10px;
-        overflow: hidden;
-        transition: border-color 0.2s;
-    }
-
-        .post-card:hover {
-            border-color: var(--text-lighter);
-        }
-
-    .post-content {
-        padding: 8px 16px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .post-header {
-        display: flex;
-        align-items: center;
-        font-size: 12px;
-        color: var(--text-light);
-        margin-bottom: 8px;
-        flex-wrap: wrap;
-    }
-
-    .post-subreddit {
-        font-weight: 700;
-        color: var(--text-color);
-        text-decoration: none;
-        margin-right: 4px;
-    }
-
-        .post-subreddit:hover {
-            text-decoration: underline;
-        }
-
-    .post-author {
-        margin: 0 4px;
-        text-decoration: none;
-        color: var(--text-light);
-    }
-
-        .post-author:hover {
-            text-decoration: underline;
-        }
-
-    .post-time {
-        margin-left: 4px;
-    }
-
-    .post-title {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 8px;
-        line-height: 1.3;
-        word-break: break-word;
-    }
-
-        .post-title a {
-            color: var(--text-color);
-            text-decoration: none;
-        }
-
-            .post-title a:hover {
-                color: var(--text-color);
-            }
-
-    .post-tags {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 8px;
-    }
-
-    .post-tag {
-        padding: 0 4px;
-        border-radius: 2px;
-        font-size: 12px;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-    }
-
-        .post-tag.nsfw {
-            background-color: var(--nsfw-tag);
-            color: white;
-        }
-
-        .post-tag.spoiler {
-            background-color: var(--spoiler-tag);
-            color: var(--text-color);
-        }
-
-        .post-tag.oc {
-            background-color: var(--oc-tag);
-            color: white;
-        }
-
-    .post-body {
-        margin-bottom: 8px;
-        font-size: 14px;
-        line-height: 1.5;
-        color: var(--text-color);
-        word-break: break-word;
-        max-height: 250px;
-        overflow: hidden;
-        position: relative;
-    }
-
-        .post-body.collapsed::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: linear-gradient(transparent, var(--bg-color));
-        }
-
-    .post-media {
-        margin-bottom: 8px;
-        position: relative;
-        border-radius: 4px;
-        overflow: hidden;
-        max-height: 512px;
-    }
-
-    .post-image {
-        width: 100%;
-        max-height: 512px;
-        object-fit: contain;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .post-video {
-        width: 100%;
-        max-height: 512px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .post-link {
-        display: flex;
-        align-items: center;
-        padding: 8px;
-        background-color: var(--bg-light);
-        border-radius: 4px;
-        text-decoration: none;
-        margin-bottom: 8px;
-    }
-
-    .post-link-icon {
-        width: 24px;
-        height: 24px;
-        margin-right: 8px;
-        color: var(--text-light);
-    }
-
-    .post-link-content {
-        flex-grow: 1;
-        min-width: 0;
-    }
-
-    .post-link-title {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--text-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .post-link-domain {
-        font-size: 12px;
-        color: var(--text-light);
-    }
-
-    .post-actions {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .post-action {
-        padding: 8px;
-        border-radius: 2px;
-        background: transparent;
-        border: none;
-        color: var(--text-light);
-        font-size: 12px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        transition: background-color 0.2s ease, color 0.2s ease;
-    }
-
-        .post-action:hover {
-            background-color: var(--hover-bg);
-            color: var(--text-color);
-        }
-
-    .post-awards {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 8px;
-    }
-
-    .post-award {
-        display: flex;
-        align-items: center;
-        background-color: var(--bg-light);
-        border-radius: 12px;
-        padding: 2px 6px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-    .award-icon {
-        width: 16px;
-        height: 16px;
-        margin-right: 4px;
-    }
-
-    .award-count {
-        color: var(--text-light);
-    }
-
-    .award-gold {
-        color: var(--award-gold);
-    }
-
-    .award-silver {
-        color: var(--award-silver);
-    }
-
-    .award-platinum {
-        color: var(--award-platinum);
-    }
-
-    /* Loading States */
-    .loading-card {
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 10px;
-        padding: 12px;
-        display: flex;
-    }
-
-    .loading-vote {
-        width: 40px;
-        margin-right: 8px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .loading-content {
-        flex-grow: 1;
-    }
-
-    .skeleton {
-        background: linear-gradient(90deg, var(--bg-light) 25%, var(--border-color) 50%, var(--bg-light) 75%);
-        background-size: 200% 100%;
-        animation: loading 1.5s infinite;
-        border-radius: 4px;
-    }
-
-    @@keyframes loading {
-    0%    {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
-
-    }
-
-    .skeleton-circle {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-    }
-
-    .skeleton-line {
-        height: 12px;
-        margin-bottom: 8px;
-        width: 100%;
-    }
-
-    .skeleton-title {
-        height: 20px;
-        margin-bottom: 12px;
-        width: 80%;
-    }
-
-    .skeleton-text {
-        height: 14px;
-        margin-bottom: 8px;
-    }
-
-        .skeleton-text:last-child {
-            width: 60%;
-        }
-
-    /* Error State */
-    .error-card {
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 10px;
-        padding: 24px;
-        text-align: center;
-    }
-
-    .error-icon {
-        font-size: 32px;
-        color: var(--nsfw-tag);
-        margin-bottom: 16px;
-    }
-
-    .error-title {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 8px;
-    }
-
-    .error-message {
-        font-size: 14px;
-        color: var(--text-light);
-        margin-bottom: 16px;
-    }
-
-    .error-button {
-        padding: 8px 16px;
-        border-radius: 9999px;
-        background-color: var(--secondary-color);
-        color: white;
-        font-size: 14px;
-        font-weight: 700;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-
-        .error-button:hover {
-            background-color: var(--secondary-hover);
-        }
-
-    /* Empty State */
-    .empty-card {
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 10px;
-        padding: 24px;
-        text-align: center;
-    }
-
-    .empty-icon {
-        font-size: 32px;
-        color: var(--text-light);
-        margin-bottom: 16px;
-    }
-
-    .empty-title {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 8px;
-    }
-
-    .empty-message {
-        font-size: 14px;
-        color: var(--text-light);
-        margin-bottom: 16px;
-    }
-
-    /* Pagination */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        margin-top: 16px;
-        margin-bottom: 32px;
-    }
-
-    .pagination-button {
-        padding: 8px 16px;
-        border-radius: 4px;
-        background-color: var(--bg-color);
-        border: 1px solid var(--border-color);
-        color: var(--text-color);
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        margin: 0 4px;
-    }
-
-        .pagination-button:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .pagination-button.active {
-            background-color: var(--secondary-color);
-            color: white;
-            border-color: var(--secondary-color);
-        }
-
-        .pagination-button.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-    /* Infinite Scroll Loader */
-    .infinite-scroll-loader {
-        display: flex;
-        justify-content: center;
-        padding: 16px 0;
-    }
-
-    .loader {
-        width: 24px;
-        height: 24px;
-        border: 2px solid var(--border-color);
-        border-radius: 50%;
-        border-top-color: var(--secondary-color);
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        0%
-
-    {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-
-    }
-
-    /* Dropdown Menu */
-    .dropdown {
-        position: relative;
-        display: inline-block;
-    }
-
-    .dropdown-menu {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background-color: var(--bg-color);
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        min-width: 200px;
-        z-index: 1000;
-        display: none;
-    }
-
-        .dropdown-menu.show {
-            display: block;
-        }
-
-    .dropdown-item {
-        padding: 8px 16px;
-        font-size: 14px;
-        color: var(--text-color);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: background-color 0.2s ease;
-    }
-
-        .dropdown-item:hover {
-            background-color: var(--hover-bg);
-        }
-
-    .dropdown-divider {
-        height: 1px;
-        background-color: var(--border-color);
-        margin: 4px 0;
-    }
-
-    /* Responsive Design */
-    @@media (max-width: 1024px) {
-        .main-container
-
-    {
-        padding: 16px;
-    }
-
-    }
-
-    @@media (max-width: 960px) {
-        .sidebar
-
-    {
-        display: none;
-    }
-
-    .feed-container {
-        max-width: 100%;
-    }
-
-    .right-sidebar {
-        display: none;
-    }
-
-    }
-
-    @@media (max-width: 768px) {
-        .header
-
-    {
-        padding: 0 12px;
-    }
-
-    .search-container {
-        max-width: 200px;
-        margin: 0 8px;
-    }
-
-    .logo-text {
-        display: none;
-    }
-
-    .main-container {
-        padding: 12px;
-    }
-
-    .user-name, .karma {
-        display: none;
-    }
-
-    .post-title {
-        font-size: 16px;
-    }
-
-    }
-
-    @@media (max-width: 576px) {
-        .search-container
-
-    {
-        max-width: 150px;
-    }
-
-    .btn-outline, .btn-primary {
-        padding: 0 12px;
-    }
-
-    .post-card {
-        border-radius: 0;
-        margin-left: -12px;
-        margin-right: -12px;
-        width: calc(100% + 24px);
-    }
-
-    .feed-header {
-        border-radius: 0;
-        margin-left: -12px;
-        margin-right: -12px;
-        width: calc(100% + 24px);
-    }
-
-    .post-action span {
-        display: none;
-    }
-
-    .post-action {
-        padding: 8px 4px;
-    }
-
-    }
-
-    /* Dark Mode Toggle */
-    .dark-mode-toggle {
-        width: 32px;
-        height: 32px;
-        border-radius: 4px;
-        background: transparent;
-        border: none;
-        color: var(--text-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background-color 0.2s ease, color 0.2s ease;
-    }
-
-        .dark-mode-toggle:hover {
-            background-color: var(--hover-bg);
-            color: var(--text-color);
-        }
-
-        .dark-mode-toggle .fa-sun {
-            display: none;
-        }
-
-    body.dark-mode .dark-mode-toggle .fa-moon {
-        display: none;
-    }
-
-    body.dark-mode .dark-mode-toggle .fa-sun {
-        display: inline-block;
-    }
-
-    /* Accessibility Focus Styles */
-    button:focus, a:focus, input:focus {
-        outline: 2px solid var(--secondary-color);
-        outline-offset: 2px;
-    }
-
-    /* Tooltip */
-    .tooltip {
-        position: relative;
-    }
-
-        .tooltip .tooltip-text {
-            visibility: hidden;
-            width: 120px;
-            background-color: var(--text-color);
-            color: var(--bg-color);
-            text-align: center;
-            border-radius: 4px;
-            padding: 4px 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.2s;
-            font-size: 12px;
-            pointer-events: none;
-        }
-
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-    /* Notification Badge */
-    .notification-badge {
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        background-color: var(--primary-color);
-        color: white;
-        font-size: 10px;
-        font-weight: 700;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Create Post Button */
-    .create-post-button {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        transition: background-color 0.2s ease, transform 0.2s ease;
-        z-index: 900;
-    }
-
-        .create-post-button:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-2px);
-        }
-
-    @@media (max-width: 576px) {
-        .create-post-button
-
-    {
-        bottom: 16px;
-        right: 16px;
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
-    }
-
-    }
-
-    /* Scroll to Top Button */
-    .scroll-top-button {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        cursor: pointer;
-        transition: background-color 0.2s ease, transform 0.2s ease;
-        z-index: 900;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(20px);
-    }
-
-        .scroll-top-button.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .scroll-top-button:hover {
-            background-color: var(--hover-bg);
-        }
-
-    /* Accessibility Skip Link */
-    .skip-link {
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background-color: var(--secondary-color);
-        color: white;
-        padding: 8px 16px;
-        z-index: 1001;
-        transition: top 0.2s ease;
-    }
-
-        .skip-link:focus {
-            top: 0;
-        }
-
-    /* New CSS */
-    .vote-section {
-        display: flex;
-        align-items: center;
-        padding: 8px 16px;
-        border-top: 1px solid var(--border-color);
-        margin-top: 0;
-    }
-
-    .vote-btn {
-        background: none;
-        border: none;
-        color: var(--text-light);
-        font-size: 20px;
-        padding: 4px;
-        border-radius: 2px;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-    }
-
-        .vote-btn:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .vote-btn.upvote:hover, .vote-btn.upvote.active {
-            color: var(--upvote-color);
-            background-color: rgba(255, 69, 0, 0.1);
-        }
-
-        .vote-btn.downvote:hover, .vote-btn.downvote.active {
-            color: var(--downvote-color);
-            background-color: rgba(113, 147, 255, 0.1);
-        }
-
-    .vote-count {
-        font-weight: 700;
-        font-size: 12px;
-        color: var(--text-color);
-        min-width: 35px;
-        text-align: center;
-        margin: 0 2px;
-    }
-
-    /* Right Sidebar */
-    .right-sidebar {
-        width: 300px;
-        flex-shrink: 0;
-    }
-
-    /* Trending Topics */
-    .trending-topics {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-
-        .trending-topics li {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-            .trending-topics li:last-child {
-                border-bottom: none;
-            }
-
-        .trending-topics a {
-            color: var(--text-color);
-            text-decoration: none;
-            font-size: 14px;
-            display: block;
-        }
-
-            .trending-topics a:hover {
-                color: var(--primary-color);
-            }
-
-    .trending-number {
-        display: inline-block;
-        width: 24px;
-        height: 24px;
-        background-color: var(--bg-light);
-        border-radius: 50%;
-        text-align: center;
-        line-height: 24px;
-        margin-right: 8px;
-        font-weight: 600;
-        font-size: 12px;
-        color: var(--primary-color);
-    }
-
-    /* Premium Promo */
-    .premium-promo {
-        background: linear-gradient(45deg, #ff4500, #ff8717);
-        color: white;
-        padding: 16px;
-        border-radius: 4px;
-        margin-bottom: 16px;
-    }
-
-    .premium-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .premium-description {
-        font-size: 14px;
-        margin-bottom: 12px;
-        opacity: 0.9;
-    }
-
-    .premium-button {
-        display: block;
-        width: 100%;
-        padding: 8px 0;
-        background-color: white;
-        color: #ff4500;
-        border: none;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 14px;
-        text-align: center;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-        .premium-button:hover {
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-
-    /* Community Rules */
-    .community-rules {
-        padding-left: 20px;
-        margin-bottom: 0;
-    }
-
-        .community-rules li {
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-
-    /* Newsletter Form */
-    .newsletter-form {
-        margin-top: 12px;
-    }
-
-    .newsletter-input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        font-size: 14px;
-        margin-bottom: 8px;
-    }
-
-    .newsletter-button {
-        width: 100%;
-        padding: 8px 0;
-        background-color: var(--secondary-color);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-        .newsletter-button:hover {
-            background-color: var(--secondary-hover);
-        }
-
-    /* Reddit-style voting arrows - exact replica */
-    .vote-section {
-        display: flex;
-        align-items: center;
-        padding: 8px 16px;
-        border-top: 1px solid var(--border-color);
-        margin-top: 0;
-        gap: 4px;
-    }
-
-    .vote-btn {
-        background: none;
-        border: none;
-        color: #878A8C;
-        font-size: 16px;
-        padding: 2px;
-        cursor: pointer;
-        transition: all 0.1s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 2px;
-    }
-
-        .vote-btn:hover {
-            background-color: rgba(26, 26, 27, 0.1);
-        }
-
-        .vote-btn.upvote {
-            transform: rotate(0deg);
-        }
-
-            .vote-btn.upvote:hover {
-                color: #FF4500;
-                background-color: rgba(255, 69, 0, 0.1);
-            }
-
-            .vote-btn.upvote.active {
-                color: #FF4500;
-            }
-
-        .vote-btn.downvote {
-            transform: rotate(180deg);
-        }
-
-            .vote-btn.downvote:hover {
-                color: #7193FF;
-                background-color: rgba(113, 147, 255, 0.1);
-            }
-
-            .vote-btn.downvote.active {
-                color: #7193FF;
-            }
-
-        .vote-btn i {
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-    .vote-count {
-        font-weight: 700;
-        font-size: 12px;
-        color: var(--text-color);
-        min-width: 32px;
-        text-align: center;
-        margin: 0 2px;
-        user-select: none;
-    }
-
-    /* Dark mode adjustments for voting */
-    body.dark-mode .vote-btn {
-        color: #818384;
-    }
-
-        body.dark-mode .vote-btn:hover {
-            background-color: rgba(215, 218, 220, 0.1);
-        }
-
-    /* Right Sidebar Styles */
-    .right-sidebar {
-        width: 300px;
-        flex-shrink: 0;
-    }
-
-    /* Trending Topics */
-    .trending-topics {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-
-        .trending-topics li {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-            .trending-topics li:last-child {
-                border-bottom: none;
-            }
-
-        .trending-topics a {
-            color: var(--text-color);
-            text-decoration: none;
-            font-size: 14px;
-            display: block;
-            font-weight: 500;
-        }
-
-            .trending-topics a:hover {
-                color: var(--primary-color);
-            }
-
-    .trending-meta {
-        font-size: 12px;
-        color: var(--text-light);
-        margin-top: 2px;
-    }
-
-    .trending-number {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        background-color: var(--bg-light);
-        border-radius: 50%;
-        text-align: center;
-        line-height: 20px;
-        margin-right: 8px;
-        font-weight: 600;
-        font-size: 11px;
-        color: var(--primary-color);
-    }
-
-    /* Premium Promo */
-    .premium-promo {
-        background: linear-gradient(45deg, #ff4500, #ff8717);
-        color: white;
-        padding: 16px;
-        border-radius: 4px;
-        margin-bottom: 16px;
-    }
-
-    .premium-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .premium-description {
-        font-size: 14px;
-        margin-bottom: 12px;
-        opacity: 0.9;
-    }
-
-    .premium-button {
-        display: block;
-        width: 100%;
-        padding: 8px 0;
-        background-color: white;
-        color: #ff4500;
-        border: none;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 14px;
-        text-align: center;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-        .premium-button:hover {
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-
-    /* Activity Items */
-    .activity-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-
-    .activity-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-    }
-
-    .activity-content {
-        flex: 1;
-    }
-
-    .activity-text {
-        font-size: 14px;
-        color: var(--text-color);
-        margin-bottom: 2px;
-    }
-
-    .activity-time {
-        font-size: 12px;
-        color: var(--text-light);
-    }
-
-    /* Community Rules */
-    .community-rules {
-        padding-left: 20px;
-        margin-bottom: 0;
-    }
-
-        .community-rules li {
-            font-size: 14px;
-            margin-bottom: 8px;
-            color: var(--text-color);
-        }
-
-    /* Newsletter Form */
-    .newsletter-form {
-        margin-top: 12px;
-    }
-
-    .newsletter-input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        font-size: 14px;
-        margin-bottom: 8px;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-    }
-
-        .newsletter-input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-        }
-
-    .newsletter-button {
-        width: 100%;
-        padding: 8px 0;
-        background-color: var(--secondary-color);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-        .newsletter-button:hover {
-            background-color: var(--secondary-hover);
-        }
-</style>
-
-
-<main class="container-fluid py-3">
-    <div class="row">
-        <!-- Left Sidebar -->
-        <div class="col-lg-2 d-none d-lg-block">
-            <div class="sidebar">
-                <!-- Popular Communities -->
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Popular Communities</h6>
-                            @if (User.Identity?.IsAuthenticated == true)
+<link href="~/css/CustomStyles/All_Post_Style.css" rel="stylesheet" />
+
+<div class="all-posts-container">
+    <div class="container main-container">
+        <div class="row">
+            <!-- Left Sidebar -->
+            <div class="col-lg-3">
+                <!-- Trending Communities -->
+                @if (Model.TrendingCommunities?.Any() == true)
+                {
+                    <div class="sidebar-card">
+                        <div class="sidebar-header">
+                            <i class="fas fa-users"></i> Trending Communities
+                        </div>
+                        <div class="sidebar-content">
+                            @foreach (var community in Model.TrendingCommunities.Take(4))
                             {
-                                <a href="@Url.CreateCommunity()" class="btn btn-sm btn-outline-primary" title="Create Community">
-                                    <i class="fas fa-plus"></i>
+                                <div class="community-item">
+                                    <div class="community-avatar">@community.Name[0]</div>
+                                    <div class="community-info">
+                                        <div class="community-name">
+                                            <a href="@Url.Community(community.Slug)" class="text-decoration-none">
+                                                r/@community.Name
+                                            </a>
+                                        </div>
+                                        <div class="community-members">@community.MemberCount.ToShortString() members</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Ad Banner -->
+                <div class="ad-banner">
+                    <div class="mb-2"><small>Advertisement</small></div>
+                    <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #f0f0f0, #e0e0e0);">
+                        <div class="text-center">
+                            <i class="fas fa-ad fa-2x mb-2"></i>
+                            <div>Your Ad Here</div>
+                            <div><small>300x250</small></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent News/Updates -->
+                <partial name="_RecentUpdates" />
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-6">
+                <!-- Header Section with Sort Controls -->
+                <div class="sidebar-card">
+                    <div class="sidebar-content">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h1 class="h4 mb-0">All Posts</h1>
+                            @if (SignInManager.IsSignedIn(User))
+                            {
+                                <a href="@Url.Action("Create", "Post")" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus"></i> Create Post
                                 </a>
                             }
                         </div>
-                        @if (ViewBag.PopularCommunities != null)
+                        
+                        <div class="sort-controls">
+                            <a href="@Url.Action("All", new { sort = "hot", time = currentTime })" 
+                               class="sort-btn @(currentSort == "hot" ? "active" : "")">
+                                <i class="fas fa-fire"></i> Hot
+                            </a>
+                            <a href="@Url.Action("All", new { sort = "new", time = currentTime })" 
+                               class="sort-btn @(currentSort == "new" ? "active" : "")">
+                                <i class="fas fa-clock"></i> New
+                            </a>
+                            <a href="@Url.Action("All", new { sort = "top", time = currentTime })" 
+                               class="sort-btn @(currentSort == "top" ? "active" : "")">
+                                <i class="fas fa-arrow-up"></i> Top
+                            </a>
+                            <a href="@Url.Action("All", new { sort = "controversial", time = currentTime })" 
+                               class="sort-btn @(currentSort == "controversial" ? "active" : "")">
+                                <i class="fas fa-comments"></i> Controversial
+                            </a>
+                            
+                            @if (currentSort == "top" || currentSort == "controversial")
+                            {
+                                <select class="form-select form-select-sm" style="width: auto;" 
+                                        onchange="window.location.href='@Url.Action("All", new { sort = currentSort })' + '&time=' + this.value">
+                                    <option value="all" selected="@(currentTime == "all" ? "true" : "false")">All Time</option>
+                                    <option value="today" selected="@(currentTime == "today" ? "true" : "false")">Today</option>
+                                    <option value="week" selected="@(currentTime == "week" ? "true" : "false")">This Week</option>
+                                    <option value="month" selected="@(currentTime == "month" ? "true" : "false")">This Month</option>
+                                    <option value="year" selected="@(currentTime == "year" ? "true" : "false")">This Year</option>
+                                </select>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Posts List -->
+                <div class="posts-list">
+                    @if (Model.Posts?.Any() == true)
+                    {
+                        @foreach (var post in Model.Posts)
                         {
-                            <div class="community-list">
-                                @foreach (var community in ViewBag.PopularCommunities)
-                                {
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="avatar avatar-sm me-2" style="background-color: @community.ThemeColor;">
-                                            @community.Name.Substring(0, 1).ToUpper()
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <a href="@Url.Community((string)community.Slug)" class="text-decoration-none">
-                                                <div class="fw-bold small">r/@community.Name</div>
-                                                <div class="text-muted small">@community.FormattedMemberCount members</div>
-                                            </a>
-                                        </div>
-                                        @if (User.Identity?.IsAuthenticated == true)
-                                        {
-                                            <button class="btn btn-sm @(community.IsCurrentUserMember ? "btn-secondary" : "btn-outline-primary") join-btn" 
-                                                    data-community-id="@community.CommunityId">
-                                                @(community.IsCurrentUserMember ? "Joined" : "Join")
-                                            </button>
-                                        }
+                            <partial name="_PostCard" model="post" />
+                        }
+
+                        <!-- Ad Banner in Feed -->
+                        @if (Model.Posts.Count > 3)
+                        {
+                            <div class="ad-banner">
+                                <div class="mb-2"><small>Sponsored Content</small></div>
+                                <div style="height: 120px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">
+                                    <div class="text-center">
+                                        <i class="fas fa-ad fa-lg mb-2"></i>
+                                        <div>Advertisement</div>
+                                        <div><small>728x90</small></div>
                                     </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="post-card">
+                            <div class="post-content text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No posts found</h5>
+                                <p class="text-muted">Be the first to share something!</p>
+                                @if (SignInManager.IsSignedIn(User))
+                                {
+                                    <a href="@Url.Action("Create", "Post")" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Create Post
+                                    </a>
                                 }
                             </div>
-                            <a href="@Url.Communities()" class="btn btn-link btn-sm w-100">View All</a>
-                        }
-                    </div>
-                </div>
-
-                <!-- Premium Promo -->
-                <div class="card mb-3 bg-warning bg-opacity-10">
-                    <div class="card-body text-center">
-                        <i class="fas fa-crown text-warning mb-2"></i>
-                        <h6>DiscussionSpot Premium</h6>
-                        <p class="small">Get an ad-free experience with special benefits</p>
-                        <a href="#" class="btn btn-warning btn-sm w-100">Try Premium</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Feed -->
-        <div class="col-lg-7">
-            <!-- Feed Header -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h1 class="h3 mb-0">All Posts</h1>
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <a href="@Url.Communities()" class="btn btn-primary btn-sm">
-                                <i class="fas fa-plus me-1"></i>Create Post
-                            </a>
-                        }
-                    </div>
-                    
-                    <!-- Sort Options -->
-                    <div class="btn-group" role="group">
-                        <a href="@Url.All("hot")" class="btn btn-sm @(currentSort == "hot" ? "btn-primary" : "btn-outline-secondary")">
-                            <i class="fas fa-fire"></i> Hot
-                        </a>
-                        <a href="@Url.All("new")" class="btn btn-sm @(currentSort == "new" ? "btn-primary" : "btn-outline-secondary")">
-                            <i class="fas fa-certificate"></i> New
-                        </a>
-                        <a href="@Url.All("top")" class="btn btn-sm @(currentSort == "top" ? "btn-primary" : "btn-outline-secondary")">
-                            <i class="fas fa-arrow-up"></i> Top
-                        </a>
-                        <a href="@Url.All("controversial")" class="btn btn-sm @(currentSort == "controversial" ? "btn-primary" : "btn-outline-secondary")">
-                            <i class="fas fa-bolt"></i> Controversial
-                        </a>
-                    </div>
-
-                    @if (currentSort == "top")
-                    {
-                        <div class="btn-group ms-2" role="group">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="far fa-clock me-1"></i>@currentTime
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item @(currentTime == "day" ? "active" : "")" href="@Url.All("top")?time=day">Today</a></li>
-                                <li><a class="dropdown-item @(currentTime == "week" ? "active" : "")" href="@Url.All("top")?time=week">This Week</a></li>
-                                <li><a class="dropdown-item @(currentTime == "month" ? "active" : "")" href="@Url.All("top")?time=month">This Month</a></li>
-                                <li><a class="dropdown-item @(currentTime == "year" ? "active" : "")" href="@Url.All("top")?time=year">This Year</a></li>
-                                <li><a class="dropdown-item @(currentTime == "all" ? "active" : "")" href="@Url.All("top")?time=all">All Time</a></li>
-                            </ul>
                         </div>
                     }
                 </div>
-            </div>
 
-            <!-- Posts -->
-            <div class="posts-list">
-                @if (Model.Posts.Any())
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1)
                 {
-                    @foreach (var post in Model.Posts)
-                    {
-                        <partial name="Partials/PostsPartial/_PostCardReddit" model="post" />
-                    
-                    }
-
-                    <!-- Pagination -->
-                    @if (Model.TotalPages > 1)
-                    {
-                        <nav aria-label="Page navigation" class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                @if (Model.CurrentPage > 1)
+                    <div class="pagination-container">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("All", new { sort = currentSort, time = currentTime, page = currentPage - 1 })">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(Model.TotalPages, currentPage + 2); i++)
                                 {
-                                    <li class="page-item">
-                                        <a class="page-link" href="@Url.All(currentSort)?time=@currentTime&page=@(Model.CurrentPage - 1)">Previous</a>
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("All", new { sort = currentSort, time = currentTime, page = i })">@i</a>
                                     </li>
                                 }
-
-                                @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
-                                {
-                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                        <a class="page-link" href="@Url.All(currentSort)?time=@currentTime&page=@i">@i</a>
-                                    </li>
-                                }
-
-                                @if (Model.CurrentPage < Model.TotalPages)
-                                {
-                                    <li class="page-item">
-                                        <a class="page-link" href="@Url.All(currentSort)?time=@currentTime&page=@(Model.CurrentPage + 1)">Next</a>
-                                    </li>
-                                }
+                                
+                                <li class="page-item @(currentPage >= Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("All", new { sort = currentSort, time = currentTime, page = currentPage + 1 })">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
                             </ul>
                         </nav>
-                    }
-                }
-                else
-                {
-                    <div class="card">
-                        <div class="card-body text-center py-5">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">No posts found</p>
-                        </div>
                     </div>
                 }
             </div>
-        </div>
 
-        <!-- Right Sidebar -->
-        <div class="col-lg-3 d-none d-lg-block">
-            <div class="sidebar">
-                <!-- Today's Top Growing Communities -->
-                @if (ViewBag.TrendingCommunities != null)
-                {
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h6 class="mb-0">Today's Top Growing Communities</h6>
-                        </div>
-                        <div class="card-body">
-                            @foreach (var community in ViewBag.TrendingCommunities)
-                            {
-                                <div class="d-flex align-items-center mb-3">
-                                    <span class="badge bg-light text-dark me-2">@community.Rank</span>
-                                    <div class="avatar avatar-sm me-2" style="background-color: @community.ThemeColor;">
-                                        @community.Name.Substring(0, 1).ToUpper()
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <a href="@Url.Community((string)community.Slug)" class="text-decoration-none">
-                                            <div class="fw-bold small">r/@community.Name</div>
-                                            <div class="text-success small">+@community.GrowthPercentage% today</div>
-                                        </a>
-                                    </div>
-                                </div>
-                            }
-                            <a href="@Url.Communities(sort: "trending")" class="btn btn-link btn-sm w-100">View All</a>
-                        </div>
-                    </div>
-                }
+            <!-- Right Sidebar -->
+            <div class="col-lg-3">
+                <!-- Trending Topics -->
+                <partial name="_TrendingTopics" />
 
-                <!-- Recent Activity -->
-                @if (User.Identity?.IsAuthenticated == true && ViewBag.RecentActivity != null)
-                {
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h6 class="mb-0">Recent Activity</h6>
+                <!-- Ad Banner -->
+                <div class="ad-banner">
+                    <div class="mb-2"><small>Advertisement</small></div>
+                    <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #f0f0f0, #e0e0e0);">
+                        <div class="text-center">
+                            <i class="fas fa-ad fa-2x mb-2"></i>
+                            <div>Your Ad Here</div>
+                            <div><small>300x250</small></div>
                         </div>
-                        <div class="card-body">
-                            @foreach (var activity in ViewBag.RecentActivity)
-                            {
-                                <div class="d-flex align-items-start mb-3">
-                                    <div class="avatar avatar-sm me-2" style="background-color: @activity.IconColor;">
-                                        <i class="@activity.IconClass"></i>
-                                    </div>
-                                    <div>
-                                        <div class="small">@activity.Description</div>
-                                        <div class="text-muted small">@activity.TimeAgo</div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-
-                <!-- Community Guidelines -->
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">DiscussionSpot Rules</h6>
-                    </div>
-                    <div class="card-body">
-                        <ol class="small ps-3 mb-0">
-                            <li>Remember the human</li>
-                            <li>Behave like you would in real life</li>
-                            <li>Look for the original source of content</li>
-                            <li>Search for duplicates before posting</li>
-                            <li>Read the community's rules</li>
-                        </ol>
                     </div>
                 </div>
+
+                <!-- Community Stats -->
+                <partial name="_CommunityStats" model="Model" />
+
+                <!-- About DiscussionSpot -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-info-circle"></i> About DiscussionSpot
+                    </div>
+                    <div class="sidebar-content">
+                        <p class="small mb-3">Welcome to DiscussionSpot, your premier online forum for meaningful discussions across technology, gaming, science, and more.</p>
+                        <div class="d-grid">
+                            <a href="@Url.Action("About", "Home")" class="btn btn-outline-primary btn-sm">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Newsletter -->
+                <partial name="_Newsletter" />
             </div>
         </div>
     </div>
-</main>
+</div>
 
-<!-- Create Post FAB -->
-@if (User.Identity?.IsAuthenticated == true)
-{
-    <a href="@Url.Communities()" class="btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-4" 
-       style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; z-index: 1000;">
-        <i class="fas fa-plus"></i>
-    </a>
-}
-@* 
 @section Scripts {
-    <script src="~/js/posts-feed.js"></script>
-} *@
-@section Scripts {
+    <script src="~/js/post-interactions.js"></script>
     <script>
-        // Voting functionality
-        document.querySelectorAll('.vote-btn').forEach(button => {
-            button.addEventListener('click', async function() {
-                if (!@Html.Raw(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false")) {
-                    window.location.href = '@Url.Login()';
-                    return;
-                }
-
-                const postId = this.dataset.postId;
-                const voteType = parseInt(this.dataset.voteType);
-                const voteSection = this.closest('.vote-section');
-                const countElement = voteSection.querySelector('.vote-count');
-                const upvoteBtn = voteSection.querySelector('.upvote');
-                const downvoteBtn = voteSection.querySelector('.downvote');
-
-                try {
-                    const response = await fetch('/Post/Vote', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                        },
-                        body: JSON.stringify({ postId: parseInt(postId), voteType })
-                    });
-
-                    const result = await response.json();
-                    if (result.success) {
-                        countElement.textContent = result.voteCount > 1000 ?
-                            (result.voteCount / 1000).toFixed(1) + 'k' :
-                            result.voteCount.toString();
-
-                        upvoteBtn.classList.toggle('active', result.userVote === 1);
-                        downvoteBtn.classList.toggle('active', result.userVote === -1);
-                    }
-                } catch (error) {
-                    console.error('Voting error:', error);
-                }
-            });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize post interactions
+            initializePostInteractions('@Url.Action("Vote", "Post")', '@Url.Action("Share", "Post")');
+            
+            // Initialize CSRF token for AJAX requests
+            const csrfToken = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)[1];
+            window.csrfToken = csrfToken;
         });
     </script>
 }

@@ -21,6 +21,11 @@ namespace discussionspot9.Helpers
         /// <summary>
         /// Generate user posts URL: /u/username/posts
         /// </summary>
+        /// 
+        public static string Profile(this IUrlHelper urlHelper, string displayName)
+        {
+            return urlHelper.UserProfile(displayName);
+        }
         public static string UserPosts(this IUrlHelper urlHelper, string displayName)
         {
             return urlHelper.RouteUrl("user_posts", new { displayName }) ?? $"/u/{displayName}/posts";

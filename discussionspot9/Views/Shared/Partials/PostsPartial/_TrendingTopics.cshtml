@@ -1,0 +1,26 @@
+﻿@using discussionspot9.Models.ViewModels.HomePage
+@model List<TrendingTopicViewModel>
+
+<div class="sidebar-card">
+    <div class="sidebar-header">
+        <i class="fas fa-trending-up"></i> Trending Topics
+    </div>
+    <div class="sidebar-content">
+        @if (Model?.Any() == true)
+        {
+            @for (int i = 0; i < Math.Min(Model.Count, 5); i++)
+            {
+                <div class="trending-item">
+                    <span class="trending-number">@(i + 1)</span>
+                    <a href="@Url.Action("Search", "Post", new { q = Model[i].Name })" class="text-decoration-none">
+                        @Model[i].Name
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted small">No trending topics at the moment</p>
+        }
+    </div>
+</div>

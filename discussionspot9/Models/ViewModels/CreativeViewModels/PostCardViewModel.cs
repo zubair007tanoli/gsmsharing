@@ -43,6 +43,29 @@
         public string CommunityUrl => $"/r/{CommunitySlug}";
         public string FormattedScore => FormatCount(Score);
         public string FormattedCommentCount => FormatCount(CommentCount);
+        public string? MediaUrl { get; set; }
+        public string? LinkUrl { get; set; }
+        public string? LinkDomain { get; set; }
+        public bool IsSavedByUser { get; set; }
+
+        // Add alias for compatibility
+        public string Username => AuthorDisplayName;
+
+        // Add these for poll posts
+        public int? PollVoteCount { get; set; }
+        public DateTime? PollEndsAt { get; set; }
+
+        // Add content preview property
+        public string ContentPreview => GetContentPreview();
+
+        private string GetContentPreview()
+        {
+            if (string.IsNullOrEmpty(Content))
+                return string.Empty;
+
+            var preview = Content.Length > 200 ? Content.Substring(0, 200) + "..." : Content;
+            return preview;
+        }
         public string VoteCountCssClass => Score switch
         {
             > 0 => "text-success",

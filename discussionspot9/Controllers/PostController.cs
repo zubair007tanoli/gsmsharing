@@ -51,12 +51,53 @@ namespace discussionspot9.Controllers
         /// <summary>
         /// Display all posts with sorting options
         /// </summary>
-        [HttpGet]
         public async Task<IActionResult> All(string sort = "hot", string time = "all", int page = 1)
         {
             try
             {
                 var model = await _postService.GetAllPostsAsync(sort, time, page);
+
+                // Get current user ID for checking saved posts
+                string? userId = null;
+                if (User.Identity?.IsAuthenticated == true)
+                {
+                    userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                }
+
+                // Enrich post data with additional information
+                foreach (var post in model.Posts)
+                {
+                    // Check if post is saved by current user
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        post.IsSavedByUser = await _postService.IsPostSavedByUserAsync(post.PostId, userId);
+                        post.CurrentUserVote = await _postService.GetUserVoteAsync(post.PostId, userId);
+                    }
+
+                    // Set media URL and link URL based on post type
+                    if (post.PostType == "image" || post.PostType == "video")
+                    {
+                        post.MediaUrl = post.Url; // Assuming URL contains the media URL
+                    }
+                    else if (post.PostType == "link")
+                    {
+                        post.LinkUrl = post.Url;
+                        if (!string.IsNullOrEmpty(post.LinkUrl))
+                        {
+                            try
+                            {
+                                post.LinkDomain = new Uri(post.LinkUrl).Host;
+                            }
+                            catch
+                            {
+                                post.LinkDomain = "External Link";
+                            }
+                        }
+                    }
+                }
+
+                // Get trending topics for sidebar
+                ViewBag.TrendingTopics = await _postService.GetTrendingTopicsAsync();
 
                 ViewData["CurrentSort"] = sort;
                 ViewData["CurrentTime"] = time;
@@ -71,7 +112,46 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("Index", "Home");
             }
         }
+        private string DeterminePostType(string mediaUrl)
+        {
+            var extension = Path.GetExtension(mediaUrl)?.ToLower();
 
+            return extension switch
+            {
+                ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "image",
+                ".mp4" or ".webm" or ".mov" => "video",
+                _ => "text"
+            };
+        }
+
+        // Add new action for saving posts
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ToggleSave(int postId)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
+
+                var result = await _postService.ToggleSavePostAsync(postId, userId);
+
+                return Json(new
+                {
+                    success = result.Success,
+                    isSaved = result.IsSaved,
+                    message = result.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling save status");
+                return Json(new { success = false, message = "An error occurred" });
+            }
+        }
         /// <summary>
         /// Display single post with comments
         /// </summary>
