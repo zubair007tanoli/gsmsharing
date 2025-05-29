@@ -1,0 +1,54 @@
+﻿@using discussionspot9.Helpers
+@model List<discussionspot9.Models.ViewModels.CreativeViewModels.CommunityCardViewModel>
+
+<div class="card sidebar-card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Popular Communities</h6>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a href="@Url.CreateCommunity()" class="btn btn-sm btn-outline-primary" title="Create Community">
+                    <i class="fas fa-plus"></i>
+                </a>
+            }
+        </div>
+        <ul class="list-unstyled mb-0">
+            @foreach (var community in Model.Take(5))
+            {
+                <li class="d-flex align-items-center mb-3">
+                    <div class="community-icon" style="background-color: @GetCommunityColor(community.CategorySlug);">
+                        @community.Name.Substring(0, 1).ToUpper()
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">
+                            <a href="@Url.Community(community.Slug)" class="text-decoration-none">r/@community.Name</a>
+                        </div>
+                        <div class="small text-muted">@community.FormattedMemberCount members</div>
+                    </div>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <button class="join-button @(community.IsCurrentUserMember ? "joined" : "")"
+                                data-community-id="@community.CommunityId">
+                            @(community.IsCurrentUserMember ? "Joined" : "Join")
+                        </button>
+                    }
+                </li>
+            }
+        </ul>
+        <a href="@Url.Communities()" class="text-primary fw-semibold text-decoration-none d-block text-center">View All</a>
+    </div>
+</div>
+
+@functions {
+    string GetCommunityColor(string? categorySlug)
+    {
+        return categorySlug?.ToLower() switch
+        {
+            "technology" => "#0079d3",
+            "gaming" => "#7193ff",
+            "science" => "#46d160",
+            "general" => "#ff4500",
+            _ => "#6366f1"
+        };
+    }
+}

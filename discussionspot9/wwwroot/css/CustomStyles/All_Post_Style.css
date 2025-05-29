@@ -1,0 +1,300 @@
+﻿
+/* Reddit-style voting arrows */
+.vote-section {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0;
+    gap: 4px;
+}
+
+.vote-btn {
+    background: none;
+    border: none;
+    color: #878A8C;
+    font-size: 16px;
+    padding: 2px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 2px;
+}
+
+    .vote-btn:hover {
+        background-color: rgba(26, 26, 27, 0.1);
+    }
+
+    .vote-btn.upvote:hover, .vote-btn.upvote.active {
+        color: var(--upvote-color);
+        background-color: rgba(255, 69, 0, 0.1);
+    }
+
+    .vote-btn.downvote:hover, .vote-btn.downvote.active {
+        color: var(--downvote-color);
+        background-color: rgba(113, 147, 255, 0.1);
+    }
+
+.vote-count {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--text-color);
+    min-width: 32px;
+    text-align: center;
+    margin: 0 2px;
+    user-select: none;
+}
+
+/* Post Cards */
+.post-card {
+    background-color: var(--bg-color);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+
+    .post-card:hover {
+        border-color: var(--text-lighter);
+    }
+
+.post-header {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.post-subreddit {
+    font-weight: 700;
+    color: var(--text-color);
+    text-decoration: none;
+    margin-right: 4px;
+}
+
+    .post-subreddit:hover {
+        text-decoration: underline;
+    }
+
+.post-author {
+    margin: 0 4px;
+    text-decoration: none;
+    color: var(--text-light);
+}
+
+    .post-author:hover {
+        text-decoration: underline;
+    }
+
+.post-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+    .post-title a {
+        color: var(--text-color);
+        text-decoration: none;
+    }
+
+/* Post Actions */
+.post-action {
+    padding: 8px;
+    border-radius: 2px;
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+    .post-action:hover {
+        background-color: var(--hover-bg);
+        color: var(--text-color);
+    }
+
+/* Post Awards */
+.post-awards {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.post-award {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-light);
+    border-radius: 12px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.award-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+}
+
+/* Post Tags */
+.post-tag {
+    padding: 0 4px;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+
+    .post-tag.nsfw {
+        background-color: var(--nsfw-tag);
+        color: white;
+    }
+
+    .post-tag.spoiler {
+        background-color: var(--spoiler-tag);
+        color: var(--text-color);
+    }
+
+    .post-tag.oc {
+        background-color: var(--oc-tag);
+        color: white;
+    }
+
+/* Community Icon */
+.community-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 100%;
+    margin-right: 8px;
+    background-color: #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+}
+
+/* Join Button */
+.join-button {
+    padding: 4px 16px;
+    border-radius: 9999px;
+    background-color: var(--secondary-color);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+    .join-button:hover {
+        background-color: var(--secondary-hover);
+    }
+
+    .join-button.joined {
+        background-color: transparent;
+        border: 1px solid var(--text-light);
+        color: var(--text-light);
+    }
+
+/* Premium Promo */
+.premium-promo {
+    background: linear-gradient(45deg, #ff4500, #ff8717);
+    color: white;
+    padding: 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.premium-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.premium-button {
+    display: block;
+    width: 100%;
+    padding: 8px 0;
+    background-color: white;
+    color: #ff4500;
+    border: none;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* Trending */
+.trending-number {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-color: var(--bg-light);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    margin-right: 8px;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--primary-color);
+}
+
+/* Sort Options */
+.sort-options {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.sort-option {
+    padding: 8px 12px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+    .sort-option:hover {
+        background-color: var(--hover-bg);
+    }
+
+    .sort-option.active {
+        background-color: var(--hover-bg);
+        color: var(--text-color);
+    }
+
+/* Dark Mode Adjustments */
+body.dark-mode .vote-btn {
+    color: #818384;
+}
+
+    body.dark-mode .vote-btn:hover {
+        background-color: rgba(215, 218, 220, 0.1);
+    }

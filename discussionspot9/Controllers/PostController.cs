@@ -28,6 +28,26 @@ namespace discussionspot9.Controllers
         {
             return View();
         }
+
+        public async Task<IActionResult> AllPostTestAsync(string sort = "hot", string time = "all", int page = 1)
+        {
+            try
+            {
+                var model = await _postService.GetAllPostsAsync(sort, time, page);
+
+                ViewData["CurrentSort"] = sort;
+                ViewData["CurrentTime"] = time;
+                ViewData["CurrentPage"] = page;
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching all posts");
+                TempData["ErrorMessage"] = "An error occurred while loading posts.";
+                return RedirectToAction("Index", "Home");
+            }
+        }
         /// <summary>
         /// Display all posts with sorting options
         /// </summary>

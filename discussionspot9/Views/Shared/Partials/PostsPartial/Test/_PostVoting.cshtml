@@ -1,0 +1,13 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
+
+<div class="vote-section d-flex align-items-center">
+    <button class="vote-btn upvote @(Model.CurrentUserVote == 1 ? "active" : "")"
+            data-post-id="@Model.PostId" data-vote-type="1" aria-label="Upvote">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    <span class="vote-count mx-2">@Model.FormattedScore</span>
+    <button class="vote-btn downvote @(Model.CurrentUserVote == -1 ? "active" : "")"
+            data-post-id="@Model.PostId" data-vote-type="-1" aria-label="Downvote">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+</div>

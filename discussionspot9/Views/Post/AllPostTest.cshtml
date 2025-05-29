@@ -1,0 +1,147 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostListViewModel
+@using discussionspot9.Helpers
+@{
+    ViewData["Title"] = "All Posts - DiscussionSpot";
+    var currentSort = ViewData["CurrentSort"]?.ToString() ?? "hot";
+    var currentTime = ViewData["CurrentTime"]?.ToString() ?? "all";
+}
+
+@* @section Styles {
+    <link rel="stylesheet" href="~/css/Reddit-style.css" />
+} *@
+<link href="~/css/CustomStyles/All_Post_Style.css" rel="stylesheet" />
+<main class="container py-4">
+    <div class="row">
+        <!-- Left Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+            @if (Model.TrendingCommunities?.Any() == true)
+            {
+                <partial name="Patials/PostsPartial/Test/_PopularCommunities" model="Model.TrendingCommunities" />
+            }
+
+            <!-- Premium Ad -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    DiscussionSpot Premium
+                </div>
+                <div class="card-body">
+                    <p class="small">Get an ad-free experience with special benefits, and directly support DiscussionSpot.</p>
+                    <a href="#" class="btn btn-primary w-100">Try Premium</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Feed -->
+        <div class="col-lg-6">
+            <!-- Feed Header with Sort Options -->
+            <partial name="Partials/PostsPartial/Test/_FeedHeader" />
+
+            <!-- Posts List -->
+            <div class="posts-list">
+                @if (Model.Posts.Any())
+                {
+                    @foreach (var post in Model.Posts)
+                    {
+                        <partial name="Partials/PostsPartial/Test/_RedditPostCard" model="post" />
+                    }
+
+                    <!-- Pagination -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <partial name="Partials/PagingPartial/_Pagination" model="Model" />
+                    }
+                }
+                else
+                {
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No posts found</p>
+                            <a href="@Url.Communities()" class="btn btn-primary">Browse Communities</a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <!-- Premium Promo -->
+            <partial name="Partials/PostsPartial/Test/_PremiumPromo" />
+
+            <!-- Trending Topics -->
+            @if (ViewBag.TrendingTopics != null)
+            {
+                <partial name="Partials/PostsPartial/Test/_TrendingTopics" model="@ViewBag.TrendingTopics" />
+            }
+
+            <!-- Community Guidelines -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    DiscussionSpot Rules
+                </div>
+                <div class="card-body">
+                    <ol class="small ps-3 mb-0">
+                        <li>Remember the human</li>
+                        <li>Behave like you would in real life</li>
+                        <li>Look for the original source of content</li>
+                        <li>Search for duplicates before posting</li>
+                        <li>Read the community's rules</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Newsletter -->
+            <div class="card">
+                <div class="card-header">
+                    Stay Updated
+                </div>
+                <div class="card-body">
+                    <p class="small mb-3">Get the best of DiscussionSpot delivered to your inbox.</p>
+                    <form class="newsletter-form">
+                        <input type="email" class="form-control mb-2" placeholder="Enter your email">
+                        <button type="submit" class="btn btn-secondary w-100">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/CustomJs/All_Posts.js"></script>
+    <script>
+        // Initialize voting functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            initVotingButtons();
+            initShareButtons();
+
+            // Join/Leave community
+            document.querySelectorAll('.join-button').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const communityId = this.dataset.communityId;
+                    const isJoined = this.classList.contains('joined');
+
+                    try {
+                        const response = await fetch('/Community/ToggleMembership', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                            },
+                            body: JSON.stringify({ communityId: parseInt(communityId) })
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            this.classList.toggle('joined');
+                            this.textContent = isJoined ? 'Join' : 'Joined';
+                        }
+                    } catch (error) {
+                        console.error('Error toggling membership:', error);
+                    }
+                });
+            });
+        });
+    </script>
+}

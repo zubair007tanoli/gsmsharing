@@ -1,0 +1,36 @@
+﻿@using discussionspot9.Helpers
+@{
+    var currentSort = ViewData["CurrentSort"]?.ToString() ?? "hot";
+}
+
+<div class="card feed-header mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">All Posts</h1>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a href="@Url.Communities()" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Create Post
+                </a>
+            }
+        </div>
+        <div class="sort-options">
+            <a href="@Url.All("hot")" class="sort-option @(currentSort == "hot" ? "active" : "")">
+                <i class="fas fa-fire"></i>
+                <span>Hot</span>
+            </a>
+            <a href="@Url.All("new")" class="sort-option @(currentSort == "new" ? "active" : "")">
+                <i class="fas fa-certificate"></i>
+                <span>New</span>
+            </a>
+            <a href="@Url.All("top")" class="sort-option @(currentSort == "top" ? "active" : "")">
+                <i class="fas fa-arrow-up"></i>
+                <span>Top</span>
+            </a>
+            <a href="@Url.All("controversial")" class="sort-option @(currentSort == "controversial" ? "active" : "")">
+                <i class="fas fa-bolt"></i>
+                <span>Controversial</span>
+            </a>
+        </div>
+    </div>
+</div>
