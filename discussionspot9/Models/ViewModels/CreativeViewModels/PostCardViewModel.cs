@@ -20,6 +20,7 @@
         public bool IsSpoiler { get; set; }
         public string PostUrl => $"/r/{CommunitySlug}/posts/{Slug}";
         public string AuthorUrl => $"/u/{AuthorDisplayName}";
+        public bool IsSavedByUser { get; set; }
         public int Score => UpvoteCount - DownvoteCount;
         // Author
         public string AuthorDisplayName { get; set; } = string.Empty;
@@ -46,8 +47,7 @@
         public string? MediaUrl { get; set; }
         public string? LinkUrl { get; set; }
         public string? LinkDomain { get; set; }
-        public bool IsSavedByUser { get; set; }
-
+    
         // Add alias for compatibility
         public string Username => AuthorDisplayName;
 

@@ -67,7 +67,7 @@ namespace discussionspot9.Controllers
                 // Enrich post data with additional information
                 foreach (var post in model.Posts)
                 {
-                    // Check if post is saved by current user
+                    // Check if post is saved by current user (only if user is authenticated)
                     if (!string.IsNullOrEmpty(userId))
                     {
                         post.IsSavedByUser = await _postService.IsPostSavedByUserAsync(post.PostId, userId);
@@ -77,21 +77,19 @@ namespace discussionspot9.Controllers
                     // Set media URL and link URL based on post type
                     if (post.PostType == "image" || post.PostType == "video")
                     {
-                        post.MediaUrl = post.Url; // Assuming URL contains the media URL
+                        post.MediaUrl = post.Url;
                     }
-                    else if (post.PostType == "link")
+                    else if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
                     {
                         post.LinkUrl = post.Url;
-                        if (!string.IsNullOrEmpty(post.LinkUrl))
+                        try
                         {
-                            try
-                            {
-                                post.LinkDomain = new Uri(post.LinkUrl).Host;
-                            }
-                            catch
-                            {
-                                post.LinkDomain = "External Link";
-                            }
+                            var uri = new Uri(post.Url);
+                            post.LinkDomain = uri.Host;
+                        }
+                        catch
+                        {
+                            post.LinkDomain = "External Link";
                         }
                     }
                 }

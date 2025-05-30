@@ -20,6 +20,6 @@ namespace discussionspot9.Interfaces
 
         Task<bool> IsPostSavedByUserAsync(int postId, string userId);
         Task<SavePostResult> ToggleSavePostAsync(int postId, string userId);
-        Task<List<Models.ViewModels.HomePage.TrendingTopicViewModel>> GetTrendingTopicsAsync();
-    }
+        Task<List<TrendingTopicViewModel>> GetTrendingTopicsAsync();
+      }
 }
