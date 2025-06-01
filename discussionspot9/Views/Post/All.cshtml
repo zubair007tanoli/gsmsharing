@@ -3,7 +3,6 @@
 @using discussionspot9.Extensions
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
-@inject SignInManager<IdentityUser> SignInManager
 @{
     ViewData["Title"] = "All Posts - DiscussionSpot";
     var currentSort = ViewData["CurrentSort"]?.ToString() ?? "hot";
@@ -19,30 +18,7 @@
             <!-- Left Sidebar -->
             <div class="col-lg-3">
                 <!-- Trending Communities -->
-                @if (Model.TrendingCommunities?.Any() == true)
-                {
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">
-                            <i class="fas fa-users"></i> Trending Communities
-                        </div>
-                        <div class="sidebar-content">
-                            @foreach (var community in Model.TrendingCommunities.Take(4))
-                            {
-                                <div class="community-item">
-                                    <div class="community-avatar">@community.Name[0]</div>
-                                    <div class="community-info">
-                                        <div class="community-name">
-                                            <a href="@Url.Community(community.Slug)" class="text-decoration-none">
-                                                r/@community.Name
-                                            </a>
-                                        </div>
-                                        <div class="community-members">@community.MemberCount.ToShortString() members</div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
+                <partial name="Partials/PostsPartial/_TrendingCommunities" model="Model.TrendingCommunities" />
 
                 <!-- Ad Banner -->
                 <div class="ad-banner">
@@ -57,7 +33,7 @@
                 </div>
 
                 <!-- Recent News/Updates -->
-                <partial name="_RecentUpdates" />
+                <partial name="Partials/PostsPartial/_RecentUpdates" />
             </div>
 
             <!-- Main Content -->
@@ -74,28 +50,28 @@
                                 </a>
                             }
                         </div>
-                        
+
                         <div class="sort-controls">
-                            <a href="@Url.Action("All", new { sort = "hot", time = currentTime })" 
+                            <a href="@Url.Action("All", new { sort = "hot", time = currentTime })"
                                class="sort-btn @(currentSort == "hot" ? "active" : "")">
                                 <i class="fas fa-fire"></i> Hot
                             </a>
-                            <a href="@Url.Action("All", new { sort = "new", time = currentTime })" 
+                            <a href="@Url.Action("All", new { sort = "new", time = currentTime })"
                                class="sort-btn @(currentSort == "new" ? "active" : "")">
                                 <i class="fas fa-clock"></i> New
                             </a>
-                            <a href="@Url.Action("All", new { sort = "top", time = currentTime })" 
+                            <a href="@Url.Action("All", new { sort = "top", time = currentTime })"
                                class="sort-btn @(currentSort == "top" ? "active" : "")">
                                 <i class="fas fa-arrow-up"></i> Top
                             </a>
-                            <a href="@Url.Action("All", new { sort = "controversial", time = currentTime })" 
+                            <a href="@Url.Action("All", new { sort = "controversial", time = currentTime })"
                                class="sort-btn @(currentSort == "controversial" ? "active" : "")">
                                 <i class="fas fa-comments"></i> Controversial
                             </a>
-                            
+
                             @if (currentSort == "top" || currentSort == "controversial")
                             {
-                                <select class="form-select form-select-sm" style="width: auto;" 
+                                <select class="form-select form-select-sm" style="width: auto;"
                                         onchange="window.location.href='@Url.Action("All", new { sort = currentSort })' + '&time=' + this.value">
                                     <option value="all" selected="@(currentTime == "all" ? "true" : "false")">All Time</option>
                                     <option value="today" selected="@(currentTime == "today" ? "true" : "false")">Today</option>
@@ -114,7 +90,7 @@
                     {
                         @foreach (var post in Model.Posts)
                         {
-                            <partial name="_PostCard" model="post" />
+                            <partial name="Partials/PostsPartial/_PostCardEnhanced" model="post" />
                         }
 
                         <!-- Ad Banner in Feed -->
@@ -161,14 +137,14 @@
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
-                                
+
                                 @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(Model.TotalPages, currentPage + 2); i++)
                                 {
                                     <li class="page-item @(i == currentPage ? "active" : "")">
                                         <a class="page-link" href="@Url.Action("All", new { sort = currentSort, time = currentTime, page = i })">@i</a>
                                     </li>
                                 }
-                                
+
                                 <li class="page-item @(currentPage >= Model.TotalPages ? "disabled" : "")">
                                     <a class="page-link" href="@Url.Action("All", new { sort = currentSort, time = currentTime, page = currentPage + 1 })">
                                         <span aria-hidden="true">&raquo;</span>
@@ -183,7 +159,7 @@
             <!-- Right Sidebar -->
             <div class="col-lg-3">
                 <!-- Trending Topics -->
-                <partial name="_TrendingTopics" />
+                <partial name="Partials/PostsPartial/_TrendingTopics" model="Model.TrendingTopics" />
 
                 <!-- Ad Banner -->
                 <div class="ad-banner">
@@ -198,7 +174,7 @@
                 </div>
 
                 <!-- Community Stats -->
-                <partial name="_CommunityStats" model="Model" />
+                <partial name="Partials/PostsPartial/_CommunityStats" />
 
                 <!-- About DiscussionSpot -->
                 <div class="sidebar-card">
@@ -214,19 +190,19 @@
                 </div>
 
                 <!-- Newsletter -->
-                <partial name="_Newsletter" />
+                <partial name="Partials/PostsPartial/_Newsletter" />
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/js/post-interactions.js"></script>
+    <script src="~/js/CustomJs/post-interactions.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize post interactions
             initializePostInteractions('@Url.Action("Vote", "Post")', '@Url.Action("Share", "Post")');
-            
+
             // Initialize CSRF token for AJAX requests
             const csrfToken = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)[1];
             window.csrfToken = csrfToken;

@@ -1,0 +1,31 @@
+﻿@model List<discussionspot9.Models.ViewModels.CreativeViewModels.TrendingCommunityViewModel>
+@using discussionspot9.Extensions
+
+<div class="sidebar-card">
+    <div class="sidebar-header">
+        <i class="fas fa-users"></i> Trending Communities
+    </div>
+    <div class="sidebar-content">
+        @if (Model?.Any() == true)
+        {
+            @foreach (var community in Model.Take(4))
+            {
+                <div class="community-item">
+                    <div class="community-avatar">@community.Name[0]</div>
+                    <div class="community-info">
+                        <div class="community-name">
+                            <a href="@Url.Community(community.Slug)" class="text-decoration-none">
+                                r/@community.Name
+                            </a>
+                        </div>
+                        <div class="community-members">@community.MemberCount.ToShortString() members</div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted small">No trending communities at the moment</p>
+        }
+    </div>
+</div>

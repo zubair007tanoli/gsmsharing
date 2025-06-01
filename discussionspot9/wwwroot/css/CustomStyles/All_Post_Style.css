@@ -340,6 +340,125 @@
     border-color: var(--all-posts-primary);
 }
 
+/* Post Type Specific Styles */
+.post-image-preview img {
+    width: 100%;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+    .post-image-preview img:hover {
+        opacity: 0.9;
+    }
+
+.post-video-preview {
+    position: relative;
+}
+
+.video-play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.post-video-preview:hover .video-play-overlay {
+    opacity: 0.8;
+}
+
+.link-preview {
+    font-size: 14px;
+}
+
+    .link-preview .link-domain {
+        color: var(--all-posts-primary);
+        font-weight: 500;
+    }
+
+    .link-preview:hover {
+        background-color: var(--all-posts-bg-light);
+    }
+
+/* Poll Styles */
+.poll-option {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--all-posts-border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+    .poll-option:hover {
+        background-color: var(--all-posts-bg-light);
+    }
+
+    .poll-option.selected {
+        border-color: var(--all-posts-primary);
+        background-color: rgba(79, 70, 229, 0.1);
+    }
+
+.poll-progress {
+    height: 4px;
+    background-color: var(--all-posts-bg-dark);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.poll-progress-bar {
+    height: 100%;
+    background-color: var(--all-posts-primary);
+    transition: width 0.3s ease;
+}
+
+/* Save Button States */
+.action-btn.save-btn.saved {
+    color: var(--all-posts-primary);
+}
+
+/* Loading States */
+.post-card.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.vote-buttons.loading .vote-btn {
+    cursor: not-allowed;
+}
+
+/* Share Menu */
+.share-menu {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: var(--all-posts-bg);
+    border: 1px solid var(--all-posts-border);
+    border-radius: 4px;
+    box-shadow: var(--all-posts-shadow-md);
+    padding: 8px;
+    min-width: 200px;
+    display: none;
+}
+
+    .share-menu.show {
+        display: block;
+    }
+
+.share-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+    .share-option:hover {
+        background-color: var(--all-posts-bg-light);
+    }
 
 @media (max-width: 992px) {
     .all-posts-container .main-container .row > div:nth-child(1), .all-posts-container .main-container .row > div:nth-child(3) {

@@ -1,6 +1,7 @@
 ﻿using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Models.ViewModels.HomePage;
+using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services.ServiceResults;
 
 namespace discussionspot9.Interfaces
@@ -21,5 +22,15 @@ namespace discussionspot9.Interfaces
         Task<bool> IsPostSavedByUserAsync(int postId, string userId);
         Task<SavePostResult> ToggleSavePostAsync(int postId, string userId);
         Task<List<TrendingTopicViewModel>> GetTrendingTopicsAsync();
-      }
+
+        // IPostService.cs
+        Task<PollViewModel?> GetPollDetailsAsync(int postId, string? userId);
+        Task<VotePollResult> VotePollAsync(int postId, string userId, List<int> optionIds);
+        Task<List<PostAwardViewModel>> GetPostAwardsAsync(int postId);
+        Task<GiveAwardResult> GiveAwardAsync(int postId, int awardId, string userId, string? message);
+        Task<PollViewModel?> GetPollDataAsync(int postId);
+        Task<bool> HasUserVotedInPollAsync(int postId, string userId);
+        Task<List<int>> GetUserPollVotesAsync(int postId, string userId);
+      
+    }
 }

@@ -1,0 +1,63 @@
+﻿@model discussionspot9.Models.ViewModels.PollViewModels.PollViewModel
+
+<div class="poll-container" data-post-id="@ViewBag.PostId">
+    <h5 class="mb-3"><i class="fas fa-poll me-2"></i>Poll</h5>
+
+    @if (Model.HasUserVoted && Model.ShowResultsBeforeVoting)
+    {
+        <!-- Show Results -->
+        <div class="poll-results">
+            @foreach (var option in Model.Options)
+            {
+                <div class="poll-result-item mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>@option.OptionText</span>
+                        <span>@option.VotePercentage%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar @(option.IsUserSelection ? "bg-primary" : "bg-secondary")"
+                             style="width: @option.VotePercentage%"></div>
+                    </div>
+                    <small class="text-muted">@option.VoteCount votes</small>
+                </div>
+            }
+            <div class="mt-3 text-muted">
+                <small>Total votes: @Model.Options.Sum(o => o.VoteCount)</small>
+                @if (Model.EndDate.HasValue)
+                {
+                    <small class="ms-2">Ends: @Model.EndDate.Value.ToString("MMM dd, yyyy")</small>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Show Voting Form -->
+        <form id="pollForm" class="poll-form">
+            @foreach (var option in Model.Options)
+            {
+                <div class="poll-option mb-2 p-3 border rounded" data-option-id="@option.PollOptionId">
+                    <div class="form-check">
+                        <input type="@(Model.AllowMultipleChoices ? "checkbox" : "radio")"
+                               class="form-check-input"
+                               name="@(Model.AllowMultipleChoices ? "pollOptions" : "pollOption")"
+                               value="@option.PollOptionId"
+                               id="option_@option.PollOptionId">
+                        <label class="form-check-label w-100" for="option_@option.PollOptionId">
+                            @option.OptionText
+                        </label>
+                    </div>
+                </div>
+            }
+
+            <button type="submit" class="btn btn-primary mt-3" id="voteButton">
+                <i class="fas fa-vote-yea me-2"></i>Vote
+            </button>
+
+            @if (Model.EndDate.HasValue)
+            {
+                <small class="text-muted ms-2">Ends: @Model.EndDate.Value.ToString("MMM dd, yyyy")</small>
+            }
+        </form>
+    }
+</div>

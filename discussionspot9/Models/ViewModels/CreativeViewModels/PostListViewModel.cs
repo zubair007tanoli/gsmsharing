@@ -1,4 +1,6 @@
-﻿namespace discussionspot9.Models.ViewModels.CreativeViewModels
+﻿using discussionspot9.Models.ViewModels.HomePage;
+
+namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
     public class PostListViewModel
     {
@@ -11,5 +13,6 @@
 
         // For sidebar
         public List<TrendingCommunityViewModel> TrendingCommunities { get; set; } = new();
+        public List<TrendingTopicViewModel> TrendingTopics { get; set; } = new();
     }
 }

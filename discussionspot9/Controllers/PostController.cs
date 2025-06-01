@@ -1,5 +1,6 @@
 ﻿using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -12,17 +13,20 @@ namespace discussionspot9.Controllers
         private readonly ICommunityService _communityService;
         private readonly ICommentService _commentService;
         private readonly ILogger<PostController> _logger;
+        private readonly INotificationService _notificationService;
 
         public PostController(
             IPostService postService,
             ICommunityService communityService,
             ICommentService commentService,
-            ILogger<PostController> logger)
+            ILogger<PostController> logger,
+            INotificationService notificationService)
         {
             _postService = postService;
             _communityService = communityService;
             _commentService = commentService;
             _logger = logger;
+            _notificationService = notificationService;
         }
         public IActionResult Test()
         {
@@ -95,7 +99,8 @@ namespace discussionspot9.Controllers
                 }
 
                 // Get trending topics for sidebar
-                ViewBag.TrendingTopics = await _postService.GetTrendingTopicsAsync();
+                //ViewBag.TrendingTopics = await _postService.GetTrendingTopicsAsync();
+                model.TrendingTopics = await _postService.GetTrendingTopicsAsync();
 
                 ViewData["CurrentSort"] = sort;
                 ViewData["CurrentTime"] = time;
@@ -157,30 +162,37 @@ namespace discussionspot9.Controllers
         public async Task<IActionResult> Details(string communitySlug, string postSlug)
         {
             if (string.IsNullOrEmpty(communitySlug) || string.IsNullOrEmpty(postSlug))
-            {
                 return NotFound();
-            }
 
             try
             {
                 var post = await _postService.GetPostDetailsAsync(communitySlug, postSlug);
                 if (post == null)
-                {
                     return NotFound();
-                }
 
                 // Increment view count
                 await _postService.IncrementViewCountAsync(post.PostId);
 
-                // Get current user's vote status if logged in
+                string? userId = null;
                 if (User.Identity?.IsAuthenticated == true)
                 {
-                    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    if (!string.IsNullOrEmpty(userId)) // Ensure userId is not null or empty
+                    userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (!string.IsNullOrEmpty(userId))
                     {
                         post.CurrentUserVote = await _postService.GetUserVoteAsync(post.PostId, userId);
+                        post.IsCurrentUserAuthor = (post.UserId == userId);
+                        post.IsSavedByUser = await _postService.IsPostSavedByUserAsync(post.PostId, userId);
                     }
                 }
+
+                // Load poll data if it's a poll post
+                if (post.PostType == "poll" && post.HasPoll)
+                {
+                    post.Poll = await _postService.GetPollDetailsAsync(post.PostId, userId);
+                }
+
+                // Load awards
+                post.Awards = await _postService.GetPostAwardsAsync(post.PostId);
 
                 // Load comments
                 var comments = await _commentService.GetPostCommentsAsync(post.PostId, "best");
@@ -197,10 +209,57 @@ namespace discussionspot9.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching post details: {CommunitySlug}/{PostSlug}",
-                    communitySlug, postSlug);
+                _logger.LogError(ex, "Error fetching post details: {CommunitySlug}/{PostSlug}", communitySlug, postSlug);
                 TempData["ErrorMessage"] = "An error occurred while loading the post.";
                 return RedirectToAction("Index", "Home");
+            }
+        }
+
+        // Add new actions for polls and awards
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> VotePoll(int postId, List<int> optionIds)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Json(new { success = false, message = "User not authenticated" });
+
+                var result = await _postService.VotePollAsync(postId, userId, optionIds);
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error voting on poll");
+                return Json(new { success = false, message = "An error occurred" });
+            }
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> GiveAward(int postId, int awardId, string? message)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Json(new { success = false, message = "User not authenticated" });
+
+                var result = await _postService.GiveAwardAsync(postId, awardId, userId, message);
+
+                // Create notification for post author
+                if (result.Success)
+                {
+                    await _notificationService.CreateAwardNotificationAsync(postId, awardId, userId);
+                }
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error giving award");
+                return Json(new { success = false, message = "An error occurred" });
             }
         }
 

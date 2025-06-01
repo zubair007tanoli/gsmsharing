@@ -4,6 +4,7 @@ using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Models.ViewModels.HomePage;
+using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services.ServiceResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -15,12 +16,14 @@ namespace discussionspot9.Services
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly ILogger<PostService> _logger;
+        private readonly INotificationService _notificationService;
 
-        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger)
+        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService)
         {
             _context = context;
             _cache = cache;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task<PostListViewModel> GetAllPostsAsync(string sort = "hot", string time = "all", int page = 1)
@@ -100,7 +103,103 @@ namespace discussionspot9.Services
         }
 
         // Add these methods to your existing PostService class
+        // Update the GetPollDetailsAsync method:
+        public async Task<PollViewModel?> GetPollDetailsAsync(int postId, string? userId)
+        {
+            var post = await _context.Posts
+                .Include(p => p.PollOptions)
+                .ThenInclude(po => po.Votes)
+                .Include(p => p.PollConfiguration) // Add this include
+                .FirstOrDefaultAsync(p => p.PostId == postId);
 
+            if (post == null || post.PollOptions == null || !post.PollOptions.Any())
+                return null;
+
+            var totalVotes = post.PollOptions.Sum(po => po.Votes.Count);
+            var hasUserVoted = userId != null && post.PollOptions.Any(po => po.Votes.Any(v => v.UserId == userId));
+
+            return new PollViewModel
+            {
+                PostId = postId,
+                Question = post.Content,
+                TotalVotes = totalVotes,
+                HasUserVoted = hasUserVoted,
+                EndDate = post.PollConfiguration?.EndDate, // Changed from PollExpiresAt
+                AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false, // Changed
+                Options = post.PollOptions.Select(po => new PollOptionViewModel
+                {
+                    PollOptionId = po.PollOptionId, // Changed from po.Id
+                    OptionText = po.OptionText, // Changed from po.Text
+                    VoteCount = po.Votes.Count,
+                    HasUserVoted = userId != null && po.Votes.Any(v => v.UserId == userId),
+                    VotePercentage = totalVotes > 0 ? (decimal)po.Votes.Count / totalVotes * 100 : 0
+                }).OrderBy(o => o.PollOptionId).ToList()
+            };
+        }
+
+        // Update the GetPostAwardsAsync method:
+        public async Task<List<PostAwardViewModel>> GetPostAwardsAsync(int postId)
+        {
+            var awards = await _context.PostAwards
+                .Where(pa => pa.PostId == postId)
+                .Include(pa => pa.Award)
+                .Include(pa => pa.AwardedByUser) // Changed from GivenByUser
+                .Select(pa => new PostAwardViewModel
+                {
+                    AwardId = pa.AwardId,
+                    AwardName = pa.Award.Name,
+                    AwardIconUrl = pa.Award.IconUrl,
+                    GivenBy = pa.AwardedByUser.UserName, // Changed from Username
+                    DateGiven = pa.AwardedAt, // Changed from DateGiven
+                    Message = pa.Message
+                })
+                .ToListAsync();
+
+            return awards;
+        }
+
+        // Update the GiveAwardAsync method:
+        public async Task<GiveAwardResult> GiveAwardAsync(int postId, int awardId, string userId, string? message)
+        {
+            try
+            {
+                var post = await _context.Posts.FindAsync(postId);
+                if (post == null)
+                {
+                    return new GiveAwardResult { Success = false, Message = "Post not found" };
+                }
+
+                var award = await _context.Awards.FindAsync(awardId);
+                if (award == null)
+                {
+                    return new GiveAwardResult { Success = false, Message = "Award not found" };
+                }
+
+                var postAward = new PostAward
+                {
+                    PostId = postId,
+                    AwardId = awardId,
+                    AwardedByUserId = userId, // Changed from GivenByUserId
+                    Message = message,
+                    AwardedAt = DateTime.UtcNow, // Changed from DateGiven
+                    IsAnonymous = false
+                };
+
+                _context.PostAwards.Add(postAward);
+                await _context.SaveChangesAsync();
+
+                return new GiveAwardResult
+                {
+                    Success = true,
+                    Message = "Award given successfully",
+                    AwardId = postAward.PostAwardId // Changed from Id
+                };
+            }
+            catch (Exception ex)
+            {
+                return new GiveAwardResult { Success = false, Message = ex.Message };
+            }
+        }
         public async Task<bool> IsPostSavedByUserAsync(int postId, string userId)
         {
             return false;
@@ -252,6 +351,7 @@ namespace discussionspot9.Services
                 DownvoteCount = post.DownvoteCount,
                 CommentCount = post.CommentCount,
                 ViewCount = post.ViewCount,
+                HasPoll = post.HasPoll,
                 IsPinned = post.IsPinned,
                 IsLocked = post.IsLocked,
                 IsNSFW = post.IsNSFW,
@@ -513,7 +613,7 @@ namespace discussionspot9.Services
             else if (p.PostType == "poll" && p.PollOptions?.Any() == true)
             {
                 viewModel.PollVoteCount = p.PollOptions.Sum(po => po.Votes?.Count ?? 0);
-                viewModel.PollEndsAt = p.PollEndsAt;
+                viewModel.PollEndsAt = p.PollExpiresAt;
             }
 
             return viewModel;
@@ -526,5 +626,66 @@ namespace discussionspot9.Services
             if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
             return (parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpper();
         }
+
+        public async Task<VotePollResult> VotePollAsync(int postId, string userId, List<int> optionIds)
+        {
+            try
+            {
+                // Remove existing votes for this user on this poll
+                var existingVotes = await _context.PollVotes
+                    .Where(pv => pv.PollOption.PostId == postId && pv.UserId == userId)
+                    .ToListAsync();
+
+                _context.PollVotes.RemoveRange(existingVotes);
+
+                // Add new votes
+                var newVotes = optionIds.Select(optionId => new PollVote
+                {
+                    PollOptionId = optionId,
+                    UserId = userId,
+                    VotedAt = DateTime.UtcNow
+                }).ToList();
+
+                _context.PollVotes.AddRange(newVotes);
+                await _context.SaveChangesAsync();
+
+                // Get updated vote counts
+                var updatedCounts = await _context.PollOptions
+                    .Where(po => po.PostId == postId)
+                    .Select(po => new { po.PollOptionId, Count = po.Votes.Count })
+                    .ToDictionaryAsync(x => x.PollOptionId, x => x.Count);
+
+                return new VotePollResult
+                {
+                    Success = true,
+                    Message = "Vote recorded successfully",
+                    UpdatedVoteCounts = updatedCounts
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error voting on poll {PostId}", postId);
+                return new VotePollResult
+                {
+                    Success = false,
+                    Message = "An error occurred while recording your vote"
+                };
+            }
+        }
+
+        public Task<PollViewModel?> GetPollDataAsync(int postId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> HasUserVotedInPollAsync(int postId, string userId)
+        {
+            throw new NotImplementedException();
+        }
+
+       public Task<List<int>> GetUserPollVotesAsync(int postId, string userId)
+       {
+            throw new NotImplementedException();
+       }
     }
 }

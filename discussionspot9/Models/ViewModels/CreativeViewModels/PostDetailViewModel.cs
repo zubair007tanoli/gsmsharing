@@ -1,4 +1,6 @@
-﻿namespace discussionspot9.Models.ViewModels.CreativeViewModels
+﻿using discussionspot9.Models.ViewModels.PollViewModels;
+
+namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
     public class PostDetailViewModel
     {
@@ -8,6 +10,9 @@
         public string? Content { get; set; }
         public string PostType { get; set; } = "text";
         public string? Url { get; set; }
+        public string? LinkPreviewImage { get; set; }
+        public string? LinkPreviewDescription { get; set; }
+        public string? LinkDomain { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public int UpvoteCount { get; set; }
@@ -18,6 +23,8 @@
         public bool IsLocked { get; set; }
         public bool IsNSFW { get; set; }
         public bool IsSpoiler { get; set; }
+        public bool HasPoll { get; set; }
+        public bool IsSavedByUser { get; set; }
 
         // Author info
         public string? UserId { get; set; }
@@ -39,6 +46,9 @@
 
         // Poll (if applicable)
         public PollViewModel? Poll { get; set; }
+
+        // Awards
+        public List<PostAwardViewModel> Awards { get; set; } = new();
 
         // Current user interaction
         public int? CurrentUserVote { get; set; }

@@ -12,8 +12,8 @@
             {
                 <div class="trending-item">
                     <span class="trending-number">@(i + 1)</span>
-                    <a href="@Url.Action("Search", "Post", new { q = Model[i].Name })" class="text-decoration-none">
-                        @Model[i].Name
+                    <a href="@Url.Action("Search", "Post", new { q = Model[i].Title })" class="text-decoration-none">
+                        @Model[i].Title
                     </a>
                 </div>
             }

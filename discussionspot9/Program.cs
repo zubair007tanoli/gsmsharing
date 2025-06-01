@@ -1,5 +1,6 @@
 
 using discussionspot9.Data.DbContext;
+using discussionspot9.Hubs;
 using discussionspot9.Interfaces;
 using discussionspot9.Services;
 using DiscussionSpot9.Services;
@@ -35,7 +36,8 @@ builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -45,7 +47,7 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
+app.MapHub<PostHub>("/posthub");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();

@@ -1,0 +1,133 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
+@using discussionspot9.Helpers
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+
+<div class="post-card" data-post-id="@Model.PostId">
+    <div class="post-header">
+        <div class="d-flex align-items-center gap-2 text-muted small">
+            <a href="@Model.CommunityUrl" class="community-link">r/@Model.CommunityName</a>
+            <span>•</span>
+            <span>Posted by <a href="@Model.AuthorUrl" class="text-decoration-none text-muted">u/@Model.AuthorDisplayName</a></span>
+            <span>•</span>
+            <span title="@Model.CreatedAt.ToString("f")">@Model.TimeAgo</span>
+        </div>
+    </div>
+
+    <div class="post-content">
+        <h3 class="post-title">
+            <a href="@Model.PostUrl" class="text-decoration-none text-dark">
+                @Model.Title
+            </a>
+        </h3>
+
+        @switch (Model.PostType)
+        {
+            case "text":
+                <p class="post-excerpt">@Model.ContentPreview</p>
+                break;
+
+            case "image":
+                @if (!string.IsNullOrEmpty(Model.MediaUrl))
+                {
+                    <div class="post-image-preview mb-2">
+                        <a href="@Model.PostUrl">
+                            <img src="@Model.MediaUrl" alt="@Model.Title" class="img-fluid rounded"
+                                 style="max-height: 400px; object-fit: cover;">
+                        </a>
+                    </div>
+                }
+                break;
+
+            case "video":
+                @if (!string.IsNullOrEmpty(Model.MediaUrl))
+                {
+                    <div class="post-video-preview mb-2 position-relative">
+                        <a href="@Model.PostUrl">
+                            <img src="@Model.ThumbnailUrl" alt="@Model.Title" class="img-fluid rounded"
+                                 style="max-height: 400px; object-fit: cover;">
+                            <div class="video-play-overlay position-absolute top-50 start-50 translate-middle">
+                                <i class="fas fa-play-circle fa-3x text-white"></i>
+                            </div>
+                        </a>
+                    </div>
+                }
+                break;
+
+            case "link":
+                @if (!string.IsNullOrEmpty(Model.LinkUrl))
+                {
+                    <div class="link-preview mb-2">
+                        <a href="@Model.LinkUrl" target="_blank" class="text-decoration-none">
+                            <div class="d-flex align-items-center gap-2 p-2 border rounded">
+                                <i class="fas fa-external-link-alt text-muted"></i>
+                                <span class="link-domain">@Model.LinkDomain</span>
+                            </div>
+                        </a>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ContentPreview))
+                {
+                    <p class="post-excerpt">@Model.ContentPreview</p>
+                }
+                break;
+
+            case "poll":
+                <div class="poll-preview mb-2">
+                    <div class="d-flex align-items-center gap-2 text-muted">
+                        <i class="fas fa-poll"></i>
+                        <span>Poll • @Model.PollVoteCount votes</span>
+                        @if (Model.PollEndsAt.HasValue)
+                        {
+                            <span>• Ends @Model.PollEndsAt.Value.ToString("MMM d")</span>
+                        }
+                    </div>
+                </div>
+                break;
+        }
+
+        @if (Model.Tags.Any())
+        {
+            <div class="d-flex gap-2 mb-2">
+                @foreach (var tag in Model.Tags.Take(3))
+                {
+                    <span class="badge bg-primary">@tag</span>
+                }
+                @if (Model.Tags.Count > 3)
+                {
+                    <span class="badge bg-secondary">+@(Model.Tags.Count - 3)</span>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="post-actions">
+        <div class="vote-buttons">
+            <button class="vote-btn upvote @(Model.CurrentUserVote == 1 ? "active" : "")"
+                    data-vote-type="1" @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <span class="vote-count @Model.VoteCountCssClass">@Model.FormattedScore</span>
+            <button class="vote-btn downvote @(Model.CurrentUserVote == -1 ? "active" : "")"
+                    data-vote-type="-1" @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
+                <i class="fas fa-arrow-down"></i>
+            </button>
+        </div>
+
+        <div class="action-buttons">
+            <a href="@Model.PostUrl#comments" class="action-btn">
+                <i class="fas fa-comment"></i> @Model.FormattedCommentCount Comments
+            </a>
+            <button class="action-btn share-btn" data-post-url="@Url.AbsoluteUrl(Model.PostUrl)">
+                <i class="fas fa-share"></i> Share
+            </button>
+            @if (SignInManager.IsSignedIn(User))
+            {
+                <button class="action-btn save-btn @(Model.IsSavedByUser ? "saved" : "")">
+                    <i class="@(Model.IsSavedByUser ? "fas" : "far") fa-bookmark"></i>
+                    @(Model.IsSavedByUser ? "Saved" : "Save")
+                </button>
+            }
+        </div>
+    </div>
+</div>
