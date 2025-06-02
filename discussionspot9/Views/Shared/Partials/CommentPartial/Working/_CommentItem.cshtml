@@ -1,0 +1,114 @@
+﻿<!-- Views/Shared/_CommentItem.cshtml -->
+@model discussionspot9.Models.ViewModels.CreativeViewModels.CommentTreeViewModel
+
+<div class="pd-comment-item" data-comment-id="@Model.Comment.CommentId">
+    <div class="pd-comment-content">
+        <div class="pd-comment-meta d-flex align-items-center gap-2 mb-2">
+            <a href="/u/@Model.Comment.AuthorDisplayName" class="text-decoration-none">
+                <div class="pd-user-avatar small">
+                    @if (!string.IsNullOrEmpty(Model.Author.ProfilePictureUrl))
+                    {
+                        <img src="@Model.Comment.ProfilePictureUrl" alt="@Model.Comment.AuthorDisplayName" />
+                    }
+                    else
+                    {
+                        <span>@Model.Comment.AuthorDisplayName.Substring(0, 1).ToUpper()</span>
+                    }
+                </div>
+            </a>
+            <a href="/u/@Model.Comment.AuthorDisplayName" class="fw-semibold text-decoration-none">
+                @Model.Comment.AuthorDisplayName
+            </a>
+            <span class="text-muted">•</span>
+            <span class="text-muted small" title="@Model.Comment.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")">
+                @Model.Comment.TimeAgo
+            </span>
+            @if (Model.Comment.IsEdited)
+            {
+                <span class="text-muted small">(edited)</span>
+            }
+        </div>
+
+        <div class="pd-comment-text mb-2">
+            @Html.Raw(Model.Comment.Content)
+        </div>
+
+        <div class="pd-comment-actions d-flex align-items-center gap-3">
+            <!-- Vote buttons -->
+            <div class="pd-comment-vote d-flex align-items-center">
+                <button class="pd-comment-vote-btn upvote @(Model.Comment.UpvoteCount == 1 ? "active" : "")"
+                        data-comment-id="@Model.Comment.AuthorDisplayName"
+                        data-vote-type="up">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <span class="pd-comment-vote-count mx-1" data-comment-id="@Model.Comment.CommentId">
+                    @Model.Comment.CurrentUserVote
+                </span>
+                <button class="pd-comment-vote-btn downvote @(Model.Comment.DownvoteCount == -1 ? "active" : "")"
+                        data-comment-id="@Model.Comment.CommentId"
+                        data-vote-type="down">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+            </div>
+
+            @if (User.Identity.IsAuthenticated)
+            {
+                <button class="pd-comment-reply-btn" data-comment-id="@Model.Comment.CommentId">
+                    <i class="fas fa-reply me-1"></i>
+                    Reply
+                </button>
+
+                @if (Model.Comment.UserId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                {
+                    <button class="pd-comment-edit-btn" data-comment-id="@Model.Comment.CommentId">
+                        <i class="fas fa-edit me-1"></i>
+                        Edit
+                    </button>
+                    <button class="pd-comment-delete-btn" data-comment-id="@Model.Comment.CommentId">
+                        <i class="fas fa-trash me-1"></i>
+                        Delete
+                    </button>
+                }
+            }
+        </div>
+
+        <!-- Reply form -->
+        @if (User.Identity.IsAuthenticated)
+        {
+            <div class="pd-reply-form mt-3" id="reply-form-@Model.Comment.CommentId" style="display: none;">
+                <div class="d-flex gap-2">
+                    <div class="pd-user-avatar small">
+                        <span>U</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <textarea class="form-control"
+                              rows="3"
+                              placeholder="Write a reply..."
+                              data-comment-id="@Model.Comment.CommentId"></textarea>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-primary pd-submit-reply"
+                                    data-comment-id="@Model.Comment.CommentId">
+                                Reply
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary pd-cancel-reply"
+                                    data-comment-id="@Model.Comment.CommentId">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Nested replies -->
+    @if (Model.Children?.Any() == true)
+    {
+        <div class="pd-comment-replies">
+            @foreach (var reply in Model.Children)
+            {
+                @await Html.PartialAsync("_CommentItem", reply)
+            }
+        </div>
+    }
+</div>

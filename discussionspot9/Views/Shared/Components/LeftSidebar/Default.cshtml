@@ -1,0 +1,95 @@
+﻿<!-- Views/Shared/Components/LeftSidebar/Default.cshtml -->
+@model discussionspot9.Models.ViewModels.CreativeViewModels.LeftSidebarViewModel
+
+<div class="pd-left-sidebar">
+    <!-- Navigation -->
+    <div class="pd-sidebar-card mb-3">
+        <div class="pd-nav-list">
+            <a href="/" class="pd-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="/popular" class="pd-nav-item">
+                <i class="fas fa-fire"></i>
+                <span>Popular</span>
+            </a>
+            <a href="/all" class="pd-nav-item">
+                <i class="fas fa-globe"></i>
+                <span>All</span>
+            </a>
+            @if (User.Identity.IsAuthenticated)
+            {
+                <a href="/saved" class="pd-nav-item">
+                    <i class="fas fa-bookmark"></i>
+                    <span>Saved</span>
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Joined Communities -->
+    @if (User.Identity.IsAuthenticated && Model.JoinedCommunities.Any())
+    {
+        <div class="pd-sidebar-card mb-3">
+            <div class="pd-sidebar-header">
+                <i class="fas fa-users me-2"></i> My Communities
+            </div>
+            <div class="pd-nav-list">
+                @foreach (var community in Model.JoinedCommunities.Take(10))
+                {
+                    <a href="/c/@community.Slug"
+                       class="pd-nav-item @(Model.CurrentCommunitySlug == community.Slug ? "active" : "")">
+                        <div class="pd-community-icon">
+                            @if (!string.IsNullOrEmpty(community.IconUrl))
+                            {
+                                <img src="@community.IconUrl" alt="@community.Name" />
+                            }
+                            else
+                            {
+                                <span>@community.Name.Substring(0, 1).ToUpper()</span>
+                            }
+                        </div>
+                        <span>@community.Name</span>
+                    </a>
+                }
+                @if (Model.JoinedCommunities.Count > 10)
+                {
+                    <a href="/my-communities" class="pd-nav-item text-center">
+                        <small>View all</small>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Trending Communities -->
+    @if (Model.TrendingCommunities.Any())
+    {
+        <div class="pd-sidebar-card">
+            <div class="pd-sidebar-header">
+                <i class="fas fa-chart-line me-2"></i> Trending Communities
+            </div>
+            <div class="pd-nav-list">
+                @foreach (var community in Model.TrendingCommunities)
+                {
+                    <a href="/c/@community.Slug" class="pd-nav-item">
+                        <div class="pd-community-icon">
+                            @if (!string.IsNullOrEmpty(community.IconUrl))
+                            {
+                                <img src="@community.IconUrl" alt="@community.Name" />
+                            }
+                            else
+                            {
+                                <span>@community.Name.Substring(0, 1).ToUpper()</span>
+                            }
+                        </div>
+                        <div class="flex-grow-1">
+                            <div>@community.Name</div>
+                            <small class="text-muted">@community.FormattedMemberCount members</small>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,46 @@
+﻿<!-- Views/Shared/Components/CommentSection/Default.cshtml -->
+@model List<discussionspot9.Models.ViewModels.CreativeViewModels.CommentTreeViewModel>
+@{
+    var postId = (int)ViewData["PostId"];
+}
+
+<div class="pd-comment-section pd-card" id="comments">
+    <div class="pd-comment-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-comments me-2"></i>
+                @Model.Count Comments
+            </h5>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-link text-decoration-none dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown">
+                    Sort by: Best
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item active" href="#" data-sort="best">Best</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="new">New</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="top">Top</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="old">Old</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="pd-comment-list p-3">
+        @if (Model.Any())
+        {
+            @foreach (var comment in Model)
+            {
+                @await Html.PartialAsync("_CommentItem", comment)
+            }
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <p>No comments yet. Be the first to share your thoughts!</p>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,61 @@
+﻿<!-- Views/Shared/Components/CommentForm/Default.cshtml -->
+@{
+    var postId = (int)ViewData["PostId"];
+    var userAvatar = ViewData["UserAvatar"] as string;
+    var userDisplayName = ViewData["UserDisplayName"] as string;
+}
+
+<div class="pd-comment-form pd-card mb-3">
+    <div class="p-3">
+        <div class="d-flex gap-3">
+            <div class="pd-user-avatar">
+                @if (!string.IsNullOrEmpty(userAvatar))
+                {
+                    <img src="@userAvatar" alt="@userDisplayName" />
+                }
+                else
+                {
+                    <span>@userDisplayName.Substring(0, 1).ToUpper()</span>
+                }
+            </div>
+            <div class="flex-grow-1">
+                <form id="commentForm" data-post-id="@postId">
+                    <div class="form-group">
+                        <textarea class="form-control pd-comment-textarea"
+                                  name="content"
+                                  rows="3"
+                                  placeholder="What are your thoughts?"
+                                  required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="pd-comment-toolbar">
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none"
+                                    data-action="bold"
+                                    title="Bold">
+                                <i class="fas fa-bold"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none"
+                                    data-action="italic"
+                                    title="Italic">
+                                <i class="fas fa-italic"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none"
+                                    data-action="link"
+                                    title="Link">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none"
+                                    data-action="code"
+                                    title="Code">
+                                <i class="fas fa-code"></i>
+                            </button>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm pd-interactive" disabled>
+                            Comment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

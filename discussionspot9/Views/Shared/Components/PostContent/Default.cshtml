@@ -1,0 +1,201 @@
+﻿<!-- Views/Shared/Components/PostContent/Default.cshtml -->
+@model discussionspot9.Models.ViewModels.CreativeViewModels.PostDetailViewModel
+@{
+    var communitySlug = ViewData["CommunitySlug"] as string;
+}
+
+<div class="pd-post-header">
+    <!-- Post Meta -->
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <a href="/c/@communitySlug" class="text-decoration-none">
+            <div class="pd-community-avatar">
+                @if (!string.IsNullOrEmpty(Model.CommunityIconUrl))
+                {
+                    <img src="@Model.CommunityIconUrl" alt="@Model.CommunityName" />
+                }
+                else
+                {
+                    <span>@Model.CommunityName.Substring(0, 1).ToUpper()</span>
+                }
+            </div>
+        </a>
+        <div class="flex-grow-1">
+            <div class="pd-post-meta">
+                <a href="/c/@communitySlug" class="fw-semibold text-decoration-none">
+                    @Model.CommunityName
+                </a>
+                <span class="text-muted mx-2">•</span>
+                <span class="text-muted">
+                    Posted by
+                    <a href="/u/@Model.AuthorDisplayName" class="text-decoration-none">
+                        @Model.AuthorDisplayName
+                    </a>
+                </span>
+                <span class="text-muted mx-2">•</span>
+                <span class="text-muted" title="@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")">
+                    @Model.TimeAgo
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="pd-post-title h3 mb-3">@Model.Title</h1>
+
+    <!-- Tags -->
+    @if (Model.Tags?.Any() == true)
+    {
+        <div class="d-flex gap-2 flex-wrap mb-3">
+            @foreach (var tag in Model.Tags)
+            {
+                <a href="/tag/@tag.Slug" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none">
+                    @tag.Name
+                </a>
+            }
+        </div>
+    }
+</div>
+
+<div class="pd-post-content">
+    <!-- Text Content -->
+    @if (!string.IsNullOrEmpty(Model.Content))
+    {
+        <div class="pd-post-text mb-4">
+            @Html.Raw(Model.Content)
+        </div>
+    }
+
+    <!-- Media Gallery -->
+    @if (Model.Media?.Any() == true)
+    {
+        <div class="pd-media-gallery mb-4">
+            <div class="row g-2">
+                @foreach (var media in Model.Media)
+                {
+                    <div class="col-md-@(Model.Media.Count == 1 ? "12" : "6")">
+                        @if (media.MediaType.StartsWith("image"))
+                        {
+                            <div class="pd-media-item">
+                                <img src="@media.Url"
+                                     alt="@(media.Caption ?? "Image")"
+                                     class="img-fluid rounded cursor-pointer"
+                                     data-bs-toggle="modal"
+                                     data-bs-target="#mediaModal"
+                                     data-media-url="@media.Url"
+                                     data-media-caption="@media.Caption" />
+                                @if (!string.IsNullOrEmpty(media.Caption))
+                                {
+                                    <p class="text-muted small mt-1">@media.Caption</p>
+                                }
+                            </div>
+                        }
+                        else if (media.MediaType.StartsWith("video"))
+                        {
+                            <div class="pd-video-container">
+                                <video controls class="w-100 rounded">
+                                    <source src="@media.Url" type="@media.MediaType">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Link Preview -->
+    @if (Model.LinkPreview != null)
+    {
+        <a href="@Model.LinkPreview.Url" target="_blank" class="text-decoration-none">
+            <div class="pd-link-preview mb-4">
+                @if (!string.IsNullOrEmpty(Model.LinkPreview.ImageUrl))
+                {
+                    <div class="pd-link-thumbnail">
+                        <img src="@Model.LinkPreview.ImageUrl" alt="Preview">
+                    </div>
+                }
+                <div class="pd-link-content">
+                    <h6 class="pd-link-title">@Model.LinkPreview.Title</h6>
+                    @if (!string.IsNullOrEmpty(Model.LinkPreview.Description))
+                    {
+                        <p class="pd-link-description">@Model.LinkPreview.Description</p>
+                    }
+                    <div class="pd-link-url">
+                        <i class="fas fa-link me-1"></i>
+                        <span>@Model.LinkPreview.Domain</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    }
+
+    <!-- Poll -->
+    @if (Model.Poll != null)
+    {
+        @await Component.InvokeAsync("PollWidget", new {
+        poll = Model.Poll,
+        postId = Model.PostId
+        })
+        }
+</div>
+
+<!-- Post Actions -->
+<div class="pd-post-actions">
+    <div class="d-flex align-items-center gap-3">
+        <!-- Vote Buttons -->
+        <div class="pd-vote-buttons d-flex align-items-center">
+            <button class="pd-vote-btn upvote pd-interactive @(Model.UpvoteCount == 1 ? "active" : "")"
+                    data-post-id="@Model.PostId"
+                    data-vote-type="up">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <span class="pd-vote-count fw-semibold mx-2" data-post-id="@Model.PostId">
+                @Model.UpvoteCount
+            </span>
+            <button class="pd-vote-btn downvote pd-interactive @(Model.DownvoteCount == -1 ? "active" : "")"
+                    data-post-id="@Model.PostId"
+                    data-vote-type="down">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+        </div>
+
+        <!-- Comment Count -->
+        <a href="#comments" class="btn btn-sm btn-outline-secondary pd-interactive text-decoration-none">
+            <i class="fas fa-comment me-1"></i>
+            <span>@Model.CommentCount</span>
+        </a>
+
+        <!-- Share Button -->
+        @await Component.InvokeAsync("ShareDropdown", new {
+                postId = Model.PostId,
+                title = Model.Title,
+                url = $"/c/{communitySlug}/post/{Model.Slug}"
+                })
+
+        <!-- Save Button -->
+        @if (User.Identity.IsAuthenticated)
+        {
+            <button class="btn btn-sm btn-outline-secondary pd-interactive ms-auto"
+                    data-action="save"
+                    data-post-id="@Model.PostId">
+                <i class="@(Model.IsSavedByUser ? "fas" : "far") fa-bookmark"></i>
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Media Modal -->
+<div class="modal fade" id="mediaModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <img src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>

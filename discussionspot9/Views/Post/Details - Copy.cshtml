@@ -6,9 +6,63 @@
     ViewData["Title"] = $"{Model.Post.Title} - DiscussionSpot";
 }
 
-<main class="container py-4">
+
+<main class="container-fluid py-4">
     <div class="row">
-        <div class="col-lg-8">
+        <!-- Left Sidebar - Ads -->
+        <div class="col-lg-2 col-md-3 d-none d-md-block">
+            <div class="sticky-ad">
+                <!-- Vertical Banner Ad -->
+                <div class="ad-container mb-3">
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                            crossorigin="anonymous"></script>
+                    <!-- Vertical Banner -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                         data-ad-slot="YOUR_AD_SLOT_ID"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                    <script>
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+                
+                <!-- Square Ad -->
+                <div class="ad-container mb-3">
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                            crossorigin="anonymous"></script>
+                    <!-- Square Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                         data-ad-slot="YOUR_SQUARE_AD_SLOT_ID"
+                         data-ad-format="square"></ins>
+                    <script>
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-6 col-md-6">
+            <!-- Top Banner Ad -->
+            <div class="ad-container mb-4">
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                        crossorigin="anonymous"></script>
+                <!-- Horizontal Banner -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                     data-ad-slot="YOUR_BANNER_AD_SLOT_ID"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
             <!-- Post Card -->
             <article class="card post-detail mb-4">
                 <div class="card-body">
@@ -76,7 +130,6 @@
                                             {
                                                 <p class="text-muted small">@Model.Post.LinkPreviewDescription</p>
                                             }
-                                            <span class="link-domain">@Model.Post.LinkDomain</span>
                                         </div>
                                     </a>
                                 </div>
@@ -113,53 +166,9 @@
                             case "poll":
                                 @if (Model.Post.Poll != null)
                                 {
-                                    <div class="poll-container mb-3" data-post-id="@Model.Post.PostId">
-                                        <form id="pollForm">
-                                            @foreach (var option in Model.Post.Poll.Options)
-                                            {
-                                                <div class="poll-option mb-2">
-                                                    <div class="d-flex align-items-center">
-                                                        @if (Model.Post.Poll.AllowMultipleChoices)
-                                                        {
-                                                            <input type="checkbox" class="form-check-input me-2"
-                                                                   name="pollOptions" value="@option.PollOptionId"
-                                                                   @(option.IsUserSelection ? "checked" : "")
-                                                                   @(Model.Post.Poll.HasUserVoted ? "disabled" : "") />
-                                                        }
-                                                        else
-                                                        {
-                                                            <input type="radio" class="form-check-input me-2"
-                                                                   name="pollOption" value="@option.PollOptionId"
-                                                                   @(option.IsUserSelection ? "checked" : "")
-                                                                   @(Model.Post.Poll.HasUserVoted ? "disabled" : "") />
-                                                        }
-                                                        <label class="flex-grow-1">@option.OptionText</label>
-                                                        @if (Model.Post.Poll.ShowResultsBeforeVoting || Model.Post.Poll.HasUserVoted)
-                                                        {
-                                                            <span class="poll-votes">@option.VoteCount votes (@option.VotePercentage%)</span>
-                                                        }
-                                                    </div>
-                                                    @if (Model.Post.Poll.ShowResultsBeforeVoting || Model.Post.Poll.HasUserVoted)
-                                                    {
-                                                        <div class="progress mt-1" style="height: 20px;">
-                                                            <div class="progress-bar" style="width: @option.VotePercentage%">
-                                                                @option.VotePercentage%
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-                                            @if (!Model.Post.Poll.HasUserVoted && SignInManager.IsSignedIn(User))
-                                            {
-                                                <button type="submit" class="btn btn-primary mt-3">Vote</button>
-                                            }
-                                            @if (Model.Post.Poll.EndDate.HasValue)
-                                            {
-                                                <p class="text-muted small mt-2">
-                                                    Poll ends @Model.Post.Poll.EndDate.Value.ToString("MMM dd, yyyy")
-                                                </p>
-                                            }
-                                        </form>
+                                    <div class="poll-container" data-post-id="@Model.Post.PostId">
+                                        <h5 class="mb-3"><i class="fas fa-poll me-2"></i>Poll</h5>
+                                        <!-- Poll logic here -->
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(Model.Post.Content))
@@ -167,7 +176,30 @@
                                     @Html.Raw(Model.Post.Content)
                                 }
                                 break;
+
+                            default:
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-comments fa-3x mb-3"></i>
+                                    <p>No content available for this post type.</p>
+                                </div>
+                                break;
                         }
+                    </div>
+
+                    <!-- In-Content Ad -->
+                    <div class="native-ad mb-4">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                                crossorigin="anonymous"></script>
+                        <!-- In-Article Ad -->
+                        <ins class="adsbygoogle"
+                             style="display:block; text-align:center;"
+                             data-ad-layout="in-article"
+                             data-ad-format="fluid"
+                             data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                             data-ad-slot="YOUR_IN_ARTICLE_AD_SLOT_ID"></ins>
+                        <script>
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
                     </div>
 
                     <!-- Post Actions -->
@@ -232,13 +264,293 @@
                 </div>
             </article>
 
-            <!-- Comments Section (unchanged) -->
-            <!-- ... existing comments code ... -->
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            Comments (@(Model.Comments?.Count() ?? 0))
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                Sort by: Best
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" data-sort="best">Best</a></li>
+                                <li><a class="dropdown-item" href="#" data-sort="new">New</a></li>
+                                <li><a class="dropdown-item" href="#" data-sort="old">Old</a></li>
+                                <li><a class="dropdown-item" href="#" data-sort="top">Top</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <!-- Comment Form -->
+                        <form id="commentForm" class="mb-4">
+                            <div class="mb-3">
+                                <textarea class="form-control" rows="3" placeholder="What are your thoughts?" 
+                                         id="commentContent" required></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Comment
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3 mb-4 bg-light rounded">
+                            <p class="mb-2">Join the discussion!</p>
+                            <a href="/Account/Login" class="btn btn-primary me-2">Login</a>
+                            <a href="/Account/Register" class="btn btn-outline-primary">Sign Up</a>
+                        </div>
+                    }
+
+                    <!-- Native Ad in Comments -->
+                    <div class="native-ad mb-4">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                                crossorigin="anonymous"></script>
+                        <!-- Native Ad -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-format="fluid"
+                             data-ad-layout-key="-6t+ed+2i-1n-4w"
+                             data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                             data-ad-slot="YOUR_NATIVE_AD_SLOT_ID"></ins>
+                        <script>
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                    </div>
+
+                    <!-- Comments List -->
+                   @*  <div id="commentsList">
+                        @if (Model.Comments?.Any() == true)
+                        {
+                            @foreach (var comment in Model.Comments.Where(c => c.ParentCommentID == null))
+                            {
+                                <div class="comment-item" data-comment-id="@comment.CommentID">
+                                    <div class="d-flex align-items-start">
+                                        <img src="@(comment.AuthorAvatarUrl ?? "/images/default-avatar.png")" 
+                                             alt="@comment.AuthorName" class="rounded-circle me-3" width="32" height="32">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <strong class="me-2">@comment.AuthorName</strong>
+                                                <span class="text-muted small">@comment.TimeAgo</span>
+                                                @if (comment.IsAuthor)
+                                                {
+                                                    <span class="badge bg-primary ms-2">OP</span>
+                                                }
+                                            </div>
+                                            <div class="comment-content mb-2">
+                                                @Html.Raw(comment.Content)
+                                            </div>
+                                            <div class="comment-actions">
+                                                <button class="comment-vote-btn upvote @(comment.CurrentUserVote == 1 ? "active" : "")"
+                                                        data-comment-id="@comment.CommentID" data-vote="1">
+                                                    <i class="fas fa-arrow-up"></i> @comment.UpVotes
+                                                </button>
+                                                <button class="comment-vote-btn downvote @(comment.CurrentUserVote == -1 ? "active" : "")"
+                                                        data-comment-id="@comment.CommentID" data-vote="-1">
+                                                    <i class="fas fa-arrow-down"></i> @comment.DownVotes
+                                                </button>
+                                                @if (SignInManager.IsSignedIn(User))
+                                                {
+                                                    <button class="btn btn-sm btn-link text-muted reply-btn" 
+                                                            data-comment-id="@comment.CommentID">
+                                                        <i class="fas fa-reply me-1"></i>Reply
+                                                    </button>
+                                                }
+                                                <button class="btn btn-sm btn-link text-muted">
+                                                    <i class="fas fa-share me-1"></i>Share
+                                                </button>
+                                                @if (comment.IsCurrentUserAuthor)
+                                                {
+                                                    <button class="btn btn-sm btn-link text-danger delete-comment-btn"
+                                                            data-comment-id="@comment.CommentID">
+                                                        <i class="fas fa-trash me-1"></i>Delete
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                        <!-- Reply Form (Initially Hidden) -->
+                        <div class="reply-form mt-3" id="replyForm_@comment.CommentID" style="display: none;">
+                            <form class="reply-comment-form" data-parent-id="@comment.CommentID">
+                                <div class="mb-2">
+                                    <textarea class="form-control form-control-sm" rows="2"
+                                      placeholder="Write a reply..." required></textarea>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-sm btn-secondary cancel-reply">Cancel</button>
+                                    <button type="submit" class="btn btn-sm btn-primary">Reply</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Nested Replies -->
+                        @{
+                            var replies = Model.Comments.Where(c => c.ParentCommentID == comment.CommentID);
+                        }
+                        @if (replies.Any())
+                        {
+                            <div class="comment-thread mt-3">
+                                @foreach (var reply in replies)
+                                {
+                                    <div class="comment-item" data-comment-id="@reply.CommentID">
+                                        <div class="d-flex align-items-start">
+                                            <img src="@(reply.AuthorAvatarUrl ?? "/images/default-avatar.png")"
+                                                 alt="@reply.AuthorName" class="rounded-circle me-3" width="28" height="28">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <strong class="me-2">@reply.AuthorName</strong>
+                                                    <span class="text-muted small">@reply.TimeAgo</span>
+                                                    @if (reply.IsAuthor)
+                                                    {
+                                                        <span class="badge bg-primary ms-2">OP</span>
+                                                    }
+                                                </div>
+                                                <div class="comment-content mb-2">
+                                                    @Html.Raw(reply.Content)
+                                                </div>
+                                                <div class="comment-actions">
+                                                    <button class="comment-vote-btn upvote @(reply.CurrentUserVote == 1 ? "active" : "")"
+                                                            data-comment-id="@reply.CommentID" data-vote="1">
+                                                        <i class="fas fa-arrow-up"></i> @reply.UpVotes
+                                                    </button>
+                                                    <button class="comment-vote-btn downvote @(reply.CurrentUserVote == -1 ? "active" : "")"
+                                                            data-comment-id="@reply.CommentID" data-vote="-1">
+                                                        <i class="fas fa-arrow-down"></i> @reply.DownVotes
+                                                    </button>
+                                                    @if (SignInManager.IsSignedIn(User))
+                                                    {
+                                                        <button class="btn btn-sm btn-link text-muted reply-btn"
+                                                                data-comment-id="@reply.CommentID">
+                                                            <i class="fas fa-reply me-1"></i>Reply
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-link text-muted">
+                                                        <i class="fas fa-share me-1"></i>Share
+                                                    </button>
+                                                    @if (reply.IsCurrentUserAuthor)
+                                                    {
+                                                        <button class="btn btn-sm btn-link text-danger delete-comment-btn"
+                                                                data-comment-id="@reply.CommentID">
+                                                            <i class="fas fa-trash me-1"></i>Delete
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-comments fa-3x mb-3"></i>
+                    <p>No comments yet. Be the first to share your thoughts!</p>
+                </div>
+            }
+        </div> *@
+
+        <!-- Load More Comments -->
+        @if ((Model.Comments?.Count() ?? 0) >= 20)
+        {
+            <div class="text-center mt-4">
+                <button class="btn btn-outline-primary" id="loadMoreComments">
+                    <i class="fas fa-chevron-down me-2"></i>Load More Comments
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Bottom Ad -->
+<div class="ad-container mb-4">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+            crossorigin="anonymous"></script>
+    <!-- Bottom Banner -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+         data-ad-slot="YOUR_BOTTOM_AD_SLOT_ID"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+</div>
+
+<!-- Right Sidebar -->
+<div class="col-lg-4 col-md-3">
+    <div class="sticky-ad">
+        <!-- Community Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">About r/@Model.Post.CommunityName</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Community information and rules would go here.</p>
+                <a href="@Url.Community(Model.Post.CommunitySlug)" class="btn btn-primary btn-sm w-100">
+                    Visit Community
+                </a>
+            </div>
         </div>
 
-        <!-- Sidebar (unchanged) -->
-        <!-- ... existing sidebar code ... -->
+        <!-- Rectangle Ad -->
+        <div class="ad-container mb-4">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                    crossorigin="anonymous"></script>
+            <!-- Rectangle Ad -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                 data-ad-slot="YOUR_RECTANGLE_AD_SLOT_ID"
+                 data-ad-format="rectangle"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <!-- Related Posts -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Related Posts</h6>
+            </div>
+            <div class="card-body">
+                <!-- Related posts would be loaded here -->
+                <p class="text-muted small">Related posts functionality to be implemented.</p>
+            </div>
+        </div>
+
+        <!-- Sidebar Ad -->
+        <div class="ad-container">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+                    crossorigin="anonymous"></script>
+            <!-- Sidebar Ad -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                 data-ad-slot="YOUR_SIDEBAR_AD_SLOT_ID"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
     </div>
+</div>
+</div>
 </main>
 
 <!-- Award Modal -->
@@ -270,24 +582,266 @@
 @section Scripts {
     <script src="~/js/CustomJs/Post_Detail.js"></script>
     <script>
-        // Poll voting
+        // Enhanced Poll Voting
         document.getElementById('pollForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const voteButton = document.getElementById('voteButton');
+            const originalText = voteButton.innerHTML;
+
+            // Show loading state
+            voteButton.disabled = true;
+            voteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Voting...';
+
             const postId = @Model.Post.PostId;
             const optionIds = [...document.querySelectorAll('input[name="pollOptions"]:checked, input[name="pollOption"]:checked')]
                 .map(input => parseInt(input.value));
 
-            const response = await fetch('/Post/VotePoll', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
-                },
-                body: JSON.stringify({ postId, optionIds })
-            });
+            if (optionIds.length === 0) {
+                alert('Please select an option before voting.');
+                voteButton.disabled = false;
+                voteButton.innerHTML = originalText;
+                return;
+            }
 
-            const result = await response.json();
-            if (result.success) location.reload();
+            try {
+                const response = await fetch('/Post/VotePoll', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({ postId, optionIds })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show success message
+                    voteButton.innerHTML = '<i class="fas fa-check me-2"></i>Vote Submitted!';
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert(result.message || 'Failed to submit vote. Please try again.');
+                    voteButton.disabled = false;
+                    voteButton.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error voting:', error);
+                alert('An error occurred. Please try again.');
+                voteButton.disabled = false;
+                voteButton.innerHTML = originalText;
+            }
+        });
+
+        // Poll option selection styling
+        document.querySelectorAll('.poll-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const input = this.querySelector('input');
+                if (input && !input.disabled) {
+                    if (input.type === 'radio') {
+                        // Remove selected class from all options
+                        document.querySelectorAll('.poll-option').forEach(opt => opt.classList.remove('selected'));
+                        this.classList.add('selected');
+                        input.checked = true;
+                    } else {
+                        input.checked = !input.checked;
+                        this.classList.toggle('selected', input.checked);
+                    }
+                }
+            });
+        });
+
+        // Comment Form Submission
+        document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const content = document.getElementById('commentContent').value.trim();
+            if (!content) return;
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Posting...';
+
+            try {
+                const response = await fetch('/Comment/Create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        postId: @Model.Post.PostId,
+                        content: content,
+                        parentCommentId: null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('commentContent').value = '';
+                    // Reload comments or add new comment to DOM
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to post comment.');
+                }
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+        // Reply Form Handling
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.reply-btn')) {
+                const commentId = e.target.closest('.reply-btn').dataset.commentId;
+                const replyForm = document.getElementById(`replyForm_${commentId}`);
+
+                // Hide all other reply forms
+                document.querySelectorAll('.reply-form').forEach(form => {
+                    if (form.id !== `replyForm_${commentId}`) {
+                        form.style.display = 'none';
+                    }
+                });
+
+                // Toggle this reply form
+                replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+
+                if (replyForm.style.display === 'block') {
+                    replyForm.querySelector('textarea').focus();
+                }
+            }
+
+            if (e.target.closest('.cancel-reply')) {
+                e.target.closest('.reply-form').style.display = 'none';
+            }
+        });
+
+        // Reply Comment Submission
+        document.addEventListener('submit', async function(e) {
+            if (e.target.closest('.reply-comment-form')) {
+                e.preventDefault();
+
+                const form = e.target;
+                const parentId = form.dataset.parentId;
+                const content = form.querySelector('textarea').value.trim();
+
+                if (!content) return;
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Replying...';
+
+                try {
+                    const response = await fetch('/Comment/Create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({
+                            postId: @Model.Post.PostId,
+                            content: content,
+                            parentCommentId: parseInt(parentId)
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        form.querySelector('textarea').value = '';
+                        form.closest('.reply-form').style.display = 'none';
+                        // Reload to show new reply
+                        location.reload();
+                    } else {
+                        alert(result.message || 'Failed to post reply.');
+                    }
+                } catch (error) {
+                    console.error('Error posting reply:', error);
+                    alert('An error occurred. Please try again.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            }
+        });
+
+        // Comment Voting
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('.comment-vote-btn')) {
+                const btn = e.target.closest('.comment-vote-btn');
+                const commentId = btn.dataset.commentId;
+                const vote = parseInt(btn.dataset.vote);
+
+                try {
+                    const response = await fetch('/Comment/Vote', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({ commentId, voteType: vote })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update vote counts and styling
+                        const commentElement = btn.closest('.comment-item');
+                        const upvoteBtn = commentElement.querySelector('.upvote');
+                        const downvoteBtn = commentElement.querySelector('.downvote');
+
+                        upvoteBtn.classList.toggle('active', result.userVote === 1);
+                        downvoteBtn.classList.toggle('active', result.userVote === -1);
+
+                        upvoteBtn.innerHTML = `<i class="fas fa-arrow-up"></i> ${result.upVotes}`;
+                        downvoteBtn.innerHTML = `<i class="fas fa-arrow-down"></i> ${result.downVotes}`;
+                    }
+                } catch (error) {
+                    console.error('Error voting on comment:', error);
+                }
+            }
+        });
+
+        // Delete Comment
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('.delete-comment-btn')) {
+                if (!confirm('Are you sure you want to delete this comment?')) return;
+
+                const btn = e.target.closest('.delete-comment-btn');
+                const commentId = btn.dataset.commentId;
+
+                try {
+                    const response = await fetch('/Comment/Delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({ commentId })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        btn.closest('.comment-item').remove();
+                    } else {
+                        alert(result.message || 'Failed to delete comment.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting comment:', error);
+                    alert('An error occurred. Please try again.');
+                }
+            }
         });
 
         // Save post
@@ -317,6 +871,12 @@
             img.addEventListener('click', function() {
                 document.getElementById('modalImage').src = this.dataset.imageUrl;
             });
+        });
+
+        // Load more comments
+        document.getElementById('loadMoreComments')?.addEventListener('click', async function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+            // Implementation for loading more comments would go here
         });
     </script>
 }
