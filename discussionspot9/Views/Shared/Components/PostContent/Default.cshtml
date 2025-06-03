@@ -48,8 +48,8 @@
         <div class="d-flex gap-2 flex-wrap mb-3">
             @foreach (var tag in Model.Tags)
             {
-                <a href="/tag/@tag.Slug" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none">
-                    @tag.Name
+                <a href="/tag/@tag" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none">
+                    @tag
                 </a>
             }
         </div>
@@ -104,26 +104,26 @@
         </div>
     }
 
-    <!-- Link Preview -->
-    @if (Model.LinkPreview != null)
+    <!-- Link Preview (using individual properties) -->
+    @if (!string.IsNullOrEmpty(Model.Url) && Model.PostType == "link")
     {
-        <a href="@Model.LinkPreview.Url" target="_blank" class="text-decoration-none">
+        <a href="@Model.Url" target="_blank" class="text-decoration-none">
             <div class="pd-link-preview mb-4">
-                @if (!string.IsNullOrEmpty(Model.LinkPreview.ImageUrl))
+                @if (!string.IsNullOrEmpty(Model.LinkPreviewImage))
                 {
                     <div class="pd-link-thumbnail">
-                        <img src="@Model.LinkPreview.ImageUrl" alt="Preview">
+                        <img src="@Model.LinkPreviewImage" alt="Preview">
                     </div>
                 }
                 <div class="pd-link-content">
-                    <h6 class="pd-link-title">@Model.LinkPreview.Title</h6>
-                    @if (!string.IsNullOrEmpty(Model.LinkPreview.Description))
+                    <h6 class="pd-link-title">@Model.Title</h6>
+                    @if (!string.IsNullOrEmpty(Model.LinkPreviewDescription))
                     {
-                        <p class="pd-link-description">@Model.LinkPreview.Description</p>
+                        <p class="pd-link-description">@Model.LinkPreviewDescription</p>
                     }
                     <div class="pd-link-url">
                         <i class="fas fa-link me-1"></i>
-                        <span>@Model.LinkPreview.Domain</span>
+                        <span>@Model.LinkDomain</span>
                     </div>
                 </div>
             </div>
@@ -145,15 +145,15 @@
     <div class="d-flex align-items-center gap-3">
         <!-- Vote Buttons -->
         <div class="pd-vote-buttons d-flex align-items-center">
-            <button class="pd-vote-btn upvote pd-interactive @(Model.UpvoteCount == 1 ? "active" : "")"
+            <button class="pd-vote-btn upvote pd-interactive @(Model.CurrentUserVote == 1 ? "active" : "")"
                     data-post-id="@Model.PostId"
                     data-vote-type="up">
                 <i class="fas fa-arrow-up"></i>
             </button>
             <span class="pd-vote-count fw-semibold mx-2" data-post-id="@Model.PostId">
-                @Model.UpvoteCount
+                @Model.Score
             </span>
-            <button class="pd-vote-btn downvote pd-interactive @(Model.DownvoteCount == -1 ? "active" : "")"
+            <button class="pd-vote-btn downvote pd-interactive @(Model.CurrentUserVote == -1 ? "active" : "")"
                     data-post-id="@Model.PostId"
                     data-vote-type="down">
                 <i class="fas fa-arrow-down"></i>

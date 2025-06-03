@@ -2,8 +2,9 @@
 {
     public class LeftSidebarViewModel
     {
-        public string CurrentCommunitySlug { get; set; } = string.Empty;
+        public string? CurrentCommunitySlug { get; set; }
         public List<CommunityCardViewModel> JoinedCommunities { get; set; } = new();
         public List<CommunityCardViewModel> TrendingCommunities { get; set; } = new();
+
     }
 }

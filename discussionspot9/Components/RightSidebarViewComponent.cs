@@ -7,12 +7,9 @@ namespace discussionspot9.ViewComponents
 {
     public class RightSidebarViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke(
-            CommunityDetailViewModel community,
-            List<PostCardViewModel> relatedPosts)
+        public IViewComponentResult Invoke(CommunityDetailViewModel community, List<PostCardViewModel> relatedPosts)
         {
-            var model = (community, relatedPosts);
-            return View(model);
+            return View((community, relatedPosts));
         }
     }
 }

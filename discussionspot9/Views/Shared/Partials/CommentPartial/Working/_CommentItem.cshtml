@@ -6,19 +6,16 @@
         <div class="pd-comment-meta d-flex align-items-center gap-2 mb-2">
             <a href="/u/@Model.Comment.AuthorDisplayName" class="text-decoration-none">
                 <div class="pd-user-avatar small">
-                    @if (!string.IsNullOrEmpty(Model.Author.ProfilePictureUrl))
-                    {
-                        <img src="@Model.Comment.ProfilePictureUrl" alt="@Model.Comment.AuthorDisplayName" />
-                    }
-                    else
-                    {
-                        <span>@Model.Comment.AuthorDisplayName.Substring(0, 1).ToUpper()</span>
-                    }
+                    <span>@Model.Comment.AuthorInitials</span>
                 </div>
             </a>
             <a href="/u/@Model.Comment.AuthorDisplayName" class="fw-semibold text-decoration-none">
                 @Model.Comment.AuthorDisplayName
             </a>
+            @if (Model.Comment.IsAuthorVerified)
+            {
+                <i class="fas fa-check-circle text-primary" title="Verified"></i>
+            }
             <span class="text-muted">•</span>
             <span class="text-muted small" title="@Model.Comment.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")">
                 @Model.Comment.TimeAgo
@@ -36,15 +33,15 @@
         <div class="pd-comment-actions d-flex align-items-center gap-3">
             <!-- Vote buttons -->
             <div class="pd-comment-vote d-flex align-items-center">
-                <button class="pd-comment-vote-btn upvote @(Model.Comment.UpvoteCount == 1 ? "active" : "")"
-                        data-comment-id="@Model.Comment.AuthorDisplayName"
+                <button class="pd-comment-vote-btn upvote @(Model.Comment.CurrentUserVote == 1 ? "active" : "")"
+                        data-comment-id="@Model.Comment.CommentId"
                         data-vote-type="up">
                     <i class="fas fa-arrow-up"></i>
                 </button>
                 <span class="pd-comment-vote-count mx-1" data-comment-id="@Model.Comment.CommentId">
-                    @Model.Comment.CurrentUserVote
+                    @Model.Comment.Score
                 </span>
-                <button class="pd-comment-vote-btn downvote @(Model.Comment.DownvoteCount == -1 ? "active" : "")"
+                <button class="pd-comment-vote-btn downvote @(Model.Comment.CurrentUserVote == -1 ? "active" : "")"
                         data-comment-id="@Model.Comment.CommentId"
                         data-vote-type="down">
                     <i class="fas fa-arrow-down"></i>
@@ -58,7 +55,7 @@
                     Reply
                 </button>
 
-                @if (Model.Comment.UserId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                @if (Model.Comment.IsCurrentUserAuthor)
                 {
                     <button class="pd-comment-edit-btn" data-comment-id="@Model.Comment.CommentId">
                         <i class="fas fa-edit me-1"></i>

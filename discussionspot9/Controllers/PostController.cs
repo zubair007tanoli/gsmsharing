@@ -28,11 +28,10 @@ namespace discussionspot9.Controllers
             _logger = logger;
             _notificationService = notificationService;
         }
-        public IActionResult Test()
-        {
+
+        public IActionResult DetailTestPage() {             // This is a placeholder for the test page
             return View();
         }
-
         public async Task<IActionResult> AllPostTestAsync(string sort = "hot", string time = "all", int page = 1)
         {
             try

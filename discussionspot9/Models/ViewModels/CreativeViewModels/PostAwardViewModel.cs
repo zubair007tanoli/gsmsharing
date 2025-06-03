@@ -9,6 +9,8 @@
         public DateTime AwardedAt { get; set; }
         public string? Message { get; set; }
         public bool IsAnonymous { get; set; }
+        public string AwardType { get; set; } = string.Empty;
+        public int Count { get; set; }
 
         public string AwardIconUrl { get; set; } = string.Empty;
         public string GivenBy { get; set; } = string.Empty;

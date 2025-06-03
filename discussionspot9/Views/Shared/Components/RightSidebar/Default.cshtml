@@ -91,14 +91,7 @@
                     {
                         <div class="d-flex align-items-center mb-2">
                             <div class="pd-user-avatar small me-2">
-                                @if (!string.IsNullOrEmpty(mod.ProfilePictureUrl))
-                                {
-                                    <img src="@mod.ProfilePictureUrl" alt="@mod.DisplayName" />
-                                }
-                                else
-                                {
-                                    <span>@mod.DisplayName.Substring(0, 1).ToUpper()</span>
-                                }
+                                <span>@mod.Initials</span>
                             </div>
                             <a href="/u/@mod.Username" class="text-decoration-none">
                                 u/@mod.Username
@@ -128,7 +121,7 @@
                             <h6 class="mb-1">@post.Title</h6>
                         </a>
                         <div class="d-flex align-items-center gap-2 text-muted small">
-                            <span><i class="fas fa-arrow-up"></i> @post.UpvoteCount</span>
+                            <span><i class="fas fa-arrow-up"></i> @post.Score</span>
                             <span><i class="fas fa-comment"></i> @post.CommentCount</span>
                             <span>@post.TimeAgo</span>
                         </div>

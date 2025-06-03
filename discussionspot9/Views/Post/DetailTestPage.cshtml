@@ -1,0 +1,1634 @@
+﻿
+@{
+    ViewData["Title"] = "DetailTestPage";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --secondary-color: #10b981;
+        --text-color: #1f2937;
+        --text-light: #6b7280;
+        --text-lighter: #9ca3af;
+        --bg-color: #ffffff;
+        --bg-light: #f9fafb;
+        --bg-dark: #f3f4f6;
+        --border-color: #e5e7eb;
+        --border-dark: #d1d5db;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --error-color: #ef4444;
+        --info-color: #3b82f6;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius-sm: 0.125rem;
+        --radius: 0.25rem;
+        --radius-md: 0.375rem;
+        --radius-lg: 0.5rem;
+        --radius-xl: 1rem;
+        --radius-full: 9999px;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-color);
+        line-height: 1.5;
+        background-color: var(--bg-light);
+    }
+
+    a {
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+        a:hover {
+            color: var(--primary-hover);
+        }
+
+    /* Post Container - Using existing class */
+    .post-container {
+        background-color: var(--bg-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+    }
+
+    .post-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--bg-light);
+    }
+
+    .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-light);
+        margin-bottom: 0.5rem;
+    }
+
+        .post-meta a {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+    .post-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .post-content {
+        padding: 1.5rem;
+    }
+
+    .post-text {
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+
+    /* Post Actions */
+    .post-actions {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        border-top: 1px solid var(--border-color);
+        background-color: var(--bg-light);
+    }
+
+    .vote-buttons {
+        display: flex;
+        align-items: center;
+        margin-right: 1.5rem;
+    }
+
+    .vote-btn {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 1.25rem;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: var(--radius);
+    }
+
+        .vote-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .vote-btn.upvote:hover,
+        .vote-btn.upvote.active {
+            color: var(--success-color);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .vote-btn.downvote:hover,
+        .vote-btn.downvote.active {
+            color: var(--error-color);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+    .vote-count {
+        font-weight: 600;
+        margin: 0 0.5rem;
+        min-width: 40px;
+        text-align: center;
+    }
+
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: var(--radius);
+    }
+
+        .action-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.1);
+        }
+
+    /* Share Dropdown */
+    .share-dropdown {
+        position: relative;
+    }
+
+    .share-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-md);
+        min-width: 200px;
+        z-index: 1050;
+        display: none;
+        padding: 0.5rem 0;
+    }
+
+    .share-dropdown.active .share-dropdown-menu {
+        display: block;
+    }
+
+    .share-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        color: var(--text-color);
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+    }
+
+        .share-option:hover {
+            background-color: var(--bg-light);
+            color: var(--text-color);
+        }
+
+        .share-option i {
+            width: 16px;
+            text-align: center;
+        }
+
+    /* Content Types */
+    /* Image Gallery */
+    .image-gallery {
+        margin-bottom: 1.5rem;
+    }
+
+    .gallery-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .gallery-item {
+        position: relative;
+        aspect-ratio: 16/9;
+        overflow: hidden;
+        border-radius: var(--radius);
+    }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+    .image-caption {
+        font-size: 0.875rem;
+        color: var(--text-light);
+        margin-top: 0.5rem;
+    }
+
+    /* Video Embed */
+    .video-embed {
+        position: relative;
+        margin-bottom: 1.5rem;
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    .video-container {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        height: 0;
+        overflow: hidden;
+    }
+
+        .video-container iframe,
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+    .video-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        .video-overlay:hover {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+    .play-button {
+        width: 60px;
+        height: 60px;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s ease;
+    }
+
+        .play-button i {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+    .video-overlay:hover .play-button {
+        transform: scale(1.1);
+    }
+
+    /* Link Preview */
+    .link-preview {
+        display: flex;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .link-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+    .link-thumbnail {
+        width: 150px;
+        min-width: 150px;
+        background-color: var(--bg-dark);
+    }
+
+        .link-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .link-content {
+        padding: 1rem;
+        flex: 1;
+    }
+
+    .link-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .link-description {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .link-url {
+        color: var(--text-lighter);
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    /* Enhanced Poll - More Prominent */
+    .poll-container {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .poll-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: var(--text-light);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .poll-question {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-color);
+    }
+
+    .poll-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .poll-option {
+        position: relative;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+        .poll-option:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.02);
+        }
+
+        .poll-option.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .poll-option.voted {
+            cursor: default;
+        }
+
+    .poll-radio {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border-dark);
+        border-radius: 50%;
+        position: relative;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+    }
+
+    .poll-option:hover .poll-radio {
+        border-color: var(--primary-color);
+    }
+
+    .poll-option.selected .poll-radio {
+        border-color: var(--primary-color);
+        background-color: var(--primary-color);
+    }
+
+        .poll-option.selected .poll-radio::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background-color: white;
+            border-radius: 50%;
+        }
+
+    .poll-option-content {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .poll-option-text {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .poll-progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background-color: rgba(79, 70, 229, 0.08);
+        border-radius: var(--radius);
+        z-index: 1;
+        transition: width 0.5s ease;
+        pointer-events: none;
+    }
+
+    .poll-percentage {
+        font-weight: 600;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        z-index: 2;
+        position: relative;
+    }
+
+    .poll-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.875rem;
+        color: var(--text-light);
+    }
+
+    .poll-votes {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+    }
+
+    .poll-time {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .vote-button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+        .vote-button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .vote-button:disabled {
+            background-color: var(--text-lighter);
+            cursor: not-allowed;
+        }
+
+    /* Comment Section - Using existing class */
+    .comment-section {
+        background-color: var(--bg-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .comment-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--bg-light);
+    }
+
+    .comment-count {
+        font-weight: 600;
+        font-size: 1.125rem;
+    }
+
+    .comment-sort {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .sort-dropdown {
+        background: none;
+        border: none;
+        color: var(--primary-color);
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .comment-list {
+        padding: 1.5rem;
+    }
+
+    .comment-item {
+        margin-bottom: 1.5rem;
+    }
+
+        .comment-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .comment-content {
+        background-color: var(--bg-light);
+        border-radius: var(--radius);
+        padding: 1rem;
+    }
+
+    .comment-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    /* User Avatar */
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+    }
+
+        .user-avatar.small {
+            width: 24px;
+            height: 24px;
+            font-size: 0.75rem;
+        }
+
+    .comment-author {
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .comment-time {
+        color: var(--text-light);
+    }
+
+    .comment-text {
+        margin-bottom: 0.75rem;
+        line-height: 1.5;
+    }
+
+    .comment-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .comment-vote {
+        display: flex;
+        align-items: center;
+    }
+
+    .comment-vote-btn {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        padding: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: var(--radius);
+    }
+
+        .comment-vote-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .comment-vote-btn.upvote:hover,
+        .comment-vote-btn.upvote.active {
+            color: var(--success-color);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .comment-vote-btn.downvote:hover,
+        .comment-vote-btn.downvote.active {
+            color: var(--error-color);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+    .comment-vote-count {
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin: 0 0.25rem;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .comment-reply-btn {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius);
+    }
+
+        .comment-reply-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.1);
+        }
+
+    /* Nested Comments */
+    .comment-replies {
+        margin-left: 2.5rem;
+        margin-top: 1rem;
+        padding-left: 1rem;
+        border-left: 2px solid var(--border-color);
+    }
+
+    /* Reply Form */
+    .reply-form {
+        margin-top: 1rem;
+        display: none;
+    }
+
+        .reply-form.active {
+            display: block;
+        }
+
+        .reply-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            resize: vertical;
+            min-height: 100px;
+            margin-bottom: 0.75rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+    .reply-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .reply-cancel-btn {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .reply-cancel-btn:hover {
+            background-color: var(--bg-dark);
+        }
+
+    .reply-submit-btn {
+        background-color: var(--primary-color);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .reply-submit-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+    /* Main Comment Form */
+    .main-comment-form {
+        background-color: var(--bg-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+        .main-comment-form h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+    /* Sidebar */
+    .sidebar-card {
+        background-color: var(--bg-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        background-color: var(--bg-light);
+    }
+
+    .sidebar-content {
+        padding: 1rem;
+    }
+
+    .about-community p {
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .community-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        font-size: 1.125rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-light);
+    }
+
+    .community-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .community-btn {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+    .join-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+    }
+
+        .join-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+    .create-post-btn {
+        background-color: var(--bg-light);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+    }
+
+        .create-post-btn:hover {
+            background-color: var(--bg-dark);
+        }
+
+    .community-rules {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .community-rules li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+
+            .community-rules li:last-child {
+                border-bottom: none;
+            }
+
+    .rule-number {
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .related-posts {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .related-posts li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+            .related-posts li:last-child {
+                border-bottom: none;
+            }
+
+    .related-post-link {
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .related-post-meta {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* AdSense Placeholders */
+    .ad-banner {
+        background-color: var(--bg-dark);
+        border: 1px dashed var(--border-dark);
+        border-radius: var(--radius);
+        padding: 1rem;
+        text-align: center;
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ad-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Left Sidebar Specific */
+    .left-sidebar .sidebar-card {
+        margin-bottom: 1rem;
+    }
+
+    .trending-topics {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .trending-topics li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+
+            .trending-topics li:last-child {
+                border-bottom: none;
+            }
+
+    .trending-number {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    /* Responsive Styles */
+    @@media (max-width: 1200px) {
+    .left-sidebar {
+        display: none;
+    }
+    .col-xl-8 {
+        flex: 0 0 75%;
+        max-width: 75%;
+    }
+
+    .col-xl-2:last-child {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+
+    }
+
+    @@media (max-width: 992px) {
+    .sidebar{
+        margin-top: 1.5rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+    .gallery-container{
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .link-preview {
+        flex-direction: column;
+    }
+
+    .link-thumbnail {
+        width: 100%;
+        height: 150px;
+    }
+
+    .comment-replies {
+        margin-left: 1rem;
+        padding-left: 0.75rem;
+    }
+
+    .poll-container {
+        padding: 1.5rem;
+    }
+
+    }
+
+    @@media (max-width: 576px) {
+    .post-actions{
+        flex-wrap: wrap;
+    }
+
+    .action-buttons {
+        margin-top: 0.75rem;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .gallery-container {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .poll-options {
+        gap: 0.75rem;
+    }
+
+    .poll-option {
+        padding: 0.75rem 1rem;
+    }
+
+    }
+</style>
+
+<!-- Main Content -->
+<div class="post-detail-page">
+    <div class="container-fluid" style="max-width: 90%;">
+        <div class="row">
+            <!-- Left Sidebar -->
+            <div class="col-xl-3 col-lg-3 left-sidebar">
+                <!-- Trending Topics -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-fire me-2"></i> Trending
+                    </div>
+                    <div class="sidebar-content">
+                        <ul class="trending-topics">
+                            <li><span class="trending-number">1</span> Artificial Intelligence</li>
+                            <li><span class="trending-number">2</span> Machine Learning</li>
+                            <li><span class="trending-number">3</span> Neural Networks</li>
+                            <li><span class="trending-number">4</span> Deep Learning</li>
+                            <li><span class="trending-number">5</span> Computer Vision</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Ad Banner -->
+                <div class="ad-banner">
+                    <div class="ad-label">Advertisement</div>
+                    <div><i class="fas fa-ad fa-2x mb-2"></i></div>
+                    <div>Google AdSense</div>
+                    <div><small>300x250</small></div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-chart-line me-2"></i> Today's Stats
+                    </div>
+                    <div class="sidebar-content">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>New Posts:</span>
+                            <strong>1,247</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Active Users:</span>
+                            <strong>15.2K</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Comments:</span>
+                            <strong>8,934</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Column -->
+            <div class="col-xl-6 col-lg-6">
+                <!-- Post Container -->
+                <div class="post-container">
+                    <div class="post-header">
+                        <div class="post-meta">
+                            <div class="user-avatar small">T</div>
+                            <a href="#">r/technology</a>
+                            <span>•</span>
+                            <span>Posted by <a href="#">u/techuser123</a></span>
+                            <span>•</span>
+                            <span>8 hours ago</span>
+                        </div>
+                        <h1 class="post-title">The Future of AI: New Models Achieve Human-Level Performance in Complex Tasks</h1>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-primary">Technology</span>
+                            <span class="badge bg-info">AI</span>
+                            <span class="badge bg-secondary">Research</span>
+                        </div>
+                    </div>
+
+                    <div class="post-content">
+                        <!-- Text Content -->
+                        <div class="post-text">
+                            <p>Researchers have developed a new artificial intelligence model that demonstrates human-level performance across multiple cognitive tasks. The breakthrough could have significant implications for various industries.</p>
+
+                            <p>The new model, developed by a team of researchers from leading universities, uses a novel approach to neural network architecture that allows it to process and understand complex information in ways that previous models couldn't.</p>
+
+                            <p>According to the lead researcher, "This represents a significant step forward in our quest to develop AI systems that can reason and learn in ways similar to humans. The model's performance on benchmark tests exceeded our expectations."</p>
+                        </div>
+
+                        <!-- Image Gallery -->
+                        <div class="image-gallery">
+                            <h5>Image Gallery</h5>
+                            <div class="gallery-container">
+                                <div class="gallery-item">
+                                    <img src="https://via.placeholder.com/400x225" alt="AI Model Architecture">
+                                </div>
+                                <div class="gallery-item">
+                                    <img src="https://via.placeholder.com/400x225" alt="Performance Comparison">
+                                </div>
+                                <div class="gallery-item">
+                                    <img src="https://via.placeholder.com/400x225" alt="Research Team">
+                                </div>
+                            </div>
+                            <div class="image-caption">Images: AI model architecture, performance comparison, and research team</div>
+                        </div>
+
+                        <!-- Video Embed -->
+                        <div class="video-embed">
+                            <h5>Video Demonstration</h5>
+                            <div class="video-container">
+                                <div class="video-overlay" id="videoOverlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                                <img src="https://via.placeholder.com/800x450" alt="Video Thumbnail" style="width:100%">
+                            </div>
+                        </div>
+
+                        <!-- Link Preview -->
+                        <div class="link-preview">
+                            <div class="link-thumbnail">
+                                <img src="https://via.placeholder.com/150x150" alt="Article Thumbnail">
+                            </div>
+                            <div class="link-content">
+                                <div class="link-title">Full Research Paper: Human-Level Performance in AI Systems</div>
+                                <div class="link-description">Read the complete research paper detailing the methodology, experiments, and results of this groundbreaking AI model.</div>
+                                <div class="link-url">
+                                    <i class="fas fa-link"></i>
+                                    <span>research-journal.com</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Poll -->
+                        <div class="poll-container">
+                            <div class="poll-badge">
+                                <i class="fas fa-poll"></i>
+                                <span>POLL</span>
+                            </div>
+                            <h5 class="poll-question">What do you think will be the most significant impact of human-level AI?</h5>
+                            <div class="poll-options" id="pollOptions">
+                                <div class="poll-option" data-option="1">
+                                    <div class="poll-radio"></div>
+                                    <div class="poll-option-content">
+                                        <span class="poll-option-text">Healthcare advancements</span>
+                                        <span class="poll-percentage">42%</span>
+                                    </div>
+                                    <div class="poll-progress" style="width: 42%"></div>
+                                </div>
+                                <div class="poll-option" data-option="2">
+                                    <div class="poll-radio"></div>
+                                    <div class="poll-option-content">
+                                        <span class="poll-option-text">Automation and job displacement</span>
+                                        <span class="poll-percentage">28%</span>
+                                    </div>
+                                    <div class="poll-progress" style="width: 28%"></div>
+                                </div>
+                                <div class="poll-option" data-option="3">
+                                    <div class="poll-radio"></div>
+                                    <div class="poll-option-content">
+                                        <span class="poll-option-text">Scientific research acceleration</span>
+                                        <span class="poll-percentage">18%</span>
+                                    </div>
+                                    <div class="poll-progress" style="width: 18%"></div>
+                                </div>
+                                <div class="poll-option" data-option="4">
+                                    <div class="poll-radio"></div>
+                                    <div class="poll-option-content">
+                                        <span class="poll-option-text">Education transformation</span>
+                                        <span class="poll-percentage">12%</span>
+                                    </div>
+                                    <div class="poll-progress" style="width: 12%"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center mb-3">
+                                <button class="vote-button" id="submitVote">Cast Your Vote</button>
+                            </div>
+                            <div class="poll-stats">
+                                <div class="poll-votes">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span id="totalVotes">1,245 votes</span>
+                                </div>
+                                <div class="poll-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Poll closes in 2 days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="post-actions">
+                        <div class="vote-buttons">
+                            <button class="vote-btn upvote" id="upvoteBtn">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <span class="vote-count" id="voteCount">1200</span>
+                            <button class="vote-btn downvote" id="downvoteBtn">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn">
+                                <i class="fas fa-comment"></i>
+                                <span>Comments (42)</span>
+                            </button>
+                            <div class="share-dropdown">
+                                <button class="action-btn" id="shareBtn">
+                                    <i class="fas fa-share"></i>
+                                    <span>Share</span>
+                                </button>
+                                <div class="share-dropdown-menu">
+                                    <a href="#" class="share-option" data-platform="facebook">
+                                        <i class="fab fa-facebook-f" style="color: #1877F2;"></i>
+                                        <span>Facebook</span>
+                                    </a>
+                                    <a href="#" class="share-option" data-platform="twitter">
+                                        <i class="fab fa-twitter" style="color: #1DA1F2;"></i>
+                                        <span>Twitter</span>
+                                    </a>
+                                    <a href="#" class="share-option" data-platform="reddit">
+                                        <i class="fab fa-reddit" style="color: #FF4500;"></i>
+                                        <span>Reddit</span>
+                                    </a>
+                                    <a href="#" class="share-option" data-platform="linkedin">
+                                        <i class="fab fa-linkedin" style="color: #0A66C2;"></i>
+                                        <span>LinkedIn</span>
+                                    </a>
+                                    <a href="#" class="share-option" data-platform="whatsapp">
+                                        <i class="fab fa-whatsapp" style="color: #25D366;"></i>
+                                        <span>WhatsApp</span>
+                                    </a>
+                                    <a href="#" class="share-option" data-platform="copy">
+                                        <i class="fas fa-copy"></i>
+                                        <span>Copy Link</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <button class="action-btn">
+                                <i class="fas fa-bookmark"></i>
+                                <span>Save</span>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-flag"></i>
+                                <span>Report</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Comment Form -->
+                <div class="main-comment-form">
+                    <h3>Add a Comment</h3>
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="user-avatar">U</div>
+                        <textarea class="form-control" placeholder="What are your thoughts?"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button class="btn btn-primary">Comment</button>
+                    </div>
+                </div>
+
+                <!-- Comment Section -->
+                <div class="comment-section">
+                    <div class="comment-header">
+                        <div class="comment-count">42 Comments</div>
+                        <div class="comment-sort">
+                            <span>Sort by:</span>
+                            <button class="sort-dropdown">
+                                Best <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="comment-list">
+                        <!-- Comment 1 -->
+                        <div class="comment-item">
+                            <div class="comment-content">
+                                <div class="comment-meta">
+                                    <div class="user-avatar">A</div>
+                                    <span class="comment-author">u/AIenthusiast</span>
+                                    <span class="comment-time">3 hours ago</span>
+                                </div>
+                                <div class="comment-text">
+                                    <p>This is truly groundbreaking research. I've been following this team's work for years, and they've consistently pushed the boundaries of what's possible with neural networks.</p>
+                                </div>
+                                <div class="comment-actions">
+                                    <div class="comment-vote">
+                                        <button class="comment-vote-btn upvote active" data-comment="1" data-type="up">
+                                            <i class="fas fa-arrow-up"></i>
+                                        </button>
+                                        <span class="comment-vote-count" id="commentVote1">24</span>
+                                        <button class="comment-vote-btn downvote" data-comment="1" data-type="down">
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </div>
+                                    <button class="comment-reply-btn" data-comment-id="1">
+                                        <i class="fas fa-reply"></i>
+                                        <span>Reply</span>
+                                    </button>
+                                </div>
+
+                                <!-- Reply Form -->
+                                <div class="reply-form" id="replyForm1">
+                                    <div class="d-flex gap-2">
+                                        <div class="user-avatar small">U</div>
+                                        <textarea class="form-control" placeholder="Write a reply..."></textarea>
+                                    </div>
+                                    <div class="reply-form-actions">
+                                        <button class="reply-cancel-btn" data-comment-id="1">Cancel</button>
+                                        <button class="reply-submit-btn">Reply</button>
+                                    </div>
+                                </div>
+
+                                <!-- Nested Comments -->
+                                <div class="comment-replies">
+                                    <!-- Nested Comment 1 -->
+                                    <div class="comment-item">
+                                        <div class="comment-content">
+                                            <div class="comment-meta">
+                                                <div class="user-avatar">T</div>
+                                                <span class="comment-author">u/techskeptic</span>
+                                                <span class="comment-time">2 hours ago</span>
+                                            </div>
+                                            <div class="comment-text">
+                                                <p>While impressive, I think we need to be cautious about claims of "human-level" performance. These models still struggle with certain types of reasoning that humans find intuitive.</p>
+                                            </div>
+                                            <div class="comment-actions">
+                                                <div class="comment-vote">
+                                                    <button class="comment-vote-btn upvote" data-comment="1-1" data-type="up">
+                                                        <i class="fas fa-arrow-up"></i>
+                                                    </button>
+                                                    <span class="comment-vote-count" id="commentVote1-1">8</span>
+                                                    <button class="comment-vote-btn downvote" data-comment="1-1" data-type="down">
+                                                        <i class="fas fa-arrow-down"></i>
+                                                    </button>
+                                                </div>
+                                                <button class="comment-reply-btn" data-comment-id="1-1">
+                                                    <i class="fas fa-reply"></i>
+                                                    <span>Reply</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- Reply Form -->
+                                            <div class="reply-form" id="replyForm1-1">
+                                                <div class="d-flex gap-2">
+                                                    <div class="user-avatar small">U</div>
+                                                    <textarea class="form-control" placeholder="Write a reply..."></textarea>
+                                                </div>
+                                                <div class="reply-form-actions">
+                                                    <button class="reply-cancel-btn" data-comment-id="1-1">Cancel</button>
+                                                    <button class="reply-submit-btn">Reply</button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Nested Comments Level 2 -->
+                                            <div class="comment-replies">
+                                                <div class="comment-item">
+                                                    <div class="comment-content">
+                                                        <div class="comment-meta">
+                                                            <div class="user-avatar">A</div>
+                                                            <span class="comment-author">u/AIenthusiast</span>
+                                                            <span class="comment-time">1 hour ago</span>
+                                                        </div>
+                                                        <div class="comment-text">
+                                                            <p>Fair point. I should have been more specific. The model shows human-level performance on the specific benchmarks mentioned in the paper, but you're right that general intelligence is still a far-off goal.</p>
+                                                        </div>
+                                                        <div class="comment-actions">
+                                                            <div class="comment-vote">
+                                                                <button class="comment-vote-btn upvote" data-comment="1-1-1" data-type="up">
+                                                                    <i class="fas fa-arrow-up"></i>
+                                                                </button>
+                                                                <span class="comment-vote-count" id="commentVote1-1-1">5</span>
+                                                                <button class="comment-vote-btn downvote" data-comment="1-1-1" data-type="down">
+                                                                    <i class="fas fa-arrow-down"></i>
+                                                                </button>
+                                                            </div>
+                                                            <button class="comment-reply-btn" data-comment-id="1-1-1">
+                                                                <i class="fas fa-reply"></i>
+                                                                <span>Reply</span>
+                                                            </button>
+                                                        </div>
+
+                                                        <!-- Reply Form -->
+                                                        <div class="reply-form" id="replyForm1-1-1">
+                                                            <div class="d-flex gap-2">
+                                                                <div class="user-avatar small">U</div>
+                                                                <textarea class="form-control" placeholder="Write a reply..."></textarea>
+                                                            </div>
+                                                            <div class="reply-form-actions">
+                                                                <button class="reply-cancel-btn" data-comment-id="1-1-1">Cancel</button>
+                                                                <button class="reply-submit-btn">Reply</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Nested Comment 2 -->
+                                    <div class="comment-item">
+                                        <div class="comment-content">
+                                            <div class="comment-meta">
+                                                <div class="user-avatar">R</div>
+                                                <span class="comment-author">u/researcher42</span>
+                                                <span class="comment-time">1 hour ago</span>
+                                            </div>
+                                            <div class="comment-text">
+                                                <p>I'm one of the co-authors of this paper. Happy to answer any questions about our methodology or findings!</p>
+                                            </div>
+                                            <div class="comment-actions">
+                                                <div class="comment-vote">
+                                                    <button class="comment-vote-btn upvote" data-comment="1-2" data-type="up">
+                                                        <i class="fas fa-arrow-up"></i>
+                                                    </button>
+                                                    <span class="comment-vote-count" id="commentVote1-2">15</span>
+                                                    <button class="comment-vote-btn downvote" data-comment="1-2" data-type="down">
+                                                        <i class="fas fa-arrow-down"></i>
+                                                    </button>
+                                                </div>
+                                                <button class="comment-reply-btn" data-comment-id="1-2">
+                                                    <i class="fas fa-reply"></i>
+                                                    <span>Reply</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- Reply Form -->
+                                            <div class="reply-form" id="replyForm1-2">
+                                                <div class="d-flex gap-2">
+                                                    <div class="user-avatar small">U</div>
+                                                    <textarea class="form-control" placeholder="Write a reply..."></textarea>
+                                                </div>
+                                                <div class="reply-form-actions">
+                                                    <button class="reply-cancel-btn" data-comment-id="1-2">Cancel</button>
+                                                    <button class="reply-submit-btn">Reply</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comment 2 -->
+                        <div class="comment-item">
+                            <div class="comment-content">
+                                <div class="comment-meta">
+                                    <div class="user-avatar">E</div>
+                                    <span class="comment-author">u/ethicist</span>
+                                    <span class="comment-time">4 hours ago</span>
+                                </div>
+                                <div class="comment-text">
+                                    <p>We need to have serious discussions about the ethical implications of these advancements. As AI approaches human-level capabilities, we need robust frameworks to ensure these systems are developed and deployed responsibly.</p>
+                                </div>
+                                <div class="comment-actions">
+                                    <div class="comment-vote">
+                                        <button class="comment-vote-btn upvote" data-comment="2" data-type="up">
+                                            <i class="fas fa-arrow-up"></i>
+                                        </button>
+                                        <span class="comment-vote-count" id="commentVote2">19</span>
+                                        <button class="comment-vote-btn downvote" data-comment="2" data-type="down">
+                                            <i class="fas fa-arrow-down"></i>
+                                        </button>
+                                    </div>
+                                    <button class="comment-reply-btn" data-comment-id="2">
+                                        <i class="fas fa-reply"></i>
+                                        <span>Reply</span>
+                                    </button>
+                                </div>
+
+                                <!-- Reply Form -->
+                                <div class="reply-form" id="replyForm2">
+                                    <div class="d-flex gap-2">
+                                        <div class="user-avatar small">U</div>
+                                        <textarea class="form-control" placeholder="Write a reply..."></textarea>
+                                    </div>
+                                    <div class="reply-form-actions">
+                                        <button class="reply-cancel-btn" data-comment-id="2">Cancel</button>
+                                        <button class="reply-submit-btn">Reply</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="col-xl-3 col-lg-3">
+                <!-- About Community -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-info-circle me-2"></i> About r/technology
+                    </div>
+                    <div class="sidebar-content">
+                        <p>A community dedicated to the discussion of technology news, developments, and innovations.</p>
+
+                        <div class="community-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">2.4M</div>
+                                <div class="stat-label">Members</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">12.5K</div>
+                                <div class="stat-label">Online</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">2012</div>
+                                <div class="stat-label">Created</div>
+                            </div>
+                        </div>
+
+                        <div class="community-buttons">
+                            <button class="community-btn join-btn">
+                                <i class="fas fa-plus me-2"></i> Join
+                            </button>
+                            <a href="#" class="community-btn create-post-btn text-decoration-none">
+                                <i class="fas fa-pen me-2"></i> Create Post
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ad Banner -->
+                <div class="ad-banner">
+                    <div class="ad-label">Advertisement</div>
+                    <div><i class="fas fa-ad fa-2x mb-2"></i></div>
+                    <div>Google AdSense</div>
+                    <div><small>300x250</small></div>
+                </div>
+
+                <!-- Community Rules -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-gavel me-2"></i> Community Rules
+                    </div>
+                    <div class="sidebar-content">
+                        <ul class="community-rules">
+                            <li><span class="rule-number">1.</span> Be respectful and constructive</li>
+                            <li><span class="rule-number">2.</span> No editorialized titles</li>
+                            <li><span class="rule-number">3.</span> Posts must be about technology</li>
+                            <li><span class="rule-number">4.</span> No commercial promotion</li>
+                            <li><span class="rule-number">5.</span> No duplicate submissions</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Related Posts -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-link me-2"></i> Related Posts
+                    </div>
+                    <div class="sidebar-content">
+                        <ul class="related-posts">
+                            <li>
+                                <a href="#" class="related-post-link">New Neural Network Architecture Breaks Records</a>
+                                <div class="related-post-meta">
+                                    <span><i class="fas fa-arrow-up"></i> 876</span>
+                                    <span><i class="fas fa-comment"></i> 124</span>
+                                    <span>2 days ago</span>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="#" class="related-post-link">AI Ethics Board Releases Guidelines</a>
+                                <div class="related-post-meta">
+                                    <span><i class="fas fa-arrow-up"></i> 542</span>
+                                    <span><i class="fas fa-comment"></i> 87</span>
+                                    <span>3 days ago</span>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="#" class="related-post-link">Tech Companies Race to Develop AI</a>
+                                <div class="related-post-meta">
+                                    <span><i class="fas fa-arrow-up"></i> 1.2k</span>
+                                    <span><i class="fas fa-comment"></i> 203</span>
+                                    <span>1 week ago</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
