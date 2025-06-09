@@ -372,6 +372,7 @@
                             <label for="registerConfirmPassword">Confirm Password</label>
                             <span asp-validation-for="RegisterModel.ConfirmPassword" class="field-validation-error"></span>
                         </div>
+
                         <div class="form-check mb-4">
                             <input class="form-check-input" asp-for="RegisterModel.AgreeToTerms" type="checkbox" id="agreeTerms" required>
                             <label class="form-check-label" for="agreeTerms">
@@ -379,6 +380,7 @@
                             </label>
                             <span asp-validation-for="RegisterModel.AgreeToTerms" class="text-danger"></span>
                         </div>
+
 
 
                         <button type="submit" class="btn btn-primary w-100 py-2">Create Account</button>
