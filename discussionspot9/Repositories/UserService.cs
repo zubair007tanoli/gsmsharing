@@ -54,10 +54,7 @@ namespace DiscussionSpot9.Services
                 var userProfile = new UserProfile
                 {
                     UserId = user.Id,
-                    DisplayName = model.DisplayName,
-                    Bio = model.Bio,
-                    Location = model.Location,
-                    Website = model.Website,
+                    DisplayName = model.DisplayName,                 
                     JoinDate = DateTime.UtcNow,
                     LastActive = DateTime.UtcNow,
                     KarmaPoints = 0,

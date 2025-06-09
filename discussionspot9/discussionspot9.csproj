@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Database\**" />
+    <Content Remove="Database\**" />
+    <EmbeddedResource Remove="Database\**" />
+    <None Remove="Database\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="bootstrap" Version="5.3.5" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.5" />
@@ -27,7 +34,6 @@
     <Folder Include="Areas\Identity\Pages\" />
     <Folder Include="Data\SqlScripts\" />
     <Folder Include="Data\Repositories\" />
-    <Folder Include="Database\" />
   </ItemGroup>
 
 </Project>

@@ -40,6 +40,12 @@ namespace DiscussionSpot9.Controllers
         public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")] RegisterViewModel registerViewModelRegisterViewModel, string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
+            // Clear validation errors for LoginModel since we're only processing registration
+            var loginModelKeys = ModelState.Keys.Where(k => k.StartsWith("LoginModel.")).ToList();
+            foreach (var key in loginModelKeys)
+            {
+                ModelState.Remove(key);
+            }
 
             if (!ModelState.IsValid)
             {

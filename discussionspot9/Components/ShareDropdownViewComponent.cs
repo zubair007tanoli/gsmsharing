@@ -1,7 +1,7 @@
 ﻿// ViewComponents/ShareDropdownViewComponent.cs
 using Microsoft.AspNetCore.Mvc;
 
-namespace discussionspot9.ViewComponents
+namespace discussionspot9.Components
 {
     public class ShareDropdownViewComponent : ViewComponent
     {

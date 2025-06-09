@@ -14,6 +14,7 @@
         public int UpvoteCount { get; set; }
         public int DownvoteCount { get; set; }
         public int Score { get; set; }
+        public int MyProperty { get; set; }
         public bool IsEdited { get; set; }
         public bool IsDeleted { get; set; }
         public int TreeLevel { get; set; }

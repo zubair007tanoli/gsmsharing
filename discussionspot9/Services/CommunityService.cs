@@ -218,5 +218,162 @@ namespace discussionspot9.Services
                 })
                 .ToListAsync();
         }
+
+        public async Task<bool> IsCommunityMemberAsync(int communityId, string userId)
+        {
+            return await _context.CommunityMembers.AnyAsync(cm => cm.CommunityId == communityId && cm.UserId == userId);
+        }
+
+        public async Task<bool> IsCommunityAdminAsync(int communityId, string userId)
+        {
+            return await _context.CommunityMembers.AnyAsync(cm => cm.CommunityId == communityId && cm.UserId == userId && cm.Role == "admin");
+        }
+
+        public async Task<bool> IsCommunityModeratorAsync(int communityId, string userId)
+        {
+            return await _context.CommunityMembers.AnyAsync(cm => cm.CommunityId == communityId && cm.UserId == userId && (cm.Role == "moderator" || cm.Role == "admin"));
+        }
+
+        public async Task<ServiceResult> UpdateCommunityDetailsAsync(CommunityDetailViewModel model)
+        {
+            var community = await _context.Communities.FindAsync(model.CommunityId);
+            if (community == null)
+            {
+                return ServiceResult.ErrorResult("Community not found.");
+            }
+
+            // You might want to add permission checks here, e.g., only admins can update
+            // if (!await IsCommunityAdminAsync(model.CommunityId, model.CurrentUserId)) { /* return permission error */ }
+
+            community.Title = model.Title;
+            community.Description = model.Description;
+            community.ShortDescription = model.Description?.Length > 500 ?
+                model.Description.Substring(0, 497) + "..." : model.Description;
+            community.CategoryId = model.CategoryId;
+            community.CommunityType = model.CommunityType;
+            community.IsNSFW = model.IsNSFW;
+            community.Rules = model.Rules;
+            community.IconUrl = model.IconUrl;
+            community.BannerUrl = model.BannerUrl;
+            community.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return ServiceResult.SuccessResult();
+        }
+
+        public async Task<ServiceResult> DeleteCommunityAsync(int communityId, string userId)
+        {
+            var community = await _context.Communities.FindAsync(communityId);
+            if (community == null)
+            {
+                return ServiceResult.ErrorResult("Community not found.");
+            }
+
+            // Only the creator or a global admin should be able to truly delete/soft delete a community
+            if (community.CreatorId != userId /* && !UserIsGlobalAdmin(userId) */)
+            {
+                return ServiceResult.ErrorResult("You don't have permission to delete this community.");
+            }
+
+            // Soft delete
+            community.IsDeleted = true;
+            community.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return ServiceResult.SuccessResult();
+        }
+
+        public async Task<ServiceResult> BanUserFromCommunityAsync(int communityId, string userIdToBan, string moderatorId)
+        {
+            // Implement logic for banning a user from a community
+            // This would likely involve a new table/entity for BannedCommunityMembers
+            // For now, let's assume it removes the user from CommunityMembers and marks them
+            // as banned in a new property (e.g., IsBanned) or a separate collection.
+
+            var communityMember = await _context.CommunityMembers
+                .FirstOrDefaultAsync(cm => cm.CommunityId == communityId && cm.UserId == userIdToBan);
+
+            if (communityMember == null)
+            {
+                return ServiceResult.ErrorResult("User is not a member of this community.");
+            }
+
+            // Check if moderatorId has permission to ban
+            if (!await IsCommunityModeratorAsync(communityId, moderatorId))
+            {
+                return ServiceResult.ErrorResult("You do not have permission to ban users in this community.");
+            }
+
+            // Simple removal for now, consider a proper 'BannedCommunityMember' entity for more robust tracking
+            _context.CommunityMembers.Remove(communityMember);
+            var community = await _context.Communities.FindAsync(communityId);
+            if (community != null)
+            {
+                community.MemberCount = Math.Max(0, community.MemberCount - 1);
+            }
+            await _context.SaveChangesAsync();
+
+            // Potentially add a record to a BannedUsers table for this community
+            // Example: _context.BannedCommunityUsers.Add(new BannedCommunityUser { CommunityId = communityId, UserId = userIdToBan, BannedBy = moderatorId, BannedAt = DateTime.UtcNow });
+            // await _context.SaveChangesAsync();
+
+            return ServiceResult.SuccessResult();
+        }
+
+        public async Task<ServiceResult> PromoteDemoteCommunityMemberAsync(int communityId, string userId, string newRole, string moderatorId)
+        {
+            if (newRole != "member" && newRole != "moderator" && newRole != "admin")
+            {
+                return ServiceResult.ErrorResult("Invalid role specified. Role must be 'member', 'moderator', or 'admin'.");
+            }
+
+            var communityMember = await _context.CommunityMembers
+                .FirstOrDefaultAsync(cm => cm.CommunityId == communityId && cm.UserId == userId);
+
+            if (communityMember == null)
+            {
+                return ServiceResult.ErrorResult("User is not a member of this community.");
+            }
+
+            // Logic to prevent promoting/demoting self
+            if (userId == moderatorId)
+            {
+                return ServiceResult.ErrorResult("You cannot change your own role.");
+            }
+
+            // Permission checks:
+            // Only an admin can promote/demote other moderators/admins
+            // Only an admin/moderator can promote/demote members
+            var moderatorRole = await GetCommunityMemberRoleAsync(communityId, moderatorId);
+            if (moderatorRole == null || (moderatorRole != "admin" && moderatorRole != "moderator"))
+            {
+                return ServiceResult.ErrorResult("You do not have sufficient permissions to change roles in this community.");
+            }
+
+            // If moderator tries to change an admin's role
+            if (moderatorRole == "moderator" && communityMember.Role == "admin")
+            {
+                return ServiceResult.ErrorResult("Moderators cannot change the role of an admin.");
+            }
+
+            // If an admin tries to promote to admin, but they are not the creator, you might want to add more checks
+            if (newRole == "admin" && moderatorRole != "admin")
+            {
+                return ServiceResult.ErrorResult("Only existing administrators can promote users to admin role.");
+            }
+
+
+            communityMember.Role = newRole;
+            await _context.SaveChangesAsync();
+
+            return ServiceResult.SuccessResult();
+        }
+
+        public async Task<string?> GetCommunityMemberRoleAsync(int communityId, string userId)
+        {
+            var member = await _context.CommunityMembers
+                .FirstOrDefaultAsync(cm => cm.CommunityId == communityId && cm.UserId == userId);
+            return member?.Role;
+        }
     }
 }

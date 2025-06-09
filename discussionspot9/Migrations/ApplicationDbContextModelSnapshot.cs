@@ -1155,6 +1155,33 @@ namespace discussionspot9.Migrations
                         });
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.SavedPost", b =>
+                {
+                    b.Property<int>("SavedPostId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SavedPostId"));
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("SavedPostId");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SavedPosts");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.SeoMetadata", b =>
                 {
                     b.Property<string>("EntityType")
@@ -1642,6 +1669,25 @@ namespace discussionspot9.Migrations
                 {
                     b.HasOne("discussionspot9.Models.Domain.Post", "Post")
                         .WithMany("Votes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.SavedPost", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

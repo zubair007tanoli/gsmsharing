@@ -2,19 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using discussionspot9.Models.ViewModels.PollViewModels;
 
-namespace discussionspot9.ViewComponents
+namespace discussionspot9.Components
 {
     public class PollWidgetViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke(PollViewModel poll, int postId)
-        {
-            if (poll == null)
-            {
-                return Content(string.Empty);
-            }
-
-            ViewData["PostId"] = postId;
-            return View(poll);
+        public IViewComponentResult Invoke()
+        {           
+            return View();
         }
     }
 }

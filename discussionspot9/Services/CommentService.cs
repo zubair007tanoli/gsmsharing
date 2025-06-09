@@ -4,15 +4,16 @@ using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Services.ServiceResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace discussionspot9.Services
 {
     public class CommentService : ICommentService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _context;
         private readonly ILogger<CommentService> _logger;
 
-        public CommentService(ApplicationDbContext context, ILogger<CommentService> logger)
+        public CommentService(IDbContextFactory<ApplicationDbContext> context, ILogger<CommentService> logger)
         {
             _context = context;
             _logger = logger;
@@ -20,6 +21,8 @@ namespace discussionspot9.Services
 
         public async Task<CreateCommentResult> CreateCommentAsync(CreateCommentViewModel model)
         {
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+
             var comment = new Comment
             {
                 Content = model.Content,
@@ -33,36 +36,38 @@ namespace discussionspot9.Services
 
             if (model.ParentCommentId.HasValue)
             {
-                var parentComment = await _context.Comments.FindAsync(model.ParentCommentId.Value);
+                var parentComment = await dbContext.Comments.FindAsync(model.ParentCommentId.Value); // Access Comments via the created DbContext
                 if (parentComment != null)
                 {
                     comment.TreeLevel = parentComment.TreeLevel + 1;
                 }
             }
 
-            _context.Comments.Add(comment);
+            dbContext.Comments.Add(comment);
 
             // Update post comment count
-            var post = await _context.Posts.FindAsync(model.PostId);
+            var post = await dbContext.Posts.FindAsync(model.PostId); // Access Posts via the created DbContext
             if (post != null)
             {
                 post.CommentCount++;
                 post.UpdatedAt = DateTime.UtcNow;
             }
 
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
             return new CreateCommentResult { Success = true, CommentId = comment.CommentId };
         }
 
         public async Task<CommentViewModel?> GetCommentByIdAsync(int commentId)
         {
-            var comment = await _context.Comments
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+
+            var comment = await dbContext.Comments
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.CommentId == commentId);
 
             if (comment == null) return null;
 
-            var userProfile = await _context.UserProfiles
+            var userProfile = await dbContext.UserProfiles
                 .FirstOrDefaultAsync(up => up.UserId == comment.UserId);
 
             return MapToCommentViewModel(comment, userProfile);
@@ -70,10 +75,12 @@ namespace discussionspot9.Services
 
         public async Task<VoteResult> VoteCommentAsync(int commentId, string userId, int voteType)
         {
-            var existingVote = await _context.CommentVotes
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+
+            var existingVote = await dbContext.CommentVotes
                 .FirstOrDefaultAsync(cv => cv.CommentId == commentId && cv.UserId == userId);
 
-            var comment = await _context.Comments.FindAsync(commentId);
+            var comment = await dbContext.Comments.FindAsync(commentId);
             if (comment == null)
             {
                 return new VoteResult { Success = false, ErrorMessage = "Comment not found" };
@@ -84,7 +91,7 @@ namespace discussionspot9.Services
                 if (existingVote.VoteType == voteType)
                 {
                     // Remove vote
-                    _context.CommentVotes.Remove(existingVote);
+                    dbContext.CommentVotes.Remove(existingVote);
                     if (voteType == 1) comment.UpvoteCount--;
                     else comment.DownvoteCount--;
                     voteType = 0;
@@ -105,7 +112,7 @@ namespace discussionspot9.Services
             else
             {
                 // New vote
-                _context.CommentVotes.Add(new CommentVote
+                dbContext.CommentVotes.Add(new CommentVote
                 {
                     CommentId = commentId,
                     UserId = userId,
@@ -118,20 +125,22 @@ namespace discussionspot9.Services
             }
 
             comment.Score = comment.UpvoteCount - comment.DownvoteCount;
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
 
             return new VoteResult { Success = true, UserVote = voteType == 0 ? null : voteType };
         }
 
         public async Task<int> GetCommentVoteCountAsync(int commentId)
         {
-            var comment = await _context.Comments.FindAsync(commentId);
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+            var comment = await dbContext.Comments.FindAsync(commentId); // Access Comments via the created DbContext
             return comment?.Score ?? 0;
         }
 
         public async Task<ServiceResult> EditCommentAsync(int commentId, string content, string userId)
         {
-            var comment = await _context.Comments.FindAsync(commentId);
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+            var comment = await dbContext.Comments.FindAsync(commentId); // Access Comments via the created DbContext
             if (comment == null)
             {
                 return ServiceResult.ErrorResult("Comment not found.");
@@ -146,13 +155,14 @@ namespace discussionspot9.Services
             comment.UpdatedAt = DateTime.UtcNow;
             comment.IsEdited = true;
 
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
             return ServiceResult.SuccessResult();
         }
 
         public async Task<ServiceResult> DeleteCommentAsync(int commentId, string userId)
         {
-            var comment = await _context.Comments.FindAsync(commentId);
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+            var comment = await dbContext.Comments.FindAsync(commentId); // Access Comments via the created DbContext
             if (comment == null)
             {
                 return ServiceResult.ErrorResult("Comment not found.");
@@ -167,7 +177,7 @@ namespace discussionspot9.Services
             comment.Content = "[deleted]";
             comment.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
             return ServiceResult.SuccessResult();
         }
 
@@ -176,38 +186,171 @@ namespace discussionspot9.Services
             const int pageSize = 20;
             var skip = (page - 1) * pageSize;
 
-            var query = _context.Comments
-                .Include(c => c.ChildComments)
-                .Where(c => c.PostId == postId && c.ParentCommentId == null && !c.IsDeleted);
+            // Create context without immediate disposal
+            using var dbContext = _context.CreateDbContext();
+            var allComments = await dbContext.Comments
+                .Where(c => c.PostId == postId && !c.IsDeleted)
+                .Include(c => c.User)
+                .AsNoTracking()
+                .ToListAsync();
 
-            query = sort switch
+              // Create a lookup dictionary for efficient child comment retrieval
+            var commentLookup = allComments.ToLookup(c => c.ParentCommentId);
+
+            // Get top-level comments
+            var topLevelComments = allComments
+                .Where(c => c.ParentCommentId == null)
+                .AsQueryable();
+
+            // Apply sorting
+            topLevelComments = sort switch
             {
-                "new" => query.OrderByDescending(c => c.CreatedAt),
-                "top" => query.OrderByDescending(c => c.Score),
-                "controversial" => query.OrderByDescending(c => c.UpvoteCount + c.DownvoteCount)
+                "new" => topLevelComments.OrderByDescending(c => c.CreatedAt),
+                "top" => topLevelComments.OrderByDescending(c => c.UpvoteCount - c.DownvoteCount),
+                "controversial" => topLevelComments.OrderByDescending(c => c.UpvoteCount + c.DownvoteCount)
                     .ThenBy(c => Math.Abs(c.UpvoteCount - c.DownvoteCount)),
-                _ => query.OrderByDescending(c => c.Score)
+                _ => topLevelComments.OrderByDescending(c => c.UpvoteCount - c.DownvoteCount)
                     .ThenByDescending(c => c.CreatedAt)
             };
 
-            var topLevelComments = await query
+            // Apply pagination
+            var pagedTopLevelComments = topLevelComments
                 .Skip(skip)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToList();
 
+            // Build comment trees using in-memory data
             var commentTrees = new List<CommentTreeViewModel>();
-            foreach (var comment in topLevelComments)
+            foreach (var comment in pagedTopLevelComments)
             {
-                var tree = await BuildCommentTree(comment, 0);
+                var tree = BuildCommentTreeFromMemory(comment, commentLookup, 0);
                 commentTrees.Add(tree);
             }
 
             return commentTrees;
         }
 
+        private CommentTreeViewModel BuildCommentTreeFromMemory(Comment comment, ILookup<int?, Comment> commentLookup, int depth)
+        {
+            // Create the CommentViewModel with all required properties
+            var commentViewModel = new CommentViewModel
+            {
+                CommentId = comment.CommentId, // Adjust property name based on your Comment entity
+                Content = comment.Content,
+                CreatedAt = comment.CreatedAt,
+                UpdatedAt = comment.UpdatedAt, // Make sure this exists in your Comment entity
+                UpvoteCount = comment.UpvoteCount,
+                DownvoteCount = comment.DownvoteCount,
+                IsEdited = comment.IsEdited, // Adjust if this property exists
+                IsDeleted = comment.IsDeleted,
+                TreeLevel = depth,
+
+                // Author properties
+                UserId = comment.UserId?.ToString(), // Convert to string if needed
+                AuthorDisplayName = comment.User?.UserName ?? "Unknown",
+                AuthorInitials = GetUserInitials(comment.User?.UserName ?? "Unknown"),
+                //IsAuthorVerified = comment.User.IsVerified ?? false, // Adjust based on your User entity
+
+                // Parent comment
+                ParentCommentId = comment.ParentCommentId,
+
+                // User interaction properties - you'll need to set these based on current user context
+                CurrentUserVote = null, // Set this based on current user's vote if available
+                IsCurrentUserAuthor = false, // Set this based on current user context
+
+                ChildComments = new List<CommentViewModel>()
+            };
+
+            // Get child comments from lookup and build them recursively
+            var childComments = commentLookup[comment.CommentId]
+                .OrderByDescending(c => c.UpvoteCount - c.DownvoteCount)
+                .ThenByDescending(c => c.CreatedAt);
+
+            foreach (var childComment in childComments)
+            {
+                var childCommentViewModel = BuildCommentViewModelFromMemory(childComment, commentLookup, depth + 1);
+                commentViewModel.ChildComments.Add(childCommentViewModel);
+            }
+
+            // Create the tree view model
+            var viewModel = new CommentTreeViewModel
+            {
+                Comment = commentViewModel,
+                Depth = depth,
+                Children = new List<CommentTreeViewModel>()
+            };
+
+            // Build child tree view models
+            foreach (var childComment in childComments)
+            {
+                var childTree = BuildCommentTreeFromMemory(childComment, commentLookup, depth + 1);
+                viewModel.Children.Add(childTree);
+            }
+
+            return viewModel;
+        }
+
+        private CommentViewModel BuildCommentViewModelFromMemory(Comment comment, ILookup<int?, Comment> commentLookup, int treeLevel)
+        {
+            var commentViewModel = new CommentViewModel
+            {
+                CommentId = comment.CommentId,
+                Content = comment.Content,
+                CreatedAt = comment.CreatedAt,
+                UpdatedAt = comment.UpdatedAt,
+                UpvoteCount = comment.UpvoteCount,
+                DownvoteCount = comment.DownvoteCount,
+                IsEdited = comment.IsEdited,
+                IsDeleted = comment.IsDeleted,
+                TreeLevel = treeLevel,
+
+                // Author properties
+                UserId = comment.UserId?.ToString(),
+                AuthorDisplayName = comment.User?.UserName ?? "Unknown",
+                AuthorInitials = GetUserInitials(comment.User?.UserName ?? "Unknown"),
+                //IsAuthorVerified = comment.User?.IsVerified ?? false,
+
+                // Parent comment
+                ParentCommentId = comment.ParentCommentId,
+
+                // User interaction properties
+                CurrentUserVote = null, // Set based on current user context
+                IsCurrentUserAuthor = false, // Set based on current user context
+
+                ChildComments = new List<CommentViewModel>()
+            };
+
+            // Recursively build child comments
+            var childComments = commentLookup[comment.CommentId]
+                .OrderByDescending(c => c.UpvoteCount - c.DownvoteCount)
+                .ThenByDescending(c => c.CreatedAt);
+
+            foreach (var childComment in childComments)
+            {
+                var childCommentViewModel = BuildCommentViewModelFromMemory(childComment, commentLookup, treeLevel + 1);
+                commentViewModel.ChildComments.Add(childCommentViewModel);
+            }
+
+            return commentViewModel;
+        }
+
+        private static string GetUserInitials(string userName)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+                return "?";
+
+            var parts = userName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return string.Join("", parts.Take(2).Select(p => p[0])).ToUpper();
+        }
+
         private async Task<CommentTreeViewModel> BuildCommentTree(Comment comment, int depth)
         {
-            var userProfile = await _context.UserProfiles
+            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+
+            var userProfile = await dbContext.UserProfiles
                 .FirstOrDefaultAsync(up => up.UserId == comment.UserId);
 
             var viewModel = MapToCommentViewModel(comment, userProfile);
@@ -221,7 +364,7 @@ namespace discussionspot9.Services
 
             if (depth < 10)
             {
-                var childComments = await _context.Comments
+                var childComments = await dbContext.Comments
                     .Where(c => c.ParentCommentId == comment.CommentId && !c.IsDeleted)
                     .OrderByDescending(c => c.Score)
                     .ToListAsync();

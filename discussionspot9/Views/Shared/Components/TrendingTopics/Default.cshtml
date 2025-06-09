@@ -1,0 +1,19 @@
+﻿@using discussionspot9.Models.ViewModels.HomePage
+@model List<TrendingTopicViewModel>
+
+<div class="sidebar-card">
+    <div class="sidebar-header">
+        <i class="fas fa-fire me-2"></i> Trending
+    </div>
+    <div class="sidebar-content">
+        <ul class="trending-topics">
+            @for (var i = 0; i < Model.Count; i++)
+            {
+                <li>
+                    <span class="trending-number">@(i + 1)</span>
+                    @Model[i].Title
+                </li>
+            }
+        </ul>
+    </div>
+</div>

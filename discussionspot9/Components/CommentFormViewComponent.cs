@@ -1,7 +1,7 @@
 ﻿// ViewComponents/CommentFormViewComponent.cs
 using Microsoft.AspNetCore.Mvc;
 
-namespace discussionspot9.ViewComponents
+namespace discussionspot9.Components
 {
     public class CommentFormViewComponent : ViewComponent
     {

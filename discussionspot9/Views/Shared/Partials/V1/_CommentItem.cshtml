@@ -1,0 +1,60 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommentTreeViewModel
+@using discussionspot9.Helpers;
+
+<div class="comment-item">
+    <div class="comment-content" style="margin-left: @(Model.Depth * 2.5)rem;">
+        @* Indent comments based on depth *@
+        <div class="comment-meta">
+            @* Assuming AuthorInitials and ToAvatarColor are C# extension methods/helpers *@
+            <div class="user-avatar @(Model.Depth > 0 ? "small" : "")" style="background-color: @(Model.Comment.AuthorDisplayName.ToAvatarColor())">
+                @Model.Comment.AuthorInitials
+            </div>
+            <span class="comment-author">@Model.Comment.AuthorDisplayName</span>
+            <span class="comment-time">@Model.Comment.TimeAgo @(Model.Comment.IsEdited ? "(edited)" : "")</span>
+        </div>
+        <div class="comment-text">
+            @Html.Raw(Model.Comment.Content) @* Use Html.Raw if comments can contain HTML *@
+        </div>
+        <div class="comment-actions">
+            <div class="comment-vote">
+                <button class="comment-vote-btn upvote @(Model.Comment.CurrentUserVote == 1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="1">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <span class="comment-vote-count" id="commentVote-@Model.Comment.CommentId">@Model.Comment.Score</span>
+                <button class="comment-vote-btn downvote @(Model.Comment.CurrentUserVote == -1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="-1">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+            </div>
+            <button class="comment-reply-btn" data-comment-id="@Model.Comment.CommentId">
+                <i class="fas fa-reply"></i>
+                <span>Reply</span>
+            </button>
+        </div>
+
+        <!-- Reply Form -->
+        <div class="reply-form" id="replyForm@Model.Comment.CommentId">
+            <div class="d-flex gap-2">
+                @* Assuming User object is available from ASP.NET Core Identity for current user *@
+                <div class="user-avatar small" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
+                    @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
+                </div>
+                <textarea class="form-control" placeholder="Write a reply..." data-comment-id="@Model.Comment.CommentId"></textarea>
+            </div>
+            <div class="reply-form-actions">
+                <button class="reply-cancel-btn" data-comment-id="@Model.Comment.CommentId">Cancel</button>
+                <button class="reply-submit-btn" data-comment-id="@Model.Comment.CommentId">Reply</button>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Children != null && Model.Children.Any())
+    {
+        <div class="comment-replies">
+            @foreach (var childCommentTree in Model.Children)
+            {
+                @* Recursively call the same partial for child comments *@
+                @await Html.PartialAsync("Partials/V1/_CommentItem", childCommentTree)
+            }
+        </div>
+    }
+</div>

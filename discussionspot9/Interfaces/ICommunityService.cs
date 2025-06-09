@@ -11,5 +11,13 @@ namespace discussionspot9.Interfaces
         Task<CreateCommunityResult> CreateCommunityAsync(CreateCommunityViewModel model);
         Task<ServiceResult> ToggleMembershipAsync(int communityId, string userId);
         Task<List<MemberViewModel>> GetCommunityMembersAsync(int communityId, int page = 1);
+        Task<bool> IsCommunityMemberAsync(int communityId, string userId);
+        Task<bool> IsCommunityAdminAsync(int communityId, string userId);
+        Task<bool> IsCommunityModeratorAsync(int communityId, string userId);
+        Task<ServiceResult> UpdateCommunityDetailsAsync(CommunityDetailViewModel model);
+        Task<ServiceResult> DeleteCommunityAsync(int communityId, string userId);
+        Task<ServiceResult> BanUserFromCommunityAsync(int communityId, string userIdToBan, string moderatorId);
+        Task<ServiceResult> PromoteDemoteCommunityMemberAsync(int communityId, string userId, string newRole, string moderatorId);
+        Task<string?> GetCommunityMemberRoleAsync(int communityId, string userId);
     }
 }

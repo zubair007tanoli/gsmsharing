@@ -200,22 +200,70 @@ namespace discussionspot9.Services
                 return new GiveAwardResult { Success = false, Message = ex.Message };
             }
         }
+
+        private static string GetUserInitials(string userName)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+                return "?";
+
+            var parts = userName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return string.Join("", parts.Take(2).Select(p => p[0])).ToUpper();
+        }
+
         public async Task<bool> IsPostSavedByUserAsync(int postId, string userId)
         {
-            return false;
+            return await _context.SavedPosts.AnyAsync(sp => sp.PostId == postId && sp.UserId == userId);
         }
+
         public async Task<SavePostResult> ToggleSavePostAsync(int postId, string userId)
         {
             try
             {
-                // Implementation depends on your SavedPosts table structure
-                // For now, return a basic result
-                return new SavePostResult
+                var existingSavedPost = await _context.SavedPosts.FirstOrDefaultAsync(sp => sp.PostId == postId && sp.UserId == userId);
+
+                if (existingSavedPost != null)
                 {
-                    Success = true,
-                    IsSaved = true,
-                    Message = "Post saved successfully"
-                };
+                    // Post is already saved, so unsave it
+                    _context.SavedPosts.Remove(existingSavedPost);
+                    await _context.SaveChangesAsync();
+                    return new SavePostResult
+                    {
+                        Success = true,
+                        IsSaved = false,
+                        Message = "Post unsaved successfully"
+                    };
+                }
+                else
+                {
+                    // Post is not saved, so save it
+                    var post = await _context.Posts.FindAsync(postId);
+                    if (post == null)
+                    {
+                        return new SavePostResult
+                        {
+                            Success = false,
+                            Message = "Post not found"
+                        };
+                    }
+
+                    var newSavedPost = new SavedPost
+                    {
+                        PostId = postId,
+                        UserId = userId,
+                        SavedAt = DateTime.UtcNow
+                    };
+                    _context.SavedPosts.Add(newSavedPost);
+                    await _context.SaveChangesAsync();
+                    return new SavePostResult
+                    {
+                        Success = true,
+                        IsSaved = true,
+                        Message = "Post saved successfully"
+                    };
+                }
             }
             catch (Exception ex)
             {
@@ -223,7 +271,7 @@ namespace discussionspot9.Services
                 return new SavePostResult
                 {
                     Success = false,
-                    Message = "Failed to save post"
+                    Message = "Failed to toggle save status for post"
                 };
             }
         }
@@ -673,19 +721,23 @@ namespace discussionspot9.Services
             }
         }
 
-        public Task<PollViewModel?> GetPollDataAsync(int postId)
+        public async Task<PollViewModel?> GetPollDataAsync(int postId)
         {
-            throw new NotImplementedException();
+            return await GetPollDetailsAsync(postId, null); // Re-use the existing method
         }
 
-        public Task<bool> HasUserVotedInPollAsync(int postId, string userId)
+        public async Task<bool> HasUserVotedInPollAsync(int postId, string userId)
         {
-            throw new NotImplementedException();
+            return await _context.PollVotes
+                .AnyAsync(pv => pv.UserId == userId && pv.PollOption.PostId == postId);
         }
 
-       public Task<List<int>> GetUserPollVotesAsync(int postId, string userId)
-       {
-            throw new NotImplementedException();
-       }
+        public async Task<List<int>> GetUserPollVotesAsync(int postId, string userId)
+        {
+            return await _context.PollVotes
+                .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
+                .Select(pv => pv.PollOptionId)
+                .ToListAsync();
+        }
     }
 }

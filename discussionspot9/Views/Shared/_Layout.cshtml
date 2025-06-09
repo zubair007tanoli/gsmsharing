@@ -22,7 +22,9 @@
 <link rel="stylesheet" href="~/css/All_Posts.css" />
 <link rel="stylesheet" href="~/css/Improve.css" />
 <link rel="stylesheet" href="~/css/dark-mode.css" /> *@
+@await RenderSectionAsync("Styles", required: false)
     @await RenderSectionAsync("customFiles", required: false)
+    @await RenderSectionAsync("HeadScripts",required:false)
 </head>
 <body>
     <header class="main-header sticky-top">

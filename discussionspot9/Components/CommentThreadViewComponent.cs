@@ -20,7 +20,7 @@ namespace discussionspot9.Components
             ViewBag.Sort = sort;
             ViewBag.Page = page;
 
-            return View(comments);
+            return View();
         }
     }
 }

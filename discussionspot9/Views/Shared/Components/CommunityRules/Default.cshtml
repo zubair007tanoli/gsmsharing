@@ -1,0 +1,18 @@
+﻿@model List<string>
+
+<div class="sidebar-card">
+    <div class="sidebar-header">
+        <i class="fas fa-gavel me-2"></i> Community Rules
+    </div>
+    <div class="sidebar-content">
+        <ul class="community-rules">
+            @for (var i = 0; i < Model.Count; i++)
+            {
+                <li>
+                    <span class="rule-number">@(i + 1).</span>
+                    @Model[i]
+                </li>
+            }
+        </ul>
+    </div>
+</div>

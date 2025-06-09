@@ -7,6 +7,6 @@ public class CommentSectionViewComponent : ViewComponent
     public IViewComponentResult Invoke(List<CommentTreeViewModel> comments, int postId)
     {
         ViewData["PostId"] = postId;
-        return View(comments);
+        return View();
     }
 }

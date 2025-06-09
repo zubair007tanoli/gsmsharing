@@ -1,11 +1,17 @@
-﻿namespace discussionspot9.Models.ViewModels.CreativeViewModels
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
     public class CommunityDetailViewModel
     {
         public int CommunityId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Community title is required.")]
+        [StringLength(200, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 200 characters.")]
         public string Title { get; set; } = string.Empty;
+
+        [StringLength(4000, ErrorMessage = "Description cannot exceed 4000 characters.")]
         public string? Description { get; set; }
         public string? IconUrl { get; set; }
         public string? BannerUrl { get; set; }
@@ -30,7 +36,12 @@
         public string? CurrentUserRole { get; set; }
 
         // Moderators
-        public List<ModeratorViewModel> Moderators { get; set; } = new();
+        public List<ModeratorViewModel> Moderators { get; set; } = new();   
+
+        public int? CategoryId { get; set; }
+     
+        // This will be set by the controller based on authenticated user
+        public string? CurrentUserId { get; set; }
 
         // Formatted properties
         public string FormattedMemberCount => FormatCount(MemberCount);

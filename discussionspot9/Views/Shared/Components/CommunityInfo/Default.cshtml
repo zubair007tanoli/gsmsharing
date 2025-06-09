@@ -1,0 +1,35 @@
+﻿@using discussionspot9.Models.ViewModels.CreativeViewModels
+@model CommunityViewModel
+
+<div class="sidebar-card">
+    <div class="sidebar-header">
+        <i class="fas fa-info-circle me-2"></i> About r/@Model.Name
+    </div>
+    <div class="sidebar-content">
+        <p>@Model.Description</p>
+
+        <div class="community-stats">
+            <div class="stat-item">
+                <div class="stat-value">@Model.MemberCount.ToString("N0")</div>
+                <div class="stat-label">Members</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">@Model.OnlineCount.ToString("N0")</div>
+                <div class="stat-label">Online</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">@Model.CreatedAt.Year</div>
+                <div class="stat-label">Created</div>
+            </div>
+        </div>
+
+        <div class="community-buttons">
+            <button class="community-btn join-btn">
+                <i class="fas fa-plus me-2"></i> Join
+            </button>
+            <a href="#" class="community-btn create-post-btn text-decoration-none">
+                <i class="fas fa-pen me-2"></i> Create Post
+            </a>
+        </div>
+    </div>
+</div>

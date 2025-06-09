@@ -1,5 +1,6 @@
 ﻿using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,9 +29,55 @@ namespace discussionspot9.Controllers
             _logger = logger;
             _notificationService = notificationService;
         }
+        [HttpGet]
+        [Route("r/{communitySlug}/posts/{postSlug}/test")]
+        public async Task<IActionResult> DetailTestPage(string communitySlug, string postSlug)
+        {
+            var postDetails = await _postService.GetPostDetailsAsync(communitySlug, postSlug);
+            if (postDetails == null)
+                return NotFound();
 
-        public IActionResult DetailTestPage() {             // This is a placeholder for the test page
-            return View();
+            string? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                postDetails.CurrentUserVote = await _postService.GetUserVoteAsync(postDetails.PostId, userId);
+                postDetails.IsCurrentUserAuthor = postDetails.UserId == userId;
+                postDetails.IsSavedByUser = await _postService.IsPostSavedByUserAsync(postDetails.PostId, userId);
+            }
+
+            var communityDetailsTask = _communityService.GetCommunityDetailsAsync(communitySlug);
+            var commentsTask = _commentService.GetPostCommentsAsync(postDetails.PostId);
+            //var relatedPostsTask = _postService.GetRelatedPostsAsync(postDetails.PostId, communitySlug, 3);
+
+            await Task.WhenAll(communityDetailsTask, commentsTask);
+
+            var model = new PostDetailPageViewModel
+            {
+                Post = postDetails,
+                CommunitySlug = communitySlug,
+                PostSlug = postSlug,
+                Community = communityDetailsTask.Result,
+                Comments = commentsTask.Result,
+                //RelatedPosts = relatedPostsTask.Result
+            };
+
+            if (postDetails.PostType == "poll" && postDetails.HasPoll)
+            {
+                var pollDetails = await _postService.GetPollDetailsAsync(postDetails.PostId, userId);
+                postDetails.Poll = new PollViewModel
+                {
+                    Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                    {
+                        OptionText = option.OptionText,
+                        VoteCount = option.VoteCount
+                    }).ToList()
+                };
+            }
+
+            await _postService.IncrementViewCountAsync(postDetails.PostId);
+
+            return View(model);
         }
         public async Task<IActionResult> AllPostTestAsync(string sort = "hot", string time = "all", int page = 1)
         {
@@ -187,7 +234,18 @@ namespace discussionspot9.Controllers
                 // Load poll data if it's a poll post
                 if (post.PostType == "poll" && post.HasPoll)
                 {
-                    post.Poll = await _postService.GetPollDetailsAsync(post.PostId, userId);
+                    var pollDetails = await _postService.GetPollDetailsAsync(post.PostId, userId);
+                    if (pollDetails != null)
+                    {
+                        post.Poll = new PollViewModel
+                        {
+                            Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                            {
+                                OptionText = option.OptionText,
+                                VoteCount = option.VoteCount
+                            }).ToList()
+                        };
+                    }
                 }
 
                 // Load awards

@@ -18,7 +18,7 @@
         public bool IsLocked { get; set; }
         public bool IsNSFW { get; set; }
         public bool IsSpoiler { get; set; }
-        public string PostUrl => $"/r/{CommunitySlug}/posts/{Slug}";
+        public string PostUrl => $"/r/{CommunitySlug}/posts/{Slug}/test";
         public string AuthorUrl => $"/u/{AuthorDisplayName}";
         public bool IsSavedByUser { get; set; }
         public int Score => UpvoteCount - DownvoteCount;

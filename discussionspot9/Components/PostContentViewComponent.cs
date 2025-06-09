@@ -2,14 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 
-namespace discussionspot9.ViewComponents
+namespace discussionspot9.Components
 {
     public class PostContentViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke(PostDetailViewModel post, string communitySlug)
+        public IViewComponentResult Invoke()
         {
-            ViewData["CommunitySlug"] = communitySlug;
-            return View(post);
+           return View();
         }
     }
 }

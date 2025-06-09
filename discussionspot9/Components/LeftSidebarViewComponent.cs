@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using System.Collections.Generic;
 
-namespace discussionspot9.ViewComponents
+namespace discussionspot9.Components
 {
+    [ViewComponent(Name = "LeftSideBar")]
     public class LeftSidebarViewComponent : ViewComponent
     {
         public IViewComponentResult Invoke(string communitySlug)
@@ -17,7 +18,7 @@ namespace discussionspot9.ViewComponents
                 TrendingCommunities = new List<CommunityCardViewModel>()
             };
 
-            return View(model);
+            return View();
         }
     }
 }

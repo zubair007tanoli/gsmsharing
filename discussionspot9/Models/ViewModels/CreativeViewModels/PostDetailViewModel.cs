@@ -45,7 +45,8 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public List<MediaViewModel> Media { get; set; } = new();
 
         // Poll (if applicable)
-        public PollViewModel? Poll { get; set; }
+        //public PollViewModel? Poll { get; set; }
+        public PollViewModel Poll { get; set; } = new();
 
         // Awards
         public List<PostAwardViewModel> Awards { get; set; } = new();

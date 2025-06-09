@@ -24,19 +24,7 @@ namespace discussionspot9.Models.ViewModels
         [DataType(DataType.Password)]
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; } = null!;
-
-        [StringLength(500)]
-        [Display(Name = "Bio (Optional)")]
-        public string? Bio { get; set; }
-
-        [StringLength(100)]
-        [Display(Name = "Location (Optional)")]
-        public string? Location { get; set; }
-
-        [Url]
-        [Display(Name = "Website (Optional)")]
-        public string? Website { get; set; }
+        public string ConfirmPassword { get; set; } = null!;     
 
         [Display(Name = "I agree to the Terms of Service and Privacy Policy")]
         [Range(typeof(bool), "true", "true", ErrorMessage = "You must agree to the terms and conditions")]
