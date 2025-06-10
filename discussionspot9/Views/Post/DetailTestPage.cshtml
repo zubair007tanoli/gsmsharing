@@ -1183,18 +1183,18 @@
                         }
 
                         @* Render Link Preview if link data is present *@
-                        @if (!string.IsNullOrWhiteSpace(Model.Post.LinkDomain) && !string.IsNullOrWhiteSpace(Model.Post.LinkDomain))
+                        @if (!string.IsNullOrWhiteSpace(Model.Post.Url) && !string.IsNullOrWhiteSpace(Model.Post.Url))
                         {
-                            <a href="@Model.Post.PostUrl" target="_blank" rel="noopener noreferrer" class="link-preview">
+                            <a href="@Model.Post.Url" target="_blank" rel="noopener noreferrer" class="link-preview">
                                 <div class="link-thumbnail">
-                                    <img src="@(Model.Post.LinkPreviewImage ?? "https://placehold.co/150x150/cccccc/333333?text=Link")" alt="Link Thumbnail">
+                                    <img src="@(Model.Post.LinkModel.ThumbnailUrl ?? "https://placehold.co/150x150/cccccc/333333?text=Link")" alt="Link Thumbnail">
                                 </div>
                                 <div class="link-content">
-                                    <div class="link-title">@Model.Post.LinkPreviewImage</div> @* Assuming title is populated via link preview or similar *@
-                                    <div class="link-description">@Model.Post.LinkPreviewDescription</div>
+                                    <div class="link-title">@Model.Post.LinkModel.Title</div> @* Assuming title is populated via link preview or similar *@
+                                    <div class="link-description">@Model.Post.LinkModel.Description</div>
                                     <div class="link-url">
                                         <i class="fas fa-link"></i>
-                                        <span>@Model.Post.LinkDomain</span>
+                                        <span>@Model.Post.LinkModel.Url</span>
                                     </div>
                                 </div>
                             </a>
@@ -1265,6 +1265,8 @@
                         </div>
                     </div>
                 </div>
+                <!-- Toast container for notifications -->
+                <div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;"></div>
 
                 <!-- Main Comment Form -->
                 <div class="main-comment-form">
@@ -1274,13 +1276,20 @@
                         <div class="user-avatar" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
                             @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
                         </div>
+
+                        <!-- Typing indicators -->
+                        <div id="typing-indicators" class="mb-2"></div>
+
                         <textarea class="form-control" placeholder="What are your thoughts?" id="mainCommentContent"></textarea>
                     </div>
                     <div class="d-flex justify-content-end">
                         <button class="btn btn-primary" id="submitMainComment" data-post-id="@Model.Post.PostId">Comment</button>
                     </div>
                 </div>
-
+                <!-- Comments container -->
+                <div id="comments-container">
+                    <!-- Comments will be populated here -->
+                </div>
                 <!-- Comment Section - Render as a ViewComponent -->
                 @await Component.InvokeAsync("CommentList", new { postId = Model.Post.PostId })
             </div>
@@ -1309,8 +1318,10 @@
 </div>
 
 @section Scripts {
-    <!-- Bootstrap JS and Popper.js - ensure this is loaded either here or in your _Layout.cshtml -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Include SignalR and your script -->
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/SignalR_Script/Post_Script_Real_Time.js"></script>
+
 
     <script>
         // Post voting functionality
@@ -1594,37 +1605,36 @@
             const commentContent = document.getElementById('mainCommentContent').value;
 
             if (!commentContent.trim()) {
-                // You might want to show a more user-friendly warning here (e.g., a Bootstrap toast)
                 console.warn("Comment content cannot be empty.");
                 return;
             }
 
             try {
-                const response = await fetch(`/api/comments`, { // Adjust API endpoint for comment submission
+                // Get the anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                const response = await fetch(`/Comment/Create`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // Add Anti-forgery token if using
+                        'RequestVerificationToken': token // Add anti-forgery token
                     },
-                    body: JSON.stringify({ postId: postId, content: commentContent, parentCommentId: null }) // parentCommentId null for main comments
+                    body: JSON.stringify({
+                        postId: postId,
+                        content: commentContent,
+                        parentCommentId: null
+                    })
                 });
 
                 if (response.ok) {
-                    // Comment submitted successfully.
-                    document.getElementById('mainCommentContent').value = ''; // Clear textarea
-                    // In a real application, you'd want to dynamically add the new comment to the list
-                    // or refresh the comments section. For now, a console log.
+                    document.getElementById('mainCommentContent').value = '';
                     console.log('Comment submitted successfully!');
-                    // Optionally, trigger a refresh of the CommentList ViewComponent
-                    // Example (requires a way to trigger VC refresh, often via AJAX and re-rendering a div):
-                    // await refreshCommentList(postId);
                 } else {
-                    console.error('Failed to submit comment:', response.statusText);
-                    // Show error to user
+                    const errorText = await response.text();
+                    console.error('Failed to submit comment:', response.status, errorText);
                 }
             } catch (error) {
                 console.error('Error submitting comment:', error);
-                // Show error to user
             }
         });
     </script>

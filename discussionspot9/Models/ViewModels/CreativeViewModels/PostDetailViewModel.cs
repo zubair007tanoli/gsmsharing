@@ -55,6 +55,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public int? CurrentUserVote { get; set; }
         public bool IsCurrentUserAuthor { get; set; }
 
+        public LinkPreviewViewModel LinkModel = new();
         // Calculated properties
         public int Score => UpvoteCount - DownvoteCount;
         public string TimeAgo => GetTimeAgo(CreatedAt);

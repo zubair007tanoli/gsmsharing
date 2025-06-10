@@ -4,6 +4,7 @@ using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Security.Claims;
 
 namespace discussionspot9.Controllers
@@ -15,19 +16,21 @@ namespace discussionspot9.Controllers
         private readonly ICommentService _commentService;
         private readonly ILogger<PostController> _logger;
         private readonly INotificationService _notificationService;
-
+        private readonly ILinkMetadataService _metadataService;
         public PostController(
             IPostService postService,
             ICommunityService communityService,
             ICommentService commentService,
             ILogger<PostController> logger,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ILinkMetadataService metadataService)
         {
             _postService = postService;
             _communityService = communityService;
             _commentService = commentService;
             _logger = logger;
             _notificationService = notificationService;
+            _metadataService = metadataService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}/test")]
@@ -61,6 +64,19 @@ namespace discussionspot9.Controllers
                 Comments = commentsTask.Result,
                 //RelatedPosts = relatedPostsTask.Result
             };
+
+            if(model.Post.PostType == "link")
+            {
+                var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
+                model.Post.LinkModel = new LinkPreviewViewModel
+                {
+                    Title = metadata.Title,
+                    Description = metadata.Description,
+                    ThumbnailUrl = metadata.ThumbnailUrl,
+                    Domain = metadata.Domain
+                };
+
+            }
 
             if (postDetails.PostType == "poll" && postDetails.HasPoll)
             {

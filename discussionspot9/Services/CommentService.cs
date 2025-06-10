@@ -407,5 +407,10 @@ namespace discussionspot9.Services
             if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
             return (parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpper();
         }
+
+        Task ICommentService.UpdateCommentAsync(int commentId, string newContent, string? userId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

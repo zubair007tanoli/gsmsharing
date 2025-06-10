@@ -31,6 +31,6 @@ namespace discussionspot9.Interfaces
         Task<PollViewModel?> GetPollDataAsync(int postId);
         Task<bool> HasUserVotedInPollAsync(int postId, string userId);
         Task<List<int>> GetUserPollVotesAsync(int postId, string userId);
-
+        Task<Post> GetPostByIdAsync(int postId);
     }
 }

@@ -32,7 +32,7 @@ namespace discussionspot9.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateCommentViewModel model)
+        public async Task<IActionResult> Create([FromBody] CreateCommentViewModel request)
         {
             if (!ModelState.IsValid)
             {
@@ -47,9 +47,9 @@ namespace discussionspot9.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                model.UserId = userId;
+                request.UserId = userId;
 
-                var result = await _commentService.CreateCommentAsync(model);
+                var result = await _commentService.CreateCommentAsync(request);
 
                 if (result.Success)
                 {
@@ -60,7 +60,7 @@ namespace discussionspot9.Controllers
                         return Json(new { success = false, message = "Failed to retrieve the created comment." });
                     }
                     // Render the comment partial view
-                    var html = await RenderPartialViewToString("_Comment", comment);
+                    var html = await RenderPartialViewToString("Partials/_CommentItem", comment);
 
                     return Json(new
                     {

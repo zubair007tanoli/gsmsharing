@@ -739,5 +739,10 @@ namespace discussionspot9.Services
                 .Select(pv => pv.PollOptionId)
                 .ToListAsync();
         }
+
+        public async Task<Post> GetPostByIdAsync(int postId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
