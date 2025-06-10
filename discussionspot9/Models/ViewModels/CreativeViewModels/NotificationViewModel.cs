@@ -28,6 +28,8 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
 
         public bool IsRead { get; set; }
 
+        public string? Url { get; set; }
+
         [DataType(DataType.DateTime)]
         public DateTime CreatedAt { get; set; }
     }

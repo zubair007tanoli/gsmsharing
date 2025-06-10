@@ -16,7 +16,7 @@ namespace discussionspot9.Components
             _userManager = userManager;
             _context = context;
         }
-            
+
         public async Task<IViewComponentResult> InvokeAsync()
         {
             var model = new HeaderViewModel();
@@ -67,12 +67,109 @@ namespace discussionspot9.Components
                         EntityType = n.EntityType,
                         EntityId = n.EntityId,
                         IsRead = n.IsRead,
-                        CreatedAt = n.CreatedAt
+                        CreatedAt = n.CreatedAt,
+                        Url = GenerateNotificationUrl(n) // Add URL generation
                     }).ToList();
                 }
             }
 
             return View(model);
+        }
+
+        private string GenerateNotificationUrl(dynamic notification)
+        {
+            var urlHelper = Url;
+
+            switch (notification.EntityType?.ToLower())
+            {
+                case "post":
+                    // For posts, we need community slug and post slug
+                    // You'll need to get these from your database
+                    return GetPostUrl(notification.EntityId, urlHelper);
+
+                case "community":
+                    // For communities: r/{slug}
+                    return GetCommunityUrl(notification.EntityId, urlHelper);
+
+                case "user":
+                    // For users: u/{displayName}
+                    return GetUserUrl(notification.EntityId, urlHelper);
+
+                case "comment":
+                    // For comments, link to the post with comment anchor
+                    return GetCommentUrl(notification.EntityId, urlHelper);
+
+                default:
+                    // Default fallback - you might want to create a notifications route
+                    return urlHelper.Action("Index", "Home");
+            }
+        }
+
+        private string GetPostUrl(string postId, IUrlHelper urlHelper)
+        {
+            // You'll need to fetch the post and community details from database
+            var postDetails = _context.Posts
+                .Include(p => p.Community)
+                .FirstOrDefault(p => p.PostId.ToString() == postId);
+
+            if (postDetails != null)
+            {
+                return urlHelper.RouteUrl("community_posts", new
+                {
+                    communitySlug = postDetails.Community.Slug,
+                    postSlug = postDetails.Slug
+                });
+            }
+
+            return urlHelper.Action("Index", "Home");
+        }
+
+        private string GetCommunityUrl(string communityId, IUrlHelper urlHelper)
+        {
+            var community = _context.Communities
+                .FirstOrDefault(c => c.CommunityId.ToString() == communityId);
+
+            if (community != null)
+            {
+                return urlHelper.RouteUrl("community_detail", new { slug = community.Slug });
+            }
+
+            return urlHelper.Action("Index", "Community");
+        }
+
+        private string GetUserUrl(string userId, IUrlHelper urlHelper)
+        {
+            var userProfile = _context.UserProfiles
+                .FirstOrDefault(u => u.UserId == userId);
+
+            if (userProfile != null)
+            {
+                return urlHelper.RouteUrl("user_profile", new { displayName = userProfile.DisplayName });
+            }
+
+            return urlHelper.Action("Index", "Home");
+        }
+
+        private string GetCommentUrl(string commentId, IUrlHelper urlHelper)
+        {
+            // Get comment and its associated post
+            var comment = _context.Comments
+                .Include(c => c.Post)
+                .ThenInclude(p => p.Community)
+                .FirstOrDefault(c => c.CommentId.ToString() == commentId);
+
+            if (comment != null)
+            {
+                var postUrl = urlHelper.RouteUrl("community_posts", new
+                {
+                    communitySlug = comment.Post.Community.Slug,
+                    postSlug = comment.Post.Slug
+                });
+
+                return $"{postUrl}#comment-{commentId}";
+            }
+
+            return urlHelper.Action("Index", "Home");
         }
     }
 }

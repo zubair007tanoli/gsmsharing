@@ -12,6 +12,7 @@ namespace discussionspot9.Models.Domain
         public string? EntityType { get; set; }
         public string? EntityId { get; set; }
         public bool IsRead { get; set; }
+        public string? Url { get; set; }
         public DateTime CreatedAt { get; set; }
 
         // Navigation properties
