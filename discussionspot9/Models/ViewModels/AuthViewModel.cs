@@ -5,7 +5,10 @@
         /// <summary>
         /// Registration model
         /// </summary>
-        public RegisterViewModel RegisterModel { get; set; } = new RegisterViewModel();
+        public RegisterViewModel RegisterModel { get; set; } = new RegisterViewModel()
+        {
+            AgreeToTerms = false // Default to true for new registrations
+        };
 
         /// <summary>
         /// Login model

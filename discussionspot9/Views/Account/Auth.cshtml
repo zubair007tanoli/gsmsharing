@@ -374,11 +374,11 @@
                         </div>
 
                         <div class="form-check mb-4">
-                            <input class="form-check-input" asp-for="RegisterModel.AgreeToTerms" type="checkbox" id="agreeTerms" required>
+                            <input class="form-check-input" asp-for="RegisterModel.AgreeToTerms" type="checkbox" id="agreeTerms">
                             <label class="form-check-label" for="agreeTerms">
                                 I agree to the <a href="/terms" class="text-decoration-none">Terms of Service</a> and <a href="/privacy" class="text-decoration-none">Privacy Policy</a>
                             </label>
-                            <span asp-validation-for="RegisterModel.AgreeToTerms" class="text-danger"></span>
+                            <span asp-validation-for="RegisterModel.AgreeToTerms" class="text-danger d-block"></span>
                         </div>
 
 
