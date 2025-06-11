@@ -3,6 +3,7 @@
     public class PostCardViewModel
     {
         public int PostId { get; set; }
+        public string AuthorId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public string? Content { get; set; }

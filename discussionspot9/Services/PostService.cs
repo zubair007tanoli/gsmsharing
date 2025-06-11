@@ -32,11 +32,19 @@ namespace discussionspot9.Services
             var skip = (page - 1) * pageSize;
 
             var query = _context.Posts
-                .Include(p => p.Community)
-                .ThenInclude(c => c!.Category)
-                .Include(p => p.PostTags)
-                .ThenInclude(pt => pt.Tag)
-                .Where(p => p.Status == "published");
+                    .Include(p => p.Community)
+                    .ThenInclude(c => c!.Category)
+                    .Include(p => p.PostTags)
+                    .ThenInclude(pt => pt.Tag)
+                    .Include(p => p.UserProfile)  // Add this line
+                    .Where(p => p.Status == "published");
+
+            //var query = _context.Posts
+            //    .Include(p => p.Community)
+            //    .ThenInclude(c => c!.Category)
+            //    .Include(p => p.PostTags)
+            //    .ThenInclude(pt => pt.Tag)
+            //    .Where(p => p.Status == "published");
 
             // Apply time filter for "top" sort
             if (sort == "top" && time != "all")
@@ -614,7 +622,7 @@ namespace discussionspot9.Services
         {
             var viewModel = new PostCardViewModel
             {
-                PostId = p.PostId,
+                PostId = p.PostId,                
                 Title = p.Title,
                 Slug = p.Slug,
                 Content = p.Content,
@@ -630,10 +638,10 @@ namespace discussionspot9.Services
                 IsLocked = p.IsLocked,
                 IsNSFW = p.IsNSFW,
                 IsSpoiler = p.IsSpoiler,
-                AuthorDisplayName = "Unknown", // This should be fetched from UserProfile
+                AuthorDisplayName = p.UserProfile.DisplayName, // This should be fetched from UserProfile
                 AuthorInitials = GetInitials("Unknown"),
                 CommunityName = p.Community!.Name,
-                CommunitySlug = p.Community.Slug,
+                CommunitySlug = p.Community.Slug,             
                 Tags = p.PostTags.Select(pt => pt.Tag.Name).ToList(),
                 IsSavedByUser = false // Will be set in the controller
             };

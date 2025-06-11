@@ -192,6 +192,11 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.CommunityId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                entity.HasOne(p => p.UserProfile)
+                       .WithMany()
+                       .HasForeignKey(p => p.UserId)
+                       .OnDelete(DeleteBehavior.SetNull);
+
                 entity.ToTable(t =>
                 {
                     t.HasCheckConstraint("CK_Post_Type", "PostType IN ('text', 'link', 'image', 'video', 'poll')");
