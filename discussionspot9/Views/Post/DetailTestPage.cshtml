@@ -1286,10 +1286,7 @@
                         <button class="btn btn-primary" id="submitMainComment" data-post-id="@Model.Post.PostId">Comment</button>
                     </div>
                 </div>
-                <!-- Comments container -->
-                <div id="comments-container">
-                    <!-- Comments will be populated here -->
-                </div>
+           
                 <!-- Comment Section - Render as a ViewComponent -->
                 @await Component.InvokeAsync("CommentList", new { postId = Model.Post.PostId })
             </div>
@@ -1323,7 +1320,7 @@
     <script src="~/js/SignalR_Script/Post_Script_Real_Time.js"></script>
 
 
-    <script>
+   @*  <script>
         // Post voting functionality
         document.querySelectorAll('[id^="upvoteBtn-"], [id^="downvoteBtn-"]').forEach(button => {
             button.addEventListener('click', async function() {
@@ -1637,6 +1634,6 @@
                 console.error('Error submitting comment:', error);
             }
         });
-    </script>
+    </script> *@
 }
 

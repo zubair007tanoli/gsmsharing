@@ -39,6 +39,7 @@ namespace discussionspot9.Controllers
             var postDetails = await _postService.GetPostDetailsAsync(communitySlug, postSlug);
             if (postDetails == null)
                 return NotFound();
+         
 
             string? userId = null;
             if (User.Identity?.IsAuthenticated == true)
@@ -64,8 +65,8 @@ namespace discussionspot9.Controllers
                 Comments = commentsTask.Result,
                 //RelatedPosts = relatedPostsTask.Result
             };
-
-            if(model.Post.PostType == "link")
+            ViewBag.PostId = model.Post.PostId;
+            if (model.Post.PostType == "link")
             {
                 var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
                 model.Post.LinkModel = new LinkPreviewViewModel

@@ -1,10 +1,11 @@
 ﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommentTreeViewModel
 @using discussionspot9.Helpers;
 
-<div class="comment-item" data-comment-id="@Model.Comment.CommentId">
-    <div class="comment-content" style="margin-left: @(Model.Depth * 2.5)rem;">
+<div class="comment-item">
+    <div class="comment-content" id="MainComments" style="margin-left: @(Model.Depth * 2.5)rem;">
         @* Indent comments based on depth *@
         <div class="comment-meta">
+            @* Assuming AuthorInitials and ToAvatarColor are C# extension methods/helpers *@
             <div class="user-avatar @(Model.Depth > 0 ? "small" : "")" style="background-color: @(Model.Comment.AuthorDisplayName.ToAvatarColor())">
                 @Model.Comment.AuthorInitials
             </div>
@@ -12,7 +13,7 @@
             <span class="comment-time">@Model.Comment.TimeAgo @(Model.Comment.IsEdited ? "(edited)" : "")</span>
         </div>
         <div class="comment-text">
-            @Html.Raw(Model.Comment.Content)
+            @Html.Raw(Model.Comment.Content) @* Use Html.Raw if comments can contain HTML *@
         </div>
         <div class="comment-actions">
             <div class="comment-vote">
@@ -29,10 +30,11 @@
                 <span>Reply</span>
             </button>
         </div>
-        <!-- Reply Form -->
 
-        <div class="reply-form d-none" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
+        <!-- Reply Form -->
+        <div class="reply-form" id="replyForm@Model.Comment.CommentId">
             <div class="d-flex gap-2">
+                @* Assuming User object is available from ASP.NET Core Identity for current user *@
                 <div class="user-avatar small" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
                     @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
                 </div>
@@ -50,6 +52,7 @@
         <div class="comment-replies">
             @foreach (var childCommentTree in Model.Children)
             {
+                @* Recursively call the same partial for child comments *@
                 @await Html.PartialAsync("Partials/V1/_CommentItem", childCommentTree)
             }
         </div>

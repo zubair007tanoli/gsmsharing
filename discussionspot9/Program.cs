@@ -38,6 +38,7 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
+builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddSignalR();
 var app = builder.Build();
 

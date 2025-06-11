@@ -12,14 +12,16 @@ namespace discussionspot9.Hubs
         private readonly ICommentService _commentService;
         private readonly INotificationService _notificationService;
         private readonly ILogger<PostHub> _logger;
+        private readonly IViewRenderService _viewRenderService;
 
         public PostHub(IPostService postService, ICommentService commentService,
-                      INotificationService notificationService, ILogger<PostHub> logger)
+                      INotificationService notificationService, ILogger<PostHub> logger, IViewRenderService viewRenderService)
         {
             _postService = postService;
             _commentService = commentService;
             _notificationService = notificationService;
             _logger = logger;
+            _viewRenderService = viewRenderService;
         }
 
         public async Task JoinPostGroup(int postId)
@@ -37,13 +39,19 @@ namespace discussionspot9.Hubs
         [Authorize]
         public async Task SendComment(int postId, string content, int? parentCommentId)
         {
+            var htmlContent = string.Empty;
+            var commentId = 0;
+
             try
             {
                 var userId = GetUserId();
                 var userName = Context.User?.Identity?.Name;
 
                 if (string.IsNullOrEmpty(userId))
-                    throw new UnauthorizedAccessException();
+                {
+                    await Clients.Caller.SendAsync("CommentError", "Unauthorized access");
+                    return;
+                }
 
                 var commentResult = await _commentService.CreateCommentAsync(new CreateCommentViewModel
                 {
@@ -59,19 +67,40 @@ namespace discussionspot9.Hubs
                     return;
                 }
 
-                var comment = await _commentService.GetCommentByIdAsync(commentResult.CommentId);
-                await Clients.Group($"post-{postId}").SendAsync("ReceiveComment", comment);
+                commentId = commentResult.CommentId;
+                var comment = await _commentService.GetCommentByIdAsync(commentId);
 
-                // Send notifications only if not commenting on own content
+                // Calculate depth for proper indentation
+                int depth = 0;
+                if (parentCommentId.HasValue)
+                {
+                    var parentComment = await _commentService.GetCommentByIdAsync(parentCommentId.Value);
+                    depth = parentComment?.TreeLevel + 1 ?? 1;
+                }
+
+                var commentModel = new CommentTreeViewModel()
+                {
+                    Comment = comment,
+                    Children = new List<CommentTreeViewModel>(),
+                    Depth = depth
+                };
+
+                try
+                {
+                    htmlContent = await _viewRenderService.RenderToStringAsync("Partials/V1/_CommentItem", commentModel);
+                }
+                catch (Exception renderEx)
+                {
+                    _logger.LogError(renderEx, "Error rendering comment HTML");
+                    await Clients.Caller.SendAsync("CommentError", "Failed to render comment");
+                    return;
+                }
+
+                // Send notifications (existing code)
                 var post = await _postService.GetPostByIdAsync(postId);
                 if (post != null && post.UserId != userId)
                 {
-                    await SendNotification(
-                        post.UserId,
-                        $"{userName} commented on your post",
-                        postId,
-                        "comment"
-                    );
+                    await SendNotification(post.UserId, $"{userName} commented on your post", postId, "comment");
                 }
 
                 if (parentCommentId.HasValue)
@@ -79,18 +108,16 @@ namespace discussionspot9.Hubs
                     var parentComment = await _commentService.GetCommentByIdAsync(parentCommentId.Value);
                     if (parentComment != null && parentComment.UserId != userId)
                     {
-                        await SendNotification(
-                            parentComment.UserId,
-                            $"{userName} replied to your comment",
-                            postId,
-                            "reply"
-                        );
+                        await SendNotification(parentComment.UserId, $"{userName} replied to your comment", postId, "reply");
                     }
                 }
+
+                await Clients.Group($"post-{postId}").SendAsync("ReceiveComment", htmlContent, commentId, parentCommentId);
+
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending comment");
+                _logger.LogError(ex, "Error sending comment for post {PostId}", postId);
                 await Clients.Caller.SendAsync("CommentError", "Failed to send comment");
             }
         }

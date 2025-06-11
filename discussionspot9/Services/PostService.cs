@@ -750,7 +750,8 @@ namespace discussionspot9.Services
 
         public async Task<Post> GetPostByIdAsync(int postId)
         {
-            throw new NotImplementedException();
+            var posts = await _context.Posts.FindAsync(postId);
+           return posts ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
         }
     }
 }

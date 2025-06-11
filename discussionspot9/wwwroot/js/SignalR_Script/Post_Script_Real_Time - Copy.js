@@ -358,14 +358,14 @@ class SignalRManager {
     // New method to re-bind events for newly added/updated comments
     rebindCommentEvents() {
         // Re-bind vote buttons
-        document.querySelectorAll('.comment-vote-btn').forEach(button => { // Changed selector to .comment-vote-btn
+        document.querySelectorAll('.vote-btn').forEach(button => {
             // Remove any existing click listeners to prevent duplicates
             button.removeEventListener('click', this.handleVoteButtonClick);
             button.addEventListener('click', this.handleVoteButtonClick);
         });
 
-        // Re-bind reply buttons (both .reply-btn and .comment-reply-btn)
-        document.querySelectorAll('.reply-btn, .comment-reply-btn').forEach(button => {
+        // Re-bind reply buttons
+        document.querySelectorAll('.reply-btn').forEach(button => {
             button.removeEventListener('click', this.handleReplyButtonClick);
             button.addEventListener('click', this.handleReplyButtonClick);
         });
@@ -382,16 +382,14 @@ class SignalRManager {
             button.addEventListener('click', this.handleDeleteButtonClick);
         });
 
-        // Re-bind reply form submission (both .reply-comment-form and .reply-submit-btn parent form)
+        // Re-bind reply form submission
         document.querySelectorAll('.reply-comment-form').forEach(form => {
             form.removeEventListener('submit', this.handleReplyFormSubmit);
             form.addEventListener('submit', this.handleReplyFormSubmit);
         });
-        // Note: If .reply-submit-btn is inside a form that's not .reply-comment-form, you might need a separate handler for it.
-        // Assuming .reply-submit-btn is inside a .reply-comment-form.
 
-        // Re-bind cancel reply buttons (both .cancel-reply and .reply-cancel-btn)
-        document.querySelectorAll('.cancel-reply, .reply-cancel-btn').forEach(button => {
+        // Re-bind cancel reply buttons
+        document.querySelectorAll('.cancel-reply').forEach(button => {
             button.removeEventListener('click', this.handleCancelReplyClick);
             button.addEventListener('click', this.handleCancelReplyClick);
         });
@@ -408,7 +406,7 @@ class SignalRManager {
     handleReplyButtonClick = (e) => {
         e.preventDefault();
         const commentId = e.currentTarget.dataset.commentId;
-        this.showReplyForm(commentId); // Now calling the class method
+        showReplyForm(commentId); // Assuming showReplyForm is a global function
     }
 
     handleEditButtonClick = (e) => {
@@ -429,64 +427,28 @@ class SignalRManager {
 
     handleReplyFormSubmit = async (event) => {
         event.preventDefault();
-        const form = event.target;
-        const postId = form.querySelector('input[name="PostId"]').value;
-        const parentCommentId = form.querySelector('input[name="ParentCommentId"]').value;
-        const content = form.querySelector('textarea[name="Content"]').value;
+        const postId = event.target.querySelector('input[name="PostId"]').value;
+        const parentCommentId = event.target.querySelector('input[name="ParentCommentId"]').value;
+        const content = event.target.querySelector('textarea[name="Content"]').value;
 
         if (!content.trim()) {
             this.showNotification("Please enter a reply.", "error");
             return;
         }
 
-        // Ensure postId and parentCommentId are integers if your C# Hub expects them as int
-        await this.sendComment(parseInt(postId), content.trim(), parentCommentId ? parseInt(parentCommentId) : null);
-
-        // Reset and hide form
-        form.reset();
-        form.closest('.reply-form').classList.add('d-none');
+        await this.sendComment(parseInt(postId), content.trim(), parentCommentId); // Ensure postId is int if your hub expects int
+        event.target.reset(); // Clear the form
+        // Hide the reply form after submission
+        event.target.closest('.reply-form').classList.add('d-none');
     }
 
     handleCancelReplyClick = (e) => {
         e.preventDefault();
-        const form = e.target.closest('.reply-form');
-        if (form) {
-            form.classList.add('d-none');
-            form.reset(); // Also reset the form fields when cancelled
-        }
+        e.target.closest('.reply-form').classList.add('d-none');
     }
 
-    // New class method for showing reply form
-    showReplyForm(commentId) {
-        console.log(`Attempting to show reply form for commentId: ${commentId}`); // Debugging line
-
-        // Hide all other reply forms (important for ensuring only one is open)
-        document.querySelectorAll('.reply-form').forEach(form => {
-            if (!form.classList.contains('d-none')) { // Only hide if it's currently visible
-                console.log(`Hiding form: `, form); // Debugging line
-                form.classList.add('d-none');
-            }
-        });
-
-        // Show this reply form by selecting based on its UNIQUE ID
-        const replyForm = document.getElementById(`replyForm${commentId}`); // Using getElementById with the dynamic ID
-        if (replyForm) {
-            console.log(`Found reply form: `, replyForm); // Debugging line
-            replyForm.classList.remove('d-none'); // Remove the d-none class to make it visible
-            replyForm.querySelector('textarea').focus();
-        } else {
-            console.log(`Reply form with ID "replyForm${commentId}" not found.`); // Debugging line
-            // Fallback: If for some reason the ID is missing but data-comment-id is present
-            const fallbackReplyForm = document.querySelector(`.reply-form[data-comment-id="${commentId}"]`);
-            if (fallbackReplyForm) {
-                console.log(`Found reply form using fallback data-comment-id: `, fallbackReplyForm);
-                fallbackReplyForm.classList.remove('d-none');
-                fallbackReplyForm.querySelector('textarea').focus();
-            } else {
-                console.log(`Fallback reply form with data-comment-id="${commentId}" also not found.`);
-            }
-        }
-    }
+    // IMPORTANT: Remove the old createCommentHTML function entirely as it's replaced by server-side rendering.
+    // The previous addCommentToUI function has also been removed.
 }
 
 // Initialize SignalR Manager
@@ -534,3 +496,15 @@ document.getElementById('submitMainComment')?.addEventListener('click', async fu
     await signalRManager.sendComment(postId, commentContent.trim());
     document.getElementById('mainCommentContent').value = '';
 });
+
+// Make sure showReplyForm is defined globally or within SignalRManager if it handles DOM directly
+function showReplyForm(commentId) {
+    // Hide any currently open reply forms first, if desired
+    document.querySelectorAll('.reply-form').forEach(form => form.classList.add('d-none'));
+
+    const replyForm = document.getElementById(`reply-form-${commentId}`);
+    if (replyForm) {
+        replyForm.classList.remove('d-none');
+        replyForm.querySelector('textarea').focus();
+    }
+}

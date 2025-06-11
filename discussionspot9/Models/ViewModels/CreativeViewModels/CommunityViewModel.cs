@@ -9,6 +9,7 @@
         public string IconUrl { get; set; } = string.Empty;
         public int MemberCount { get; set; }
         public int OnlineCount { get; set; }
+        public int Depth { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsMember { get; set; }
     }

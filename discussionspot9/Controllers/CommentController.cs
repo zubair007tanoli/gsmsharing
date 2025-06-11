@@ -1,4 +1,5 @@
-﻿using discussionspot9.Interfaces;
+﻿using discussionspot9.Hubs;
+using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Internal;
 using System.Security.Claims;
 
 namespace discussionspot9.Controllers
@@ -16,15 +19,18 @@ namespace discussionspot9.Controllers
         private readonly ICommentService _commentService;
         private readonly IUserService _userService;
         private readonly ILogger<CommentController> _logger;
+        private readonly IHubContext<PostHub> _postHub;
 
         public CommentController(
             ICommentService commentService,
             IUserService userService,
-            ILogger<CommentController> logger)
+            ILogger<CommentController> logger,
+            IHubContext<PostHub> postHub)
         {
             _commentService = commentService;
             _userService = userService;
             _logger = logger;
+            _postHub = postHub;
         }
 
         /// <summary>
@@ -46,6 +52,7 @@ namespace discussionspot9.Controllers
 
             try
             {
+                
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 request.UserId = userId;
 
@@ -53,23 +60,32 @@ namespace discussionspot9.Controllers
 
                 if (result.Success)
                 {
+
                     // Get the created comment with user info for rendering
                     var comment = await _commentService.GetCommentByIdAsync(result.CommentId);
-                    if (comment == null)
-                    {
-                        return Json(new { success = false, message = "Failed to retrieve the created comment." });
-                    }
-                    // Render the comment partial view
-                    var html = await RenderPartialViewToString("Partials/_CommentItem", comment);
+                    //if (comment == null)
+                    //{
+                    //   //await _postHub.Clients.SendAsync("CommentError", "Failed to retrieve the created comment.");
+                    //    return Json(new { success = false, message = "Failed to retrieve the created comment." });
+                    //}
+                    //else {                         
+                    //    // Notify the post hub about the new comment
+                    //    await _postHub.Clients.Group($"post-{comment.PostId}").SendAsync("ReceiveComment", comment);
+                    //}
+                    //// Render the comment partial view
+                    //var html = await RenderPartialViewToString("Partials/_CommentItem", comment);
 
-                    return Json(new
-                    {
-                        success = true,
-                        commentId = result.CommentId,
-                        html = html,
-                        message = "Comment posted successfully!"
-                    });
+
+                    return PartialView("~/Views/Shared/Partials/CommentPartial/V1/_CommentItem.cshtml", comment);
+                    //return Json(new
+                    //{
+                    //    success = true,
+                    //    commentId = result.CommentId,
+                    //    html = html,
+                    //    message = "Comment posted successfully!"
+                    //});
                 }
+               
 
                 return Json(new { success = false, message = result.ErrorMessage });
             }
