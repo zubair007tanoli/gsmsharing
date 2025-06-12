@@ -504,36 +504,33 @@ class SignalRManager {
         // Show this reply form by selecting based on its UNIQUE ID
         const replyForm = document.getElementById(`replyForm${commentId}`);
         if (replyForm) {
-            const isCurrentlyHidden = replyForm.classList.contains('d-none');
             console.log(`Found reply form: `, replyForm);
-            console.log(`Classes before explicit toggle: `, replyForm.classList.value);
+            console.log(`Classes before toggle: `, replyForm.classList.value);
 
-            if (isCurrentlyHidden) {
-                // If it's hidden, show it
+            // If it's currently hidden (has d-none), remove d-none and add active.
+            // If it's currently visible (has active), remove active and add d-none.
+            if (replyForm.classList.contains('d-none')) {
                 replyForm.classList.remove('d-none');
                 replyForm.classList.add('active');
             } else {
-                // If it's visible, hide it
                 replyForm.classList.remove('active');
                 replyForm.classList.add('d-none');
             }
 
-            console.log(`Classes after explicit toggle: `, replyForm.classList.value);
+            console.log(`Classes after toggle: `, replyForm.classList.value);
 
-            // Focus only if it became visible
-            if (replyForm.classList.contains('active')) {
+            if (replyForm.classList.contains('active')) { // If it's now visible
                 replyForm.querySelector('textarea').focus();
             }
         } else {
             console.log(`Reply form with ID "replyForm${commentId}" not found.`);
-            // Fallback (though this path should ideally not be taken if IDs are consistent)
+            // Fallback: If for some reason the ID is missing but data-comment-id is present
             const fallbackReplyForm = document.querySelector(`.reply-form[data-comment-id="${commentId}"]`);
             if (fallbackReplyForm) {
                 console.log(`Found reply form using fallback data-comment-id: `, fallbackReplyForm);
-                console.log(`Fallback Classes before explicit toggle: `, fallbackReplyForm.classList.value);
+                console.log(`Fallback Classes before toggle: `, fallbackReplyForm.classList.value);
 
-                const isFallbackCurrentlyHidden = fallbackReplyForm.classList.contains('d-none');
-                if (isFallbackCurrentlyHidden) {
+                if (fallbackReplyForm.classList.contains('d-none')) {
                     fallbackReplyForm.classList.remove('d-none');
                     fallbackReplyForm.classList.add('active');
                 } else {
@@ -541,7 +538,7 @@ class SignalRManager {
                     fallbackReplyForm.classList.add('d-none');
                 }
 
-                console.log(`Fallback Classes after explicit toggle: `, fallbackReplyForm.classList.value);
+                console.log(`Fallback Classes after toggle: `, fallbackReplyForm.classList.value);
                 if (fallbackReplyForm.classList.contains('active')) {
                     fallbackReplyForm.querySelector('textarea').focus();
                 }

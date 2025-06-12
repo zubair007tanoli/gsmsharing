@@ -141,11 +141,9 @@ class SignalRManager {
 
     async sendComment(postId, content, parentCommentId = null) {
         try {
-            console.log(`SignalR: Attempting to send comment to Hub. PostId: ${postId}, Content: "${content}", ParentCommentId: ${parentCommentId}`); // Debugging
             await this.postConnection.invoke("SendComment", postId, content, parentCommentId);
-            console.log("SignalR: SendComment invoked successfully."); // Debugging
         } catch (err) {
-            console.error("SignalR: Error sending comment via invoke:", err); // More detailed error
+            console.error("Error sending comment:", err);
             this.showNotification("Failed to send comment", 'error');
         }
     }
@@ -427,7 +425,6 @@ class SignalRManager {
 
     // New handler for reply submit button click
     handleSubmitReplyButtonClick = async (event) => {
-        console.log("handleSubmitReplyButtonClick triggered."); // Debugging
         event.preventDefault(); // Prevent default button action (no form submit)
         const replyFormDiv = event.currentTarget.closest('.reply-form'); // Get the containing reply-form div
 
@@ -444,9 +441,6 @@ class SignalRManager {
         const contentTextarea = replyFormDiv.querySelector('textarea');
         const content = contentTextarea ? contentTextarea.value : '';
 
-        console.log(`Reply content: "${content}"`); // Debugging
-        console.log(`Parent Comment ID (from data-comment-id): ${parentCommentId}`); // Debugging
-
         if (!content.trim()) {
             this.showNotification("Please enter a reply.", "error");
             return;
@@ -454,19 +448,13 @@ class SignalRManager {
 
         // Use the global postId variable from the page's context
         // Ensure this.pagePostId is set when the page loads, as done in DOMContentLoaded
-        if (this.pagePostId === null) { // Check for null, not just falsy
-            console.error("Post ID not available for reply submission. this.pagePostId is null."); // Debugging
+        if (!this.pagePostId) {
+            console.error("Post ID not available for reply submission.");
             this.showNotification("Error: Post ID missing for reply.", "error");
             return;
         }
-        console.log(`Page Post ID: ${this.pagePostId}`); // Debugging
 
-        // Call the SignalR sendComment method
-        await this.sendComment(
-            parseInt(this.pagePostId), // Ensure postId is an integer
-            content.trim(),
-            parentCommentId ? parseInt(parentCommentId) : null // Ensure parentCommentId is a nullable integer
-        );
+        await this.sendComment(parseInt(this.pagePostId), content.trim(), parentCommentId ? parseInt(parentCommentId) : null);
 
         // Reset the textarea and hide the reply form
         if (contentTextarea) contentTextarea.value = ''; // Clear textarea
@@ -504,36 +492,33 @@ class SignalRManager {
         // Show this reply form by selecting based on its UNIQUE ID
         const replyForm = document.getElementById(`replyForm${commentId}`);
         if (replyForm) {
-            const isCurrentlyHidden = replyForm.classList.contains('d-none');
             console.log(`Found reply form: `, replyForm);
-            console.log(`Classes before explicit toggle: `, replyForm.classList.value);
+            console.log(`Classes before toggle: `, replyForm.classList.value);
 
-            if (isCurrentlyHidden) {
-                // If it's hidden, show it
+            // If it's currently hidden (has d-none), remove d-none and add active.
+            // If it's currently visible (has active), remove active and add d-none.
+            if (replyForm.classList.contains('d-none')) {
                 replyForm.classList.remove('d-none');
                 replyForm.classList.add('active');
             } else {
-                // If it's visible, hide it
                 replyForm.classList.remove('active');
                 replyForm.classList.add('d-none');
             }
 
-            console.log(`Classes after explicit toggle: `, replyForm.classList.value);
+            console.log(`Classes after toggle: `, replyForm.classList.value);
 
-            // Focus only if it became visible
-            if (replyForm.classList.contains('active')) {
+            if (replyForm.classList.contains('active')) { // If it's now visible
                 replyForm.querySelector('textarea').focus();
             }
         } else {
             console.log(`Reply form with ID "replyForm${commentId}" not found.`);
-            // Fallback (though this path should ideally not be taken if IDs are consistent)
+            // Fallback: If for some reason the ID is missing but data-comment-id is present
             const fallbackReplyForm = document.querySelector(`.reply-form[data-comment-id="${commentId}"]`);
             if (fallbackReplyForm) {
                 console.log(`Found reply form using fallback data-comment-id: `, fallbackReplyForm);
-                console.log(`Fallback Classes before explicit toggle: `, fallbackReplyForm.classList.value);
+                console.log(`Fallback Classes before toggle: `, fallbackReplyForm.classList.value);
 
-                const isFallbackCurrentlyHidden = fallbackReplyForm.classList.contains('d-none');
-                if (isFallbackCurrentlyHidden) {
+                if (fallbackReplyForm.classList.contains('d-none')) {
                     fallbackReplyForm.classList.remove('d-none');
                     fallbackReplyForm.classList.add('active');
                 } else {
@@ -541,7 +526,7 @@ class SignalRManager {
                     fallbackReplyForm.classList.add('d-none');
                 }
 
-                console.log(`Fallback Classes after explicit toggle: `, fallbackReplyForm.classList.value);
+                console.log(`Fallback Classes after toggle: `, fallbackReplyForm.classList.value);
                 if (fallbackReplyForm.classList.contains('active')) {
                     fallbackReplyForm.querySelector('textarea').focus();
                 }
@@ -564,7 +549,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const postIdElement = document.querySelector('[data-post-id]');
     if (postIdElement) {
         signalRManager.pagePostId = parseInt(postIdElement.getAttribute('data-post-id'));
-        console.log(`DOMContentLoaded: Page Post ID set to: ${signalRManager.pagePostId}`); // Debugging
         await signalRManager.joinPostGroup(signalRManager.pagePostId);
 
         // Initial binding of events for comments already rendered on page load
@@ -584,24 +568,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     } else {
-        console.error("Post ID element not found on the page. Cannot set signalRManager.pagePostId.");
+        console.error("Post ID element not found on the page.");
     }
 });
 
 // Update your existing main comment submission
 document.getElementById('submitMainComment')?.addEventListener('click', async function () {
-    // For consistency, using signalRManager.pagePostId instead of re-parsing from data-post-id
-    const postId = signalRManager.pagePostId;
+    const postId = parseInt(this.getAttribute('data-post-id')); // This should also use signalRManager.pagePostId for consistency
     const commentContent = document.getElementById('mainCommentContent').value;
 
     if (!commentContent.trim()) {
         signalRManager.showNotification("Please enter a comment.", "error");
-        return;
-    }
-
-    if (postId === null) {
-        console.error("Main comment submission: Post ID is null.");
-        signalRManager.showNotification("Error: Post ID missing for main comment.", "error");
         return;
     }
 
