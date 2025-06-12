@@ -118,6 +118,9 @@
             <a href="@Model.PostUrl#comments" class="action-btn">
                 <i class="fas fa-comment"></i> @Model.FormattedCommentCount Comments
             </a>
+            <a href="@Model.PostUrl#comments" class="action-btn">
+                <i class="fas fa-eye"></i> @Model.FormattedViewCount Views
+            </a>
             <button class="action-btn share-btn" data-post-url="@Url.AbsoluteUrl(Model.PostUrl)">
                 <i class="fas fa-share"></i> Share
             </button>

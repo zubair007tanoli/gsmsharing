@@ -8,11 +8,6 @@ class SignalRManager {
         this.isTyping = false;
         // Store global postId once it's available
         this.pagePostId = null;
-        // Track the currently open share dropdown for click-outside-to-close functionality
-        this.openShareDropdown = null;
-
-        // Bind the click-outside handler to 'this'
-        this.handleDocumentClick = this.handleDocumentClick.bind(this);
     }
 
     async initializeConnections() {
@@ -37,19 +32,6 @@ class SignalRManager {
             console.log("SignalR connections established");
         } catch (err) {
             console.error("SignalR connection failed: ", err);
-        }
-
-        // Add a global click listener to close dropdowns when clicking outside
-        document.addEventListener('click', this.handleDocumentClick);
-    }
-
-    // Handle clicks anywhere on the document to close dropdowns
-    handleDocumentClick(event) {
-        if (this.openShareDropdown && !this.openShareDropdown.contains(event.target)) {
-            // Clicked outside the currently open dropdown, close it
-            console.log("Document click: Closing share dropdown.");
-            this.openShareDropdown.classList.remove('active'); // Remove 'active' from the parent dropdown
-            this.openShareDropdown = null;
         }
     }
 
@@ -101,17 +83,13 @@ class SignalRManager {
         });
 
         // Comment vote updated
-        this.postConnection.on("CommentVoteUpdated", (commentId, upvoteCount, downvoteCount, currentUserVote) => {
-            this.updateCommentVotes({
-                CommentId: commentId,
-                Score: upvoteCount - downvoteCount, // Assuming score is upvotes - downvotes
-                CurrentUserVote: currentUserVote // Now passed directly
-            });
+        this.postConnection.on("CommentVoteUpdated", (voteData) => {
+            this.updateCommentVotes(voteData);
         });
 
-        // Modified: Post vote update handler - receives detailed vote info
-        this.postConnection.on("UpdatePostVotesUI", (postId, upvoteCount, downvoteCount, currentUserVote) => {
-            this.updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote);
+        // Post vote count updated
+        this.postConnection.on("UpdateVoteCount", (newCount) => {
+            this.updatePostVoteCount(newCount);
         });
 
         // Typing indicators
@@ -125,11 +103,6 @@ class SignalRManager {
 
         // Error handling
         this.postConnection.on("CommentError", (errorMessage) => {
-            this.showNotification(errorMessage, 'error');
-        });
-
-        // PostVoteError for handling voting errors specifically
-        this.postConnection.on("VoteError", (errorMessage) => {
             this.showNotification(errorMessage, 'error');
         });
     }
@@ -168,11 +141,11 @@ class SignalRManager {
 
     async sendComment(postId, content, parentCommentId = null) {
         try {
-            console.log(`SignalR: Attempting to send comment to Hub. PostId: ${postId}, Content: "${content}", ParentCommentId: ${parentCommentId}`);
+            console.log(`SignalR: Attempting to send comment to Hub. PostId: ${postId}, Content: "${content}", ParentCommentId: ${parentCommentId}`); // Debugging
             await this.postConnection.invoke("SendComment", postId, content, parentCommentId);
-            console.log("SignalR: SendComment invoked successfully.");
+            console.log("SignalR: SendComment invoked successfully."); // Debugging
         } catch (err) {
-            console.error("SignalR: Error sending comment via invoke:", err);
+            console.error("SignalR: Error sending comment via invoke:", err); // More detailed error
             this.showNotification("Failed to send comment", 'error');
         }
     }
@@ -187,6 +160,8 @@ class SignalRManager {
     }
 
     async deleteComment(commentId) {
+        // IMPORTANT: Never use window.confirm() in production as it blocks UI.
+        // Replace with a custom modal/dialog for user confirmation.
         if (confirm("Are you sure you want to delete this comment?")) {
             try {
                 await this.postConnection.invoke("DeleteComment", commentId);
@@ -199,23 +174,9 @@ class SignalRManager {
 
     async voteComment(commentId, isUpvote) {
         try {
-            // SignalR Hub's VoteComment takes (commentId, voteType)
-            await this.postConnection.invoke("VoteComment", commentId, isUpvote ? 1 : -1);
+            await this.postConnection.invoke("VoteComment", commentId, isUpvote);
         } catch (err) {
             console.error("Error voting comment:", err);
-            this.showNotification("Failed to vote on comment.", 'error');
-        }
-    }
-
-    // Vote on a Post
-    async votePost(postId, voteType) {
-        try {
-            console.log(`SignalR: Attempting to vote on post. PostId: ${postId}, VoteType: ${voteType}`);
-            await this.postConnection.invoke("VotePost", postId, voteType);
-            console.log("SignalR: VotePost invoked successfully.");
-        } catch (err) {
-            console.error("SignalR: Error voting on post via invoke:", err);
-            this.showNotification("Failed to vote on post.", 'error');
         }
     }
 
@@ -225,10 +186,12 @@ class SignalRManager {
             await this.postConnection.invoke("StartTyping", postId);
         }
 
+        // Clear existing timeout
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
         }
 
+        // Set timeout to stop typing after 3 seconds
         this.typingTimeout = setTimeout(async () => {
             await this.stopTyping(postId);
         }, 3000);
@@ -248,6 +211,7 @@ class SignalRManager {
 
     // --- UI Update Methods (now receive pre-rendered HTML) ---
 
+    // Helper method to add a reply to a parent comment's children container
     addReplyToParent(replyHtml, parentCommentId) {
         const parentComment = document.querySelector(`.comment-item[data-comment-id="${parentCommentId}"]`);
         if (!parentComment) {
@@ -255,32 +219,40 @@ class SignalRManager {
             return;
         }
 
+        // Look for existing replies container (from your partial view: .comment-children)
         let repliesContainer = parentComment.querySelector('.comment-children');
         if (!repliesContainer) {
+            // Create replies container if it doesn't exist
             repliesContainer = document.createElement('div');
-            repliesContainer.className = 'comment-children mt-3';
+            repliesContainer.className = 'comment-children mt-3'; // Class from your partial view
             parentComment.appendChild(repliesContainer);
         }
 
+        // Add the reply at the end of existing replies
         repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
     }
 
+    // Helper method to update the displayed comment count
     updateCommentCount() {
-        const commentCountElement = document.querySelector('.comment-count');
+        const commentCountElement = document.querySelector('.comment-count'); // Assuming you have a span/div with this class for total comment count
         if (commentCountElement) {
+            // Count all comment items based on the data-comment-id attribute
             const totalComments = document.querySelectorAll('.comment-item').length;
             commentCountElement.textContent = `${totalComments} Comments`;
         }
     }
 
+    // Updates an existing comment element with new HTML from the server
     updateCommentInUI(commentHtml, commentId) {
-        const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+        const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`); // Select by data-comment-id
         if (commentElement) {
+            // Replace the entire comment item HTML with the new HTML from the server
             commentElement.outerHTML = commentHtml;
         }
     }
 
     removeCommentFromUI(commentId) {
+        // Select the comment element using its data-comment-id
         const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
         if (commentElement) {
             commentElement.remove();
@@ -288,51 +260,34 @@ class SignalRManager {
     }
 
     updateCommentVotes(voteData) {
+        // Select the comment element using its data-comment-id
         const commentElement = document.querySelector(`.comment-item[data-comment-id="${voteData.CommentId}"]`);
         if (commentElement) {
-            const scoreElement = commentElement.querySelector('.comment-vote-count');
-            if (scoreElement) scoreElement.textContent = voteData.Score;
+            // Your partial view uses a single .vote-count span for score
+            const scoreElement = commentElement.querySelector('.vote-count');
+            if (scoreElement) scoreElement.textContent = voteData.Score; // Update to voteData.Score
 
-            const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote');
-            const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote');
+            // Update button active states based on CurrentUserVote
+            const upvoteBtn = commentElement.querySelector('.comment-upvote'); // Select by class name
+            const downvoteBtn = commentElement.querySelector('.comment-downvote'); // Select by class name
 
+            // Toggle 'active' class based on the CurrentUserVote from voteData
             upvoteBtn?.classList.toggle('active', voteData.CurrentUserVote === 1);
             downvoteBtn?.classList.toggle('active', voteData.CurrentUserVote === -1);
         }
     }
 
-    // Modified: updatePostVotesUI to handle individual counts and active state
-    updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote) {
-        console.log(`updatePostVotesUI: PostId: ${postId}, Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
-
-        // Get the specific elements for upvote and downvote counts
-        const upvoteCountElement = document.getElementById(`upvoteCount-${postId}`);
-        const downvoteCountElement = document.getElementById(`downvoteCount-${postId}`);
-        // Optional: If you still have a net total score element
-        const totalScoreElement = document.getElementById(`totalScore-${postId}`);
-
-        // Get the upvote and downvote buttons for the post
-        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
-        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
-
-        // Update the text content of the count spans
-        if (upvoteCountElement) upvoteCountElement.textContent = upvoteCount;
-        if (downvoteCountElement) downvoteCountElement.textContent = "-" + downvoteCount;
-        if (totalScoreElement) totalScoreElement.textContent = "Score " + (upvoteCount - downvoteCount); // Calculate and update total score
-
-        // Update active classes for buttons based on currentUserVote
-        // A value of 1 means the user upvoted, -1 means downvoted, null/0 means no vote
-        if (upvoteBtn) {
-            upvoteBtn.classList.toggle('active', currentUserVote === 1);
-        }
-        if (downvoteBtn) {
-            downvoteBtn.classList.toggle('active', currentUserVote === -1);
+    updatePostVoteCount(newCount) {
+        const voteCountElement = document.getElementById('post-vote-count');
+        if (voteCountElement) {
+            voteCountElement.textContent = newCount;
         }
     }
 
     showTypingIndicator(userName) {
         const typingContainer = document.getElementById('typing-indicators');
         if (typingContainer) {
+            // Ensure only one indicator per user
             let indicator = document.getElementById(`typing-${userName}`);
             if (!indicator) {
                 indicator = document.createElement('div');
@@ -358,6 +313,7 @@ class SignalRManager {
                 badge.textContent = count > 99 ? '99+' : count;
                 badge.style.display = count > 0 ? 'inline' : 'none';
             } else {
+                // Increment existing count
                 const currentCount = parseInt(badge.textContent) || 0;
                 badge.textContent = currentCount + 1;
                 badge.style.display = 'inline';
@@ -366,6 +322,7 @@ class SignalRManager {
     }
 
     showNotification(message, type = 'info') {
+        // Create toast notification
         const toast = document.createElement('div');
         toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} border-0`;
         toast.setAttribute('role', 'alert');
@@ -379,20 +336,22 @@ class SignalRManager {
         `;
 
         const toastContainer = document.getElementById('toast-container');
+        // If toast container doesn't exist, create it (e.g., at the top right of the viewport)
         if (!toastContainer) {
             const newToastContainer = document.createElement('div');
             newToastContainer.id = 'toast-container';
             newToastContainer.style.position = 'fixed';
             newToastContainer.style.top = '1rem';
             newToastContainer.style.right = '1rem';
-            newToastContainer.style.zIndex = '1050';
+            newToastContainer.style.zIndex = '1050'; // Ensure it's above other elements
             document.body.appendChild(newToastContainer);
             newToastContainer.appendChild(toast);
         } else {
             toastContainer.appendChild(toast);
         }
 
-        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+
+        const bsToast = new bootstrap.Toast(toast, { delay: 3000 }); // Auto-hide after 3 seconds
         bsToast.show();
 
         toast.addEventListener('hidden.bs.toast', () => {
@@ -400,15 +359,15 @@ class SignalRManager {
         });
     }
 
-    // Method to re-bind all events for dynamically added/updated elements
+    // New method to re-bind events for newly added/updated comments
     rebindCommentEvents() {
-        // Re-bind comment vote buttons
+        // Re-bind vote buttons
         document.querySelectorAll('.comment-vote-btn').forEach(button => {
             button.removeEventListener('click', this.handleVoteButtonClick);
             button.addEventListener('click', this.handleVoteButtonClick);
         });
 
-        // Re-bind reply buttons
+        // Re-bind reply buttons (both .reply-btn and .comment-reply-btn)
         document.querySelectorAll('.reply-btn, .comment-reply-btn').forEach(button => {
             button.removeEventListener('click', this.handleReplyButtonClick);
             button.addEventListener('click', this.handleReplyButtonClick);
@@ -428,8 +387,8 @@ class SignalRManager {
 
         // Re-bind reply submit buttons
         document.querySelectorAll('.reply-submit-btn').forEach(button => {
-            button.removeEventListener('click', this.handleSubmitReplyButtonClick);
-            button.addEventListener('click', this.handleSubmitReplyButtonClick);
+            button.removeEventListener('click', this.handleSubmitReplyButtonClick); // Use new handler
+            button.addEventListener('click', this.handleSubmitReplyButtonClick); // Use new handler
         });
 
         // Re-bind cancel reply buttons
@@ -437,20 +396,14 @@ class SignalRManager {
             button.removeEventListener('click', this.handleCancelReplyClick);
             button.addEventListener('click', this.handleCancelReplyClick);
         });
-
-        // Rebind share buttons
-        this.rebindShareButtons();
-
-        // Rebind Post Vote Buttons
-        this.rebindPostVoteButtons();
     }
 
     // Event handlers for rebindCommentEvents (defined as arrow functions to preserve 'this')
     handleVoteButtonClick = (e) => {
         e.preventDefault();
         const commentId = e.currentTarget.dataset.commentId;
-        const voteType = parseInt(e.currentTarget.dataset.voteType); // 1 for upvote, -1 for downvote
-        this.voteComment(commentId, voteType === 1); // Pass true for upvote, false for downvote
+        const voteType = parseInt(e.currentTarget.dataset.voteType);
+        this.voteComment(commentId, voteType === 1);
     }
 
     handleReplyButtonClick = (e) => {
@@ -472,10 +425,11 @@ class SignalRManager {
         this.deleteComment(commentId);
     }
 
+    // New handler for reply submit button click
     handleSubmitReplyButtonClick = async (event) => {
-        console.log("handleSubmitReplyButtonClick triggered.");
-        event.preventDefault();
-        const replyFormDiv = event.currentTarget.closest('.reply-form');
+        console.log("handleSubmitReplyButtonClick triggered."); // Debugging
+        event.preventDefault(); // Prevent default button action (no form submit)
+        const replyFormDiv = event.currentTarget.closest('.reply-form'); // Get the containing reply-form div
 
         if (!replyFormDiv) {
             console.error("Could not find parent .reply-form div for reply submit button.");
@@ -483,59 +437,71 @@ class SignalRManager {
             return;
         }
 
+        // Get ParentCommentId from the data-comment-id of the reply-form div
         const parentCommentId = replyFormDiv.dataset.commentId;
+
+        // Get content from the textarea within this specific reply form
         const contentTextarea = replyFormDiv.querySelector('textarea');
         const content = contentTextarea ? contentTextarea.value : '';
 
-        console.log(`Reply content: "${content}"`);
-        console.log(`Parent Comment ID (from data-comment-id): ${parentCommentId}`);
+        console.log(`Reply content: "${content}"`); // Debugging
+        console.log(`Parent Comment ID (from data-comment-id): ${parentCommentId}`); // Debugging
 
         if (!content.trim()) {
             this.showNotification("Please enter a reply.", "error");
             return;
         }
 
-        if (this.pagePostId === null) {
-            console.error("Post ID not available for reply submission. this.pagePostId is null.");
+        // Use the global postId variable from the page's context
+        // Ensure this.pagePostId is set when the page loads, as done in DOMContentLoaded
+        if (this.pagePostId === null) { // Check for null, not just falsy
+            console.error("Post ID not available for reply submission. this.pagePostId is null."); // Debugging
             this.showNotification("Error: Post ID missing for reply.", "error");
             return;
         }
-        console.log(`Page Post ID: ${this.pagePostId}`);
+        console.log(`Page Post ID: ${this.pagePostId}`); // Debugging
 
+        // Call the SignalR sendComment method
         await this.sendComment(
-            parseInt(this.pagePostId),
+            parseInt(this.pagePostId), // Ensure postId is an integer
             content.trim(),
-            parentCommentId ? parseInt(parentCommentId) : null
+            parentCommentId ? parseInt(parentCommentId) : null // Ensure parentCommentId is a nullable integer
         );
 
-        if (contentTextarea) contentTextarea.value = '';
-        replyFormDiv.classList.remove('active');
-        replyFormDiv.classList.add('d-none');
+        // Reset the textarea and hide the reply form
+        if (contentTextarea) contentTextarea.value = ''; // Clear textarea
+        replyFormDiv.classList.remove('active'); // Hide the reply form
+        replyFormDiv.classList.add('d-none'); // Ensure it's hidden with Bootstrap class
     }
 
     handleCancelReplyClick = (e) => {
         e.preventDefault();
         const form = e.target.closest('.reply-form');
         if (form) {
-            form.classList.remove('active');
-            form.classList.add('d-none');
+            form.classList.remove('active'); // Hide the reply form
+            form.classList.add('d-none'); // Ensure it's hidden with Bootstrap class
+            // Find and clear textarea
             const textarea = form.querySelector('textarea');
             if (textarea) textarea.value = '';
         }
     }
 
+    // New class method for showing reply form
     showReplyForm(commentId) {
         console.log(`Attempting to show reply form for commentId: ${commentId}`);
 
+        // Hide all other reply forms by removing 'active' class
         document.querySelectorAll('.reply-form').forEach(form => {
             const formCommentId = form.dataset.commentId;
+            // Only hide if active AND it's not the target form
             if (formCommentId != commentId && form.classList.contains('active')) {
                 console.log(`Hiding form: `, form);
                 form.classList.remove('active');
-                form.classList.add('d-none');
+                form.classList.add('d-none'); // Add d-none back when hiding other forms
             }
         });
 
+        // Show this reply form by selecting based on its UNIQUE ID
         const replyForm = document.getElementById(`replyForm${commentId}`);
         if (replyForm) {
             const isCurrentlyHidden = replyForm.classList.contains('d-none');
@@ -543,20 +509,24 @@ class SignalRManager {
             console.log(`Classes before explicit toggle: `, replyForm.classList.value);
 
             if (isCurrentlyHidden) {
+                // If it's hidden, show it
                 replyForm.classList.remove('d-none');
                 replyForm.classList.add('active');
             } else {
+                // If it's visible, hide it
                 replyForm.classList.remove('active');
                 replyForm.classList.add('d-none');
             }
 
             console.log(`Classes after explicit toggle: `, replyForm.classList.value);
 
+            // Focus only if it became visible
             if (replyForm.classList.contains('active')) {
                 replyForm.querySelector('textarea').focus();
             }
         } else {
             console.log(`Reply form with ID "replyForm${commentId}" not found.`);
+            // Fallback (though this path should ideally not be taken if IDs are consistent)
             const fallbackReplyForm = document.querySelector(`.reply-form[data-comment-id="${commentId}"]`);
             if (fallbackReplyForm) {
                 console.log(`Found reply form using fallback data-comment-id: `, fallbackReplyForm);
@@ -580,135 +550,6 @@ class SignalRManager {
             }
         }
     }
-
-    rebindShareButtons() {
-        console.log("rebindShareButtons: Attempting to bind share buttons.");
-        document.querySelectorAll('.share-dropdown .action-btn').forEach((button, index) => {
-            if (button.querySelector('.fas.fa-share')) {
-                button.removeEventListener('click', this.handleShareButtonClick);
-                button.addEventListener('click', this.handleShareButtonClick);
-                console.log(`rebindShareButtons: Bound click handler to Share button with id: ${button.id}`);
-            } else {
-                console.log(`rebindShareButtons: Skipping action-btn, not the primary share toggle:`, button);
-            }
-        });
-
-        document.querySelectorAll('.share-option').forEach(option => {
-            option.removeEventListener('click', this.handleShareOptionClick);
-            option.addEventListener('click', this.handleShareOptionClick);
-            console.log(`rebindShareButtons: Bound click handler to share option:`, option);
-        });
-    }
-
-    handleShareButtonClick = (event) => {
-        console.log("handleShareButtonClick: Share button clicked.");
-        event.preventDefault();
-        event.stopPropagation();
-
-        const shareDropdown = event.currentTarget.closest('.share-dropdown');
-        if (!shareDropdown) {
-            console.error("handleShareButtonClick: Share dropdown parent not found.");
-            return;
-        }
-
-        if (this.openShareDropdown && this.openShareDropdown !== shareDropdown) {
-            console.log("handleShareButtonClick: Closing previously open dropdown.");
-            this.openShareDropdown.classList.remove('active');
-        }
-
-        console.log(`handleShareButtonClick: Parent dropdown classes before toggle: ${shareDropdown.classList.value}`);
-        shareDropdown.classList.toggle('active');
-        console.log(`handleShareButtonClick: Parent dropdown classes after toggle: ${shareDropdown.classList.value}`);
-
-        this.openShareDropdown = shareDropdown.classList.contains('active') ? shareDropdown : null;
-        console.log(`handleShareButtonClick: openShareDropdown is now:`, this.openShareDropdown);
-    }
-
-    handleShareOptionClick = (event) => {
-        console.log("handleShareOptionClick: Share option clicked.");
-        event.preventDefault();
-        event.stopPropagation();
-
-        const platform = event.currentTarget.dataset.platform;
-        const postLink = window.location.href;
-
-        console.log(`handleShareOptionClick: Platform: ${platform}, Link: ${postLink}`);
-
-        switch (platform) {
-            case 'facebook':
-                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postLink)}`, '_blank');
-                break;
-            case 'twitter':
-                window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(postLink)}&text=${encodeURIComponent(document.title)}`, '_blank');
-                break;
-            case 'reddit':
-                window.open(`https://www.reddit.com/submit?url=${encodeURIComponent(postLink)}&title=${encodeURIComponent(document.title)}`, '_blank');
-                break;
-            case 'linkedin':
-                window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(postLink)}&title=${encodeURIComponent(document.title)}`, '_blank');
-                break;
-            case 'whatsapp':
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(document.title + ' ' + postLink)}`, '_blank');
-                break;
-            case 'copy':
-                this.copyToClipboard(postLink);
-                this.showNotification('Link copied to clipboard!', 'success');
-                break;
-            default:
-                console.warn('Unknown share platform:', platform);
-        }
-
-        const shareDropdown = event.currentTarget.closest('.share-dropdown');
-        if (shareDropdown) {
-            console.log("handleShareOptionClick: Closing dropdown after selection.");
-            shareDropdown.classList.remove('active');
-            this.openShareDropdown = null;
-        }
-    }
-
-    copyToClipboard(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        try {
-            document.execCommand('copy');
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-            this.showNotification('Failed to copy link. Please copy manually.', 'error');
-        }
-        document.body.removeChild(textarea);
-    }
-
-    // Method to bind Post Vote Buttons
-    rebindPostVoteButtons() {
-        console.log("rebindPostVoteButtons: Attempting to bind post vote buttons.");
-        document.querySelectorAll('.post-actions .vote-btn').forEach(button => {
-            button.removeEventListener('click', this.handlePostVoteButtonClick);
-            button.addEventListener('click', this.handlePostVoteButtonClick);
-            console.log(`rebindPostVoteButtons: Bound click handler to post vote button with id: ${button.id}`);
-        });
-    }
-
-    // Handler for Post Vote Button Click
-    handlePostVoteButtonClick = (event) => {
-        console.log("handlePostVoteButtonClick: Post vote button clicked.");
-        event.preventDefault();
-
-        const postId = event.currentTarget.dataset.postId;
-        const voteType = parseInt(event.currentTarget.dataset.voteType); // 1 for upvote, -1 for downvote
-
-        if (!postId) {
-            console.error("handlePostVoteButtonClick: Post ID not found for voting.");
-            this.showNotification("Error: Could not vote on post. Post ID missing.", "error");
-            return;
-        }
-
-        this.votePost(parseInt(postId), voteType);
-    }
 }
 
 // Initialize SignalR Manager
@@ -718,14 +559,18 @@ const signalRManager = new SignalRManager();
 document.addEventListener('DOMContentLoaded', async () => {
     await signalRManager.initializeConnections();
 
+    // Join post group if on a post page
+    // Store postId in the SignalRManager instance for easy access in reply submissions
     const postIdElement = document.querySelector('[data-post-id]');
     if (postIdElement) {
         signalRManager.pagePostId = parseInt(postIdElement.getAttribute('data-post-id'));
-        console.log(`DOMContentLoaded: Page Post ID set to: ${signalRManager.pagePostId}`);
+        console.log(`DOMContentLoaded: Page Post ID set to: ${signalRManager.pagePostId}`); // Debugging
         await signalRManager.joinPostGroup(signalRManager.pagePostId);
 
-        signalRManager.rebindCommentEvents(); // This now includes rebindShareButtons() and rebindPostVoteButtons()
+        // Initial binding of events for comments already rendered on page load
+        signalRManager.rebindCommentEvents();
 
+        // Setup typing indicators for main comment textarea
         const commentTextarea = document.getElementById('mainCommentContent');
         if (commentTextarea) {
             let typingTimer;
@@ -743,7 +588,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// Update your existing main comment submission
 document.getElementById('submitMainComment')?.addEventListener('click', async function () {
+    // For consistency, using signalRManager.pagePostId instead of re-parsing from data-post-id
     const postId = signalRManager.pagePostId;
     const commentContent = document.getElementById('mainCommentContent').value;
 
@@ -758,6 +605,7 @@ document.getElementById('submitMainComment')?.addEventListener('click', async fu
         return;
     }
 
+    // Send via SignalR
     await signalRManager.sendComment(postId, commentContent.trim());
     document.getElementById('mainCommentContent').value = '';
 });

@@ -200,7 +200,7 @@ namespace discussionspot9.Hubs
                     var comment = await _commentService.GetCommentByIdAsync(commentId);
                     await Clients.Group($"post-{comment.PostId}")
                         .SendAsync("CommentVoteUpdated", commentId,
-                            comment.UpvoteCount, comment.DownvoteCount);
+                            comment.UpvoteCount, comment.DownvoteCount, result.UserVote); // Pass UserVote here
                 }
                 else
                 {
@@ -213,10 +213,55 @@ namespace discussionspot9.Hubs
                 await Clients.Caller.SendAsync("VoteError", "Failed to vote on comment");
             }
         }
-        public async Task UpdateVoteCount(int postId, int newCount)
+
+        // Modified: To send more detailed vote information
+        [Authorize]
+        public async Task VotePost(int postId, int voteType)
         {
-            await Clients.Group($"post-{postId}").SendAsync("UpdateVoteCount", newCount);
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    await Clients.Caller.SendAsync("VoteError", "User not authenticated.");
+                    return;
+                }
+
+                var result = await _postService.VotePostAsync(postId, userId, voteType);
+
+                if (result.Success)
+                {
+
+                    var updatedPost = await _postService.GetPostByIdAsync(postId);
+                    if (updatedPost != null)
+                    {
+                        // Send all necessary info: postId, new upvote, new downvote, and current user's vote status
+                        await Clients.Group($"post-{postId}").SendAsync("UpdatePostVotesUI",
+                            postId,
+                            updatedPost.UpvoteCount,
+                            updatedPost.DownvoteCount,
+                            result.UserVote // This should be 1, -1, or null (for removed vote)
+                        );
+                       
+                    }
+                }
+                else
+                {
+                    await Clients.Caller.SendAsync("VoteError", result.ErrorMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error voting on post {PostId}", postId);
+                await Clients.Caller.SendAsync("VoteError", "Failed to vote on post.");
+            }
         }
+
+        // Removed: UpdateVoteCount as it's now replaced by UpdatePostVotesUI
+        // public async Task UpdateVoteCount(int postId, int newCount)
+        // {
+        //     await Clients.Group($"post-{postId}").SendAsync("UpdateVoteCount", newCount);
+        // }
 
         [Authorize]
         public async Task StartTyping(int postId)

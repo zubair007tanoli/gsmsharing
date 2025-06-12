@@ -101,17 +101,17 @@ class SignalRManager {
         });
 
         // Comment vote updated
-        this.postConnection.on("CommentVoteUpdated", (commentId, upvoteCount, downvoteCount, currentUserVote) => {
+        this.postConnection.on("CommentVoteUpdated", (commentId, upvoteCount, downvoteCount) => {
             this.updateCommentVotes({
                 CommentId: commentId,
                 Score: upvoteCount - downvoteCount, // Assuming score is upvotes - downvotes
-                CurrentUserVote: currentUserVote // Now passed directly
+                CurrentUserVote: 0 // Placeholder, as CurrentUserVote is not passed here directly
             });
         });
 
-        // Modified: Post vote update handler - receives detailed vote info
-        this.postConnection.on("UpdatePostVotesUI", (postId, upvoteCount, downvoteCount, currentUserVote) => {
-            this.updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote);
+        // Post vote count updated - This is the method for post voting
+        this.postConnection.on("UpdateVoteCount", (newCount) => {
+            this.updatePostVoteCount(newCount);
         });
 
         // Typing indicators
@@ -128,7 +128,7 @@ class SignalRManager {
             this.showNotification(errorMessage, 'error');
         });
 
-        // PostVoteError for handling voting errors specifically
+        // New: PostVoteError for handling voting errors specifically
         this.postConnection.on("VoteError", (errorMessage) => {
             this.showNotification(errorMessage, 'error');
         });
@@ -203,11 +203,11 @@ class SignalRManager {
             await this.postConnection.invoke("VoteComment", commentId, isUpvote ? 1 : -1);
         } catch (err) {
             console.error("Error voting comment:", err);
-            this.showNotification("Failed to vote on comment.", 'error');
+            this.showNotification("Failed to vote on comment.", 'error'); // More specific notification
         }
     }
 
-    // Vote on a Post
+    // New method: Vote on a Post
     async votePost(postId, voteType) {
         try {
             console.log(`SignalR: Attempting to vote on post. PostId: ${postId}, VoteType: ${voteType}`);
@@ -215,7 +215,7 @@ class SignalRManager {
             console.log("SignalR: VotePost invoked successfully.");
         } catch (err) {
             console.error("SignalR: Error voting on post via invoke:", err);
-            this.showNotification("Failed to vote on post.", 'error');
+            this.showNotification("Failed to vote on post.", 'error'); // More specific notification
         }
     }
 
@@ -290,44 +290,29 @@ class SignalRManager {
     updateCommentVotes(voteData) {
         const commentElement = document.querySelector(`.comment-item[data-comment-id="${voteData.CommentId}"]`);
         if (commentElement) {
-            const scoreElement = commentElement.querySelector('.comment-vote-count');
+            const scoreElement = commentElement.querySelector('.comment-vote-count'); // Corrected selector for comment votes
             if (scoreElement) scoreElement.textContent = voteData.Score;
 
-            const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote');
-            const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote');
+            const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote'); // Use more specific class
+            const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote'); // Use more specific class
 
+            // Assuming voteData.CurrentUserVote is 1 for upvote, -1 for downvote, 0 for no vote
             upvoteBtn?.classList.toggle('active', voteData.CurrentUserVote === 1);
             downvoteBtn?.classList.toggle('active', voteData.CurrentUserVote === -1);
         }
     }
 
-    // Modified: updatePostVotesUI to handle individual counts and active state
-    updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote) {
-        console.log(`updatePostVotesUI: PostId: ${postId}, Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
-
-        // Get the specific elements for upvote and downvote counts
-        const upvoteCountElement = document.getElementById(`upvoteCount-${postId}`);
-        const downvoteCountElement = document.getElementById(`downvoteCount-${postId}`);
-        // Optional: If you still have a net total score element
-        const totalScoreElement = document.getElementById(`totalScore-${postId}`);
-
-        // Get the upvote and downvote buttons for the post
-        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
-        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
-
-        // Update the text content of the count spans
-        if (upvoteCountElement) upvoteCountElement.textContent = upvoteCount;
-        if (downvoteCountElement) downvoteCountElement.textContent = "-" + downvoteCount;
-        if (totalScoreElement) totalScoreElement.textContent = "Score " + (upvoteCount - downvoteCount); // Calculate and update total score
-
-        // Update active classes for buttons based on currentUserVote
-        // A value of 1 means the user upvoted, -1 means downvoted, null/0 means no vote
-        if (upvoteBtn) {
-            upvoteBtn.classList.toggle('active', currentUserVote === 1);
+    updatePostVoteCount(newCount) {
+        console.log(`updatePostVoteCount: Updating post vote count to: ${newCount}`); // Debugging
+        const voteCountElement = document.getElementById('voteCount-' + this.pagePostId); // Ensure correct ID
+        if (voteCountElement) {
+            voteCountElement.textContent = newCount;
         }
-        if (downvoteBtn) {
-            downvoteBtn.classList.toggle('active', currentUserVote === -1);
-        }
+
+        // You may also want to update the active state of the upvote/downvote buttons for the post itself
+        // This requires getting the CurrentUserVote for the post, which is not currently passed in UpdateVoteCount.
+        // If your server sends the current user's vote status for the post, you would update it here similarly to updateCommentVotes.
+        // For now, only the score is updated.
     }
 
     showTypingIndicator(userName) {
@@ -441,7 +426,7 @@ class SignalRManager {
         // Rebind share buttons
         this.rebindShareButtons();
 
-        // Rebind Post Vote Buttons
+        // New: Rebind Post Vote Buttons
         this.rebindPostVoteButtons();
     }
 
@@ -683,7 +668,7 @@ class SignalRManager {
         document.body.removeChild(textarea);
     }
 
-    // Method to bind Post Vote Buttons
+    // New: Method to bind Post Vote Buttons
     rebindPostVoteButtons() {
         console.log("rebindPostVoteButtons: Attempting to bind post vote buttons.");
         document.querySelectorAll('.post-actions .vote-btn').forEach(button => {
@@ -693,7 +678,7 @@ class SignalRManager {
         });
     }
 
-    // Handler for Post Vote Button Click
+    // New: Handler for Post Vote Button Click
     handlePostVoteButtonClick = (event) => {
         console.log("handlePostVoteButtonClick: Post vote button clicked.");
         event.preventDefault();

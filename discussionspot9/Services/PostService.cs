@@ -31,22 +31,21 @@ namespace discussionspot9.Services
             const int pageSize = 25;
             var skip = (page - 1) * pageSize;
 
-            var query = _context.Posts
-                    .Include(p => p.Community)
-                    .ThenInclude(c => c!.Category)
-                    .Include(p => p.PostTags)
-                    .ThenInclude(pt => pt.Tag)
-                    .Include(p => p.UserProfile)  // Add this line
-                    .Where(p => p.Status == "published");
+            // Base query with optimized count retrieval
+            var baseQuery = from p in _context.Posts
+                            where p.Status == "published"
+                            select new
+                            {
+                                p.PostId,
+                                p.CreatedAt,
+                                p.ViewCount, // Added view count
+                                CommentCount = p.Comments.Count(),
+                                UpvoteCount = p.Votes.Count(v => v.VoteType == 1),
+                                DownvoteCount = p.Votes.Count(v => v.VoteType == -1),
+                                Score = p.Votes.Sum(v => (int?)v.VoteType) ?? 0
+                            };
 
-            //var query = _context.Posts
-            //    .Include(p => p.Community)
-            //    .ThenInclude(c => c!.Category)
-            //    .Include(p => p.PostTags)
-            //    .ThenInclude(pt => pt.Tag)
-            //    .Where(p => p.Status == "published");
-
-            // Apply time filter for "top" sort
+            // Apply time filter for 'top' sort
             if (sort == "top" && time != "all")
             {
                 var timeFilter = time switch
@@ -57,47 +56,76 @@ namespace discussionspot9.Services
                     "year" => DateTime.UtcNow.AddDays(-365),
                     _ => DateTime.MinValue
                 };
-                query = query.Where(p => p.CreatedAt >= timeFilter);
+                baseQuery = baseQuery.Where(p => p.CreatedAt >= timeFilter);
             }
 
-            // Get total count before ordering
-            var totalPosts = await query.CountAsync();
+            var totalPosts = await baseQuery.CountAsync();
 
-            // Apply sorting
-            List<Post> posts;
+            // Get ordered post IDs with counts
+            var orderedPostData = await (sort switch
+            {
+                "new" => baseQuery.OrderByDescending(p => p.CreatedAt),
+                "top" => baseQuery.OrderByDescending(p => p.Score),
+                "controversial" => baseQuery
+                    .OrderByDescending(p => p.CommentCount)
+                    .ThenBy(p => Math.Abs(p.UpvoteCount - p.DownvoteCount)),
+                "hot" => baseQuery.OrderByDescending(p => p.Score).ThenByDescending(p => p.CreatedAt),
+                _ => baseQuery.OrderByDescending(p => p.Score).ThenByDescending(p => p.CreatedAt)
+            })
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync();
+
+            // Apply hot algorithm if needed
             if (sort == "hot")
             {
-                // Fetch data first, then apply complex sorting in memory
-                posts = await query
-                    .OrderByDescending(p => p.Score)
-                    .ThenByDescending(p => p.CreatedAt)
-                    .Skip(skip)
-                    .Take(pageSize * 2) // Get extra to account for sorting
-                    .ToListAsync();
-
-                // Apply hot algorithm in memory
                 var now = DateTime.UtcNow;
-                posts = posts
+                orderedPostData = orderedPostData
                     .OrderByDescending(p => p.Score / Math.Pow((now - p.CreatedAt).TotalHours + 2, 1.5))
-                    .Take(pageSize)
                     .ToList();
             }
-            else
-            {
-                posts = await (sort switch
-                {
-                    "new" => query.OrderByDescending(p => p.CreatedAt),
-                    "top" => query.OrderByDescending(p => p.Score),
-                    "controversial" => query.OrderByDescending(p => p.CommentCount)
-                        .ThenBy(p => Math.Abs(p.UpvoteCount - p.DownvoteCount)),
-                    _ => query.OrderByDescending(p => p.Score).ThenByDescending(p => p.CreatedAt)
-                })
-                .Skip(skip)
-                .Take(pageSize)
-                .ToListAsync();
-            }
 
-            var postViewModels = posts.Select(p => MapToPostCardViewModel(p)).ToList();
+            // Get full post data with optimized includes
+            var postIds = orderedPostData.Select(p => p.PostId).ToList();
+            var posts = await _context.Posts
+                .AsNoTracking()
+                .Where(p => postIds.Contains(p.PostId))
+                .Select(p => new
+                {
+                    Post = p,
+                    Community = p.Community,
+                    Category = p.Community.Category,
+                    PostTags = p.PostTags.Select(pt => new { pt.Tag }),
+                    UserProfile = p.UserProfile
+                })
+                .ToListAsync();
+
+            // Maintain order and set counts
+            var orderedPosts = postIds.Select(id =>
+            {
+                var postData = orderedPostData.First(pd => pd.PostId == id);
+                var postContainer = posts.First(p => p.Post.PostId == id);
+
+                // Create post with aggregated data
+                var post = postContainer.Post;
+                post.CommentCount = postData.CommentCount;
+                post.UpvoteCount = postData.UpvoteCount;
+                post.DownvoteCount = postData.DownvoteCount;
+                post.Score = postData.Score;
+                post.ViewCount = postData.ViewCount;  // Set view count
+
+                // Attach related entities
+                post.Community = postContainer.Community;
+                post.Community.Category = postContainer.Category;
+                post.PostTags = postContainer.PostTags
+                    .Select(pt => new PostTag { Tag = pt.Tag })
+                    .ToList();
+                post.UserProfile = postContainer.UserProfile;
+
+                return post;
+            }).ToList();
+
+            var postViewModels = orderedPosts.Select(p => MapToPostCardViewModel(p)).ToList();
 
             return new PostListViewModel
             {
@@ -109,7 +137,6 @@ namespace discussionspot9.Services
                 CurrentTimeFilter = time
             };
         }
-
         // Add these methods to your existing PostService class
         // Update the GetPollDetailsAsync method:
         public async Task<PollViewModel?> GetPollDetailsAsync(int postId, string? userId)

@@ -148,7 +148,7 @@
         .action-buttons {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            
         }
 
         .action-btn {
@@ -1208,16 +1208,54 @@
                     </div>
 
                     <div class="post-actions">
-                        <div class="vote-buttons">
+             @*            <div class="vote-buttons">                          
                             <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")" id="upvoteBtn-@Model.Post.PostId" data-post-id="@Model.Post.PostId" data-vote-type="1">
                                 <i class="fas fa-arrow-up"></i>
                             </button>
                             <span class="vote-count" id="voteCount-@Model.Post.PostId">@Model.Post.Score</span>
                             <button class="vote-btn downvote @(Model.Post.CurrentUserVote == -1 ? "active" : "")" id="downvoteBtn-@Model.Post.PostId" data-post-id="@Model.Post.PostId" data-vote-type="-1">
                                 <i class="fas fa-arrow-down"></i>
+                            </button>                            
+                        </div> *@
+                        <div class="vote-buttons">
+                            <span class="upvote-count" id="upvoteCount-@Model.Post.PostId">@Model.Post.UpvoteCount</span>
+                            <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")"
+                                    id="upvoteBtn-@Model.Post.PostId"
+                                    data-post-id="@Model.Post.PostId"
+                                    data-vote-type="1">
+                                <i class="fas fa-arrow-up"></i>
                             </button>
+                           
+                            <span class="downvote-count" id="downvoteCount-@Model.Post.PostId">-@Model.Post.DownvoteCount</span>
+                            <!-- Optional: You can keep a net score if desired, or remove it if only up/down counts are needed -->
+                           
+                            <button class="vote-btn downvote @(Model.Post.CurrentUserVote == -1 ? "active" : "")"
+                                    id="downvoteBtn-@Model.Post.PostId"
+                                    data-post-id="@Model.Post.PostId"
+                                    data-vote-type="-1">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <span class="total-score" id="totalScore-@Model.Post.PostId">Score @Model.Post.Score</span>
                         </div>
-                        <div class="action-buttons">
+                      @*   <div class="vote-buttons">
+                            <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")"
+                                    id="upvoteBtn-@Model.Post.PostId"
+                                    data-post-id="@Model.Post.PostId"
+                                    data-vote-type="1">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <span class="upvote-count" id="upvoteCount-@Model.Post.PostId">@Model.Post.UpvoteCount</span>
+                            <span class="downvote-count" id="downvoteCount-@Model.Post.PostId">@Model.Post.DownvoteCount</span>
+                            <!-- Optional: You can keep a net score if desired, or remove it if only up/down counts are needed -->
+                            <span class="total-score" id="totalScore-@Model.Post.PostId">@Model.Post.Score</span>
+                            <button class="vote-btn downvote @(Model.Post.CurrentUserVote == -1 ? "active" : "")"
+                                    id="downvoteBtn-@Model.Post.PostId"
+                                    data-post-id="@Model.Post.PostId"
+                                    data-vote-type="-1">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div> *@
+                        <div class="action-buttons ms-auto">
                             <button class="action-btn">
                                 <i class="fas fa-comment"></i>
                                 <span>Comments (@Model.Post.CommentCount)</span>

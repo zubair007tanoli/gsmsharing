@@ -1,4 +1,6 @@
-﻿namespace discussionspot9.Models.ViewModels.CreativeViewModels
+﻿using Microsoft.Identity.Client;
+
+namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
     public class PostCardViewModel
     {
@@ -45,6 +47,7 @@
         public string CommunityUrl => $"/r/{CommunitySlug}";
         public string FormattedScore => FormatCount(Score);
         public string FormattedCommentCount => FormatCount(CommentCount);
+        public string FormattedViewCount => FormatCount(ViewCount);
         public string? MediaUrl { get; set; }
         public string? LinkUrl { get; set; }
         public string? LinkDomain { get; set; }
