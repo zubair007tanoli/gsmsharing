@@ -190,46 +190,27 @@ namespace discussionspot9.Hubs
         [Authorize]
         public async Task VoteComment(int commentId, int voteType)
         {
-            var userId = GetUserId();
-            _logger.LogInformation($"VoteComment invoked for commentId: {commentId}, voteType: {voteType}, UserId: {userId ?? "null"}");
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning($"Unauthorized attempt to vote on comment {commentId}. User ID is null or empty.");
-                await Clients.Caller.SendAsync("VoteError", "Unauthorized access. Please log in to vote.");
-                return;
-            }
-
             try
             {
+                var userId = GetUserId();
                 var result = await _commentService.VoteCommentAsync(commentId, userId, voteType);
 
                 if (result.Success)
                 {
                     var comment = await _commentService.GetCommentByIdAsync(commentId);
-                    if (comment != null)
-                    {
-                        await Clients.Group($"post-{comment.PostId}")
-                            .SendAsync("CommentVoteUpdated", commentId,
-                                comment.UpvoteCount, comment.DownvoteCount, result.UserVote); // Pass UserVote here
-                        _logger.LogInformation($"Successfully updated comment vote for comment {commentId}. New score: {comment.Score}, Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, UserVote: {result.UserVote}.");
-                    }
-                    else
-                    {
-                        _logger.LogError($"Comment with ID {commentId} not found after successful vote.");
-                        await Clients.Caller.SendAsync("VoteError", "Comment not found after voting. Please refresh.");
-                    }
+                    await Clients.Group($"post-{comment.PostId}")
+                        .SendAsync("CommentVoteUpdated", commentId,
+                            comment.UpvoteCount, comment.DownvoteCount, result.UserVote); // Pass UserVote here
                 }
                 else
                 {
-                    _logger.LogError($"Failed to vote on comment {commentId}. Error: {result.ErrorMessage}");
                     await Clients.Caller.SendAsync("VoteError", result.ErrorMessage);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Unhandled exception while voting on comment {commentId}");
-                await Clients.Caller.SendAsync("VoteError", "An unexpected error occurred while voting on comment.");
+                _logger.LogError(ex, "Error voting on comment");
+                await Clients.Caller.SendAsync("VoteError", "Failed to vote on comment");
             }
         }
 
@@ -261,7 +242,7 @@ namespace discussionspot9.Hubs
                             updatedPost.DownvoteCount,
                             result.UserVote // This should be 1, -1, or null (for removed vote)
                         );
-
+                       
                     }
                 }
                 else

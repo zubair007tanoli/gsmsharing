@@ -100,10 +100,13 @@ class SignalRManager {
             this.updateCommentCount(); // Recalculate count after deletion
         });
 
-        // Comment vote updated (Now matches Hub parameters directly)
+        // Comment vote updated
         this.postConnection.on("CommentVoteUpdated", (commentId, upvoteCount, downvoteCount, currentUserVote) => {
-            console.log(`SignalR: CommentVoteUpdated received for commentId: ${commentId}, Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
-            this.updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote); // Pass individual parameters directly
+            this.updateCommentVotes({
+                CommentId: commentId,
+                Score: upvoteCount - downvoteCount, // Assuming score is upvotes - downvotes
+                CurrentUserVote: currentUserVote // Now passed directly
+            });
         });
 
         // Modified: Post vote update handler - receives detailed vote info
@@ -195,45 +198,24 @@ class SignalRManager {
     }
 
     async voteComment(commentId, isUpvote) {
-        // --- NEW AUTHENTICATION CHECK ---
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected to the server. Please check your internet connection.", 'error');
-            console.error("SignalR: Not connected when attempting to vote on comment.");
-            return;
-        }
-
-        // It's still crucial to ensure the user is authenticated on the server side
-        // via the [Authorize] attribute on your Hub method. The client-side notification
-        // serves as a UX improvement, but the server is the ultimate gatekeeper.
         try {
-            console.log(`Attempting to invoke VoteComment on Hub for CommentId: ${commentId}, isUpvote: ${isUpvote}`); // Debugging
             // SignalR Hub's VoteComment takes (commentId, voteType)
             await this.postConnection.invoke("VoteComment", commentId, isUpvote ? 1 : -1);
-            console.log(`VoteComment invoked successfully for CommentId: ${commentId}`); // Debugging
         } catch (err) {
-            console.error("Error voting comment (after invoke attempt):", err);
-            // This message will be shown if the server rejects the invoke (e.g., due to [Authorize])
-            this.showNotification("Failed to vote on comment. Please ensure you are logged in.", 'error');
+            console.error("Error voting comment:", err);
+            this.showNotification("Failed to vote on comment.", 'error');
         }
     }
 
     // Vote on a Post
     async votePost(postId, voteType) {
-        // --- NEW AUTHENTICATION CHECK ---
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected to the server. Please check your internet connection.", 'error');
-            console.error("SignalR: Not connected when attempting to vote on post.");
-            return;
-        }
-        // Similar authentication considerations as voteComment apply here.
-
         try {
             console.log(`SignalR: Attempting to vote on post. PostId: ${postId}, VoteType: ${voteType}`);
             await this.postConnection.invoke("VotePost", postId, voteType);
             console.log("SignalR: VotePost invoked successfully.");
         } catch (err) {
             console.error("SignalR: Error voting on post via invoke:", err);
-            this.showNotification("Failed to vote on post. Please ensure you are logged in.", 'error');
+            this.showNotification("Failed to vote on post.", 'error');
         }
     }
 
@@ -305,20 +287,17 @@ class SignalRManager {
         }
     }
 
-    // Corrected: updateCommentVotes now accepts individual parameters
-    updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote) {
-        console.log(`updateCommentVotes: Received for commentId: ${commentId}, Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
-        const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+    updateCommentVotes(voteData) {
+        const commentElement = document.querySelector(`.comment-item[data-comment-id="${voteData.CommentId}"]`);
         if (commentElement) {
             const scoreElement = commentElement.querySelector('.comment-vote-count');
-            if (scoreElement) scoreElement.textContent = upvoteCount - downvoteCount; // Calculate net score
+            if (scoreElement) scoreElement.textContent = voteData.Score;
 
             const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote');
             const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote');
 
-            // Set active class based on currentUserVote
-            upvoteBtn?.classList.toggle('active', currentUserVote === 1);
-            downvoteBtn?.classList.toggle('active', currentUserVote === -1);
+            upvoteBtn?.classList.toggle('active', voteData.CurrentUserVote === 1);
+            downvoteBtn?.classList.toggle('active', voteData.CurrentUserVote === -1);
         }
     }
 
@@ -338,8 +317,8 @@ class SignalRManager {
 
         // Update the text content of the count spans
         if (upvoteCountElement) upvoteCountElement.textContent = upvoteCount;
-        if (downvoteCountElement) downvoteCountElement.textContent = downvoteCount;
-        if (totalScoreElement) totalScoreElement.textContent = upvoteCount - downvoteCount; // Calculate and update total score
+        if (downvoteCountElement) downvoteCountElement.textContent = "-" + downvoteCount;
+        if (totalScoreElement) totalScoreElement.textContent = "Score " + (upvoteCount - downvoteCount); // Calculate and update total score
 
         // Update active classes for buttons based on currentUserVote
         // A value of 1 means the user upvoted, -1 means downvoted, null/0 means no vote
@@ -423,58 +402,54 @@ class SignalRManager {
 
     // Method to re-bind all events for dynamically added/updated elements
     rebindCommentEvents() {
-        console.log("rebindCommentEvents: Starting re-binding of comment related events."); // Debugging
+        // Re-bind comment vote buttons
         document.querySelectorAll('.comment-vote-btn').forEach(button => {
             button.removeEventListener('click', this.handleVoteButtonClick);
             button.addEventListener('click', this.handleVoteButtonClick);
-            console.log(`rebindCommentEvents: Bound click handler to comment vote button: ${button.id || button.className}`); // Debugging
         });
 
+        // Re-bind reply buttons
         document.querySelectorAll('.reply-btn, .comment-reply-btn').forEach(button => {
             button.removeEventListener('click', this.handleReplyButtonClick);
             button.addEventListener('click', this.handleReplyButtonClick);
-            console.log(`rebindCommentEvents: Bound click handler to reply button: ${button.id || button.className}`); // Debugging
         });
 
+        // Re-bind edit buttons
         document.querySelectorAll('.edit-btn').forEach(button => {
             button.removeEventListener('click', this.handleEditButtonClick);
             button.addEventListener('click', this.handleEditButtonClick);
-            console.log(`rebindCommentEvents: Bound click handler to edit button: ${button.id || button.className}`); // Debugging
         });
 
+        // Re-bind delete buttons
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.removeEventListener('click', this.handleDeleteButtonClick);
             button.addEventListener('click', this.handleDeleteButtonClick);
-            console.log(`rebindCommentEvents: Bound click handler to delete button: ${button.id || button.className}`); // Debugging
         });
 
+        // Re-bind reply submit buttons
         document.querySelectorAll('.reply-submit-btn').forEach(button => {
             button.removeEventListener('click', this.handleSubmitReplyButtonClick);
             button.addEventListener('click', this.handleSubmitReplyButtonClick);
-            console.log(`rebindCommentEvents: Bound click handler to reply submit button: ${button.id || button.className}`); // Debugging
         });
 
+        // Re-bind cancel reply buttons
         document.querySelectorAll('.cancel-reply, .reply-cancel-btn').forEach(button => {
             button.removeEventListener('click', this.handleCancelReplyClick);
             button.addEventListener('click', this.handleCancelReplyClick);
-            console.log(`rebindCommentEvents: Bound click handler to cancel reply button: ${button.id || button.className}`); // Debugging
         });
 
-        // Rebind share buttons (already has its own logging)
+        // Rebind share buttons
         this.rebindShareButtons();
 
-        // Rebind Post Vote Buttons (already has its own logging)
+        // Rebind Post Vote Buttons
         this.rebindPostVoteButtons();
-        console.log("rebindCommentEvents: Finished re-binding of comment related events."); // Debugging
     }
 
     // Event handlers for rebindCommentEvents (defined as arrow functions to preserve 'this')
     handleVoteButtonClick = (e) => {
         e.preventDefault();
-        console.log("handleVoteButtonClick: Comment vote button clicked."); // Debugging
         const commentId = e.currentTarget.dataset.commentId;
         const voteType = parseInt(e.currentTarget.dataset.voteType); // 1 for upvote, -1 for downvote
-        console.log(`handleVoteButtonClick: CommentId: ${commentId}, VoteType: ${voteType}`); // Debugging
         this.voteComment(commentId, voteType === 1); // Pass true for upvote, false for downvote
     }
 
@@ -554,45 +529,61 @@ class SignalRManager {
 
         document.querySelectorAll('.reply-form').forEach(form => {
             const formCommentId = form.dataset.commentId;
-            if (formCommentId != commentId && form.classList.contains('d-none') === false) { // Corrected check for visible form
+            if (formCommentId != commentId && form.classList.contains('active')) {
                 console.log(`Hiding form: `, form);
-                form.classList.add('d-none'); // Hide the form
-                form.classList.remove('active'); // Remove active class if present
+                form.classList.remove('active');
+                form.classList.add('d-none');
             }
         });
 
         const replyForm = document.getElementById(`replyForm${commentId}`);
-        // Fallback for when ID might not be present but data-comment-id is.
-        // It's best to always use a unique ID if possible.
-        const fallbackReplyForm = document.querySelector(`.reply-form[data-comment-id="${commentId}"]`);
-        const targetForm = replyForm || fallbackReplyForm;
-
-        if (targetForm) {
-            const isCurrentlyHidden = targetForm.classList.contains('d-none');
-            console.log(`Found reply form: `, targetForm);
-            console.log(`Classes before toggle: `, targetForm.classList.value);
+        if (replyForm) {
+            const isCurrentlyHidden = replyForm.classList.contains('d-none');
+            console.log(`Found reply form: `, replyForm);
+            console.log(`Classes before explicit toggle: `, replyForm.classList.value);
 
             if (isCurrentlyHidden) {
-                targetForm.classList.remove('d-none');
-                targetForm.classList.add('active'); // Add active class to show
+                replyForm.classList.remove('d-none');
+                replyForm.classList.add('active');
             } else {
-                targetForm.classList.add('d-none'); // Hide the form
-                targetForm.classList.remove('active'); // Remove active class
+                replyForm.classList.remove('active');
+                replyForm.classList.add('d-none');
             }
 
-            console.log(`Classes after toggle: `, targetForm.classList.value);
+            console.log(`Classes after explicit toggle: `, replyForm.classList.value);
 
-            if (targetForm.classList.contains('active')) {
-                targetForm.querySelector('textarea')?.focus(); // Use optional chaining for textarea
+            if (replyForm.classList.contains('active')) {
+                replyForm.querySelector('textarea').focus();
             }
         } else {
-            console.log(`Reply form with ID "replyForm${commentId}" and fallback data-comment-id="${commentId}" not found.`);
+            console.log(`Reply form with ID "replyForm${commentId}" not found.`);
+            const fallbackReplyForm = document.querySelector(`.reply-form[data-comment-id="${commentId}"]`);
+            if (fallbackReplyForm) {
+                console.log(`Found reply form using fallback data-comment-id: `, fallbackReplyForm);
+                console.log(`Fallback Classes before explicit toggle: `, fallbackReplyForm.classList.value);
+
+                const isFallbackCurrentlyHidden = fallbackReplyForm.classList.contains('d-none');
+                if (isFallbackCurrentlyHidden) {
+                    fallbackReplyForm.classList.remove('d-none');
+                    fallbackReplyForm.classList.add('active');
+                } else {
+                    fallbackReplyForm.classList.remove('active');
+                    fallbackReplyForm.classList.add('d-none');
+                }
+
+                console.log(`Fallback Classes after explicit toggle: `, fallbackReplyForm.classList.value);
+                if (fallbackReplyForm.classList.contains('active')) {
+                    fallbackReplyForm.querySelector('textarea').focus();
+                }
+            } else {
+                console.log(`Fallback reply form with data-comment-id="${commentId}" also not found.`);
+            }
         }
     }
 
     rebindShareButtons() {
         console.log("rebindShareButtons: Attempting to bind share buttons.");
-        document.querySelectorAll('.share-dropdown .action-btn').forEach((button) => {
+        document.querySelectorAll('.share-dropdown .action-btn').forEach((button, index) => {
             if (button.querySelector('.fas.fa-share')) {
                 button.removeEventListener('click', this.handleShareButtonClick);
                 button.addEventListener('click', this.handleShareButtonClick);

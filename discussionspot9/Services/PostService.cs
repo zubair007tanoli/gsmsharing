@@ -40,8 +40,8 @@ namespace discussionspot9.Services
                                 p.CreatedAt,
                                 p.ViewCount, // Added view count
                                 CommentCount = p.Comments.Count(),
-                                UpvoteCount = p.Votes.Count(v => v.VoteType == 1),
-                                DownvoteCount = p.Votes.Count(v => v.VoteType == -1),
+                                UpvoteCount = p.UpvoteCount,
+                                DownvoteCount = p.DownvoteCount,
                                 Score = p.Votes.Sum(v => (int?)v.VoteType) ?? 0
                             };
 
