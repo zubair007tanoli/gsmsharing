@@ -1,0 +1,2156 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+@{
+    ViewData["Title"] = "Create New Post";
+}
+<style>
+    /* Scoped styles for post creator to prevent conflicts */
+    .post-creator-container * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .post-creator-container {
+        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: #DAE0E6;
+        color: #1c1c1c;
+        line-height: 1.4;
+        font-size: 14px;
+        min-height: 100vh;
+    }
+
+        /* Reddit-like Header */
+        .post-creator-container .reddit-header {
+            background: #fff;
+            border-bottom: 1px solid #ccc;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .post-creator-container .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 48px;
+        }
+
+        .post-creator-container .reddit-logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FF4500;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+
+        .post-creator-container .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: auto;
+        }
+
+        .post-creator-container .header-btn {
+            padding: 4px 16px;
+            border: 1px solid #0079D3;
+            background: transparent;
+            color: #0079D3;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+            .post-creator-container .header-btn.primary {
+                background: #0079D3;
+                color: white;
+            }
+
+        /* Main Layout */
+        .post-creator-container .container-fluid.main-container {
+            max-width: none;
+            padding: 0 15px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: 312px 1fr 312px;
+            gap: 20px;
+            padding: 0 20px;
+        }
+
+        /* Left Sidebar */
+        .post-creator-container .left-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .post-creator-container .sidebar-card {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .post-creator-container .sidebar-header {
+            background: #f6f7f8;
+            padding: 12px 16px;
+            border-bottom: 1px solid #edeff1;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #7c7c7c;
+            letter-spacing: 0.5px;
+        }
+
+        .post-creator-container .sidebar-content {
+            padding: 16px;
+        }
+
+        .post-creator-container .community-search {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .post-creator-container .community-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            font-size: 14px;
+            background: #f6f7f8;
+        }
+
+            .post-creator-container .community-input:focus {
+                outline: none;
+                border-color: #0079D3;
+                background: white;
+            }
+
+        .post-creator-container .community-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #edeff1;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .post-creator-container .community-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .post-creator-container .community-item:hover {
+                background: #f6f7f8;
+            }
+
+        .post-creator-container .community-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0079D3;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .post-creator-container .community-info h4 {
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .post-creator-container .community-info p {
+            font-size: 12px;
+            color: #7c7c7c;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .post-creator-container .rules-list {
+            list-style: none;
+        }
+
+            .post-creator-container .rules-list li {
+                padding: 12px 0;
+                border-bottom: 1px solid #edeff1;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+                .post-creator-container .rules-list li:last-child {
+                    border-bottom: none;
+                }
+
+        .post-creator-container .rule-number {
+            font-weight: 600;
+            color: #0079D3;
+        }
+
+        /* Main Content */
+        .post-creator-container .main-content {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .post-creator-container .post-header {
+            background: #f6f7f8;
+            padding: 16px 20px;
+            border-bottom: 1px solid #edeff1;
+        }
+
+        .post-creator-container .post-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 0;
+            color: #1c1c1c;
+        }
+
+        .post-creator-container .breadcrumb {
+            font-size: 12px;
+            color: #7c7c7c;
+            margin-top: 4px;
+        }
+
+            .post-creator-container .breadcrumb a {
+                color: #0079D3;
+                text-decoration: none;
+            }
+
+        /* Post Type Tabs */
+        .post-creator-container .post-tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #edeff1;
+        }
+
+        .post-creator-container .post-tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: #7c7c7c;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+            .post-creator-container .post-tab:hover {
+                background: #f6f7f8;
+                color: #1c1c1c;
+            }
+
+            .post-creator-container .post-tab.active {
+                color: #0079D3;
+                border-bottom-color: #0079D3;
+                background: white;
+            }
+
+            .post-creator-container .post-tab i {
+                font-size: 16px;
+            }
+
+        /* Form Content */
+        .post-creator-container .form-container {
+            padding: 20px;
+        }
+
+        .post-creator-container .form-group {
+            margin-bottom: 16px;
+        }
+
+        .post-creator-container .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1c1c1c;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .post-creator-container .form-input,
+        .post-creator-container .form-textarea,
+        .post-creator-container .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+
+            .post-creator-container .form-input:focus,
+            .post-creator-container .form-textarea:focus,
+            .post-creator-container .form-select:focus {
+                outline: none;
+                border-color: #0079D3;
+            }
+
+        .post-creator-container .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .post-creator-container .char-count {
+            font-size: 12px;
+            color: #7c7c7c;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        /* Content Sections */
+        .post-creator-container .content-section {
+            display: none;
+        }
+
+            .post-creator-container .content-section.active {
+                display: block;
+            }
+
+        /* Rich Text Editor */
+        .post-creator-container .editor-container {
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .post-creator-container .editor-toolbar {
+            padding: 8px 12px;
+            border-bottom: 1px solid #edeff1;
+            background: #f6f7f8;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .post-creator-container .editor-btn {
+            padding: 6px 8px;
+            border: none;
+            background: transparent;
+            color: #7c7c7c;
+            cursor: pointer;
+            border-radius: 2px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+            .post-creator-container .editor-btn:hover {
+                background: #edeff1;
+                color: #1c1c1c;
+            }
+
+            .post-creator-container .editor-btn.active {
+                background: #0079D3;
+                color: white;
+            }
+
+        .post-creator-container .editor-content {
+            padding: 12px;
+            min-height: 120px;
+            outline: none;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+            .post-creator-container .editor-content:empty:before {
+                content: "Text (optional)";
+                color: #7c7c7c;
+            }
+
+        /* File Upload */
+        .post-creator-container .upload-area {
+            border: 2px dashed #edeff1;
+            border-radius: 4px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f6f7f8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+            .post-creator-container .upload-area:hover,
+            .post-creator-container .upload-area.dragover {
+                border-color: #0079D3;
+                background: rgba(0, 121, 211, 0.05);
+            }
+
+        .post-creator-container .upload-icon {
+            font-size: 48px;
+            color: #7c7c7c;
+            margin-bottom: 12px;
+        }
+
+        .post-creator-container .upload-text {
+            font-size: 16px;
+            color: #1c1c1c;
+            margin-bottom: 4px;
+        }
+
+        .post-creator-container .upload-subtext {
+            font-size: 12px;
+            color: #7c7c7c;
+        }
+
+        /* Tags */
+        .post-creator-container .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            background: white;
+            min-height: 40px;
+            align-items: center;
+        }
+
+        .post-creator-container .tag {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #0079D3;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .post-creator-container .tag-remove {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+            .post-creator-container .tag-remove:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+        .post-creator-container .tag-input {
+            border: none;
+            outline: none;
+            background: transparent;
+            flex: 1;
+            min-width: 100px;
+            font-size: 14px;
+        }
+
+        /* Toggle Switch Styles - Bootstrap Style */
+        .post-creator-container .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+            .post-creator-container .toggle-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+        .post-creator-container .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+            .post-creator-container .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        .post-creator-container .toggle-switch input:checked + .toggle-slider {
+            background-color: #0079D3;
+        }
+
+            .post-creator-container .toggle-switch input:checked + .toggle-slider:before {
+                transform: translateX(20px);
+            }
+
+        /* Post Options - Display in rows */
+        .post-creator-container .post-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #edeff1;
+        }
+
+        .post-creator-container .option-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1c1c1c;
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border: 1px solid #edeff1;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+            .post-creator-container .option-toggle:hover {
+                background: #f0f0f0;
+                border-color: #0079D3;
+            }
+
+            .post-creator-container .option-toggle span {
+                user-select: none;
+                flex: 1;
+            }
+
+        /* Poll Settings - Display in rows */
+        .post-creator-container .poll-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+            .post-creator-container .poll-settings .option-toggle {
+                margin-bottom: 0;
+            }
+
+        /* Action Buttons */
+        .post-creator-container .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 16px 20px;
+            background: #f6f7f8;
+            border-top: 1px solid #edeff1;
+        }
+
+        .post-creator-container .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .post-creator-container .btn-primary {
+            background: #0079D3;
+            color: white;
+        }
+
+            .post-creator-container .btn-primary:hover {
+                background: #0066b3;
+            }
+
+        .post-creator-container .btn-secondary {
+            background: transparent;
+            color: #0079D3;
+            border: 1px solid #0079D3;
+        }
+
+            .post-creator-container .btn-secondary:hover {
+                background: #0079D3;
+                color: white;
+            }
+
+        .post-creator-container .btn-ghost {
+            background: transparent;
+            color: #7c7c7c;
+            border: 1px solid #edeff1;
+        }
+
+            .post-creator-container .btn-ghost:hover {
+                background: #f6f7f8;
+                color: #1c1c1c;
+            }
+
+        /* Right Sidebar */
+        .post-creator-container .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .post-creator-container .tips-list {
+            list-style: none;
+        }
+
+            .post-creator-container .tips-list li {
+                padding: 10px 0;
+                font-size: 13px;
+                color: #7c7c7c;
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                line-height: 1.4;
+            }
+
+            .post-creator-container .tips-list i {
+                color: #46D160;
+                margin-top: 2px;
+                font-size: 10px;
+            }
+
+        /* Poll Options */
+        .post-creator-container .poll-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .post-creator-container .poll-option {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+            .post-creator-container .poll-option input {
+                flex: 1;
+            }
+
+        .post-creator-container .poll-remove {
+            padding: 6px 8px;
+            background: transparent;
+            border: 1px solid #edeff1;
+            color: #7c7c7c;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+            .post-creator-container .poll-remove:hover {
+                background: #f6f7f8;
+                border-color: #FF4500;
+                color: #FF4500;
+            }
+
+        .post-creator-container .add-option {
+            align-self: flex-start;
+            margin-top: 8px;
+        }
+
+        /* Community suggestions */
+        .post-creator-container .community-suggestion {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #edeff1;
+        }
+
+            .post-creator-container .community-suggestion:last-child {
+                border-bottom: none;
+            }
+
+        .post-creator-container .suggestion-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #0079D3;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .post-creator-container .suggestion-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+            .post-creator-container .suggestion-info h4 {
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0 0 2px 0;
+                color: #1c1c1c;
+            }
+
+            .post-creator-container .suggestion-info p {
+                font-size: 12px;
+                color: #7c7c7c;
+                margin: 0;
+                line-height: 1.3;
+            }
+
+        .post-creator-container .suggestion-stats {
+            font-size: 11px;
+            color: #46D160;
+            margin-top: 2px;
+        }
+
+        .post-creator-container .join-btn {
+            padding: 4px 12px;
+            background: #0079D3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+            .post-creator-container .join-btn:hover {
+                background: #0066b3;
+            }
+
+            .post-creator-container .join-btn.joined {
+                background: #46D160;
+            }
+
+        .post-creator-container .trending-badge {
+            background: #FF4500;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .post-creator-container .new-badge {
+            background: #46D160;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .post-creator-container .btn-create-community {
+            background: none;
+            border: 1px solid #0079D3;
+            color: #0079D3;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+            .post-creator-container .btn-create-community:hover {
+                background: #0079D3;
+                color: white;
+            }
+
+        .post-creator-container .community-section-header {
+            padding: 8px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #7c7c7c;
+            background: #f6f7f8;
+            border-bottom: 1px solid #edeff1;
+            letter-spacing: 0.5px;
+        }
+
+        .post-creator-container .poll-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .post-creator-container .ad-card {
+            background: #f6f7f8;
+            border: 1px solid #edeff1;
+        }
+
+            .post-creator-container .ad-card .sidebar-header {
+                font-size: 10px;
+                color: #7c7c7c;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+        /* AdSense responsive styles */
+        .post-creator-container .adsbygoogle {
+            display: block;
+            min-height: 100px;
+            background: #f0f0f0;
+        }
+
+        /* Media preview styles */
+        .post-creator-container .media-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .post-creator-container .media-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #f6f7f8;
+        }
+
+            .post-creator-container .media-item img,
+            .post-creator-container .media-item video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .post-creator-container .media-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        /* SEO Section */
+        .post-creator-container .seo-section {
+            background: #f9f9f9;
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+            .post-creator-container .seo-section h3 {
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 12px;
+                color: #1c1c1c;
+            }
+
+        .post-creator-container .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Full width SEO toggle */
+        .post-creator-container #seoToggle {
+            width: 100%;
+            justify-content: center;
+            font-size: 14px;
+            padding: 12px 16px;
+        }
+
+        /* Improved guidelines design */
+        .post-creator-container .guideline-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+            .post-creator-container .guideline-item:last-child {
+                border-bottom: none;
+            }
+
+        .post-creator-container .guideline-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #0079D3, #00A8FF);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .post-creator-container .guideline-content h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+            color: #1c1c1c;
+        }
+
+        .post-creator-container .guideline-content p {
+            font-size: 12px;
+            color: #7c7c7c;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* News card styles */
+        .post-creator-container .news-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+            .post-creator-container .news-item:last-child {
+                border-bottom: none;
+            }
+
+        .post-creator-container .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .post-creator-container .news-time {
+            font-size: 11px;
+            color: #7c7c7c;
+        }
+
+        .post-creator-container .news-category {
+            font-size: 10px;
+            background: #0079D3;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .post-creator-container .news-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+            color: #1c1c1c;
+            line-height: 1.3;
+        }
+
+        .post-creator-container .news-excerpt {
+            font-size: 12px;
+            color: #7c7c7c;
+            margin: 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+    /* Responsive */
+    @@media (max-width: 1024px) {
+    .post-creator-container .container-fluid.main-container
+    {
+        grid-template-columns: 1fr;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .post-creator-container .left-sidebar,
+    .post-creator-container .right-sidebar {
+        display: none;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+    .post-creator-container .main-container
+    {
+        margin: 10px auto;
+        padding: 0 10px;
+    }
+    .post-creator-container .post-tabs {
+        overflow-x: auto;
+    }
+    .post-creator-container .post-tab {
+        min-width: 80px;
+        flex: none;
+    }
+
+    .post-creator-container .form-container {
+        padding: 16px;
+    }
+
+    .post-creator-container .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .post-creator-container .post-options,
+    .post-creator-container .poll-settings {
+        grid-template-columns: 1fr;
+    }
+
+    }
+
+    /* Status Messages */
+    .post-creator-container .status-message {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        padding: 12px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 1000;
+        display: none;
+        animation: slideIn 0.3s ease;
+    }
+
+        .post-creator-container .status-message.success {
+            background: #46D160;
+            color: white;
+        }
+
+        .post-creator-container .status-message.error {
+            background: #FF4500;
+            color: white;
+        }
+
+        .post-creator-container .status-message.info {
+            background: #0079D3;
+            color: white;
+        }
+
+    @@keyframes slideIn {
+    from{
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    }
+</style>
+<div class="post-creator-container">
+   <!-- Main Container -->
+    <div class="container-fluid main-container">
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <!-- Community Selection -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Choose a community</span>
+                        <button type="button" class="btn-create-community" onclick="showCreateCommunityModal()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="sidebar-content">
+                    <div class="community-search">
+                        <input type="text" class="community-input" id="communitySearch" placeholder="Search communities" required>
+                        <div class="community-dropdown" id="communityDropdown">
+                            <!-- Popular Communities -->
+                            <div class="community-section-header">Popular Communities</div>
+                            <div class="community-item" data-community="technology" data-id="1" data-slug="technology">
+                                <div class="community-icon">T</div>
+                                <div class="community-info">
+                                    <h4>r/Technology</h4>
+                                    <p>1.2M members • Tech news & discussions</p>
+                                </div>
+                            </div>
+                            <div class="community-item" data-community="gaming" data-id="2" data-slug="gaming">
+                                <div class="community-icon">G</div>
+                                <div class="community-info">
+                                    <h4>r/Gaming</h4>
+                                    <p>3.4M members • Gaming community</p>
+                                </div>
+                            </div>
+                            <div class="community-item" data-community="programming" data-id="3" data-slug="programming">
+                                <div class="community-icon">P</div>
+                                <div class="community-info">
+                                    <h4>r/Programming</h4>
+                                    <p>2.1M members • Programming discussions</p>
+                                </div>
+                            </div>
+
+                            <!-- Your Communities -->
+                            <div class="community-section-header">Your Communities</div>
+                            <div class="community-item" data-community="webdev" data-id="4" data-slug="webdev">
+                                <div class="community-icon">W</div>
+                                <div class="community-info">
+                                    <h4>r/WebDev</h4>
+                                    <p>890K members • Web development</p>
+                                </div>
+                            </div>
+                            <div class="community-item" data-community="javascript" data-id="5" data-slug="javascript">
+                                <div class="community-icon">J</div>
+                                <div class="community-info">
+                                    <h4>r/JavaScript</h4>
+                                    <p>2.3M members • JavaScript programming</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Community List (Always Visible) -->
+                    <div class="community-list" style="margin-top: 16px;">
+                        <div style="font-size: 12px; font-weight: 600; color: #7c7c7c; margin-bottom: 8px; text-transform: uppercase;">Recent Communities</div>
+                        <div class="community-item" data-community="technology" data-id="1" data-slug="technology" style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div class="community-icon" style="width: 24px; height: 24px; font-size: 12px;">T</div>
+                            <div class="community-info">
+                                <h4 style="font-size: 13px;">r/Technology</h4>
+                                <p style="font-size: 11px;">1.2M members</p>
+                            </div>
+                        </div>
+                        <div class="community-item" data-community="gaming" data-id="2" data-slug="gaming" style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div class="community-icon" style="width: 24px; height: 24px; font-size: 12px;">G</div>
+                            <div class="community-info">
+                                <h4 style="font-size: 13px;">r/Gaming</h4>
+                                <p style="font-size: 11px;">3.4M members</p>
+                            </div>
+                        </div>
+                        <div class="community-item" data-community="programming" data-id="3" data-slug="programming" style="padding: 8px 0;">
+                            <div class="community-icon" style="width: 24px; height: 24px; font-size: 12px;">P</div>
+                            <div class="community-info">
+                                <h4 style="font-size: 13px;">r/Programming</h4>
+                                <p style="font-size: 11px;">2.1M members</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Community Suggestions -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-fire"></i> Trending Communities
+                </div>
+                <div class="sidebar-content">
+                    <div class="community-suggestion">
+                        <div class="suggestion-icon" style="background: linear-gradient(45deg, #FF6B6B, #FF8E53);">AI</div>
+                        <div class="suggestion-info">
+                            <h4>r/ArtificialIntelligence <span class="trending-badge">HOT</span></h4>
+                            <p>Discussions about AI, machine learning, and the future</p>
+                            <div class="suggestion-stats">↗ +2.3K members this week</div>
+                        </div>
+                        <button class="join-btn" onclick="joinCommunity(this, 'ai')">Join</button>
+                    </div>
+
+                    <div class="community-suggestion">
+                        <div class="suggestion-icon" style="background: linear-gradient(45deg, #4ECDC4, #44A08D);">WD</div>
+                        <div class="suggestion-info">
+                            <h4>r/WebDevelopment</h4>
+                            <p>Frontend, backend, and everything in between</p>
+                            <div class="suggestion-stats">↗ +1.8K members this week</div>
+                        </div>
+                        <button class="join-btn" onclick="joinCommunity(this, 'webdev')">Join</button>
+                    </div>
+
+                    <div class="community-suggestion">
+                        <div class="suggestion-icon" style="background: linear-gradient(45deg, #A8E6CF, #7FCDCD);">ST</div>
+                        <div class="suggestion-info">
+                            <h4>r/StartupAdvice <span class="new-badge">NEW</span></h4>
+                            <p>Tips and guidance for entrepreneurs and startups</p>
+                            <div class="suggestion-stats">↗ +950 members this week</div>
+                        </div>
+                        <button class="join-btn" onclick="joinCommunity(this, 'startup')">Join</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Community Rules -->
+            <div class="sidebar-card">
+                <div class="sidebar-header" id="rulesHeader">
+                    <i class="fas fa-shield-alt"></i> Community Guidelines
+                </div>
+                <div class="sidebar-content">
+                    <ul class="rules-list" id="rulesList">
+                        <li>
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="rule-number">1.</span>
+                                <div>
+                                    <strong>Be respectful and civil</strong>
+                                    <div style="font-size: 12px; color: #7c7c7c; margin-top: 2px;">Treat others with respect. No personal attacks, harassment, or hate speech.</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="rule-number">2.</span>
+                                <div>
+                                    <strong>No spam or self-promotion</strong>
+                                    <div style="font-size: 12px; color: #7c7c7c; margin-top: 2px;">Don't spam the community with repetitive content or excessive self-promotion.</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="rule-number">3.</span>
+                                <div>
+                                    <strong>Stay on topic</strong>
+                                    <div style="font-size: 12px; color: #7c7c7c; margin-top: 2px;">Posts must be related to the community topic and contribute to meaningful discussion.</div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Google AdSense Ad - Left Sidebar -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Sponsored</div>
+                <div class="sidebar-content">
+                    <!-- Vertical Banner Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="2233445566"
+                         data-ad-format="vertical"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Second Ad Unit - Left Sidebar -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Advertisement</div>
+                <div class="sidebar-content">
+                    <!-- Square Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="7788990011"
+                         data-ad-format="square"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="post-header">
+                <h1 class="post-title">Create a post</h1>
+                <div class="breadcrumb">
+                    <a href="#">Home</a> / <a href="#">Submit</a> / Create Post
+                </div>
+            </div>
+
+            <!-- Top Banner Ad -->
+            <div style="padding: 16px 20px; border-bottom: 1px solid #edeff1; background: #f6f7f8;">
+                <div style="text-align: center;">
+                    <div style="font-size: 10px; color: #7c7c7c; margin-bottom: 8px;">ADVERTISEMENT</div>
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="5566778899"
+                         data-ad-format="banner"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Post Type Tabs -->
+            <div class="post-tabs">
+                <div class="post-tab active" data-type="text">
+                    <i class="fas fa-font"></i>
+                    <span>Post</span>
+                </div>
+                <div class="post-tab" data-type="image">
+                    <i class="fas fa-image"></i>
+                    <span>Images & Video</span>
+                </div>
+                <div class="post-tab" data-type="link">
+                    <i class="fas fa-link"></i>
+                    <span>Link</span>
+                </div>
+                <div class="post-tab" data-type="poll">
+                    <i class="fas fa-poll"></i>
+                    <span>Poll</span>
+                </div>
+            </div>
+
+            <!-- Form Container -->
+            <div class="form-container">
+                <form id="postForm" method="post" enctype="multipart/form-data">
+                    <!-- Hidden fields for database relationships -->
+                    <input type="hidden" id="communityId" name="CommunityId" value="" required>
+                    <input type="hidden" id="communitySlug" name="CommunitySlug" value="">
+                    <input type="hidden" id="userId" name="UserId" value="current-user-id">
+                    <input type="hidden" id="postType" name="PostType" value="text">
+                    <input type="hidden" id="slug" name="Slug" value="">
+
+                    <!-- Title -->
+                    <div class="form-group">
+                        <label class="form-label" for="title">Title *</label>
+                        <input type="text" class="form-input" id="title" name="Title" placeholder="An interesting title" maxlength="300" required>
+                        <div class="char-count">
+                            <span id="titleCount">0</span>/300
+                        </div>
+                    </div>
+
+                    <!-- Content Sections -->
+                    <div class="content-section active" id="textContent">
+                        <div class="form-group">
+                            <label class="form-label">Content</label>
+                            <div class="editor-container">
+                                <div class="editor-toolbar">
+                                    <button type="button" class="editor-btn" title="Bold">
+                                        <i class="fas fa-bold"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Italic">
+                                        <i class="fas fa-italic"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Link">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Code">
+                                        <i class="fas fa-code"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Quote">
+                                        <i class="fas fa-quote-left"></i>
+                                    </button>
+                                </div>
+                                <div class="editor-content" contenteditable="true" id="textEditor"></div>
+                            </div>
+                            <textarea name="Content" id="contentHidden" style="display: none;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="content-section" id="imageContent">
+                        <div class="form-group">
+                            <label class="form-label">Upload Media *</label>
+                            <div class="upload-area" onclick="document.getElementById('mediaUpload').click()">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="upload-text">Drag and drop images or videos</div>
+                                <div class="upload-subtext">or click to browse (Max 10MB per file)</div>
+                            </div>
+                            <input type="file" id="mediaUpload" name="MediaFiles" multiple accept="image/*,video/*" style="display: none;">
+                            <div class="media-preview" id="mediaPreview"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Caption</label>
+                            <input type="text" class="form-input" name="MediaCaption" placeholder="Add a caption to your media">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Alt Text (Accessibility)</label>
+                            <input type="text" class="form-input" name="MediaAltText" placeholder="Describe your media for screen readers">
+                        </div>
+                    </div>
+
+                    <div class="content-section" id="linkContent">
+                        <div class="form-group">
+                            <label class="form-label">URL *</label>
+                            <input type="url" class="form-input" id="linkUrl" name="Url" placeholder="https://example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description (Optional)</label>
+                            <textarea class="form-textarea" name="Content" rows="5" placeholder="Describe or comment on the link..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="content-section" id="pollContent">
+                        <div class="form-group">
+                            <label class="form-label">Poll Question</label>
+                            <textarea class="form-textarea" name="Content" rows="3" placeholder="What's your poll question?"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Poll Options *</label>
+                            <div class="poll-options" id="pollOptions">
+                                <div class="poll-option">
+                                    <input type="text" class="form-input poll-option-input" name="PollOptions" placeholder="Option 1" required>
+                                    <button type="button" class="poll-remove" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="poll-option">
+                                    <input type="text" class="form-input poll-option-input" name="PollOptions" placeholder="Option 2" required>
+                                    <button type="button" class="poll-remove" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-ghost add-option" id="addPollOption">
+                                <i class="fas fa-plus"></i> Add option
+                            </button>
+                        </div>
+
+                        <!-- Poll Configuration -->
+                        <div class="form-group">
+                            <label class="form-label">Poll Settings</label>
+                            <div class="poll-settings">
+                                <label class="option-toggle">
+                                    <span>Allow Multiple Choices</span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="allowMultipleChoices" name="AllowMultipleChoices">
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+
+                                <label class="option-toggle">
+                                    <span>Show Results Before Voting</span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="showResultsBeforeVoting" name="ShowResultsBeforeVoting" checked>
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+
+                                <label class="option-toggle">
+                                    <span>Allow Users to Add Options</span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="allowAddingOptions" name="AllowAddingOptions">
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Poll End Date - Separated -->
+                        <div class="form-group">
+                            <label class="form-label">Poll End Date (Optional)</label>
+                            <input type="datetime-local" class="form-input" id="pollEndDate" name="EndDate">
+                            <div style="font-size: 11px; color: #7c7c7c; margin-top: 4px;">Set when the poll should automatically close</div>
+                        </div>
+                    </div>
+
+                    <!-- Tags Section -->
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <div class="tag-container" id="tagContainer">
+                            <input type="text" class="tag-input" id="tagInput" placeholder="Add tags (press Enter)">
+                        </div>
+                        <div style="font-size: 12px; color: #7c7c7c; margin-top: 4px;">Add up to 5 tags to help categorize your post</div>
+                    </div>
+
+                    <!-- SEO Toggle Button -->
+                    <div class="form-group">
+                        <button type="button" class="btn btn-ghost" id="seoToggle" style="margin-bottom: 16px;">
+                            <i class="fas fa-chevron-down"></i> Show SEO Settings
+                        </button>
+                    </div>
+
+                    <!-- SEO Metadata Section (Hidden by default) -->
+                    <div class="seo-section" id="seoSection" style="display: none;">
+                        <h3><i class="fas fa-search"></i> SEO & Social Media Settings</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Meta Title</label>
+                                <input type="text" class="form-input" name="MetaTitle" placeholder="Custom title for search engines" maxlength="200">
+                                <div style="font-size: 11px; color: #7c7c7c;">Leave blank to use post title</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Canonical URL</label>
+                                <input type="url" class="form-input" name="CanonicalUrl" placeholder="https://example.com/canonical">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Meta Description</label>
+                            <textarea class="form-textarea" name="MetaDescription" rows="2" placeholder="Brief description for search results" maxlength="500"></textarea>
+                            <div style="font-size: 11px; color: #7c7c7c;">Recommended: 150-160 characters</div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Keywords</label>
+                                <input type="text" class="form-input" name="Keywords" placeholder="Comma-separated keywords">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Social Media Image</label>
+                                <input type="file" class="form-input" name="SocialMediaImage" accept="image/*">
+                                <div style="font-size: 11px; color: #7c7c7c;">Recommended: 1200x630 pixels</div>
+                            </div>
+                        </div>
+
+                        <!-- Open Graph Settings -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Facebook Title</label>
+                                <input type="text" class="form-input" name="OgTitle" placeholder="Title for Facebook shares" maxlength="200">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Twitter Title</label>
+                                <input type="text" class="form-input" name="TwitterTitle" placeholder="Title for Twitter shares" maxlength="200">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Facebook Description</label>
+                                <textarea class="form-textarea" name="OgDescription" rows="2" placeholder="Description for Facebook shares" maxlength="500"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Twitter Description</label>
+                                <textarea class="form-textarea" name="TwitterDescription" rows="2" placeholder="Description for Twitter shares" maxlength="500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post Options -->
+                    <div class="post-options">
+                        <label class="option-toggle">
+                            <span>NSFW</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" name="IsNSFW">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                        <label class="option-toggle">
+                            <span>Spoiler</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" name="IsSpoiler">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                        <label class="option-toggle">
+                            <span>Pin Post</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" name="IsPinned">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                        <label class="option-toggle">
+                            <span>Lock Comments</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" name="IsLocked">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" id="saveAsDraft">
+                    <i class="fas fa-save"></i> Save Draft
+                </button>
+                <button type="button" class="btn btn-secondary" id="previewBtn">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button type="submit" class="btn btn-primary" id="submitPost" form="postForm">
+                    <i class="fas fa-paper-plane"></i> Post
+                </button>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="right-sidebar">
+            <!-- Posting Tips -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-lightbulb"></i> Posting Guidelines
+                </div>
+                <div class="sidebar-content">
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Choose the Right Community</h4>
+                            <p>Select a community that matches your content topic</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-heading"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Write Engaging Titles</h4>
+                            <p>Create descriptive and compelling titles that grab attention</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Use Relevant Tags</h4>
+                            <p>Add tags to help others discover your content</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Content Warnings</h4>
+                            <p>Mark NSFW or spoiler content appropriately</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Tips -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">SEO Best Practices</div>
+                <div class="sidebar-content">
+                    <ul class="tips-list">
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Include target keywords in your title naturally</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Write compelling meta descriptions</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Use high-quality images with alt text</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Add structured data for better search visibility</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Latest News Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-newspaper"></i> Latest News
+                </div>
+                <div class="sidebar-content">
+                    <div class="news-item">
+                        <div class="news-meta">
+                            <span class="news-time">2 hours ago</span>
+                            <span class="news-category">Tech</span>
+                        </div>
+                        <h4 class="news-title">New AI Features Released</h4>
+                        <p class="news-excerpt">DiscussionSpot introduces AI-powered content recommendations...</p>
+                    </div>
+
+                    <div class="news-item">
+                        <div class="news-meta">
+                            <span class="news-time">5 hours ago</span>
+                            <span class="news-category">Update</span>
+                        </div>
+                        <h4 class="news-title">Mobile App Improvements</h4>
+                        <p class="news-excerpt">Enhanced performance and new dark mode options now available...</p>
+                    </div>
+
+                    <div class="news-item">
+                        <div class="news-meta">
+                            <span class="news-time">1 day ago</span>
+                            <span class="news-category">Community</span>
+                        </div>
+                        <h4 class="news-title">Community Guidelines Update</h4>
+                        <p class="news-excerpt">New moderation tools and updated community standards...</p>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 16px;">
+                        <a href="#" style="color: #0079D3; font-size: 12px; font-weight: 600; text-decoration: none;">View All News →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google AdSense Ads -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Sponsored</div>
+                <div class="sidebar-content">
+                    <!-- Rectangle Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="1234567890"
+                         data-ad-format="rectangle"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Second Ad Unit -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Advertisement</div>
+                <div class="sidebar-content">
+                    <!-- Square Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="0987654321"
+                         data-ad-format="square"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Third Ad Unit - Native Ad -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Recommended</div>
+                <div class="sidebar-content">
+                    <!-- Native Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-format="fluid"
+                         data-ad-layout-key="-6t+ed+2i-1n-4w"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="1122334455"></ins>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage">
+        <span id="statusText">Status message</span>
+    </div>
+</div>
+
+<script>
+    // Global state
+    let currentPostType = 'text';
+    let selectedCommunity = null;
+    let tags = [];
+    let uploadedFiles = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeEventListeners();
+        generateSlug();
+
+        // Initialize AdSense
+        if (typeof adsbygoogle !== 'undefined') {
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        }
+    });
+
+    function initializeEventListeners() {
+        // Post type tabs
+        document.querySelectorAll('.post-tab').forEach(tab => {
+            tab.addEventListener('click', handleTabClick);
+        });
+
+        // Community search and selection
+        const communitySearch = document.getElementById('communitySearch');
+        const communityDropdown = document.getElementById('communityDropdown');
+
+        communitySearch.addEventListener('focus', () => {
+            communityDropdown.style.display = 'block';
+        });
+
+        communitySearch.addEventListener('input', handleCommunitySearch);
+
+        document.querySelectorAll('.community-item').forEach(item => {
+            item.addEventListener('click', handleCommunitySelect);
+        });
+
+        // Title and slug generation
+        document.getElementById('title').addEventListener('input', function(e) {
+            updateCharCount(e.target, 'titleCount', 300);
+            generateSlug();
+        });
+
+        // Tag input
+        document.getElementById('tagInput').addEventListener('keypress', handleTagInput);
+
+        // Poll options
+        document.getElementById('addPollOption').addEventListener('click', addPollOption);
+
+        // Media upload
+        document.getElementById('mediaUpload').addEventListener('change', handleMediaUpload);
+
+        // Form submission
+        document.getElementById('postForm').addEventListener('submit', handleFormSubmit);
+
+        // Editor content sync
+        document.getElementById('textEditor').addEventListener('input', syncEditorContent);
+
+        // Click outside to close dropdowns
+        document.addEventListener('click', handleOutsideClick);
+
+        // Save as draft
+        document.getElementById('saveAsDraft').addEventListener('click', function() {
+            document.querySelector('input[name="Status"]')?.remove();
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'Status';
+            statusInput.value = 'draft';
+            document.getElementById('postForm').appendChild(statusInput);
+
+            showStatus('info', 'Saving as draft...');
+            setTimeout(() => {
+                showStatus('success', 'Draft saved successfully!');
+            }, 1000);
+        });
+
+        // Preview
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            showStatus('info', 'Opening preview...');
+        });
+
+        // SEO Toggle
+        document.getElementById('seoToggle').addEventListener('click', function() {
+            const seoSection = document.getElementById('seoSection');
+            const isVisible = seoSection.style.display !== 'none';
+            seoSection.style.display = isVisible ? 'none' : 'block';
+            this.innerHTML = isVisible ?
+                '<i class="fas fa-chevron-down"></i> Show SEO Settings' :
+                '<i class="fas fa-chevron-up"></i> Hide SEO Settings';
+        });
+
+        // Toggle switches
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+            });
+        });
+    }
+
+    function handleTabClick(e) {
+        e.preventDefault();
+
+        // Remove active class from all tabs
+        document.querySelectorAll('.post-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Hide all content sections
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Add active class to clicked tab
+        e.currentTarget.classList.add('active');
+        currentPostType = e.currentTarget.getAttribute('data-type');
+        document.getElementById('postType').value = currentPostType;
+
+        // Show corresponding content section
+        const targetSection = document.getElementById(currentPostType + 'Content');
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+
+        // Update required fields based on post type
+        updateRequiredFields();
+    }
+
+    function updateRequiredFields() {
+        // Reset all required fields
+        document.querySelectorAll('[required]').forEach(field => {
+            if (field.id !== 'title' && field.id !== 'communitySearch') {
+                field.removeAttribute('required');
+            }
+        });
+
+        // Set required fields based on post type
+        switch(currentPostType) {
+            case 'image':
+                document.getElementById('mediaUpload').setAttribute('required', 'required');
+                break;
+            case 'link':
+                document.getElementById('linkUrl').setAttribute('required', 'required');
+                break;
+            case 'poll':
+                document.querySelectorAll('.poll-option-input').forEach(input => {
+                    input.setAttribute('required', 'required');
+                });
+                break;
+        }
+    }
+
+    function handleCommunitySearch(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const communityItems = document.querySelectorAll('.community-item');
+
+        communityItems.forEach(item => {
+            const communityName = item.querySelector('h4').textContent.toLowerCase();
+            if (communityName.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function handleCommunitySelect(e) {
+        const communityItem = e.currentTarget;
+        const communityName = communityItem.querySelector('h4').textContent;
+        const communitySlug = communityItem.getAttribute('data-slug');
+        const communityId = communityItem.getAttribute('data-id');
+
+        selectedCommunity = {
+            id: communityId,
+            name: communityName,
+            slug: communitySlug
+        };
+
+        document.getElementById('communityId').value = communityId;
+        document.getElementById('communitySlug').value = communitySlug;
+        document.getElementById('communitySearch').value = communityName;
+        document.getElementById('communityDropdown').style.display = 'none';
+
+        document.getElementById('rulesHeader').innerHTML = `<i class="fas fa-shield-alt"></i> ${communityName} Rules`;
+
+        showStatus('success', `Selected ${communityName}`);
+    }
+
+    function updateCharCount(input, counterId, maxLength) {
+        const current = input.value.length;
+        document.getElementById(counterId).textContent = current;
+
+        const counter = document.getElementById(counterId);
+        if (current > maxLength * 0.9) {
+            counter.style.color = '#f59e0b';
+        } else {
+            counter.style.color = '#7c7c7c';
+        }
+
+        if (current >= maxLength) {
+            counter.style.color = '#ef4444';
+        }
+    }
+
+    function generateSlug() {
+        const title = document.getElementById('title').value;
+        const slug = title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim('-');
+        document.getElementById('slug').value = slug;
+    }
+
+    function handleTagInput(e) {
+        if (e.key === 'Enter' && e.target.value.trim() !== '') {
+            e.preventDefault();
+
+            if (tags.length < 5) {
+                const tagText = e.target.value.trim();
+
+                if (!tags.includes(tagText)) {
+                    tags.push(tagText);
+
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'tag';
+                    tagElement.innerHTML = `
+                        ${tagText}
+                        <button type="button" class="tag-remove" onclick="removeTag('${tagText}', this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <input type="hidden" name="TagNames" value="${tagText}" />
+                    `;
+
+                    const container = document.getElementById('tagContainer');
+                    container.insertBefore(tagElement, e.target);
+                    e.target.value = '';
+                }
+            } else {
+                showStatus('warning', 'Maximum 5 tags allowed');
+            }
+        }
+    }
+
+    function removeTag(tagText, button) {
+        const index = tags.indexOf(tagText);
+        if (index > -1) {
+            tags.splice(index, 1);
+        }
+        button.parentElement.remove();
+    }
+
+    function addPollOption() {
+        const pollOptions = document.getElementById('pollOptions');
+        const optionCount = pollOptions.children.length;
+
+        if (optionCount < 6) {
+            const newOption = document.createElement('div');
+            newOption.className = 'poll-option';
+            newOption.innerHTML = `
+                <input type="text" class="form-input poll-option-input" name="PollOptions" placeholder="Option ${optionCount + 1}" required>
+                <button type="button" class="poll-remove" onclick="removePollOption(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            pollOptions.appendChild(newOption);
+            updatePollRemoveButtons();
+        } else {
+            showStatus('warning', 'Maximum 6 poll options allowed');
+        }
+    }
+
+    function removePollOption(button) {
+        const pollOptions = document.getElementById('pollOptions');
+        if (pollOptions.children.length > 2) {
+            button.parentElement.remove();
+            updatePollRemoveButtons();
+        }
+    }
+
+    function updatePollRemoveButtons() {
+        const pollOptions = document.getElementById('pollOptions');
+        const removeButtons = pollOptions.querySelectorAll('.poll-remove');
+
+        removeButtons.forEach((button, index) => {
+            if (pollOptions.children.length <= 2) {
+                button.disabled = true;
+            } else {
+                button.disabled = false;
+            }
+        });
+    }
+
+    function handleMediaUpload(e) {
+        const files = Array.from(e.target.files);
+        const preview = document.getElementById('mediaPreview');
+
+        files.forEach(file => {
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('error', `File ${file.name} is too large. Maximum size is 10MB.`);
+                return;
+            }
+
+            const mediaItem = document.createElement('div');
+            mediaItem.className = 'media-item';
+
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                mediaItem.appendChild(img);
+            } else if (file.type.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.controls = true;
+                mediaItem.appendChild(video);
+            }
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'media-remove';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.onclick = () => mediaItem.remove();
+
+            mediaItem.appendChild(removeBtn);
+            preview.appendChild(mediaItem);
+        });
+    }
+
+    function syncEditorContent() {
+        const editorContent = document.getElementById('textEditor').innerHTML;
+        document.getElementById('contentHidden').value = editorContent;
+    }
+
+    function handleFormSubmit(e) {
+        e.preventDefault();
+
+        // Validate required fields
+        if (!selectedCommunity) {
+            showStatus('error', 'Please select a community');
+            return;
+        }
+
+        const title = document.getElementById('title').value.trim();
+        if (!title) {
+            showStatus('error', 'Please enter a title');
+            return;
+        }
+
+        // Sync editor content
+        syncEditorContent();
+
+        showStatus('info', 'Publishing post...');
+
+        // Here you would submit the form to your server
+        setTimeout(() => {
+            showStatus('success', 'Post published successfully!');
+        }, 2000);
+    }
+
+    function handleOutsideClick(e) {
+        const communityDropdown = document.getElementById('communityDropdown');
+        const communitySearch = document.getElementById('communitySearch');
+
+        if (!communitySearch.contains(e.target) && !communityDropdown.contains(e.target)) {
+            communityDropdown.style.display = 'none';
+        }
+    }
+
+    function showStatus(type, message) {
+        const statusMessage = document.getElementById('statusMessage');
+        const statusText = document.getElementById('statusText');
+
+        statusMessage.className = `status-message ${type}`;
+        statusText.textContent = message;
+        statusMessage.style.display = 'block';
+
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 3000);
+    }
+
+    function joinCommunity(button, communitySlug) {
+        if (button.classList.contains('joined')) {
+            button.textContent = 'Join';
+            button.classList.remove('joined');
+            showStatus('info', 'Left community');
+        } else {
+            button.textContent = 'Joined';
+            button.classList.add('joined');
+            showStatus('success', 'Joined community!');
+        }
+    }
+
+    function showCreateCommunityModal() {
+        showStatus('info', 'Opening create community modal...');
+        // Here you would open a modal for creating a new community
+    }
+</script>

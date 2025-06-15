@@ -39,13 +39,17 @@
 
         private static string GetTimeAgo(DateTime dateTime)
         {
-            var timeSpan = DateTime.UtcNow - dateTime.ToUniversalTime();
+            var utcDateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+            var timeSpan = DateTime.UtcNow - utcDateTime;
+
             return timeSpan.TotalSeconds switch
             {
                 < 60 => "just now",
                 < 3600 => $"{(int)timeSpan.TotalMinutes}m ago",
                 < 86400 => $"{(int)timeSpan.TotalHours}h ago",
-                _ => dateTime.ToString("MMM dd, yyyy")
+                < 2592000 => $"{(int)timeSpan.TotalDays}d ago", // Less than 30 days
+                < 31536000 => $"{(int)(timeSpan.TotalDays / 30)}mo ago", // Less than 365 days
+                _ => $"{(int)(timeSpan.TotalDays / 365)}y ago"
             };
         }
     }

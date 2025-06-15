@@ -1,4 +1,5 @@
-﻿using discussionspot9.Hubs;
+﻿
+using discussionspot9.Hubs;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Services;
@@ -8,7 +9,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Internal;
 using System.Security.Claims;
 
 namespace discussionspot9.Controllers

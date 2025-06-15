@@ -373,7 +373,12 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("Details", "Community", new { slug = communitySlug });
             }
         }
-
+        [HttpGet]
+        public async Task<IActionResult> CreateTest()
+        {
+            CreatePostViewModel model = new();
+            return View(model);
+        }
         /// <summary>
         /// Create new post - POST
         /// </summary>

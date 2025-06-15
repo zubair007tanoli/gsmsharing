@@ -1,8 +1,8 @@
 ﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommentTreeViewModel
 @using discussionspot9.Helpers;
 
-<div class="comment-item" data-comment-id="@Model.Comment.CommentId">
-    <div class="comment-content" style="margin-left: @(Model.Depth * 2.5)rem;">
+<div class="comment-item" id="commentsContainer@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
+    <div class="comment-content" style="margin-left: @(Model.Depth > 0 ? "2.5" : "0")rem;">
         @* Indent comments based on depth *@
         <div class="comment-meta">
             <div class="user-avatar @(Model.Depth > 0 ? "small" : "")" style="background-color: @(Model.Comment.AuthorDisplayName.ToAvatarColor())">
@@ -19,7 +19,7 @@
                 <button class="comment-vote-btn upvote @(Model.Comment.CurrentUserVote == 1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="1">
                     <i class="fas fa-arrow-up"></i>
                 </button>
-                <span class="comment-vote-count" id="commentVote-@Model.Comment.CommentId">@Model.Comment.Score</span>
+                <span class="comment-vote-count" id="commentVote@(Model.Comment.CommentId)">@(Model.Comment.UpvoteCount - Model.Comment.DownvoteCount)</span>
                 <button class="comment-vote-btn downvote @(Model.Comment.CurrentUserVote == -1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="-1">
                     <i class="fas fa-arrow-down"></i>
                 </button>
@@ -30,28 +30,29 @@
             </button>
         </div>
         <!-- Reply Form -->
-
-        <div class="reply-form d-none" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
+        <div class="reply-form d-none flex-column" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
             <div class="d-flex gap-2">
                 <div class="user-avatar small" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
                     @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
                 </div>
                 <textarea class="form-control" placeholder="Write a reply..." data-comment-id="@Model.Comment.CommentId"></textarea>
             </div>
-            <div class="reply-form-actions">
+            <div class="reply-form-actions d-flex justify-content-end mt-2">
                 <button class="reply-cancel-btn" data-comment-id="@Model.Comment.CommentId">Cancel</button>
                 <button class="reply-submit-btn" data-comment-id="@Model.Comment.CommentId">Reply</button>
             </div>
         </div>
     </div>
 
-    @if (Model.Children != null && Model.Children.Any())
-    {
-        <div class="comment-replies">
+    @* Always render the comment-replies div, even if empty, so it can be targeted by JavaScript. *@
+    @* Add a unique ID to the comment-replies div using the parent comment's ID. *@
+    <div class="comment-replies" id="commentReplies-@(Model.Comment.CommentId)">
+        @if (Model.Children != null && Model.Children.Any())
+        {
             @foreach (var childCommentTree in Model.Children)
             {
                 @await Html.PartialAsync("Partials/V1/_CommentItem", childCommentTree)
             }
-        </div>
-    }
+        }
+    </div>
 </div>

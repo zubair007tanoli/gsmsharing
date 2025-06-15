@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
-namespace discussionspot9.Hubs
+namespace discussionspot9.Hubs // Ensure this namespace matches your project structure
 {
+    // The PostHub handles real-time interactions related to posts and comments,
+    // including commenting, voting, typing indicators, and notifications.
     public class PostHub : Hub
     {
         private readonly IPostService _postService;
@@ -14,6 +16,7 @@ namespace discussionspot9.Hubs
         private readonly ILogger<PostHub> _logger;
         private readonly IViewRenderService _viewRenderService;
 
+        // Constructor for dependency injection
         public PostHub(IPostService postService, ICommentService commentService,
                       INotificationService notificationService, ILogger<PostHub> logger, IViewRenderService viewRenderService)
         {
@@ -24,21 +27,39 @@ namespace discussionspot9.Hubs
             _viewRenderService = viewRenderService;
         }
 
+        /// <summary>
+        /// Allows a client to join a SignalR group specific to a post.
+        /// This enables real-time updates for all clients viewing the same post.
+        /// </summary>
+        /// <param name="postId">The ID of the post to join.</param>
         public async Task JoinPostGroup(int postId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"post-{postId}");
             _logger.LogInformation($"User {Context.UserIdentifier} joined post group {postId}");
         }
 
+        /// <summary>
+        /// Allows a client to leave a SignalR group specific to a post.
+        /// </summary>
+        /// <param name="postId">The ID of the post to leave.</param>
         public async Task LeavePostGroup(int postId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"post-{postId}");
             _logger.LogInformation($"User {Context.UserIdentifier} left post group {postId}");
         }
 
-        [Authorize]
+        /// <summary>
+        /// Handles sending a new comment or a reply to an existing comment.
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="postId">The ID of the post the comment belongs to.</param>
+        /// <param name="content">The content of the comment.</param>
+        /// <param name="parentCommentId">Optional. The ID of the parent comment if this is a reply.</param>
+        [Authorize] // Ensures only authenticated users can send comments
         public async Task SendComment(int postId, string content, int? parentCommentId)
         {
+            _logger.LogInformation($"*** DEBUG: SendComment method ENTERED. PostId: {postId}, Content: '{content}', ParentCommentId: {parentCommentId}. ConnectionId: {Context.ConnectionId}");
+
             var htmlContent = string.Empty;
             var commentId = 0;
 
@@ -49,10 +70,12 @@ namespace discussionspot9.Hubs
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    await Clients.Caller.SendAsync("CommentError", "Unauthorized access");
+                    // This scenario should be caught by [Authorize], but provides an additional safeguard.
+                    await Clients.Caller.SendAsync("CommentError", "Unauthorized access. Please log in to comment.");
                     return;
                 }
 
+                // Create the comment via the CommentService
                 var commentResult = await _commentService.CreateCommentAsync(new CreateCommentViewModel
                 {
                     PostId = postId,
@@ -70,14 +93,15 @@ namespace discussionspot9.Hubs
                 commentId = commentResult.CommentId;
                 var comment = await _commentService.GetCommentByIdAsync(commentId);
 
-                // Calculate depth for proper indentation
+                // Calculate depth for proper indentation in the UI
                 int depth = 0;
                 if (parentCommentId.HasValue)
                 {
                     var parentComment = await _commentService.GetCommentByIdAsync(parentCommentId.Value);
-                    depth = parentComment?.TreeLevel + 1 ?? 1;
+                    depth = parentComment?.TreeLevel + 1 ?? 1; // Increment depth if it's a reply
                 }
 
+                // Prepare the view model for rendering the comment HTML
                 var commentModel = new CommentTreeViewModel()
                 {
                     Comment = comment,
@@ -85,18 +109,19 @@ namespace discussionspot9.Hubs
                     Depth = depth
                 };
 
+                // Render the comment partial view to HTML string
                 try
                 {
                     htmlContent = await _viewRenderService.RenderToStringAsync("Partials/V1/_CommentItem", commentModel);
                 }
                 catch (Exception renderEx)
                 {
-                    _logger.LogError(renderEx, "Error rendering comment HTML");
-                    await Clients.Caller.SendAsync("CommentError", "Failed to render comment");
+                    _logger.LogError(renderEx, "Error rendering comment HTML for PostId {PostId}, CommentId {CommentId}", postId, commentId);
+                    await Clients.Caller.SendAsync("CommentError", "Failed to render comment in the UI.");
                     return;
                 }
 
-                // Send notifications (existing code)
+                // Send notifications to post author or parent comment author if different from current user
                 var post = await _postService.GetPostByIdAsync(postId);
                 if (post != null && post.UserId != userId)
                 {
@@ -106,35 +131,54 @@ namespace discussionspot9.Hubs
                 if (parentCommentId.HasValue)
                 {
                     var parentComment = await _commentService.GetCommentByIdAsync(parentCommentId.Value);
-                    if (parentComment != null && parentComment.UserId != userId)
+                    if (parentComment != null && parentComment.UserId != userId && parentComment.UserId != post?.UserId)
                     {
+                        // Avoid double-notifying if parent comment author is also post author
                         await SendNotification(parentComment.UserId, $"{userName} replied to your comment", postId, "reply");
                     }
                 }
 
+                // Broadcast the new comment HTML to all clients in the post group
                 await Clients.Group($"post-{postId}").SendAsync("ReceiveComment", htmlContent, commentId, parentCommentId);
-
+                _logger.LogInformation($"Comment {commentId} for post {postId} sent to group.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending comment for post {PostId}", postId);
-                await Clients.Caller.SendAsync("CommentError", "Failed to send comment");
+                await Clients.Caller.SendAsync("CommentError", "An unexpected error occurred while sending your comment.");
             }
         }
 
+        /// <summary>
+        /// Handles editing an existing comment.
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment to edit.</param>
+        /// <param name="newContent">The new content for the comment.</param>
         [Authorize]
         public async Task EditComment(int commentId, string newContent)
         {
             try
             {
                 var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    await Clients.Caller.SendAsync("CommentError", "Unauthorized access. Please log in to edit.");
+                    return;
+                }
+
                 var result = await _commentService.EditCommentAsync(commentId, newContent, userId);
 
                 if (result.Success)
                 {
                     var comment = await _commentService.GetCommentByIdAsync(commentId);
-                    await Clients.Group($"post-{comment.PostId}")
-                        .SendAsync("CommentEdited", comment);
+                    if (comment != null)
+                    {
+                        // Notify clients that the comment has been edited
+                        await Clients.Group($"post-{comment.PostId}")
+                            .SendAsync("CommentEdited", comment);
+                        _logger.LogInformation($"Comment {commentId} edited by {userId} and broadcasted.");
+                    }
                 }
                 else
                 {
@@ -143,11 +187,16 @@ namespace discussionspot9.Hubs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error editing comment");
-                await Clients.Caller.SendAsync("CommentError", "Failed to edit comment");
+                _logger.LogError(ex, "Error editing comment {CommentId}", commentId);
+                await Clients.Caller.SendAsync("CommentError", "Failed to edit comment.");
             }
         }
 
+        /// <summary>
+        /// Handles deleting a comment.
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment to delete.</param>
         [Authorize]
         public async Task DeleteComment(int commentId)
         {
@@ -157,7 +206,7 @@ namespace discussionspot9.Hubs
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    await Clients.Caller.SendAsync("CommentError", "User not authenticated");
+                    await Clients.Caller.SendAsync("CommentError", "User not authenticated to delete comment.");
                     return;
                 }
 
@@ -165,7 +214,7 @@ namespace discussionspot9.Hubs
 
                 if (comment == null)
                 {
-                    await Clients.Caller.SendAsync("CommentError", "Comment not found");
+                    await Clients.Caller.SendAsync("CommentError", "Comment not found.");
                     return;
                 }
 
@@ -173,7 +222,9 @@ namespace discussionspot9.Hubs
 
                 if (result.Success)
                 {
+                    // Notify all clients in the post group that the comment was deleted
                     await Clients.Group($"post-{comment.PostId}").SendAsync("CommentDeleted", commentId);
+                    _logger.LogInformation($"Comment {commentId} deleted by {userId} and broadcasted.");
                 }
                 else
                 {
@@ -182,14 +233,22 @@ namespace discussionspot9.Hubs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting comment");
-                await Clients.Caller.SendAsync("CommentError", "Failed to delete comment");
+                _logger.LogError(ex, "Error deleting comment {CommentId}", commentId);
+                await Clients.Caller.SendAsync("CommentError", "Failed to delete comment.");
             }
         }
 
-        [Authorize]
+        /// <summary>
+        /// Handles voting on a comment (upvote/downvote).
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment being voted on.</param>
+        /// <param name="voteType">1 for upvote, -1 for downvote, 0 to remove vote.</param>
+        [Authorize] // Ensures only authenticated users can vote
         public async Task VoteComment(int commentId, int voteType)
         {
+            _logger.LogInformation($"*** DEBUG: VoteComment method ENTERED. CommentId: {commentId}, VoteType: {voteType}. ConnectionId: {Context.ConnectionId}");
+
             var userId = GetUserId();
             _logger.LogInformation($"VoteComment invoked for commentId: {commentId}, voteType: {voteType}, UserId: {userId ?? "null"}");
 
@@ -209,14 +268,17 @@ namespace discussionspot9.Hubs
                     var comment = await _commentService.GetCommentByIdAsync(commentId);
                     if (comment != null)
                     {
+
+          
+                        // Broadcast updated vote counts and user's vote status to all clients in the post group
                         await Clients.Group($"post-{comment.PostId}")
                             .SendAsync("CommentVoteUpdated", commentId,
-                                comment.UpvoteCount, comment.DownvoteCount, result.UserVote); // Pass UserVote here
+                                comment.UpvoteCount, comment.DownvoteCount, comment.Score); // Pass UserVote here
                         _logger.LogInformation($"Successfully updated comment vote for comment {commentId}. New score: {comment.Score}, Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, UserVote: {result.UserVote}.");
                     }
                     else
                     {
-                        _logger.LogError($"Comment with ID {commentId} not found after successful vote.");
+                        _logger.LogError($"Comment with ID {commentId} not found after successful vote in service.");
                         await Clients.Caller.SendAsync("VoteError", "Comment not found after voting. Please refresh.");
                     }
                 }
@@ -233,7 +295,12 @@ namespace discussionspot9.Hubs
             }
         }
 
-        // Modified: To send more detailed vote information
+        /// <summary>
+        /// Handles voting on a post.
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="postId">The ID of the post being voted on.</param>
+        /// <param name="voteType">1 for upvote, -1 for downvote, 0 to remove vote.</param>
         [Authorize]
         public async Task VotePost(int postId, int voteType)
         {
@@ -242,7 +309,7 @@ namespace discussionspot9.Hubs
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    await Clients.Caller.SendAsync("VoteError", "User not authenticated.");
+                    await Clients.Caller.SendAsync("VoteError", "User not authenticated to vote on post.");
                     return;
                 }
 
@@ -250,7 +317,6 @@ namespace discussionspot9.Hubs
 
                 if (result.Success)
                 {
-
                     var updatedPost = await _postService.GetPostByIdAsync(postId);
                     if (updatedPost != null)
                     {
@@ -261,7 +327,7 @@ namespace discussionspot9.Hubs
                             updatedPost.DownvoteCount,
                             result.UserVote // This should be 1, -1, or null (for removed vote)
                         );
-
+                        _logger.LogInformation($"Post {postId} vote updated. Up: {updatedPost.UpvoteCount}, Down: {updatedPost.DownvoteCount}, UserVote: {result.UserVote}.");
                     }
                 }
                 else
@@ -276,32 +342,56 @@ namespace discussionspot9.Hubs
             }
         }
 
-        // Removed: UpdateVoteCount as it's now replaced by UpdatePostVotesUI
-        // public async Task UpdateVoteCount(int postId, int newCount)
-        // {
-        //     await Clients.Group($"post-{postId}").SendAsync("UpdateVoteCount", newCount);
-        // }
-
+        /// <summary>
+        /// Notifies other users in the post group that the current user has started typing a comment.
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="postId">The ID of the post where typing is occurring.</param>
         [Authorize]
         public async Task StartTyping(int postId)
         {
-            var userName = Context.User?.Identity?.Name;
-            await Clients.OthersInGroup($"post-{postId}").SendAsync("UserStartedTyping", userName);
+            var userName = Context.User?.Identity?.Name; // Get display name if available
+            if (!string.IsNullOrEmpty(userName))
+            {
+                // Notify others in the group (excluding the sender)
+                await Clients.OthersInGroup($"post-{postId}").SendAsync("UserStartedTyping", userName);
+                _logger.LogInformation($"User {userName} started typing in post {postId}.");
+            }
         }
 
+        /// <summary>
+        /// Notifies other users in the post group that the current user has stopped typing.
+        /// Requires authentication.
+        /// </summary>
+        /// <param name="postId">The ID of the post where typing occurred.</param>
         [Authorize]
         public async Task StopTyping(int postId)
         {
             var userName = Context.User?.Identity?.Name;
-            await Clients.OthersInGroup($"post-{postId}").SendAsync("UserStoppedTyping", userName);
+            if (!string.IsNullOrEmpty(userName))
+            {
+                // Notify others in the group (excluding the sender)
+                await Clients.OthersInGroup($"post-{postId}").SendAsync("UserStoppedTyping", userName);
+                _logger.LogInformation($"User {userName} stopped typing in post {postId}.");
+            }
         }
+
+        /// <summary>
+        /// Helper method to send a notification to a specific user.
+        /// Integrates with the NotificationService to persist the notification.
+        /// </summary>
+        /// <param name="userId">The ID of the user to notify.</param>
+        /// <param name="message">The notification message.</param>
+        /// <param name="postId">The related post ID.</param>
+        /// <param name="type">Type of notification (e.g., "comment", "reply", "award").</param>
         private async Task SendNotification(string userId, string message, int postId, string type)
         {
             try
             {
-                await _notificationService.CreateNotificationAsync(
-                    userId, message, postId, type);
+                // Persist notification to database
+                await _notificationService.CreateNotificationAsync(userId, message, postId, type);
 
+                // Send real-time notification to the target user's group
                 await Clients.User(userId).SendAsync("ReceiveNotification", new
                 {
                     Message = message,
@@ -309,35 +399,54 @@ namespace discussionspot9.Hubs
                     Type = type,
                     Timestamp = DateTime.UtcNow
                 });
+                _logger.LogInformation($"Notification sent to user {userId}: {message}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending notification");
+                _logger.LogError(ex, "Error sending notification to user {UserId}", userId);
             }
         }
 
+        /// <summary>
+        /// Retrieves the current authenticated user's ID from the SignalR context.
+        /// </summary>
+        /// <returns>The user ID as a string, or null if not authenticated.</returns>
         private string? GetUserId() =>
             Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-
+        /// <summary>
+        /// Called when a new client connects to the Hub.
+        /// Adds authenticated users to a user-specific group for direct notifications.
+        /// </summary>
         public override async Task OnConnectedAsync()
         {
             if (Context.User?.Identity?.IsAuthenticated == true)
             {
                 var userId = Context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
-                _logger.LogInformation($"User {userId} connected to SignalR");
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
+                    _logger.LogInformation($"User {userId} connected to SignalR. ConnectionId: {Context.ConnectionId}");
+                }
             }
             await base.OnConnectedAsync();
         }
 
+        /// <summary>
+        /// Called when a client disconnects from the Hub.
+        /// Removes authenticated users from their user-specific group.
+        /// </summary>
+        /// <param name="exception">The exception that caused the disconnect, if any.</param>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             if (Context.User?.Identity?.IsAuthenticated == true)
             {
                 var userId = Context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{userId}");
-                _logger.LogInformation($"User {userId} disconnected from SignalR");
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{userId}");
+                    _logger.LogInformation($"User {userId} disconnected from SignalR. ConnectionId: {Context.ConnectionId}");
+                }
             }
             await base.OnDisconnectedAsync(exception);
         }

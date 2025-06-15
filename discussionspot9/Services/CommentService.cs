@@ -72,10 +72,9 @@ namespace discussionspot9.Services
 
             return MapToCommentViewModel(comment, userProfile);
         }
-
         public async Task<VoteResult> VoteCommentAsync(int commentId, string userId, int voteType)
         {
-            using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+            using var dbContext = _context.CreateDbContext();
 
             var existingVote = await dbContext.CommentVotes
                 .FirstOrDefaultAsync(cv => cv.CommentId == commentId && cv.UserId == userId);
@@ -94,7 +93,7 @@ namespace discussionspot9.Services
                     dbContext.CommentVotes.Remove(existingVote);
                     if (voteType == 1) comment.UpvoteCount--;
                     else comment.DownvoteCount--;
-                    voteType = 0;
+                    voteType = 0; // Represents vote removal
                 }
                 else
                 {
@@ -127,8 +126,69 @@ namespace discussionspot9.Services
             comment.Score = comment.UpvoteCount - comment.DownvoteCount;
             await dbContext.SaveChangesAsync();
 
-            return new VoteResult { Success = true, UserVote = voteType == 0 ? null : voteType };
+            return new VoteResult
+            {
+                Success = true,
+                UserVote = voteType == 0 ? null : (int?)voteType
+            };
         }
+        //public async Task<VoteResult> VoteCommentAsync(int commentId, string userId, int voteType)
+        //{
+        //    using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
+
+        //    var existingVote = await dbContext.CommentVotes
+        //        .FirstOrDefaultAsync(cv => cv.CommentId == commentId && cv.UserId == userId);
+
+        //    var comment = await dbContext.Comments.FindAsync(commentId);
+        //    if (comment == null)
+        //    {
+        //        return new VoteResult { Success = false, ErrorMessage = "Comment not found" };
+        //    }
+
+        //    if (existingVote != null)
+        //    {
+        //        if (existingVote.VoteType == voteType)
+        //        {
+        //            // Remove vote
+        //            dbContext.CommentVotes.Remove(existingVote);
+        //            if (voteType == 1) comment.UpvoteCount--;
+        //            else comment.DownvoteCount--;
+        //            voteType = 0;
+        //        }
+        //        else
+        //        {
+        //            // Change vote
+        //            if (existingVote.VoteType == 1) comment.UpvoteCount--;
+        //            else comment.DownvoteCount--;
+
+        //            existingVote.VoteType = voteType;
+        //            existingVote.VotedAt = DateTime.UtcNow;
+
+        //            if (voteType == 1) comment.UpvoteCount++;
+        //            else comment.DownvoteCount++;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // New vote
+        //        dbContext.CommentVotes.Add(new CommentVote
+        //        {
+        //            CommentId = commentId,
+        //            UserId = userId,
+        //            VoteType = voteType,
+        //            VotedAt = DateTime.UtcNow
+        //        });
+
+        //        if (voteType == 1) comment.UpvoteCount++;
+        //        else comment.DownvoteCount++;
+        //    }
+
+        //    comment.Score = comment.UpvoteCount - comment.DownvoteCount;
+        //    await dbContext.SaveChangesAsync();
+
+
+        //    return new VoteResult { Success = true, UserVote = voteType == 0 ? null : voteType };
+        //}
 
         public async Task<int> GetCommentVoteCountAsync(int commentId)
         {
@@ -384,6 +444,7 @@ namespace discussionspot9.Services
             return new CommentViewModel
             {
                 CommentId = comment.CommentId,
+                PostId = comment.PostId,
                 Content = comment.Content,
                 CreatedAt = comment.CreatedAt,
                 UpdatedAt = comment.UpdatedAt,

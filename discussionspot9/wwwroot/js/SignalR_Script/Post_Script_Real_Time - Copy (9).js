@@ -1,4 +1,5 @@
-﻿// This class manages all SignalR connections and real-time interactions for posts and comments.
+﻿// signalr-connection.js
+// This class manages all SignalR connections and real-time interactions for posts and comments.
 class SignalRManager {
     constructor() {
         this.postConnection = null; // Connection to PostHub
@@ -8,7 +9,6 @@ class SignalRManager {
         this.isTyping = false; // Flag to prevent multiple 'started typing' messages
         this.pagePostId = null; // Stores the postId from the page's data attribute
         this.openShareDropdown = null; // Tracks the currently open share dropdown for click-outside-to-close functionality
-        this.connectionCheckInterval = null; // Interval for checking connection state
 
         // Bind 'this' to event handlers to ensure correct context
         this.handleDocumentClick = this.handleDocumentClick.bind(this);
@@ -20,63 +20,21 @@ class SignalRManager {
         this.handleShareOptionClick = this.handleShareOptionClick.bind(this);
         this.handlePostVoteButtonClick = this.handlePostVoteButtonClick.bind(this);
         this.handlePollVoteButtonClick = this.handlePollVoteButtonClick.bind(this);
-        this.checkConnectionState = this.checkConnectionState.bind(this); // Bind for interval
     }
 
     // Initializes SignalR connections to both PostHub and NotificationHub.
     async initializeConnections() {
-        // --- CRITICAL: Check if SignalR client library is loaded ---
-        if (typeof signalR === 'undefined' || !signalR.HubConnectionBuilder) {
-            console.error("CRITICAL ERROR: SignalR JavaScript client library (signalr.js) is not loaded or not correctly initialized. Please ensure the <script src='_framework/signalr/signalr.js'></script> (or similar CDN link) is included BEFORE this script.");
-            this.showNotification("Real-time features not available. SignalR library missing.", 'error');
-            return; // Stop initialization if library is not found
-        }
+        // Build connection to PostHub
+        this.postConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/postHub")
+            .withAutomaticReconnect() // Enable automatic reconnection
+            .build();
 
-        try {
-            // Build connection to PostHub
-            this.postConnection = new signalR.HubConnectionBuilder()
-                .withUrl("/postHub")
-                .withAutomaticReconnect()
-                .build();
-            console.log("PostHub connection builder created. Initial state:", this.postConnection.state);
-
-            // Build connection to NotificationHub
-            this.notificationConnection = new signalR.HubConnectionBuilder()
-                .withUrl("/notificationHub")
-                .withAutomaticReconnect()
-                .build();
-            console.log("NotificationHub connection builder created. Initial state:", this.notificationConnection.state);
-
-        } catch (buildError) {
-            console.error("Error building SignalR connections:", buildError);
-            this.showNotification("Failed to set up real-time connections. Check browser console for details.", 'error');
-            return; // Stop if connection objects cannot be built
-        }
-
-
-        // Set up connection event handlers for PostHub
-        this.postConnection.onclose(error => {
-            console.error("SignalR PostHub connection closed.", error);
-            this.showNotification("Real-time features disconnected. Attempting to reconnect...", 'error');
-            clearInterval(this.connectionCheckInterval); // Stop checking on close
-        });
-        this.postConnection.onreconnecting(error => {
-            console.warn("SignalR PostHub reconnecting...", error);
-            this.showNotification("Real-time features reconnecting...", 'info');
-        });
-        this.postConnection.onreconnected(connectionId => {
-            console.log(`SignalR PostHub reconnected. New connection ID: ${connectionId}`);
-            this.showNotification("Real-time features reconnected!", 'success');
-            // Re-join post group on reconnect if pagePostId is set
-            if (this.pagePostId) {
-                console.log(`Attempting to re-join post group ${this.pagePostId} on reconnected.`);
-                this.postConnection.invoke("JoinPostGroup", this.pagePostId)
-                    .then(() => console.log(`Successfully re-joined post group ${this.pagePostId} on reconnect.`))
-                    .catch(err => console.error(`Error re-joining post group ${this.pagePostId} on reconnect:`, err));
-            }
-            this.startConnectionStateCheck(); // Restart check on reconnected
-        });
-
+        // Build connection to NotificationHub
+        this.notificationConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .withAutomaticReconnect()
+            .build();
 
         // Set up event handlers for incoming messages from both hubs
         await this.setupPostEventHandlers();
@@ -84,55 +42,17 @@ class SignalRManager {
 
         try {
             // Start both connections
-            console.log("Attempting to start PostHub connection...");
             await this.postConnection.start();
-            console.log("PostHub connection started. Current state:", this.postConnection.state);
-
-            console.log("Attempting to start NotificationHub connection...");
             await this.notificationConnection.start();
-            console.log("NotificationHub connection started. Current state:", this.notificationConnection.state);
-
             console.log("SignalR connections established");
-            this.startConnectionStateCheck(); // Start periodic connection state check ONLY after successful start
         } catch (err) {
-            console.error("SignalR connection start failed: ", err);
+            console.error("SignalR connection failed: ", err);
             this.showNotification("Failed to connect to real-time features. Please refresh the page.", 'error');
         }
 
         // Add a global click listener to handle closing dropdowns when clicking outside
         document.addEventListener('click', this.handleDocumentClick);
     }
-
-    // Starts a periodic console log to show the SignalR connection state.
-    startConnectionStateCheck() {
-        if (this.connectionCheckInterval) {
-            clearInterval(this.connectionCheckInterval);
-        }
-        // Only start if connections are actually defined (should be after initializeConnections completes successfully)
-        if (this.postConnection && this.notificationConnection) {
-            this.connectionCheckInterval = setInterval(this.checkConnectionState, 5000); // Check every 5 seconds
-            console.log("Started periodic connection state check.");
-        } else {
-            console.warn("Cannot start connection state check: SignalR connections not fully initialized.");
-        }
-    }
-
-    // Logs the current SignalR connection state to the console.
-    checkConnectionState() {
-        const stateMap = {
-            0: 'Disconnected',
-            1: 'Connecting',
-            2: 'Connected',
-            3: 'Disconnecting',
-            4: 'Reconnecting'
-        };
-
-        const postHubState = this.postConnection ? stateMap[this.postConnection.state] : 'NOT INITIALIZED (PostConnection is null)';
-        const notificationHubState = this.notificationConnection ? stateMap[this.notificationConnection.state] : 'NOT INITIALIZED (NotificationConnection is null)';
-
-        console.log(`SignalR Status: PostHub: ${postHubState} (Raw: ${this.postConnection?.state}), NotificationHub: ${notificationHubState} (Raw: ${this.notificationConnection?.state})`);
-    }
-
 
     // Handles clicks anywhere on the document to close active dropdowns.
     handleDocumentClick(event) {
@@ -150,38 +70,23 @@ class SignalRManager {
             try {
                 if (parentCommentId) {
                     // If it's a reply, append to the parent comment's replies section
-                    // Use the newly added ID to select the parent's comment replies container
-                    const parentCommentReplies = document.getElementById(`commentReplies-${parentCommentId}`);
+                    const parentCommentReplies = document.querySelector(`.comment-item[data-comment-id="${parentCommentId}"] .comment-replies`);
                     if (parentCommentReplies) {
                         parentCommentReplies.insertAdjacentHTML('beforeend', commentHtml);
-                        console.log(`Received reply for parent ${parentCommentId}. Appended to #commentReplies-${parentCommentId}`);
                     } else {
-                        console.warn(`Parent comment replies section not found for parentCommentId: ${parentCommentId}. Creating one.`);
-                        // If the comment-replies div doesn't exist (e.g., first reply to a comment), create it
-                        const parentCommentItem = document.getElementById(`commentsContainer${parentCommentId}`);
-                        if (parentCommentItem) {
-                            const newCommentRepliesDiv = document.createElement('div');
-                            newCommentRepliesDiv.className = 'comment-replies';
-                            newCommentRepliesDiv.id = `commentReplies-${parentCommentId}`; // Assign the unique ID
-                            newCommentRepliesDiv.insertAdjacentHTML('beforeend', commentHtml);
-                            parentCommentItem.appendChild(newCommentRepliesDiv);
-                            console.log(`Created #commentReplies-${parentCommentId} and appended reply.`);
-                        } else {
-                            console.error(`Parent comment item with ID commentsContainer${parentCommentId} not found. Cannot append reply.`);
-                        }
+                        console.warn(`Parent comment replies section not found for parentCommentId: ${parentCommentId}`);
                     }
                 } else {
                     // If it's a top-level comment, append to the main comments list
                     const commentsList = document.getElementById('commentsList'); // Assumes a main container with this ID
                     if (commentsList) {
                         commentsList.insertAdjacentHTML('beforeend', commentHtml);
-                        console.log(`Received new top-level comment. Appended to #commentsList.`);
                     } else {
                         console.warn("Main comments list element not found (ID 'commentsList').");
                     }
                 }
                 this.rebindCommentEvents(); // Rebind events for newly added comment elements
-                //this.showNotification("New comment received!", "info");
+                this.showNotification("New comment received!", "info");
             } catch (error) {
                 console.error("Error processing received comment:", error);
                 this.showNotification("Error displaying new comment.", "error");
@@ -222,12 +127,12 @@ class SignalRManager {
             this.hideTypingIndicator(userName);
         });
 
-        //update Comment votes
+        // Handles updates to comment vote counts.
         this.postConnection.on("CommentVoteUpdated", (commentId, upvoteCount, downvoteCount, currentUserVote) => {
+            // --- Crucial Debugging Log ---
+            console.log(`--- RECEIVED CommentVoteUpdated --- CommentId: ${commentId}, Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
             this.updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote);
         });
-        console.log("setupPostEventHandlers: 'CommentVoteUpdated' listener attached.");
-
 
         // Handles updates to post vote counts.
         this.postConnection.on("UpdatePostVotesUI", (postId, upvoteCount, downvoteCount, currentUserVote) => {
@@ -268,45 +173,27 @@ class SignalRManager {
 
     // Invokes the server to join a specific post group.
     async joinPostGroup(postId) {
-        // Ensure we try to leave the previous group if a different postId is being joined
-        if (this.currentPostId && this.currentPostId !== postId) {
-            console.log(`Attempting to leave previous group: post-${this.currentPostId}`);
-            await this.leavePostGroup(this.currentPostId);
+        if (this.currentPostId) {
+            await this.leavePostGroup(this.currentPostId); // Leave previous group if any
         }
-        this.currentPostId = postId; // Update the current post ID being tracked
-
-        // Only attempt to invoke if postConnection is initialized and connected
-        if (this.postConnection && this.postConnection.state === signalR.HubConnectionState.Connected) {
-            try {
-                console.log(`Attempting to join SignalR group: post-${postId} (Connection ID: ${this.postConnection.connectionId})`);
-                await this.postConnection.invoke("JoinPostGroup", postId);
-                console.log(`Successfully invoked JoinPostGroup for post-${postId}. Current connection ID: ${this.postConnection.connectionId}`);
-            } catch (err) {
-                console.error(`Error invoking JoinPostGroup for post-${postId}:`, err);
-                this.showNotification(`Failed to join post group ${postId}. Real-time updates may be limited.`, 'error');
-            }
-        } else {
-            console.warn(`Cannot join group post-${postId}. Post connection is not available or not connected. Current state: ${this.postConnection?.state}`);
+        this.currentPostId = postId;
+        try {
+            await this.postConnection.invoke("JoinPostGroup", postId);
+            console.log(`Joined post group: ${postId}`);
+        } catch (err) {
+            console.error("Error joining post group:", err);
         }
     }
 
     // Invokes the server to leave a specific post group.
     async leavePostGroup(postId) {
-        if (this.postConnection && this.postConnection.state === signalR.HubConnectionState.Connected) {
-            try {
-                console.log(`Attempting to leave SignalR group: post-${postId}`);
-                await this.postConnection.invoke("LeavePostGroup", postId);
-                console.log(`Successfully left post group: post-${postId}`);
-            } catch (err) {
-                console.error(`Error leaving post group ${postId}:`, err);
-            }
-        } else {
-            console.warn(`Cannot leave group post-${postId}. Post connection is not available or not connected.`);
+        try {
+            await this.postConnection.invoke("LeavePostGroup", postId);
+            console.log(`Left post group: ${postId}`);
+        } catch (err) {
+            console.error("Error leaving post group:", err);
         }
-
-        if (this.currentPostId === postId) { // Only clear if we're leaving the current tracked post
-            this.currentPostId = null;
-        }
+        this.currentPostId = null;
     }
 
     // Sends a comment to the server.
@@ -341,8 +228,7 @@ class SignalRManager {
 
     // Deletes a comment on the server.
     async deleteComment(commentId) {
-        // IMPORTANT: Replaced window.confirm with a custom modal for better compatibility
-        this.showConfirmationModal("Are you sure you want to delete this comment?", async () => {
+        if (confirm("Are you sure you want to delete this comment?")) {
             if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
                 this.showNotification("Not connected to the server. Please check your internet connection.", 'error');
                 return;
@@ -353,7 +239,7 @@ class SignalRManager {
                 console.error("Error deleting comment:", err);
                 this.showNotification("Failed to delete comment.", 'error');
             }
-        });
+        }
     }
 
     // Sends a vote for a comment to the server.
@@ -366,9 +252,9 @@ class SignalRManager {
 
         try {
             const voteType = isUpvote ? 1 : -1;
-            console.log(`Invoking VoteComment on Hub for CommentId: ${commentId}, VoteType: ${voteType}. Current SignalR connection state: ${this.postConnection.state}`);
+            // console.log(`Invoking VoteComment on Hub for CommentId: ${commentId}, VoteType: ${voteType}`);
             await this.postConnection.invoke("VoteComment", commentId, voteType);
-            console.log(`VoteComment invoked successfully for CommentId: ${commentId}`);
+            // console.log(`VoteComment invoked successfully for CommentId: ${commentId}`);
         } catch (err) {
             console.error("Error voting comment (after invoke attempt):", err);
             this.showNotification("Failed to vote on comment. Please ensure you are logged in or try again.", 'error');
@@ -425,28 +311,28 @@ class SignalRManager {
         document.querySelectorAll('.comment-vote-btn').forEach(button => {
             button.removeEventListener('click', this.handleVoteButtonClick); // Remove old listener to prevent duplicates
             button.addEventListener('click', this.handleVoteButtonClick); // Add new listener
-            // console.log("rebindCommentEvents: Bound vote button to comment ID:", button.dataset.commentId); // Added log
+            console.log("rebindCommentEvents: Bound vote button to comment ID:", button.dataset.commentId); // Added log
         });
 
         // Reply buttons
         document.querySelectorAll('.comment-reply-btn').forEach(button => {
             button.removeEventListener('click', this.handleReplyButtonClick);
             button.addEventListener('click', this.handleReplyButtonClick);
-            // console.log("rebindCommentEvents: Bound reply button to comment ID:", button.dataset.commentId); // Added log
+            console.log("rebindCommentEvents: Bound reply button to comment ID:", button.dataset.commentId); // Added log
         });
 
         // Reply form submit buttons
         document.querySelectorAll('.reply-submit-btn').forEach(button => {
             button.removeEventListener('click', this.handleSubmitReplyButtonClick);
             button.addEventListener('click', this.handleSubmitReplyButtonClick);
-            // console.log("rebindCommentEvents: Bound reply submit button for comment ID:", button.dataset.commentId); // Added log
+            console.log("rebindCommentEvents: Bound reply submit button for comment ID:", button.dataset.commentId); // Added log
         });
 
         // Reply form cancel buttons
         document.querySelectorAll('.reply-cancel-btn').forEach(button => {
             button.removeEventListener('click', this.handleReplyCancel);
             button.addEventListener('click', this.handleReplyCancel);
-            // console.log("rebindCommentEvents: Bound reply cancel button for comment ID:", button.dataset.commentId); // Added log
+            console.log("rebindCommentEvents: Bound reply cancel button for comment ID:", button.dataset.commentId); // Added log
         });
 
         // Rebind share and post vote buttons (as they might be on the same page)
@@ -757,99 +643,59 @@ class SignalRManager {
         });
     }
 
-    // Custom confirmation modal (replaces window.confirm)
-    showConfirmationModal(message, onConfirm) {
-        const modalId = 'customConfirmationModal';
-        let modal = document.getElementById(modalId);
-
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = modalId;
-            modal.className = 'modal fade';
-            modal.setAttribute('tabindex', '-1');
-            modal.setAttribute('aria-labelledby', 'confirmationModalLabel');
-            modal.setAttribute('aria-hidden', 'true');
-            modal.innerHTML = `
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="confirmationModalLabel">Confirm Action</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            ${message}
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        } else {
-            modal.querySelector('.modal-body').innerHTML = message;
-        }
-
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-
-        const confirmBtn = document.getElementById('confirmActionBtn');
-        const confirmHandler = () => {
-            onConfirm();
-            bsModal.hide();
-            confirmBtn.removeEventListener('click', confirmHandler); // Clean up
-        };
-        confirmBtn.addEventListener('click', confirmHandler);
-
-        // Ensure the event listener is cleaned up if modal is closed without confirming
-        modal.addEventListener('hidden.bs.modal', () => {
-            confirmBtn.removeEventListener('click', confirmHandler);
-        }, { once: true }); // Use { once: true } to remove the listener after it's triggered once
-    }
-
     // Updates the displayed vote counts and active state for comment buttons.
+    //updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote) {
+    //    console.log(`updateCommentVotes: Updating UI for commentId: ${commentId}. Received Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`); // Added log
+    //    const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+    //    if (commentElement) {
+    //        // --- FIX HERE: Target by ID directly for robustness ---
+    //        const scoreElement = document.getElementById(`commentVote-${commentId}`);
+    //        if (scoreElement) {
+    //            const newScore = upvoteCount - downvoteCount;
+    //            scoreElement.textContent = newScore; // Calculate net score
+    //            console.log(`updateCommentVotes: Set scoreElement textContent to: ${newScore}`); // Added log
+    //        } else {
+    //            console.warn(`updateCommentVotes: Score element with ID 'commentVote-${commentId}' not found.`); // Added log
+    //        }
+
+    //        const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote');
+    //        const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote');
+
+    //        // Set 'active' class based on the current user's vote status
+    //        upvoteBtn?.classList.toggle('active', currentUserVote === 1);
+    //        downvoteBtn?.classList.toggle('active', currentUserVote === -1);
+    //        console.log(`updateCommentVotes: Toggled active classes. Upvote active: ${upvoteBtn?.classList.contains('active')}, Downvote active: ${downvoteBtn?.classList.contains('active')}`); // Added log
+    //    } else {
+    //        console.warn(`updateCommentVotes: Comment element with data-comment-id="${commentId}" not found.`); // Added log
+    //    }
+    //}
+
+    // In updateCommentVotes method:
     updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote) {
-        console.log(`updateCommentVotes: START for commentId: ${commentId}. Received Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
-
+        console.log(`updateCommentVotes: Updating UI for commentId: ${commentId}. Received Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
         const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
-        if (!commentElement) {
-            console.warn(`updateCommentVotes: Comment element with data-comment-id="${commentId}" not found. Cannot update votes.`);
-            return; // Exit if the main comment container isn't found
-        }
-        console.log(`updateCommentVotes: Found commentElement for ID ${commentId}.`);
 
-        // Get the score element by its specific ID
-        const scoreElement = document.getElementById(`commentVote${commentId}`); // THIS IS THE CRITICAL LINE
-
-        if (scoreElement) {
-            console.log(`updateCommentVotes: Found scoreElement (ID: commentVote${commentId}). Current text: "${scoreElement.textContent}"`);
+        if (commentElement) {
+            // Calculate net score
             const newScore = upvoteCount - downvoteCount;
-            scoreElement.textContent = newScore; // Update the displayed score
-            console.log(`updateCommentVotes: Set scoreElement textContent to: ${newScore}. New displayed value: "${scoreElement.textContent}"`);
-            // debugger; // Keep this debugger for now to inspect if needed
-        } else {
-            console.warn(`updateCommentVotes: Score element with ID 'commentVote${commentId}' NOT found. Cannot update score.`);
-        }
 
-        // Update vote buttons active state
-        const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote');
-        const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote');
+            // Update score display
+            const scoreElement = commentElement.querySelector('.comment-vote-count');
+            if (scoreElement) {
+                scoreElement.textContent = newScore;
+            }
 
-        if (upvoteBtn) {
-            upvoteBtn.classList.toggle('active', currentUserVote === 1);
-            console.log(`updateCommentVotes: Upvote button toggled. Is active: ${upvoteBtn.classList.contains('active')}`);
-        } else {
-            console.warn(`updateCommentVotes: Upvote button not found for commentId: ${commentId}.`);
-        }
+            // Update button active states
+            const upvoteBtn = commentElement.querySelector('.comment-vote-btn.upvote');
+            const downvoteBtn = commentElement.querySelector('.comment-vote-btn.downvote');
 
-        if (downvoteBtn) {
-            downvoteBtn.classList.toggle('active', currentUserVote === -1);
-            console.log(`updateCommentVotes: Downvote button toggled. Is active: ${downvoteBtn.classList.contains('active')}`);
-        } else {
-            console.warn(`updateCommentVotes: Downvote button not found for commentId: ${commentId}.`);
+            if (upvoteBtn) {
+                upvoteBtn.classList.toggle('active', currentUserVote === 1);
+            }
+            if (downvoteBtn) {
+                downvoteBtn.classList.toggle('active', currentUserVote === -1);
+            }
         }
-        console.log(`updateCommentVotes: END for commentId: ${commentId}.`);
     }
 
     // Updates the displayed vote counts and active state for post buttons.
@@ -857,7 +703,7 @@ class SignalRManager {
         // console.log(`updatePostVotesUI: PostId: ${postId}, Up: ${upvoteCount}, Down: ${downvoteCount}, UserVote: ${currentUserVote}`);
 
         const upvoteCountElement = document.getElementById(`upvoteCount-${postId}`);
-        const downvoteCountElement = document.getElementById(`downvoteCount-${postId}`); // Corrected variable name
+        const downvoteCountElement = document.getElementById(`downvoteCount-${postId}`);
         const totalScoreElement = document.getElementById(`totalScore-${postId}`); // If you have a combined score element
 
         const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
@@ -922,11 +768,8 @@ window.signalRManager = signalRManager; // Useful for console debugging
 
 // Initialize SignalR connections and event binding when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("DOMContentLoaded event fired. Initializing SignalR connections...");
     // Establish SignalR connections
     await signalRManager.initializeConnections();
-    // This rebind ensures that newly added comments (if any from initial load) also have their vote buttons active.
-    signalRManager.rebindCommentEvents(); // Moved this here to ensure initial binding.
 
     // Get the post ID from the page (assuming a data attribute or hidden input)
     const postIdElement = document.getElementById('pagePostId') || document.querySelector('[data-post-id]');
@@ -935,23 +778,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("DOMContentLoaded: Page Post ID set to:", signalRManager.pagePostId);
 
         // Join the post-specific SignalR group for real-time updates
-        await signalRManager.joinPostGroup(signalRManager.pagePostId); // Use the manager's join method
+        await signalRManager.postConnection.invoke("JoinPostGroup", signalRManager.pagePostId);
+
+        // Rebind all dynamic event listeners (comments, shares, votes)
+        signalRManager.rebindCommentEvents();
+
+        // Set up typing indicator logic for the main comment textarea
+        const commentTextarea = document.getElementById('mainCommentContent');
+        if (commentTextarea) {
+            let typingTimer; // Local timer for this specific textarea
+            commentTextarea.addEventListener('input', () => {
+                signalRManager.startTyping(signalRManager.pagePostId); // Notify server about typing
+
+                clearTimeout(typingTimer); // Reset timer on each input
+                typingTimer = setTimeout(async () => {
+                    await signalRManager.stopTyping(signalRManager.pagePostId); // Notify server about stopping typing
+                }, 1000); // 1-second delay after last input
+            });
+        }
     } else {
         console.error("Post ID element not found on the page (expected ID 'pagePostId' or data-post-id). Real-time features might be limited.");
-    }
-
-    // Set up typing indicator logic for the main comment textarea
-    const commentTextarea = document.getElementById('mainCommentContent');
-    if (commentTextarea) {
-        let typingTimer; // Local timer for this specific textarea
-        commentTextarea.addEventListener('input', () => {
-            signalRManager.startTyping(signalRManager.pagePostId); // Notify server about typing
-
-            clearTimeout(typingTimer); // Reset timer on each input
-            typingTimer = setTimeout(async () => {
-                await signalRManager.stopTyping(signalRManager.pagePostId); // Notify server about stopping typing
-            }, 1000); // 1-second delay after last input
-        });
     }
 });
 
@@ -967,7 +813,7 @@ document.getElementById('submitMainComment')?.addEventListener('click', async fu
 
     if (postId === null) {
         console.error("Main comment submission: Post ID is null. Cannot send comment.");
-        signalRManager.showNotification("Error: Post ID missing for main comment.", "error");
+        signalRManager.showNotification("Error: Post ID missing for main comment. Please refresh.", "error");
         return;
     }
 

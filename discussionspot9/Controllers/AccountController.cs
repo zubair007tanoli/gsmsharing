@@ -70,7 +70,7 @@ namespace DiscussionSpot9.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            return View(registerViewModelRegisterViewModel);
+            return RedirectToAction("Auth");
         }
         #endregion
 
@@ -122,7 +122,7 @@ namespace DiscussionSpot9.Controllers
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
             }
 
-            return View(loginViewModel);
+            return RedirectToAction("Auth");
         }
         #endregion
 
