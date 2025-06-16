@@ -1,5 +1,6 @@
 ﻿using discussionspot9.Models.ViewModels.PollViewModels;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
@@ -210,10 +211,15 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
                 {
                     yield return new ValidationResult("At least 2 options are required for polls.", new[] { nameof(PollOptions) });
                 }
-                if (PollOptions.Any(string.IsNullOrWhiteSpace))
+                if (PollOptions.Any(option => string.IsNullOrWhiteSpace(option.OptionText)))
                 {
                     yield return new ValidationResult("Poll options cannot be empty.", new[] { nameof(PollOptions) });
                 }
+                if (PollOptions.Any(option => string.IsNullOrWhiteSpace(option.OptionText)))
+                {
+                    yield return new ValidationResult("Poll options cannot be empty.", new[] { nameof(PollOptions) });
+                }
+
                 if (PollEndDate.HasValue && PollEndDate.Value <= DateTime.UtcNow)
                 {
                     yield return new ValidationResult("Poll end date must be in the future.", new[] { nameof(PollEndDate) });

@@ -1,4 +1,6 @@
-﻿namespace discussionspot9.Models.ViewModels.CreativeViewModels
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
     public class SeoMetadataViewModel
     {
