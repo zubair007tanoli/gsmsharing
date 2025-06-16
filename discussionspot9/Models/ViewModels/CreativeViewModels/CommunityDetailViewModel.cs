@@ -42,7 +42,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
      
         // This will be set by the controller based on authenticated user
         public string? CurrentUserId { get; set; }
-
+    
         // Formatted properties
         public string FormattedMemberCount => FormatCount(MemberCount);
         public string FormattedPostCount => FormatCount(PostCount);

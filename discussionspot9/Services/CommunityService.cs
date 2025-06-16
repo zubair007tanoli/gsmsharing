@@ -375,5 +375,59 @@ namespace discussionspot9.Services
                 .FirstOrDefaultAsync(cm => cm.CommunityId == communityId && cm.UserId == userId);
             return member?.Role;
         }
+
+        public async Task<List<CommunityViewModel>> GetUserJoinedCommunitiesAsync(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new List<CommunityViewModel>();
+            }
+
+            return await _context.CommunityMembers
+                .Where(cm => cm.UserId == userId && !cm.Community!.IsDeleted)
+                .Select(cm => new CommunityViewModel
+                {
+                    CommunityId = cm.CommunityId,
+                    Name = cm.Community!.Name,
+                    Slug = cm.Community.Slug,
+                    Title = cm.Community.Title,
+                    Description = cm.Community.ShortDescription,
+                    IconUrl = cm.Community.IconUrl,
+                    MemberCount = cm.Community.MemberCount
+                })
+                .OrderBy(cm => cm.Title) // Order by title for consistent display
+                .ToListAsync();
+        }
+
+        public async Task<List<CommunityViewModel>> GetSuggestedCommunitiesAsync(string userId, int count = 5)
+        {
+            // For suggested communities, we can fetch communities the user is NOT a member of.
+            // You can enhance this logic based on categories the user has interacted with,
+            // popular communities they haven't joined, or other criteria.
+
+            var joinedCommunityIds = await _context.CommunityMembers
+                                                .Where(cm => cm.UserId == userId)
+                                                .Select(cm => cm.CommunityId)
+                                                .ToListAsync();
+
+            var suggestedCommunities = await _context.Communities
+                .Where(c => !c.IsDeleted && !joinedCommunityIds.Contains(c.CommunityId))
+                .OrderByDescending(c => c.MemberCount) // Suggest popular unjoined communities
+                .Take(count)
+                .Select(c => new CommunityViewModel
+                {
+                    CommunityId = c.CommunityId,
+                    Name = c.Name,
+                    Slug = c.Slug,
+                    Title = c.Title,
+                    Description = c.ShortDescription,
+                    IconUrl = c.IconUrl,
+                    MemberCount = c.MemberCount
+                })
+                .ToListAsync();
+
+            return suggestedCommunities;
+        }
+
     }
 }

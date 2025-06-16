@@ -104,7 +104,9 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string CommunityName { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
         public string? UserId { get; set; }
-
+        //user communities and suggested communities
+        public List<CommunityViewModel> UserCommunities { get; set; } = new List<CommunityViewModel>();
+        public List<CommunityViewModel> SuggestedCommunities { get; set; } = new List<CommunityViewModel>();
         // Validation
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

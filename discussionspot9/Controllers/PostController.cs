@@ -376,8 +376,26 @@ namespace discussionspot9.Controllers
         [HttpGet]
         public async Task<IActionResult> CreateTest()
         {
-            CreatePostViewModel model = new();
+            var model = new CreatePostViewModel();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                model.UserCommunities = await _communityService.GetUserJoinedCommunitiesAsync(userId);
+                model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(userId);
+            }
+            else
+            {
+                // If not logged in, maybe show some general popular communities as suggestions
+                model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(string.Empty); // Pass empty string to fetch general suggestions
+            }
             return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateTest(CreatePostViewModel createPostView)
+        {
+           
+            return RedirectToAction("CreateTest");
         }
         /// <summary>
         /// Create new post - POST
