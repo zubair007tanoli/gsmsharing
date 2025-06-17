@@ -1536,7 +1536,7 @@
                 <div class="sidebar-header">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                         <span>Choose a community</span>
-                        <button asp-controller="Community" asp-action="Create" type="button" class="btn-create-community">
+                        <button asp-controller="Community" asp-action="Create" type="button" class="btn-create-community" asp-route-returnUrl="@Context.Request.Path + Context.Request.QueryString">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
