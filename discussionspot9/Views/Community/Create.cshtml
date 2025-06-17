@@ -1,0 +1,1378 @@
+﻿
+@{
+    ViewData["Title"] = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    /* Scoped styles for community creator to prevent conflicts */
+    .community-creator-container * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .community-creator-container {
+        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: #DAE0E6;
+        color: #1c1c1c;
+        line-height: 1.4;
+        font-size: 14px;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Dark mode compatibility */
+    body.dark-mode .community-creator-container {
+        background-color: #111827;
+        color: #f9fafb;
+    }
+
+    /* Reddit-like Header */
+    .community-creator-container .reddit-header {
+        background: #fff;
+        border-bottom: 1px solid #ccc;
+        padding: 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .reddit-header {
+        background: #111827;
+        border-bottom-color: #374151;
+    }
+
+    .community-creator-container .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        height: 48px;
+    }
+
+    .community-creator-container .reddit-logo {
+        font-size: 20px;
+        font-weight: bold;
+        color: #FF4500;
+        text-decoration: none;
+        margin-right: 20px;
+    }
+
+    .community-creator-container .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-left: auto;
+    }
+
+    .community-creator-container .header-btn {
+        padding: 4px 16px;
+        border: 1px solid #0079D3;
+        background: transparent;
+        color: #0079D3;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .header-btn {
+        border-color: #818cf8;
+        color: #818cf8;
+    }
+
+    .community-creator-container .header-btn.primary {
+        background: #0079D3;
+        color: white;
+    }
+
+    body.dark-mode .community-creator-container .header-btn.primary {
+        background: #818cf8;
+        border-color: #818cf8;
+    }
+
+    /* Main Layout */
+    .community-creator-container .container-fluid.main-container {
+        max-width: none;
+        padding: 0 15px;
+        margin: 20px auto;
+        display: grid;
+        grid-template-columns: 312px 1fr 312px;
+        gap: 20px;
+        padding: 0 20px;
+    }
+
+    /* Left Sidebar */
+    .community-creator-container .left-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .community-creator-container .sidebar-card {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .sidebar-card {
+        background: #1f2937;
+        border-color: #4b5563;
+    }
+
+    .community-creator-container .sidebar-header {
+        background: #f6f7f8;
+        padding: 12px 16px;
+        border-bottom: 1px solid #edeff1;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #7c7c7c;
+        letter-spacing: 0.5px;
+        transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .sidebar-header {
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom-color: #4b5563;
+        color: #d1d5db;
+    }
+
+    .community-creator-container .sidebar-content {
+        padding: 16px;
+    }
+
+    /* Main Content */
+    .community-creator-container .main-content {
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .main-content {
+        background: #1f2937;
+        border-color: #4b5563;
+    }
+
+    .community-creator-container .community-header {
+        background: #f6f7f8;
+        padding: 16px 20px;
+        border-bottom: 1px solid #edeff1;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .community-header {
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom-color: #4b5563;
+    }
+
+    .community-creator-container .community-title {
+        font-size: 18px;
+        font-weight: 500;
+        margin: 0;
+        color: #1c1c1c;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .community-title {
+        color: #f9fafb;
+    }
+
+    .community-creator-container .breadcrumb {
+        font-size: 12px;
+        color: #7c7c7c;
+        margin-top: 4px;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .breadcrumb {
+        color: #d1d5db;
+    }
+
+    .community-creator-container .breadcrumb a {
+        color: #0079D3;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .breadcrumb a {
+        color: #818cf8;
+    }
+
+    /* Form Content */
+    .community-creator-container .form-container {
+        padding: 20px;
+    }
+
+    .community-creator-container .form-group {
+        margin-bottom: 16px;
+    }
+
+    .community-creator-container .form-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1c1c1c;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .form-label {
+        color: #f9fafb;
+    }
+
+    .community-creator-container .form-input,
+    .community-creator-container .form-textarea,
+    .community-creator-container .form-select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #edeff1;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: inherit;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .form-input,
+    body.dark-mode .community-creator-container .form-textarea,
+    body.dark-mode .community-creator-container .form-select {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+
+    .community-creator-container .form-input:focus,
+    .community-creator-container .form-textarea:focus,
+    .community-creator-container .form-select:focus {
+        outline: none;
+        border-color: #0079D3;
+    }
+
+    body.dark-mode .community-creator-container .form-input:focus,
+    body.dark-mode .community-creator-container .form-textarea:focus,
+    body.dark-mode .community-creator-container .form-select:focus {
+        border-color: #818cf8;
+        box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+    }
+
+    .community-creator-container .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .community-creator-container .char-count {
+        font-size: 12px;
+        color: #7c7c7c;
+        text-align: right;
+        margin-top: 4px;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .char-count {
+        color: #d1d5db;
+    }
+
+    /* Form Row */
+    .community-creator-container .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    /* File Upload */
+    .community-creator-container .upload-area {
+        border: 2px dashed #edeff1;
+        border-radius: 4px;
+        padding: 40px 20px;
+        text-align: center;
+        background: #f6f7f8;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    body.dark-mode .community-creator-container .upload-area {
+        border-color: #4b5563;
+        background: #374151;
+    }
+
+    .community-creator-container .upload-area:hover,
+    .community-creator-container .upload-area.dragover {
+        border-color: #0079D3;
+        background: rgba(0, 121, 211, 0.05);
+    }
+
+    body.dark-mode .community-creator-container .upload-area:hover,
+    body.dark-mode .community-creator-container .upload-area.dragover {
+        border-color: #818cf8;
+        background: rgba(129, 140, 248, 0.1);
+    }
+
+    .community-creator-container .upload-icon {
+        font-size: 48px;
+        color: #7c7c7c;
+        margin-bottom: 12px;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .upload-icon {
+        color: #d1d5db;
+    }
+
+    .community-creator-container .upload-text {
+        font-size: 16px;
+        color: #1c1c1c;
+        margin-bottom: 4px;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .upload-text {
+        color: #f9fafb;
+    }
+
+    .community-creator-container .upload-subtext {
+        font-size: 12px;
+        color: #7c7c7c;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .upload-subtext {
+        color: #d1d5db;
+    }
+
+    /* Toggle Switch Styles */
+    .community-creator-container .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
+
+        .community-creator-container .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .community-creator-container .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+    body.dark-mode .community-creator-container .toggle-slider {
+        background-color: #4b5563;
+    }
+
+    .community-creator-container .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    .community-creator-container .toggle-switch input:checked + .toggle-slider {
+        background-color: #0079D3;
+    }
+
+    body.dark-mode .community-creator-container .toggle-switch input:checked + .toggle-slider {
+        background-color: #818cf8;
+    }
+
+    .community-creator-container .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+    }
+
+    /* Community Options */
+    .community-creator-container .community-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #edeff1;
+        transition: border-color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .community-options {
+        border-top-color: #4b5563;
+    }
+
+    .community-creator-container .option-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: #1c1c1c;
+        padding: 12px 16px;
+        background: #f9f9f9;
+        border: 1px solid #edeff1;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    body.dark-mode .community-creator-container .option-toggle {
+        color: #f9fafb;
+        background: #374151;
+        border-color: #4b5563;
+    }
+
+    .community-creator-container .option-toggle:hover {
+        background: #f0f0f0;
+        border-color: #0079D3;
+    }
+
+    body.dark-mode .community-creator-container .option-toggle:hover {
+        background: #4b5563;
+        border-color: #818cf8;
+    }
+
+    .community-creator-container .option-toggle span {
+        user-select: none;
+        flex: 1;
+    }
+
+    /* Action Buttons */
+    .community-creator-container .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 16px 20px;
+        background: #f6f7f8;
+        border-top: 1px solid #edeff1;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .form-actions {
+        background: rgba(0, 0, 0, 0.2);
+        border-top-color: #4b5563;
+    }
+
+    .community-creator-container .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .community-creator-container .btn-primary {
+        background: #0079D3;
+        color: white;
+    }
+
+    body.dark-mode .community-creator-container .btn-primary {
+        background: #818cf8;
+    }
+
+    .community-creator-container .btn-primary:hover {
+        background: #0066b3;
+    }
+
+    body.dark-mode .community-creator-container .btn-primary:hover {
+        background: #a5b4fc;
+    }
+
+    .community-creator-container .btn-secondary {
+        background: transparent;
+        color: #0079D3;
+        border: 1px solid #0079D3;
+    }
+
+    body.dark-mode .community-creator-container .btn-secondary {
+        color: #818cf8;
+        border-color: #818cf8;
+    }
+
+    .community-creator-container .btn-secondary:hover {
+        background: #0079D3;
+        color: white;
+    }
+
+    body.dark-mode .community-creator-container .btn-secondary:hover {
+        background: #818cf8;
+        color: white;
+    }
+
+    .community-creator-container .btn-ghost {
+        background: transparent;
+        color: #7c7c7c;
+        border: 1px solid #edeff1;
+    }
+
+    body.dark-mode .community-creator-container .btn-ghost {
+        color: #d1d5db;
+        border-color: #4b5563;
+    }
+
+    .community-creator-container .btn-ghost:hover {
+        background: #f6f7f8;
+        color: #1c1c1c;
+    }
+
+    body.dark-mode .community-creator-container .btn-ghost:hover {
+        background: #374151;
+        color: #f9fafb;
+    }
+
+    /* Right Sidebar */
+    .community-creator-container .right-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .community-creator-container .tips-list {
+        list-style: none;
+    }
+
+        .community-creator-container .tips-list li {
+            padding: 10px 0;
+            font-size: 13px;
+            color: #7c7c7c;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.4;
+            transition: color 0.3s ease;
+        }
+
+    body.dark-mode .community-creator-container .tips-list li {
+        color: #d1d5db;
+    }
+
+    .community-creator-container .tips-list i {
+        color: #46D160;
+        margin-top: 2px;
+        font-size: 10px;
+    }
+
+    /* Community Preview */
+    .community-creator-container .community-preview {
+        background: #f9f9f9;
+        border: 1px solid #edeff1;
+        border-radius: 4px;
+        padding: 16px;
+        margin-top: 16px;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .community-preview {
+        background: #374151;
+        border-color: #4b5563;
+    }
+
+    .community-creator-container .community-preview h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #1c1c1c;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .community-preview h3 {
+        color: #f9fafb;
+    }
+
+    .community-creator-container .preview-community {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: white;
+        border: 1px solid #edeff1;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .preview-community {
+        background: #1f2937;
+        border-color: #4b5563;
+    }
+
+    .community-creator-container .preview-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #0079D3;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    body.dark-mode .community-creator-container .preview-icon {
+        background: #818cf8;
+    }
+
+    .community-creator-container .preview-info h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+        color: #1c1c1c;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .preview-info h4 {
+        color: #f9fafb;
+    }
+
+    .community-creator-container .preview-info p {
+        font-size: 12px;
+        color: #7c7c7c;
+        margin: 0;
+        line-height: 1.3;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .preview-info p {
+        color: #d1d5db;
+    }
+
+    /* Rules Editor */
+    .community-creator-container .rules-editor {
+        border: 1px solid #edeff1;
+        border-radius: 4px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .rules-editor {
+        border-color: #4b5563;
+        background: #374151;
+    }
+
+    .community-creator-container .rules-toolbar {
+        padding: 8px 12px;
+        border-bottom: 1px solid #edeff1;
+        background: #f6f7f8;
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .rules-toolbar {
+        border-bottom-color: #4b5563;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .community-creator-container .rules-btn {
+        padding: 6px 8px;
+        border: none;
+        background: transparent;
+        color: #7c7c7c;
+        cursor: pointer;
+        border-radius: 2px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+
+    body.dark-mode .community-creator-container .rules-btn {
+        color: #d1d5db;
+    }
+
+    .community-creator-container .rules-btn:hover {
+        background: #edeff1;
+        color: #1c1c1c;
+    }
+
+    body.dark-mode .community-creator-container .rules-btn:hover {
+        background: #4b5563;
+        color: #f9fafb;
+    }
+
+    .community-creator-container .rules-content {
+        padding: 12px;
+        min-height: 120px;
+        outline: none;
+        font-size: 14px;
+        line-height: 1.5;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .rules-content {
+        color: #f9fafb;
+    }
+
+    .community-creator-container .rules-content:empty:before {
+        content: "Enter community rules and guidelines...";
+        color: #7c7c7c;
+    }
+
+    body.dark-mode .community-creator-container .rules-content:empty:before {
+        color: #9ca3af;
+    }
+
+    /* Image Preview */
+    .community-creator-container .image-preview {
+        margin-top: 8px;
+        display: none;
+    }
+
+    .community-creator-container .preview-image {
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 4px;
+        border: 1px solid #edeff1;
+        transition: border-color 0.3s ease;
+    }
+
+    body.dark-mode .community-creator-container .preview-image {
+        border-color: #4b5563;
+    }
+
+    /* Status Messages */
+    .community-creator-container .status-message {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        padding: 12px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 1000;
+        display: none;
+        animation: slideIn 0.3s ease;
+        transition: all 0.3s ease;
+    }
+
+        .community-creator-container .status-message.success {
+            background: #46D160;
+            color: white;
+        }
+
+        .community-creator-container .status-message.error {
+            background: #FF4500;
+            color: white;
+        }
+
+        .community-creator-container .status-message.info {
+            background: #0079D3;
+            color: white;
+        }
+
+    body.dark-mode .community-creator-container .status-message.info {
+        background: #818cf8;
+    }
+
+    @keyframes slideIn {
+        from
+
+    {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .community-creator-container .container-fluid.main-container
+
+    {
+        grid-template-columns: 1fr;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .community-creator-container .left-sidebar,
+    .community-creator-container .right-sidebar {
+        display: none;
+    }
+
+    }
+
+    @media (max-width: 768px) {
+        .community-creator-container .main-container
+
+    {
+        margin: 10px auto;
+        padding: 0 10px;
+    }
+
+    .community-creator-container .form-container {
+        padding: 16px;
+    }
+
+    .community-creator-container .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .community-creator-container .community-options {
+        grid-template-columns: 1fr;
+    }
+
+    }
+</style>
+<div class="community-creator-container">
+    <!-- Main Container -->
+    <div class="container-fluid main-container">
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <!-- Community Guidelines -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-info-circle"></i> Community Creation Guidelines
+                </div>
+                <div class="sidebar-content">
+                    <ul class="tips-list">
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Choose a unique and descriptive name</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Write clear community rules and guidelines</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Select the appropriate category</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Add an engaging description</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Upload a community icon and banner</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Popular Categories -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-tags"></i> Popular Categories
+                </div>
+                <div class="sidebar-content">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
+                            <strong>Technology</strong> - 1,234 communities
+                        </div>
+                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
+                            <strong>Gaming</strong> - 987 communities
+                        </div>
+                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
+                            <strong>Science</strong> - 654 communities
+                        </div>
+                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
+                            <strong>Arts & Culture</strong> - 432 communities
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="community-header">
+                <h1 class="community-title">Create a new community</h1>
+                <div class="breadcrumb">
+                    <a href="/">Home</a> / <a href="/communities">Communities</a> / Create Community
+                </div>
+            </div>
+
+            <!-- Form Container -->
+            <div class="form-container">
+                <form id="communityForm" method="post" enctype="multipart/form-data">
+                    <!-- Hidden fields -->
+                    <input type="hidden" id="creatorId" name="CreatorId" value="">
+                    <input type="hidden" id="slug" name="Slug" value="">
+
+                    <!-- Basic Information -->
+                    <div class="form-group">
+                        <label class="form-label" for="communityName">Community Name *</label>
+                        <input type="text" class="form-input" id="communityName" name="Name" placeholder="Enter community name" maxlength="100" required>
+                        <div class="char-count">
+                            <span id="nameCount">0</span>/100
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="communityTitle">Display Title *</label>
+                        <input type="text" class="form-input" id="communityTitle" name="Title" placeholder="A descriptive title for your community" maxlength="200" required>
+                        <div class="char-count">
+                            <span id="titleCount">0</span>/200
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="categorySelect">Category *</label>
+                            <select class="form-select" id="categorySelect" name="CategoryId" required>
+                                <option value="">Select a category</option>
+                                <option value="1">Technology</option>
+                                <option value="2">Gaming</option>
+                                <option value="3">Science</option>
+                                <option value="4">Arts & Culture</option>
+                                <option value="5">Sports</option>
+                                <option value="6">Education</option>
+                                <option value="7">Business</option>
+                                <option value="8">Entertainment</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="communityType">Community Type *</label>
+                            <select class="form-select" id="communityType" name="CommunityType" required>
+                                <option value="public">Public - Anyone can view and join</option>
+                                <option value="restricted">Restricted - Anyone can view, approval required to join</option>
+                                <option value="private">Private - Invitation only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="shortDescription">Short Description *</label>
+                        <input type="text" class="form-input" id="shortDescription" name="ShortDescription" placeholder="Brief description for community listings" maxlength="500" required>
+                        <div class="char-count">
+                            <span id="shortDescCount">0</span>/500
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="description">Full Description</label>
+                        <textarea class="form-textarea" id="description" name="Description" rows="5" placeholder="Detailed description of your community, its purpose, and what members can expect..."></textarea>
+                    </div>
+
+                    <!-- Visual Elements -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="iconUpload">Community Icon</label>
+                            <div class="upload-area" onclick="document.getElementById('iconUpload').click()">
+                                <div class="upload-icon">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <div class="upload-text">Upload Icon</div>
+                                <div class="upload-subtext">Recommended: 256x256px</div>
+                            </div>
+                            <input type="file" id="iconUpload" name="IconFile" accept="image/*" style="display: none;">
+                            <div class="image-preview" id="iconPreview">
+                                <img class="preview-image" id="iconImage" alt="Community Icon Preview">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="bannerUpload">Community Banner</label>
+                            <div class="upload-area" onclick="document.getElementById('bannerUpload').click()">
+                                <div class="upload-icon">
+                                    <i class="fas fa-panorama"></i>
+                                </div>
+                                <div class="upload-text">Upload Banner</div>
+                                <div class="upload-subtext">Recommended: 1920x384px</div>
+                            </div>
+                            <input type="file" id="bannerUpload" name="BannerFile" accept="image/*" style="display: none;">
+                            <div class="image-preview" id="bannerPreview">
+                                <img class="preview-image" id="bannerImage" alt="Community Banner Preview">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="themeColor">Theme Color</label>
+                        <input type="color" class="form-input" id="themeColor" name="ThemeColor" value="#0079D3" style="height: 40px;">
+                    </div>
+
+                    <!-- Community Rules -->
+                    <div class="form-group">
+                        <label class="form-label">Community Rules & Guidelines</label>
+                        <div class="rules-editor">
+                            <div class="rules-toolbar">
+                                <button type="button" class="rules-btn" title="Bold">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button type="button" class="rules-btn" title="Italic">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button type="button" class="rules-btn" title="List">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                                <button type="button" class="rules-btn" title="Link">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                            </div>
+                            <div class="rules-content" contenteditable="true" id="rulesEditor"></div>
+                        </div>
+                        <textarea name="Rules" id="rulesHidden" style="display: none;"></textarea>
+                    </div>
+
+                    <!-- Community Options -->
+                    <div class="community-options">
+                        <label class="option-toggle">
+                            <span>NSFW Community</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" name="IsNSFW">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Community Preview -->
+                    <div class="community-preview">
+                        <h3><i class="fas fa-eye"></i> Community Preview</h3>
+                        <div class="preview-community">
+                            <div class="preview-icon" id="previewIcon">C</div>
+                            <div class="preview-info">
+                                <h4 id="previewName">Community Name</h4>
+                                <p id="previewDescription">Community description will appear here</p>
+                                <div style="font-size: 11px; color: #46D160; margin-top: 4px;">
+                                    <span id="previewType">Public</span> • <span id="previewCategory">Category</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" id="saveAsDraft">
+                    <i class="fas fa-save"></i> Save Draft
+                </button>
+                <button type="button" class="btn btn-secondary" id="previewBtn">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button type="submit" class="btn btn-primary" id="createCommunity" form="communityForm">
+                    <i class="fas fa-plus"></i> Create Community
+                </button>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="right-sidebar">
+            <!-- Community Tips -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-lightbulb"></i> Community Success Tips
+                </div>
+                <div class="sidebar-content">
+                    <ul class="tips-list">
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Start with clear, enforceable rules</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Be active and engage with your members</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Create quality content to attract users</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Moderate consistently and fairly</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Promote your community in relevant places</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Community Stats -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">Platform Statistics</div>
+                <div class="sidebar-content">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #0079D3;">12,847</div>
+                            <div style="font-size: 12px; color: #7c7c7c;">Total Communities</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #46D160;">2.3M</div>
+                            <div style="font-size: 12px; color: #7c7c7c;">Active Members</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #FF4500;">156</div>
+                            <div style="font-size: 12px; color: #7c7c7c;">New Communities This Week</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Communities -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">Recently Created</div>
+                <div class="sidebar-content">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 24px; height: 24px; background: #FF6B6B; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">AI</div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600;">r/AIDiscussion</div>
+                                <div style="font-size: 10px; color: #7c7c7c;">2 hours ago</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 24px; height: 24px; background: #4ECDC4; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">WD</div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600;">r/WebDev</div>
+                                <div style="font-size: 10px; color: #7c7c7c;">5 hours ago</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 24px; height: 24px; background: #A8E6CF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">ST</div>
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600;">r/StartupLife</div>
+                                <div style="font-size: 10px; color: #7c7c7c;">1 day ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage">
+        <span id="statusText">Status message</span>
+    </div>
+</div>
+
+<script>
+    // Global state
+    let selectedCategory = null;
+
+    // Initialize dark mode from localStorage
+    function initializeDarkMode() {
+        const savedDarkMode = localStorage.getItem('darkMode');
+        if (savedDarkMode === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDarkMode();
+        initializeEventListeners();
+        setCreatorId();
+        updatePreview();
+    });
+
+    function setCreatorId() {
+        // Set the current user ID - you'll need to get this from your authentication system
+        document.getElementById('creatorId').value = 'current-user-id'; // Replace with actual user ID
+    }
+
+    function initializeEventListeners() {
+        // Character count tracking
+        document.getElementById('communityName').addEventListener('input', function(e) {
+            updateCharCount(e.target, 'nameCount', 100);
+            generateSlug();
+            updatePreview();
+        });
+
+        document.getElementById('communityTitle').addEventListener('input', function(e) {
+            updateCharCount(e.target, 'titleCount', 200);
+            updatePreview();
+        });
+
+        document.getElementById('shortDescription').addEventListener('input', function(e) {
+            updateCharCount(e.target, 'shortDescCount', 500);
+            updatePreview();
+        });
+
+        // Category and type selection
+        document.getElementById('categorySelect').addEventListener('change', updatePreview);
+        document.getElementById('communityType').addEventListener('change', updatePreview);
+
+        // Theme color
+        document.getElementById('themeColor').addEventListener('change', function(e) {
+            document.getElementById('previewIcon').style.background = e.target.value;
+        });
+
+        // File uploads
+        document.getElementById('iconUpload').addEventListener('change', function(e) {
+            handleImageUpload(e, 'iconPreview', 'iconImage');
+        });
+
+        document.getElementById('bannerUpload').addEventListener('change', function(e) {
+            handleImageUpload(e, 'bannerPreview', 'bannerImage');
+        });
+
+        // Rules editor
+        document.getElementById('rulesEditor').addEventListener('input', syncRulesContent);
+
+        // Form submission
+        document.getElementById('communityForm').addEventListener('submit', handleFormSubmit);
+
+        // Save as draft
+        document.getElementById('saveAsDraft').addEventListener('click', function() {
+            showStatus('info', 'Saving as draft...');
+            setTimeout(() => {
+                showStatus('success', 'Draft saved successfully!');
+            }, 1000);
+        });
+
+        // Preview
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            showStatus('info', 'Opening preview...');
+        });
+
+        // Toggle switches
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+            });
+        });
+    }
+
+    function updateCharCount(input, counterId, maxLength) {
+        const current = input.value.length;
+        document.getElementById(counterId).textContent = current;
+
+        const counter = document.getElementById(counterId);
+        if (current > maxLength * 0.9) {
+            counter.style.color = '#f59e0b';
+        } else {
+            counter.style.color = '#7c7c7c';
+        }
+
+        if (current >= maxLength) {
+            counter.style.color = '#ef4444';
+        }
+    }
+
+    function generateSlug() {
+        const name = document.getElementById('communityName').value;
+        const slug = name
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim('-');
+        document.getElementById('slug').value = slug;
+    }
+
+    function updatePreview() {
+        const name = document.getElementById('communityName').value || 'Community Name';
+        const shortDesc = document.getElementById('shortDescription').value || 'Community description will appear here';
+        const categorySelect = document.getElementById('categorySelect');
+        const typeSelect = document.getElementById('communityType');
+
+        const category = categorySelect.options[categorySelect.selectedIndex]?.text || 'Category';
+        const type = typeSelect.options[typeSelect.selectedIndex]?.text.split(' -')[0] || 'Public';
+
+        document.getElementById('previewName').textContent = name;
+        document.getElementById('previewDescription').textContent = shortDesc;
+        document.getElementById('previewCategory').textContent = category;
+        document.getElementById('previewType').textContent = type;
+
+        // Update icon with first letter
+        const firstLetter = name.charAt(0).toUpperCase() || 'C';
+        document.getElementById('previewIcon').textContent = firstLetter;
+    }
+
+    function handleImageUpload(event, previewId, imageId) {
+        const file = event.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('error', 'File size must be less than 5MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(imageId).src = e.target.result;
+                document.getElementById(previewId).style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function syncRulesContent() {
+        const rulesContent = document.getElementById('rulesEditor').innerHTML;
+        document.getElementById('rulesHidden').value = rulesContent;
+    }
+
+    function handleFormSubmit(e) {
+        e.preventDefault();
+
+        // Validate required fields
+        const name = document.getElementById('communityName').value.trim();
+        const title = document.getElementById('communityTitle').value.trim();
+        const shortDesc = document.getElementById('shortDescription').value.trim();
+        const category = document.getElementById('categorySelect').value;
+
+        if (!name || !title || !shortDesc || !category) {
+            showStatus('error', 'Please fill in all required fields');
+            return;
+        }
+
+        // Sync rules content
+        syncRulesContent();
+
+        showStatus('info', 'Creating community...');
+
+        // Here you would submit the form to your server
+        setTimeout(() => {
+            showStatus('success', 'Community created successfully!');
+        }, 2000);
+    }
+
+    function showStatus(type, message) {
+        const statusMessage = document.getElementById('statusMessage');
+        const statusText = document.getElementById('statusText');
+
+        statusMessage.className = `status-message ${type}`;
+        statusText.textContent = message;
+        statusMessage.style.display = 'block';
+
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 3000);
+    }
+
+    // Dark mode toggle functionality
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDarkMode);
+        showStatus('info', isDarkMode ? 'Dark mode enabled' : 'Light mode enabled');
+    }
+</script>
+
