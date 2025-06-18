@@ -2,6 +2,7 @@
      @using System.Text.Json
 @{
     ViewData["Title"] = "Create New Post";
+    var UrlPage = Context.Request.Path + Context.Request.QueryString;
 }
 
 <style>
@@ -1574,9 +1575,9 @@
                 <div class="sidebar-header">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                         <span>Choose a community</span>
-                        <button asp-controller="Community" asp-action="Create" type="button" class="btn-create-community" asp-route-returnUrl="@Context.Request.Path + Context.Request.QueryString">
+                        <a asp-controller="Community" asp-action="Create" class="btn-create-community" asp-route-returnUrl="@UrlPage">
                             <i class="fas fa-plus"></i>
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <div class="sidebar-content">

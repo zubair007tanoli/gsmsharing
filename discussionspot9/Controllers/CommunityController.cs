@@ -97,7 +97,7 @@ namespace discussionspot9.Controllers
         /// </summary>
         [HttpGet]
         [Authorize]
-        public IActionResult Create()
+        public IActionResult Create(string returnUrl)
         {
             var model = new CreateCommunityViewModel();
             return View(model);
