@@ -44,7 +44,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         [Display(Name = "Publication Date")]
         [DataType(DataType.DateTime)]
         public DateTime? PublicationDate { get; set; }
-
+        public string Question { get; set; }
         // Poll configuration
         [Display(Name = "Poll Options")]
         public List<string> PollOptions { get; set; } = new();
@@ -104,6 +104,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string CommunityName { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
         public string? UserId { get; set; }
+        
         //user communities and suggested communities
         public List<CommunityViewModel> UserCommunities { get; set; } = new List<CommunityViewModel>();
         public List<CommunityViewModel> SuggestedCommunities { get; set; } = new List<CommunityViewModel>();
