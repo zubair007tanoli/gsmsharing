@@ -1,8 +1,9 @@
-﻿@using discussionspot9.Models.Enums
-@model discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+     @using System.Text.Json
 @{
     ViewData["Title"] = "Create New Post";
 }
+
 <style>
     /* Scoped styles for post creator to prevent conflicts */
     .post-creator-container * {
@@ -1433,6 +1434,33 @@
         color: #d1d5db;
     }
 
+    /* Validation styles */
+    .post-creator-container .field-validation-error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 4px;
+        display: block;
+    }
+
+    .post-creator-container .input-validation-error {
+        border-color: #dc3545 !important;
+    }
+
+    .post-creator-container .validation-summary-errors {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+    }
+
+    body.dark-mode .post-creator-container .validation-summary-errors {
+        background: #2d1b1e;
+        border-color: #5a2a2e;
+        color: #f8d7da;
+    }
+
     /* Responsive */
     @@media (max-width: 1024px) {
         .post-creator-container .container-fluid.main-container {
@@ -1528,333 +1556,672 @@
         }
     }
 </style>
-<div class="post-creator-container">
-    <div class="container-fluid main-container">
-        <aside class="left-sidebar">
-            <!-- Community selection (unchanged) -->
-        </aside>
 
-        <main class="main-content">
-            <div class="post-header">
-                <h1 class="post-title">Create a Post</h1>
-                <div class="breadcrumb">
-                    <a href="#">Home</a> / <a href="#">Submit</a> / Create Post
+<div class="post-creator-container">
+    <!-- Validation Summary -->
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="All" class="validation-summary-errors"></div>
+    }
+
+    <!-- Main Container -->
+    <div class="container-fluid main-container">
+        <!-- Left Sidebar -->
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <!-- Community Selection -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Choose a community</span>
+                        <button type="button" class="btn-create-community" onclick="showCreateCommunityModal()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="sidebar-content">
+                    <!-- Community Lists Sidebar -->
+                    <div class="community-search relative w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+                        <input type="text" class="community-input w-full p-3 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out text-gray-800 placeholder-gray-500" id="communitySearch" placeholder="Search communities" required>
+
+                        <div class="community-dropdown absolute z-10 w-full bg-white border border-gray-200 rounded-xl shadow-xl mt-2 max-h-80 overflow-y-auto transform transition-all duration-300 ease-in-out hidden" id="communityDropdown">
+                            <!-- Content will be populated by JavaScript -->
+                        </div>
+                        <input type="hidden" id="selectedCommunityId" name="CreatePost.CommunityId" />
+                        <input type="hidden" id="selectedCommunityName" name="CreatePost.CommunityName" />
+                        <input type="hidden" id="selectedCommunitySlug" name="CreatePost.CommunitySlug" />
+                    </div>
+                    <div class="community-search">
+                        <input type="text" class="community-input" id="communitySearch" placeholder="Search communities" required>
+                        <div class="community-dropdown" id="communityDropdown">
+                            <!-- Popular Communities -->
+                            <div class="community-section-header">Popular Communities</div>
+                            <div class="community-item" data-community="technology" data-id="1" data-slug="technology">
+                                <div class="community-icon">T</div>
+                                <div class="community-info">
+                                    <h4>r/Technology</h4>
+                                    <p>1.2M members • Tech news & discussions</p>
+                                </div>
+                            </div>
+                            <div class="community-item" data-community="gaming" data-id="2" data-slug="gaming">
+                                <div class="community-icon">G</div>
+                                <div class="community-info">
+                                    <h4>r/Gaming</h4>
+                                    <p>3.4M members • Gaming community</p>
+                                </div>
+                            </div>
+                            <div class="community-item" data-community="programming" data-id="3" data-slug="programming">
+                                <div class="community-icon">P</div>
+                                <div class="community-info">
+                                    <h4>r/Programming</h4>
+                                    <p>2.1M members • Programming discussions</p>
+                                </div>
+                            </div>
+
+                            <!-- Your Communities -->
+                            <div class="community-section-header">Your Communities</div>
+                            <div class="community-item" data-community="webdev" data-id="4" data-slug="webdev">
+                                <div class="community-icon">W</div>
+                                <div class="community-info">
+                                    <h4>r/WebDev</h4>
+                                    <p>890K members • Web development</p>
+                                </div>
+                            </div>
+                            <div class="community-item" data-community="javascript" data-id="5" data-slug="javascript">
+                                <div class="community-icon">J</div>
+                                <div class="community-info">
+                                    <h4>r/JavaScript</h4>
+                                    <p>2.3M members • JavaScript programming</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Community List (Always Visible) -->
+                    <div class="community-list" style="margin-top: 16px;">
+                        <div style="font-size: 12px; font-weight: 600; color: #7c7c7c; margin-bottom: 8px; text-transform: uppercase;">Recent Communities</div>
+                        <div class="community-item" data-community="technology" data-id="1" data-slug="technology" style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div class="community-icon" style="width: 24px; height: 24px; font-size: 12px;">T</div>
+                            <div class="community-info">
+                                <h4 style="font-size: 13px;">r/Technology</h4>
+                                <p style="font-size: 11px;">1.2M members</p>
+                            </div>
+                        </div>
+                        <div class="community-item" data-community="gaming" data-id="2" data-slug="gaming" style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <div class="community-icon" style="width: 24px; height: 24px; font-size: 12px;">G</div>
+                            <div class="community-info">
+                                <h4 style="font-size: 13px;">r/Gaming</h4>
+                                <p style="font-size: 11px;">3.4M members</p>
+                            </div>
+                        </div>
+                        <div class="community-item" data-community="programming" data-id="3" data-slug="programming" style="padding: 8px 0;">
+                            <div class="community-icon" style="width: 24px; height: 24px; font-size: 12px;">P</div>
+                            <div class="community-info">
+                                <h4 style="font-size: 13px;">r/Programming</h4>
+                                <p style="font-size: 11px;">2.1M members</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-container">
-                <form id="postForm" method="post" enctype="multipart/form-data">
-                    <!-- Hidden fields for initial data (Community & User IDs) -->
-                    <input type="hidden" asp-for="CommunityId" id="communityId" />
-                    <input type="hidden" asp-for="CommunityName" id="communityName" />
-                    <input type="hidden" asp-for="CommunitySlug" id="communitySlug" />
-                    <input type="hidden" asp-for="UserId" id="userId" value="current-user-id" />
-                    <input type="hidden" asp-for="Status" id="statusInput" value="published" />
-
-                    <!-- Post Type Selection -->
-                    <div class="form-group mb-6 p-4 border rounded-lg shadow-sm bg-blue-50">
-                        <label class="form-label mb-3">Choose Post Type(s):</label>
-                        <div class="flex flex-wrap gap-4">
-                            @foreach (PostContentTypes type in Enum.GetValues(typeof(PostContentTypes)))
-                            {
-                                if (type == PostContentTypes.None) continue; // Skip 'None'
-                                <label class="flex items-center space-x-2">
-                                    <input type="checkbox"
-                                           name="PostType"
-                                           value="@((int)type)"
-                                    @(Model.PostType.HasFlag(type) ? "checked" : "")
-                                           class="form-checkbox h-5 w-5 text-blue-600 rounded post-type-checkbox"
-                                           data-content-type="@type.ToString().ToLower()" />
-                                    <span class="text-gray-700 font-medium">@type.ToString()</span>
-                                </label>
-                            }
+            <!-- Community Suggestions -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-fire"></i> Trending Communities
+                </div>
+                <div class="sidebar-content">
+                    <div class="community-suggestion">
+                        <div class="suggestion-icon" style="background: linear-gradient(45deg, #FF6B6B, #FF8E53);">AI</div>
+                        <div class="suggestion-info">
+                            <h4>r/ArtificialIntelligence <span class="trending-badge">HOT</span></h4>
+                            <p>Discussions about AI, machine learning, and the future</p>
+                            <div class="suggestion-stats">↗ +2.3K members this week</div>
                         </div>
-                        <span asp-validation-for="PostType" class="text-red-500 text-sm mt-1"></span>
+                        <button class="join-btn" onclick="joinCommunity(this, 'ai')">Join</button>
                     </div>
+
+                    <div class="community-suggestion">
+                        <div class="suggestion-icon" style="background: linear-gradient(45deg, #4ECDC4, #44A08D);">WD</div>
+                        <div class="suggestion-info">
+                            <h4>r/WebDevelopment</h4>
+                            <p>Frontend, backend, and everything in between</p>
+                            <div class="suggestion-stats">↗ +1.8K members this week</div>
+                        </div>
+                        <button class="join-btn" onclick="joinCommunity(this, 'webdev')">Join</button>
+                    </div>
+
+                    <div class="community-suggestion">
+                        <div class="suggestion-icon" style="background: linear-gradient(45deg, #A8E6CF, #7FCDCD);">ST</div>
+                        <div class="suggestion-info">
+                            <h4>r/StartupAdvice <span class="new-badge">NEW</span></h4>
+                            <p>Tips and guidance for entrepreneurs and startups</p>
+                            <div class="suggestion-stats">↗ +950 members this week</div>
+                        </div>
+                        <button class="join-btn" onclick="joinCommunity(this, 'startup')">Join</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Community Rules -->
+            <div class="sidebar-card">
+                <div class="sidebar-header" id="rulesHeader">
+                    <i class="fas fa-shield-alt"></i> Community Guidelines
+                </div>
+                <div class="sidebar-content">
+                    <ul class="rules-list" id="rulesList">
+                        <li>
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="rule-number">1.</span>
+                                <div>
+                                    <strong>Be respectful and civil</strong>
+                                    <div style="font-size: 12px; color: #7c7c7c; margin-top: 2px;">Treat others with respect. No personal attacks, harassment, or hate speech.</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="rule-number">2.</span>
+                                <div>
+                                    <strong>No spam or self-promotion</strong>
+                                    <div style="font-size: 12px; color: #7c7c7c; margin-top: 2px;">Don't spam the community with repetitive content or excessive self-promotion.</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <span class="rule-number">3.</span>
+                                <div>
+                                    <strong>Stay on topic</strong>
+                                    <div style="font-size: 12px; color: #7c7c7c; margin-top: 2px;">Posts must be related to the community topic and contribute to meaningful discussion.</div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Google AdSense Ad - Left Sidebar -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Sponsored</div>
+                <div class="sidebar-content">
+                    <!-- Vertical Banner Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="2233445566"
+                         data-ad-format="vertical"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Second Ad Unit - Left Sidebar -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Advertisement</div>
+                <div class="sidebar-content">
+                    <!-- Square Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="7788990011"
+                         data-ad-format="square"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="post-header">
+                <h1 class="post-title">Create a post</h1>
+                <div class="breadcrumb">
+                    <a href="/">Home</a> / <a href="/create-post">Submit</a> / Create Post
+                </div>
+            </div>
+
+            <!-- Post Type Tabs -->
+            <div class="post-tabs">
+                <div class="post-tab active" data-type="text">
+                    <i class="fas fa-font"></i>
+                    <span>Post</span>
+                </div>
+                <div class="post-tab" data-type="image">
+                    <i class="fas fa-image"></i>
+                    <span>Images & Video</span>
+                </div>
+                <div class="post-tab" data-type="link">
+                    <i class="fas fa-link"></i>
+                    <span>Link</span>
+                </div>
+                <div class="post-tab" data-type="poll">
+                    <i class="fas fa-poll"></i>
+                    <span>Poll</span>
+                </div>
+            </div>
+
+            <!-- Form Container -->
+            <div class="form-container">
+                <form asp-action="CreateTest" asp-controller="Post" id="postForm" method="post" enctype="multipart/form-data" asp-antiforgery="true">
+                    <!-- Hidden fields for database relationships -->
+                    <input type="hidden" asp-for="CommunityId" id="communityId" required>
+                    <input type="hidden" asp-for="CommunitySlug" id="communitySlug">
+                    <input type="hidden" asp-for="UserId" id="userId">
+                    <input type="hidden" asp-for="PostType" id="postType" value="text">
+                    <input type="hidden" asp-for="Status" value="published">
 
                     <!-- Title -->
                     <div class="form-group">
-                        <label class="form-label" asp-for="Title"></label>
-                        <input asp-for="Title" class="form-input" placeholder="An interesting title" maxlength="300" required />
+                        <label class="form-label" asp-for="Title">Title *</label>
+                        <input asp-for="Title" class="form-input" id="title" placeholder="An interesting title" maxlength="300" required>
+                        <span asp-validation-for="Title" class="field-validation-error"></span>
                         <div class="char-count">
                             <span id="titleCount">0</span>/300
                         </div>
-                        <span asp-validation-for="Title" class="text-red-500 text-sm mt-1"></span>
                     </div>
 
                     <!-- Content Sections -->
-                    <div class="content-section" id="textContent" data-post-type="text">
+                    <div class="content-section active" id="textContent">
                         <div class="form-group">
-                            <label class="form-label" asp-for="Content"></label>
+                            <label class="form-label" asp-for="Content">Content</label>
                             <div class="editor-container">
                                 <div class="editor-toolbar">
-                                    <button type="button" class="text-bold" title="Bold"><i class="fas fa-bold"></i></button>
-                                    <button type="button" class="text-italic" title="Italic"><i class="fas fa-italic"></i></button>
-                                    <button type="button" class="text-underline" title="Underline"><i class="fas fa-underline"></i></button>
-                                    <button type="button" class="text-link" title="Link"><i class="fas fa-link"></i></button>
-                                    <button type="button" class="text-quote" title="Quote"><i class="fas fa-quote-right"></i></button>
-                                    <button type="button" class="text-code" title="Code"><i class="fas fa-code"></i></button>
-                                    <button type="button" class="text-list-ul" title="Unordered List"><i class="fas fa-list-ul"></i></button>
-                                    <button type="button" class="text-list-ol" title="Ordered List"><i class="fas fa-list-ol"></i></button>
+                                    <button type="button" class="editor-btn" title="Bold">
+                                        <i class="fas fa-bold"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Italic">
+                                        <i class="fas fa-italic"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Link">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Code">
+                                        <i class="fas fa-code"></i>
+                                    </button>
+                                    <button type="button" class="editor-btn" title="Quote">
+                                        <i class="fas fa-quote-left"></i>
+                                    </button>
                                 </div>
-                                <div class="editor-content" contenteditable="true" id="textEditor">@Model.Content</div>
+                                <div class="editor-content" contenteditable="true" id="textEditor"></div>
                             </div>
                             <textarea asp-for="Content" id="contentHidden" style="display: none;"></textarea>
-                            <span asp-validation-for="Content" class="text-red-500 text-sm mt-1"></span>
+                            <span asp-validation-for="Content" class="field-validation-error"></span>
                         </div>
                     </div>
 
-                    <div class="content-section" id="imageContent" data-post-type="image">
+                    <div class="content-section" id="imageContent">
                         <div class="form-group">
-                            <label class="form-label" asp-for="MediaFiles"></label>
+                            <label class="form-label" asp-for="MediaFiles">Upload Media *</label>
                             <div class="upload-area" onclick="document.getElementById('mediaUpload').click()">
-                                <p class="text-gray-500"><i class="fas fa-cloud-upload-alt text-2xl mb-2"></i></p>
-                                <p class="text-gray-600 font-medium">Drag & drop images/videos here, or click to browse</p>
-                                <p class="text-gray-500 text-sm">(Max 10MB per file, JPEG/PNG/GIF/MP4/WebM)</p>
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="upload-text">Drag and drop images or videos</div>
+                                <div class="upload-subtext">or click to browse (Max 10MB per file)</div>
                             </div>
-                            <input asp-for="MediaFiles" id="mediaUpload" multiple accept="image/*,video/*" style="display: none;" />
-                            <div class="media-preview grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mt-4" id="mediaPreview">
-                                @if (Model.MediaFiles != null)
-                                {
-                                    foreach (var mediaFile in Model.MediaFiles)
-                                    {
-                                        // In a real scenario, you'd show a preview of uploaded files if they persist after postback
-                                        // For simplicity, this is client-side JS based.
-                                    }
-                                }
-                            </div>
-                            <span asp-validation-for="MediaFiles" class="text-red-500 text-sm mt-1"></span>
+                            <input asp-for="MediaFiles" id="mediaUpload" multiple accept="image/*,video/*" style="display: none;">
+                            <span asp-validation-for="MediaFiles" class="field-validation-error"></span>
+                            <div class="media-preview" id="mediaPreview"></div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" asp-for="MediaCaption"></label>
-                            <input asp-for="MediaCaption" class="form-input" placeholder="Add a caption to your media" />
-                            <span asp-validation-for="MediaCaption" class="text-red-500 text-sm mt-1"></span>
+                            <label class="form-label" asp-for="MediaCaption">Caption</label>
+                            <input asp-for="MediaCaption" class="form-input" placeholder="Add a caption to your media">
+                            <span asp-validation-for="MediaCaption" class="field-validation-error"></span>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" asp-for="MediaAltText"></label>
-                            <input asp-for="MediaAltText" class="form-input" placeholder="Describe your media for screen readers" />
-                            <span asp-validation-for="MediaAltText" class="text-red-500 text-sm mt-1"></span>
+                            <label class="form-label" asp-for="MediaAltText">Alt Text (Accessibility)</label>
+                            <input asp-for="MediaAltText" class="form-input" placeholder="Describe your media for screen readers">
+                            <span asp-validation-for="MediaAltText" class="field-validation-error"></span>
                         </div>
                     </div>
 
-                    <div class="content-section" id="linkContent" data-post-type="link">
+                    <div class="content-section" id="linkContent">
                         <div class="form-group">
-                            <label class="form-label" asp-for="Url"></label>
-                            <input asp-for="Url" class="form-input" id="linkUrl" placeholder="https://example.com" />
-                            <span asp-validation-for="Url" class="text-red-500 text-sm mt-1"></span>
+                            <label class="form-label" asp-for="Url">URL *</label>
+                            <input asp-for="Url" class="form-input" id="linkUrl" placeholder="https://example.com">
+                            <span asp-validation-for="Url" class="field-validation-error"></span>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="linkDescription">Link Description (Optional)</label>
-                            <textarea asp-for="Content" class="form-textarea" id="linkDescription" rows="5" placeholder="Describe or comment on the link..."></textarea>
-                            <span asp-validation-for="Content" class="text-red-500 text-sm mt-1"></span>
+                            <label class="form-label" asp-for="Content">Description (Optional)</label>
+                            <textarea asp-for="Content" class="form-textarea" rows="5" placeholder="Describe or comment on the link..."></textarea>
+                            <span asp-validation-for="Content" class="field-validation-error"></span>
                         </div>
                     </div>
 
-                    <div class="content-section" id="pollContent" data-post-type="poll">
+                    <div class="content-section" id="pollContent">
                         <div class="form-group">
-                            <label class="form-label" for="pollQuestion">Poll Question</label>
-                            <textarea asp-for="Content" class="form-textarea" id="pollQuestion" rows="3" placeholder="What's your poll question?" required></textarea>
-                            <span asp-validation-for="Content" class="text-red-500 text-sm mt-1"></span>
+                            <label class="form-label" asp-for="Content">Poll Question</label>
+                            <textarea asp-for="Content" class="form-textarea" rows="3" placeholder="What's your poll question?"></textarea>
+                            <span asp-validation-for="Content" class="field-validation-error"></span>
                         </div>
 
-                        <!-- Poll Options Section (FIXED) -->
-                        <div class="form-group mb-4 p-4 border rounded-lg shadow-sm bg-gray-50">
-                            <label class="block text-gray-700 text-lg font-semibold mb-2">Poll Options</label>
-                            <p class="text-gray-600 text-sm mb-4">Provide at least two options for your poll. You can add more as needed.</p>
-
-                            <div id="pollOptionsContainer" class="space-y-3">
-                                @{
-                                    // Determine the initial count of options to render
-                                    int initialPollOptionCount = Model.PollOptions != null && Model.PollOptions.Any() ? Model.PollOptions.Count : 2;
-                                }
-                                @for (int i = 0; i < initialPollOptionCount; i++)
-                                {
-                                    <div class="poll-option flex items-center space-x-2">
-                                        <input type="text"
-                                               name="PollOptions[@i].OptionText"
-                                               id="PollOptions_@i__OptionText"
-                                               value="@(Model.PollOptions != null && i < Model.PollOptions.Count ? Model.PollOptions[i].OptionText : "")"
-                                               class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm poll-option-input"
-                                               placeholder="Option @(i + 1)" required />
-                                        @* Hidden input to preserve PollOptionId if editing existing options *@
-                                        <input type="hidden" name="PollOptions[@i].PollOptionId"
-                                               value="@(Model.PollOptions != null && i < Model.PollOptions.Count ? Model.PollOptions[i].PollOptionId : 0)" />
-                                        <button type="button" class="poll-remove text-gray-500 hover:text-red-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" title="Remove option" @(initialPollOptionCount <= 2 ? "disabled" : "")>
-                                            <i class="fas fa-times text-lg"></i>
-                                        </button>
-                                    </div>
-                                }
+                        <div class="form-group">
+                            <label class="form-label">Poll Options *</label>
+                            <div class="poll-options" id="pollOptions">
+                                <div class="poll-option">
+                                    <input type="text" class="form-input poll-option-input" name="PollOptions" placeholder="Option 1" required>
+                                    <button type="button" class="poll-remove" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="poll-option">
+                                    <input type="text" class="form-input poll-option-input" name="PollOptions" placeholder="Option 2" required>
+                                    <button type="button" class="poll-remove" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
-
-                            <button type="button" class="btn btn-ghost add-option mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" id="addPollOption">
-                                <i class="fas fa-plus mr-2"></i> Add Option
+                            <button type="button" class="btn btn-ghost add-option" id="addPollOption">
+                                <i class="fas fa-plus"></i> Add option
                             </button>
-                            <span asp-validation-for="PollOptions" class="text-red-500 text-sm mt-1"></span>
                         </div>
 
-                        <div class="form-group mt-6">
+                        <!-- Poll Configuration -->
+                        <div class="form-group">
                             <label class="form-label">Poll Settings</label>
-                            <div class="poll-settings space-y-3">
-                                <label class="flex items-center option-toggle">
-                                    <input type="checkbox" asp-for="AllowMultipleChoices" class="form-checkbox h-5 w-5 text-blue-600 rounded toggle-checkbox" />
-                                    <span class="ml-2 text-gray-700">Allow Multiple Choices</span>
+                            <div class="poll-settings">
+                                <label class="option-toggle">
+                                    <span>Allow Multiple Choices</span>
+                                    <div class="toggle-switch">
+                                        <input asp-for="AllowMultipleChoices" type="checkbox" id="allowMultipleChoices">
+                                        <span class="toggle-slider"></span>
+                                    </div>
                                 </label>
-                                <label class="flex items-center option-toggle">
-                                    <input type="checkbox" asp-for="ShowResultsBeforeVoting" class="form-checkbox h-5 w-5 text-blue-600 rounded toggle-checkbox" />
-                                    <span class="ml-2 text-gray-700">Show Results Before Voting</span>
+
+                                <label class="option-toggle">
+                                    <span>Show Results Before Voting</span>
+                                    <div class="toggle-switch">
+                                        <input asp-for="ShowResultsBeforeVoting" type="checkbox" id="showResultsBeforeVoting" checked>
+                                        <span class="toggle-slider"></span>
+                                    </div>
                                 </label>
-                                <label class="flex items-center option-toggle">
-                                    <input type="checkbox" asp-for="ShowResultsBeforeEnd" class="form-checkbox h-5 w-5 text-blue-600 rounded toggle-checkbox" />
-                                    <span class="ml-2 text-gray-700">Show Results Before End</span>
-                                </label>
-                                <label class="flex items-center option-toggle">
-                                    <input type="checkbox" asp-for="AllowAddingOptions" class="form-checkbox h-5 w-5 text-blue-600 rounded toggle-checkbox" />
-                                    <span class="ml-2 text-gray-700">Allow Users to Add Options</span>
+
+                                <label class="option-toggle">
+                                    <span>Allow Users to Add Options</span>
+                                    <div class="toggle-switch">
+                                        <input asp-for="AllowAddingOptions" type="checkbox" id="allowAddingOptions">
+                                        <span class="toggle-slider"></span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="form-group mt-6">
-                            <label asp-for="PollEndDate" class="block text-gray-700 text-lg font-semibold mb-2">Poll End Date (Optional)</label>
-                            <input type="datetime-local" asp-for="PollEndDate" class="form-input mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm" />
-                            <span asp-validation-for="PollEndDate" class="text-red-500 text-sm mt-1"></span>
+                        <!-- Poll End Date - Separated -->
+                        <div class="form-group">
+                            <label class="form-label" asp-for="PollEndDate">Poll End Date (Optional)</label>
+                            <input asp-for="PollEndDate" type="datetime-local" class="form-input" id="pollEndDate">
+                            <span asp-validation-for="PollEndDate" class="field-validation-error"></span>
+                            <div style="font-size: 11px; color: #7c7c7c; margin-top: 4px;">Set when the poll should automatically close</div>
                         </div>
                     </div>
 
                     <!-- Tags Section -->
-                    <div class="form-group mt-6">
-                        <label class="form-label" asp-for="TagsInput"></label> @* Bind to TagsInput for input *@
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
                         <div class="tag-container" id="tagContainer">
-                            @if (Model.Tags != null)
-                            {
-                                foreach (var tag in Model.Tags)
-                                {
-                                    <span class="tag">@tag <button type="button" class="tag-remove" data-tag="@tag"><i class="fas fa-times"></i></button></span>
-                                }
-                            }
-                            <input type="text" class="tag-input" id="tagInput" placeholder="Add tags (press Enter)" />
-                            <input type="hidden" asp-for="TagsInput" id="tagsInputHidden" /> @* Hidden input to store comma-separated tags *@
+                            <input type="text" class="tag-input" id="tagInput" placeholder="Add tags (press Enter)">
                         </div>
-                        <span asp-validation-for="Tags" class="text-red-500 text-sm mt-1"></span>
+                        <input asp-for="TagsInput" type="hidden" id="tagsInputHidden">
+                        <div style="font-size: 12px; color: #7c7c7c; margin-top: 4px;">Add up to 5 tags to help categorize your post</div>
                     </div>
 
-                    <!-- NSFW and Spoiler Toggles -->
-                    <div class="post-options mt-6">
+                    <!-- SEO Toggle Button -->
+                    <div class="form-group">
+                        <button type="button" class="btn btn-ghost" id="seoToggle" style="margin-bottom: 16px;">
+                            <i class="fas fa-chevron-down"></i> Show SEO Settings
+                        </button>
+                    </div>
+
+                    <!-- SEO Metadata Section (Hidden by default) -->
+                    <div class="seo-section" id="seoSection" style="display: none;">
+                        <h3><i class="fas fa-search"></i> SEO & Social Media Settings</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" asp-for="MetaTitle">Meta Title</label>
+                                <input asp-for="MetaTitle" class="form-input" placeholder="Custom title for search engines" maxlength="200">
+                                <span asp-validation-for="MetaTitle" class="field-validation-error"></span>
+                                <div style="font-size: 11px; color: #7c7c7c;">Leave blank to use post title</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" asp-for="CanonicalUrl">Canonical URL</label>
+                                <input asp-for="CanonicalUrl" class="form-input" placeholder="https://example.com/canonical">
+                                <span asp-validation-for="CanonicalUrl" class="field-validation-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" asp-for="MetaDescription">Meta Description</label>
+                            <textarea asp-for="MetaDescription" class="form-textarea" rows="2" placeholder="Brief description for search results" maxlength="500"></textarea>
+                            <span asp-validation-for="MetaDescription" class="field-validation-error"></span>
+                            <div style="font-size: 11px; color: #7c7c7c;">Recommended: 150-160 characters</div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" asp-for="Keywords">Keywords</label>
+                                <input asp-for="Keywords" class="form-input" placeholder="Comma-separated keywords">
+                                <span asp-validation-for="Keywords" class="field-validation-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" asp-for="OgImage">Social Media Image</label>
+                                <input asp-for="OgImage" type="file" class="form-input" accept="image/*">
+                                <span asp-validation-for="OgImage" class="field-validation-error"></span>
+                                <div style="font-size: 11px; color: #7c7c7c;">Recommended: 1200x630 pixels</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post Options -->
+                    <div class="post-options">
                         <label class="option-toggle">
                             <span>NSFW</span>
                             <div class="toggle-switch">
-                                <input asp-for="IsNSFW" type="checkbox" class="toggle-checkbox" />
+                                <input asp-for="IsNSFW" type="checkbox">
                                 <span class="toggle-slider"></span>
                             </div>
                         </label>
                         <label class="option-toggle">
                             <span>Spoiler</span>
                             <div class="toggle-switch">
-                                <input asp-for="IsSpoiler" type="checkbox" class="toggle-checkbox" />
+                                <input asp-for="IsSpoiler" type="checkbox">
                                 <span class="toggle-slider"></span>
                             </div>
                         </label>
                         <label class="option-toggle">
-                            <span>Pin to Profile</span>
+                            <span>Pin Post</span>
                             <div class="toggle-switch">
-                                <input asp-for="IsPinned" type="checkbox" class="toggle-checkbox" />
+                                <input asp-for="IsPinned" type="checkbox">
                                 <span class="toggle-slider"></span>
                             </div>
                         </label>
                         <label class="option-toggle">
                             <span>Lock Comments</span>
                             <div class="toggle-switch">
-                                <input asp-for="IsLocked" type="checkbox" class="toggle-checkbox" />
+                                <input asp-for="IsLocked" type="checkbox">
                                 <span class="toggle-slider"></span>
                             </div>
                         </label>
                     </div>
-
-                    <!-- Publication Date -->
-                    <div class="form-group mt-6">
-                        <label asp-for="PublicationDate" class="block text-gray-700 text-lg font-semibold mb-2">Publication Date (Optional)</label>
-                        <input type="datetime-local" asp-for="PublicationDate" class="form-input mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm" />
-                        <span asp-validation-for="PublicationDate" class="text-red-500 text-sm mt-1"></span>
-                    </div>
-
-
-                    <!-- SEO Section -->
-                    <div class="form-group mt-6">
-                        <button type="button" class="btn btn-ghost inline-flex items-center" id="seoToggle">
-                            <i class="fas fa-chevron-right mr-2 transition-transform duration-200" id="seoToggleIcon"></i> Show SEO Settings
-                        </button>
-                    </div>
-
-                    <div class="seo-section" id="seoSection" style="display: none;">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Search Engine Optimization</h3>
-                        <p class="text-gray-600 text-sm mb-4">Optimize your post for search engines and social media sharing.</p>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" asp-for="MetaTitle"></label>
-                                <input asp-for="MetaTitle" class="form-input" placeholder="Custom title for search engines" maxlength="200" />
-                                <span asp-validation-for="MetaTitle" class="text-red-500 text-sm mt-1"></span>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" asp-for="CanonicalUrl"></label>
-                                <input asp-for="CanonicalUrl" class="form-input" placeholder="https://example.com/canonical" />
-                                <span asp-validation-for="CanonicalUrl" class="text-red-500 text-sm mt-1"></span>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" asp-for="MetaDescription"></label>
-                            <textarea asp-for="MetaDescription" class="form-textarea" rows="3" placeholder="Brief description for search results" maxlength="500"></textarea>
-                            <span asp-validation-for="MetaDescription" class="text-red-500 text-sm mt-1"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" asp-for="Keywords"></label>
-                            <input asp-for="Keywords" class="form-input" placeholder="Comma-separated keywords (e.g., tech, programming, AI)" maxlength="500" />
-                            <span asp-validation-for="Keywords" class="text-red-500 text-sm mt-1"></span>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" asp-for="OgImage"></label>
-                            <div class="upload-area" onclick="document.getElementById('ogImageUpload').click()">
-                                <p class="text-gray-500"><i class="fas fa-image text-2xl mb-2"></i></p>
-                                <p class="text-gray-600 font-medium">Upload a social media image (Open Graph / Twitter Card)</p>
-                                <p class="text-gray-500 text-sm">(Max 5MB, JPEG/PNG recommended)</p>
-                            </div>
-                            <input asp-for="OgImage" id="ogImageUpload" accept="image/jpeg,image/png" style="display: none;" />
-                            <div class="media-preview mt-4" id="ogImagePreview">
-                                @if (Model.OgImage != null)
-                                {
-                                    <!-- In a real scenario, you might show a preview if the image persists after postback -->
-                                }
-                            </div>
-                            <span asp-validation-for="OgImage" class="text-red-500 text-sm mt-1"></span>
-                        </div>
-                    </div>
-
                 </form>
             </div>
 
+            <!-- Form Actions -->
             <div class="form-actions">
                 <button type="button" class="btn btn-ghost" id="saveAsDraft">
-                    <i class="fas fa-save mr-2"></i> Save Draft
+                    <i class="fas fa-save"></i> Save Draft
                 </button>
                 <button type="button" class="btn btn-secondary" id="previewBtn">
-                    <i class="fas fa-eye mr-2"></i> Preview
+                    <i class="fas fa-eye"></i> Preview
                 </button>
                 <button type="submit" class="btn btn-primary" id="submitPost" form="postForm">
-                    <i class="fas fa-paper-plane mr-2"></i> Post
+                    <i class="fas fa-paper-plane"></i> Post
                 </button>
             </div>
         </main>
 
+        <!-- Right Sidebar -->
         <aside class="right-sidebar">
-            <!-- Right sidebar content (unchanged) -->
+            <!-- Posting Tips -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-lightbulb"></i> Posting Guidelines
+                </div>
+                <div class="sidebar-content">
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Choose the Right Community</h4>
+                            <p>Select a community that matches your content topic</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-heading"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Write Engaging Titles</h4>
+                            <p>Create descriptive and compelling titles that grab attention</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Use Relevant Tags</h4>
+                            <p>Add tags to help others discover your content</p>
+                        </div>
+                    </div>
+
+                    <div class="guideline-item">
+                        <div class="guideline-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="guideline-content">
+                            <h4>Content Warnings</h4>
+                            <p>Mark NSFW or spoiler content appropriately</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Tips -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">SEO Best Practices</div>
+                <div class="sidebar-content">
+                    <ul class="tips-list">
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Include target keywords in your title naturally</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Write compelling meta descriptions</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Use high-quality images with alt text</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Add structured data for better search visibility</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Latest News Card -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-newspaper"></i> Latest News
+                </div>
+                <div class="sidebar-content">
+                    <div class="news-item">
+                        <div class="news-meta">
+                            <span class="news-time">2 hours ago</span>
+                            <span class="news-category">Tech</span>
+                        </div>
+                        <h4 class="news-title">New AI Features Released</h4>
+                        <p class="news-excerpt">DiscussionSpot introduces AI-powered content recommendations...</p>
+                    </div>
+
+                    <div class="news-item">
+                        <div class="news-meta">
+                            <span class="news-time">5 hours ago</span>
+                            <span class="news-category">Update</span>
+                        </div>
+                        <h4 class="news-title">Mobile App Improvements</h4>
+                        <p class="news-excerpt">Enhanced performance and new dark mode options now available...</p>
+                    </div>
+
+                    <div class="news-item">
+                        <div class="news-meta">
+                            <span class="news-time">1 day ago</span>
+                            <span class="news-category">Community</span>
+                        </div>
+                        <h4 class="news-title">Community Guidelines Update</h4>
+                        <p class="news-excerpt">New moderation tools and updated community standards...</p>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 16px;">
+                        <a href="#" style="color: #0079D3; font-size: 12px; font-weight: 600; text-decoration: none;">View All News →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google AdSense Ads -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Sponsored</div>
+                <div class="sidebar-content">
+                    <!-- Rectangle Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="1234567890"
+                         data-ad-format="rectangle"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Second Ad Unit -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Advertisement</div>
+                <div class="sidebar-content">
+                    <!-- Square Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="0987654321"
+                         data-ad-format="square"
+                         data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+
+            <!-- Third Ad Unit - Native Ad -->
+            <div class="sidebar-card ad-card">
+                <div class="sidebar-header">Recommended</div>
+                <div class="sidebar-content">
+                    <!-- Native Ad -->
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-format="fluid"
+                         data-ad-layout-key="-6t+ed+2i-1n-4w"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="1122334455"></ins>
+                </div>
+            </div>
         </aside>
     </div>
 
+    <!-- Status Message -->
     <div class="status-message" id="statusMessage">
         <span id="statusText">Status message</span>
     </div>
@@ -1875,28 +2242,19 @@
         }
     }
 
-    // Dark mode toggle functionality
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark-mode');
-
-        // Save preference to localStorage
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        localStorage.setItem('darkMode', isDarkMode);
-
-        showStatus('info', isDarkMode ? 'Dark mode enabled' : 'Light mode enabled');
-    }
-
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
         initializeDarkMode();
         initializeEventListeners();
         generateSlug();
-
-        // Initialize AdSense
-        if (typeof adsbygoogle !== 'undefined') {
-            (adsbygoogle = window.adsbygoogle || []).push({});
-        }
+        setUserId();
     });
+
+    function setUserId() {
+        // Set the current user ID - you'll need to get this from your authentication system
+        // For now, using a placeholder
+        document.getElementById('userId').value = '@User.Identity.Name'; // Replace with actual user ID
+    }
 
     function initializeEventListeners() {
         // Post type tabs
@@ -1944,17 +2302,9 @@
 
         // Save as draft
         document.getElementById('saveAsDraft').addEventListener('click', function() {
-            document.querySelector('input[name="Status"]')?.remove();
-            const statusInput = document.createElement('input');
-            statusInput.type = 'hidden';
-            statusInput.name = 'Status';
-            statusInput.value = 'draft';
-            document.getElementById('postForm').appendChild(statusInput);
-
+            document.querySelector('input[name="Status"]').value = 'draft';
             showStatus('info', 'Saving as draft...');
-            setTimeout(() => {
-                showStatus('success', 'Draft saved successfully!');
-            }, 1000);
+            document.getElementById('postForm').submit();
         });
 
         // Preview
@@ -2012,7 +2362,7 @@
     function updateRequiredFields() {
         // Reset all required fields
         document.querySelectorAll('[required]').forEach(field => {
-            if (field.id !== 'title' && field.id !== 'communitySearch') {
+            if (field.id !== 'title' && field.id !== 'communitySearch' && field.id !== 'communityId') {
                 field.removeAttribute('required');
             }
         });
@@ -2093,7 +2443,7 @@
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .trim('-');
-        document.getElementById('slug').value = slug;
+        // Note: Slug will be generated server-side for database consistency
     }
 
     function handleTagInput(e) {
@@ -2113,12 +2463,14 @@
                         <button type="button" class="tag-remove" onclick="removeTag('${tagText}', this)">
                             <i class="fas fa-times"></i>
                         </button>
-                        <input type="hidden" name="TagNames" value="${tagText}" />
                     `;
 
                     const container = document.getElementById('tagContainer');
                     container.insertBefore(tagElement, e.target);
                     e.target.value = '';
+
+                    // Update hidden input
+                    document.getElementById('tagsInputHidden').value = tags.join(',');
                 }
             } else {
                 showStatus('warning', 'Maximum 5 tags allowed');
@@ -2132,6 +2484,7 @@
             tags.splice(index, 1);
         }
         button.parentElement.remove();
+        document.getElementById('tagsInputHidden').value = tags.join(',');
     }
 
     function addPollOption() {
@@ -2216,16 +2569,16 @@
     }
 
     function handleFormSubmit(e) {
-        e.preventDefault();
-
         // Validate required fields
         if (!selectedCommunity) {
+            e.preventDefault();
             showStatus('error', 'Please select a community');
             return;
         }
 
         const title = document.getElementById('title').value.trim();
         if (!title) {
+            e.preventDefault();
             showStatus('error', 'Please enter a title');
             return;
         }
@@ -2234,11 +2587,6 @@
         syncEditorContent();
 
         showStatus('info', 'Publishing post...');
-
-        // Here you would submit the form to your server
-        setTimeout(() => {
-            showStatus('success', 'Post published successfully!');
-        }, 2000);
     }
 
     function handleOutsideClick(e) {
@@ -2263,20 +2611,159 @@
         }, 3000);
     }
 
-    function joinCommunity(button, communitySlug) {
-        if (button.classList.contains('joined')) {
-            button.textContent = 'Join';
-            button.classList.remove('joined');
-            showStatus('info', 'Left community');
-        } else {
-            button.textContent = 'Joined';
-            button.classList.add('joined');
-            showStatus('success', 'Joined community!');
-        }
-    }
-
     function showCreateCommunityModal() {
         showStatus('info', 'Opening create community modal...');
         // Here you would open a modal for creating a new community
     }
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data from your C# controller, serialized to JSON
+        const allUserCommunities = @Html.Raw(Json.Serialize(Model.UserCommunities));
+        const allSuggestedCommunities = @Html.Raw(Json.Serialize(Model.SuggestedCommunities));
+
+        // Combine all communities for search functionality, ensuring no duplicates if a community is both joined and suggested
+        const allSearchableCommunities = Array.from(new Map(
+            [...allSuggestedCommunities, ...allUserCommunities].map(item => [item.communityId, item])
+        ).values());
+
+        const communitySearchInput = document.getElementById('communitySearch');
+        const communityDropdown = document.getElementById('communityDropdown');
+        const communitySearchContainer = communitySearchInput.closest('.community-search');
+
+        const selectedCommunityIdInput = document.getElementById('selectedCommunityId');
+        const selectedCommunityNameInput = document.getElementById('selectedCommunityName');
+        const selectedCommunitySlugInput = document.getElementById('selectedCommunitySlug');
+
+        // Formats member count for display
+        function formatMemberCount(count) {
+            if (count < 1000) {
+                return count.toString();
+            } else if (count < 1000000) {
+                return `${(count / 1000).toFixed(0)}K`;
+            } else {
+                return `${(count / 1000000).toFixed(1)}M`;
+            }
+        }
+
+        // Function to render community items into the dropdown
+        function renderCommunities(filteredPopular, filteredYour) {
+            communityDropdown.innerHTML = ''; // Clear previous content
+
+            if (filteredPopular.length === 0 && filteredYour.length === 0) {
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'p-4 text-center text-gray-500';
+                noResultsDiv.textContent = 'No communities found.';
+                communityDropdown.appendChild(noResultsDiv);
+                return;
+            }
+
+            if (filteredPopular.length > 0) {
+                const popularHeader = document.createElement('div');
+                popularHeader.className = 'community-section-header px-4 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 bg-gray-50';
+                popularHeader.textContent = 'Popular Communities';
+                communityDropdown.appendChild(popularHeader);
+
+                filteredPopular.forEach(community => {
+                    communityDropdown.appendChild(createCommunityItem(community));
+                });
+            }
+
+            if (filteredYour.length > 0) {
+                const yourHeader = document.createElement('div');
+                yourHeader.className = 'community-section-header px-4 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wide border-t border-b border-gray-100 bg-gray-50 mt-2';
+                yourHeader.textContent = 'Your Communities';
+                communityDropdown.appendChild(yourHeader);
+
+                filteredYour.forEach(community => {
+                    communityDropdown.appendChild(createCommunityItem(community));
+                });
+            }
+        }
+
+        // Helper function to create a single community item element
+        function createCommunityItem(community) {
+            const communityItem = document.createElement('div');
+            communityItem.className = 'community-item flex items-center p-3 cursor-pointer hover:bg-blue-50 hover:text-blue-700 rounded-md transition duration-150 ease-in-out';
+            communityItem.setAttribute('data-community-id', community.communityId);
+            communityItem.setAttribute('data-community-name', community.name);
+            communityItem.setAttribute('data-community-slug', community.slug);
+
+            const iconUrl = community.iconUrl || `https://placehold.co/40x40/6B7280/FFFFFF?text=${community.name.charAt(0).toUpperCase()}`;
+            communityItem.innerHTML = `
+                <img
+                    src="${iconUrl}"
+                    alt="${community.title} icon"
+                    class="community-icon w-10 h-10 rounded-full mr-3 flex-shrink-0 object-cover"
+                    onerror="this.onerror=null;this.src='https://placehold.co/40x40/6B7280/FFFFFF?text=${community.name.charAt(0).toUpperCase()}';"
+                />
+                <div class="community-info">
+                    <h4 class="text-gray-900 font-medium text-base">r/${community.title}</h4>
+                    <p class="text-gray-600 text-sm">${formatMemberCount(community.memberCount)} members • ${community.description || ''}</p>
+                </div>
+            `;
+
+            communityItem.addEventListener('click', () => {
+                communitySearchInput.value = community.title; // Set input to selected community's title
+                communityDropdown.classList.add('hidden'); // Hide dropdown
+
+                // Populate hidden fields
+                selectedCommunityIdInput.value = community.communityId;
+                selectedCommunityNameInput.value = community.name;
+                selectedCommunitySlugInput.value = community.slug;
+
+                console.log('Selected community:', community);
+            });
+
+            return communityItem;
+        }
+
+        // Filter function for the search input
+        function filterCommunitiesBySearchTerm(term) {
+            const lowerCaseTerm = term.toLowerCase();
+
+            // Filter suggested communities (mapped to "Popular Communities" in the UI)
+            const filteredPopular = allSuggestedCommunities.filter(community =>
+                community.title.toLowerCase().includes(lowerCaseTerm) ||
+                (community.description && community.description.toLowerCase().includes(lowerCaseTerm)) ||
+                community.name.toLowerCase().includes(lowerCaseTerm)
+            );
+
+            // Filter user joined communities (mapped to "Your Communities" in the UI)
+            const filteredYour = allUserCommunities.filter(community =>
+                community.title.toLowerCase().includes(lowerCaseTerm) ||
+                (community.description && community.description.toLowerCase().includes(lowerCaseTerm)) ||
+                community.name.toLowerCase().includes(lowerCaseTerm)
+            );
+
+            renderCommunities(filteredPopular, filteredYour);
+        }
+
+        // Event Listeners for the search input and dropdown
+        communitySearchInput.addEventListener('input', (event) => {
+            filterCommunitiesBySearchTerm(event.target.value);
+            communityDropdown.classList.remove('hidden'); // Show dropdown on input
+        });
+
+        communitySearchInput.addEventListener('focus', () => {
+            // Render all communities initially when input is focused, or filtered if already typed
+            filterCommunitiesBySearchTerm(communitySearchInput.value);
+            communityDropdown.classList.remove('hidden'); // Show dropdown on focus
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!communitySearchContainer.contains(event.target)) {
+                communityDropdown.classList.add('hidden');
+            }
+        });
+
+        // Initial render on page load
+        filterCommunitiesBySearchTerm(''); // Render all communities initially
+    });
+</script>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
