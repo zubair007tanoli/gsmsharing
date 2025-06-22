@@ -1,7 +1,9 @@
-﻿using discussionspot9.Interfaces;
+﻿using discussionspot9.Data.DbContext;
+using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace discussionspot9.Controllers
@@ -10,6 +12,7 @@ namespace discussionspot9.Controllers
     {
         private readonly ICommunityService _communityService;
         private readonly IPostService _postService;
+        private readonly ApplicationDbContext _context; // Assuming you have a DbContext for database access
         private readonly IMemoryCache _cache;
         private readonly ILogger<CommunityController> _logger;
 
@@ -17,12 +20,14 @@ namespace discussionspot9.Controllers
             ICommunityService communityService,
             IPostService postService,
             IMemoryCache cache,
-            ILogger<CommunityController> logger)
+            ILogger<CommunityController> logger,
+            ApplicationDbContext context)
         {
             _communityService = communityService;
             _postService = postService;
             _cache = cache;
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
@@ -100,6 +105,7 @@ namespace discussionspot9.Controllers
         public IActionResult Create(string returnUrl)
         {
             var model = new CreateCommunityViewModel();
+            LoadCategories(model).GetAwaiter().GetResult(); // Load categories synchronously for simplicity
             return View(model);
         }
 
@@ -185,6 +191,45 @@ namespace discussionspot9.Controllers
                 _logger.LogError(ex, "Error fetching community members");
                 return StatusCode(500, "An error occurred while loading members");
             }
+        }
+
+        /// <summary>
+        /// Loads active categories into view model
+        /// </summary>
+        private async Task LoadCategories(CreateCommunityViewModel model)
+        {
+            try
+            {
+                var categories = await _context.Categories
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.DisplayOrder)
+                    .ThenBy(c => c.Name)
+                    .Select(c => new CategoryDropdownItem
+                    {
+                        CategoryId = c.CategoryId,
+                        Name = c.Name
+                    })
+                    .ToListAsync();
+
+                model.AvailableCategories = categories;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load categories");
+                model.AvailableCategories = new List<CategoryDropdownItem>();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Validates category selection against database
+        /// </summary>
+        private async Task<bool> ValidateCategory(int categoryId)
+        {
+            if (categoryId <= 0) return false;
+
+            return await _context.Categories
+                .AnyAsync(c => c.CategoryId == categoryId && c.IsActive);
         }
     }
 }
