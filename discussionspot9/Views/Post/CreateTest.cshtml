@@ -14,6 +14,8 @@
     {
         suggestedCommunities = new List<CommunityViewModel>();
     }
+    var UrlPage = Context.Request.Path + Context.Request.QueryString;
+}
 }
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -493,7 +495,7 @@
     /* Status Messages */
     .status-message {
         position: fixed;
-        top: 20px;
+        top: 60px;
         right: 20px;
         padding: 16px 20px;
         border-radius: 6px;
@@ -519,6 +521,57 @@
             color: white;
         }
 
+    
+    /* Add this to your existing CSS */
+    /* Community info layout adjustments */
+    .community-info {
+        position: relative;
+        flex: 1;
+    }
+
+    .community-info p {
+        display: inline-block;
+        margin: 0;
+        vertical-align: middle;
+    }
+
+    .community-info form {
+        display: inline-block;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    /* Small button styles */
+    .btn-sm {
+        padding: 2px 12px;
+        font-size: 12px;
+        height: 24px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    /* Specific button states */
+    .btn-secondary.btn-sm {
+        background: transparent;
+        color: #0079d3;
+        border: 1px solid #0079d3;
+        transition: all 0.2s;
+    }
+
+        .btn-secondary.btn-sm:hover {
+            background: #0079d3;
+            color: white;
+        }
+
+    /* Joined state (for future implementation) */
+    .btn-joined.btn-sm {
+        background: #0079d3;
+        color: white;
+        border: 1px solid #0079d3;
+    }
     @@keyframes slideIn {
         from
 
@@ -584,7 +637,14 @@
         <aside class="left-sidebar">
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-users"></i> Choose a Community
+                    
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <span>Choose a community</span>
+                            <a asp-controller="Community" asp-action="Create" class="btn-create-community" asp-route-returnUrl="@UrlPage">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                  
                 </div>
                 <div class="card-content">
                     <div class="community-search">
@@ -608,6 +668,7 @@
                                     <div class="community-info">
                                         <h4>r/@community.Title</h4>
                                         <p>@community.MemberCount.ToString("N0") members</p>
+                                      
                                     </div>
                                 </div>
                             }
@@ -625,11 +686,19 @@
                                     <div class="community-info">
                                         <h4>r/@community.Title</h4>
                                         <p>@community.MemberCount.ToString("N0") members</p>
+                                        <form asp-controller="Community" asp-action="ToggleMembership" method="post" style="display:inline;">
+                                            <input type="hidden" name="communityId" value="@community.CommunityId" />
+                                            <button type="submit" class="btn btn-secondary btn-sm" style="margin-top:4px;">Join</button>
+                                        </form>
                                     </div>
                                 </div>
                             }
                         }
                     </div>
+                </div>
+                <div class="card-footer">
+                    <a class="btn btn-secondary btn-sm" id="selectCommunityBtn" style="width: 100%; margin-top: 8px;">
+                        Explore Communities <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </aside>
@@ -983,7 +1052,8 @@
         const userCommunities = @Html.Raw(Json.Serialize(userCommunities));
         const suggestedCommunities = @Html.Raw(Json.Serialize(suggestedCommunities));
 
-        window.allCommunities = [...userCommunities, ...suggestedCommunities];
+        // window.allCommunities = [...userCommunities, ...suggestedCommunities];
+         window.allCommunities = [...userCommunities];
     }
 
     function loadCommunityDropdown() {
@@ -998,7 +1068,7 @@
         dropdown.innerHTML = '';
 
         if (filteredCommunities.length === 0) {
-            dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #7c7c7c;">No communities found</div>';
+            dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #7c7c7c;">No communities found. Please Join or Create One</div>';
             return;
         }
 
