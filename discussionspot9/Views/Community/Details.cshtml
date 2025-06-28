@@ -1,17 +1,735 @@
-﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CreateCommunityViewModel
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommunityDetailPageViewModel
 @{
-    ViewData["Title"] = Model.Title ?? "Community";
+    ViewData["Title"] = Model.Community.Title ?? "Community";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-@* @section Styles {
+@section Styles {
     <link rel="stylesheet" href="~/css/modern-style.css" />
     <link rel="stylesheet" href="~/css/dark-mode.css" />
     <link rel="stylesheet" href="~/css/DiscussionMain.css" />
     <link rel="stylesheet" href="~/css/Improve.css" />
-} *@
+    <style>
+        /* Community Detail Page Styles - Reddit-like Design */
+        .community-detail-page {
+            display: grid;
+            grid-template-columns: 240px 1fr 280px;
+            gap: 1.5rem;
+            padding: 1.5rem 0;
+            max-width: 1440px;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+        }
 
-<div class="main-container">
+        /* Community Header - Reddit Style */
+        .community-header {
+            position: relative;
+            color: white;
+            padding: 1.5rem 2rem;
+            margin-bottom: 0;
+            border-radius: 0;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .community-banner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+        }
+
+        .community-header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .community-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Professional Community Icon */
+        .community-avatar {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .community-icon-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .community-icon-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .community-details h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 0.25rem 0;
+            line-height: 1.2;
+        }
+
+        .community-name {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0 0 0.5rem 0;
+            font-weight: 500;
+        }
+
+        .community-description {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin: 0;
+            max-width: 400px;
+            line-height: 1.3;
+        }
+
+        .community-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .community-type, .nsfw-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.5rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nsfw-badge {
+            background-color: rgba(239, 68, 68, 0.8);
+        }
+
+        /* Compact Action Buttons - Reddit Style */
+        .community-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+            .community-actions .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                transition: all 0.2s ease;
+                min-width: auto;
+                white-space: nowrap;
+            }
+
+            .community-actions .btn-primary {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+                .community-actions .btn-primary:hover {
+                    background-color: rgba(255, 255, 255, 0.3);
+                    border-color: rgba(255, 255, 255, 0.5);
+                    transform: translateY(-1px);
+                }
+
+            .community-actions .btn-outline-light {
+                background-color: transparent;
+                border-color: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+                .community-actions .btn-outline-light:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    border-color: rgba(255, 255, 255, 0.5);
+                }
+
+            .community-actions .dropdown-toggle::after {
+                display: none;
+            }
+
+        /* Navigation - Reddit Style */
+        .community-navigation {
+            background-color: white;
+            padding: 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .nav-pills {
+            display: flex;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+
+            .nav-pills .nav-link {
+                color: #6b7280;
+                border-radius: 0;
+                margin: 0;
+                padding: 1rem 1.5rem;
+                font-weight: 600;
+                font-size: 0.875rem;
+                border-bottom: 3px solid transparent;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+                .nav-pills .nav-link:hover {
+                    background-color: #f3f4f6;
+                    color: #1a73e8;
+                }
+
+                .nav-pills .nav-link.active {
+                    background-color: transparent;
+                    color: #1a73e8;
+                    border-bottom-color: #1a73e8;
+                }
+
+        .sort-options {
+            padding: 1rem 1.5rem;
+        }
+
+            .sort-options .form-select {
+                border: 1px solid #e5e7eb;
+                border-radius: 20px;
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+                background-color: white;
+                min-width: 120px;
+            }
+
+        /* Tab Content */
+        .tab-content {
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+            .tab-pane.active {
+                display: block;
+            }
+
+        /* Create Post Section */
+        .create-post-section {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .create-post-btn {
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            border: none;
+            color: white;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+
+            .create-post-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(26, 115, 232, 0.4);
+            }
+
+        /* No Posts Message */
+        .no-posts-message {
+            text-align: center;
+            padding: 3rem 2rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #e5e7eb;
+            margin: 2rem 0;
+        }
+
+            .no-posts-message .icon {
+                font-size: 3rem;
+                color: #9ca3af;
+                margin-bottom: 1rem;
+            }
+
+            .no-posts-message h3 {
+                color: #374151;
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+
+            .no-posts-message p {
+                color: #6b7280;
+                margin-bottom: 1.5rem;
+                font-size: 0.95rem;
+            }
+
+            .no-posts-message .btn {
+                background: linear-gradient(135deg, #1a73e8, #4285f4);
+                border: none;
+                color: white;
+                padding: 0.75rem 1.5rem;
+                border-radius: 20px;
+                font-weight: 600;
+                text-decoration: none;
+                display: inline-block;
+                transition: all 0.2s ease;
+            }
+
+                .no-posts-message .btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
+                    color: white;
+                }
+
+        /* Posts Container */
+        .posts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Post Item - Reddit Style */
+        .post-item-detailed {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: white;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+            .post-item-detailed:hover {
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
+            }
+
+        .post-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 3rem;
+            padding: 0.5rem 0;
+        }
+
+        .vote-button {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+            .vote-button:hover {
+                background-color: #f3f4f6;
+            }
+
+            .vote-button.upvoted {
+                color: #ff4500;
+            }
+
+            .vote-button.downvoted {
+                color: #7c3aed;
+            }
+
+        .vote-count {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .post-main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+            .post-main-content h3 {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+                line-height: 1.4;
+            }
+
+                .post-main-content h3 a {
+                    color: #1f2937;
+                    text-decoration: none;
+                    font-weight: 600;
+                }
+
+                    .post-main-content h3 a:hover {
+                        color: #1a73e8;
+                    }
+
+        .post-excerpt {
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+            font-size: 0.875rem;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .post-info {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+            .post-info span {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+        .post-tags {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .tag:hover {
+                background-color: #1a73e8;
+                color: white;
+            }
+
+        /* Stats Grid */
+        .community-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s ease;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+            .stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        /* Sidebar Styles */
+        .sidebar, .right-sidebar {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: fit-content;
+            position: sticky;
+            top: 1.5rem;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+            .sidebar-header h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin: 0;
+                color: #1f2937;
+            }
+
+        .sidebar-section {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+            .sidebar-section:last-child {
+                border-bottom: none;
+            }
+
+            .sidebar-section h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: 0.75rem;
+                color: #1f2937;
+            }
+
+        .category-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+            .category-list li a {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                color: #6b7280;
+                text-decoration: none;
+                transition: all 0.2s ease;
+                border-radius: 6px;
+                margin-bottom: 0.25rem;
+            }
+
+                .category-list li a:hover {
+                    background-color: #f3f4f6;
+                    color: #1a73e8;
+                }
+
+                .category-list li a.active {
+                    background-color: #1a73e8;
+                    color: white;
+                }
+
+                .category-list li a i {
+                    font-size: 1rem;
+                    width: 1.25rem;
+                    text-align: center;
+                }
+
+        /* Load More Button */
+        .load-more-section {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+        }
+
+        .load-more-btn {
+            background: transparent;
+            border: 2px solid #1a73e8;
+            color: #1a73e8;
+            padding: 0.75rem 2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+            .load-more-btn:hover {
+                background-color: #1a73e8;
+                color: white;
+                transform: translateY(-1px);
+            }
+
+        /* Ad Sections */
+        .ad-placeholder, .ad-banner-section {
+            background-color: #f8f9fa;
+            border: 1px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .ad-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 1200px) {
+            .community-detail-page
+
+        {
+            grid-template-columns: 240px 1fr;
+        }
+
+        .right-sidebar {
+            display: none;
+        }
+
+        }
+
+        @@media (max-width: 992px) {
+            .community-detail-page
+
+        {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .sidebar {
+            display: none;
+        }
+
+        .community-header-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .community-actions {
+            align-self: stretch;
+            justify-content: center;
+        }
+
+        }
+
+        @@media (max-width: 768px) {
+            .community-info
+
+        {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .community-navigation {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .nav-pills {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .community-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .post-item-detailed {
+            flex-direction: column;
+        }
+
+        .post-stats {
+            flex-direction: row;
+            justify-content: space-around;
+            min-width: auto;
+        }
+
+        }
+
+        /* Dark Mode Support */
+        body.dark-mode .community-detail-page {
+            background-color: #111827;
+            color: #f9fafb;
+        }
+
+        body.dark-mode .community-header {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+        }
+
+        body.dark-mode .community-navigation,
+        body.dark-mode .tab-content,
+        body.dark-mode .sidebar,
+        body.dark-mode .right-sidebar,
+        body.dark-mode .post-item-detailed,
+        body.dark-mode .stat-card {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+
+        body.dark-mode .nav-pills .nav-link {
+            color: #d1d5db;
+        }
+
+            body.dark-mode .nav-pills .nav-link:hover {
+                background-color: #374151;
+                color: #60a5fa;
+            }
+
+            body.dark-mode .nav-pills .nav-link.active {
+                color: #60a5fa;
+                border-bottom-color: #60a5fa;
+            }
+
+        body.dark-mode .no-posts-message {
+            background-color: #111827;
+            border-color: #374151;
+        }
+
+        body.dark-mode .create-post-section {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-color: #374151;
+        }
+    </style>
+}
+
+<div class="main-container community-detail-page">
     <!-- Left Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -31,8 +749,9 @@
         </ul>
 
         <!-- Sidebar Ad -->
-        <div class="sidebar-ad">
+        <div class="sidebar-section">
             <div class="ad-placeholder">
+                <div class="ad-label">Advertisement</div>
                 <!-- Google AdSense -->
                 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
                 <ins class="adsbygoogle"
@@ -44,7 +763,6 @@
                 <script>
                     (adsbygoogle = window.adsbygoogle || []).push({});
                 </script>
-                <div class="ad-label">Advertisement</div>
             </div>
         </div>
     </aside>
@@ -52,35 +770,35 @@
     <!-- Main Content -->
     <main>
         <!-- Community Header -->
-        <div class="community-header" style="background: linear-gradient(135deg, @(Model.ThemeColor ?? "#0079D3"), @(Model.ThemeColor ?? "#0079D3")88);">
-            @if (!string.IsNullOrEmpty(Model.BannerUrl))
+        <div class="community-header" style="background: linear-gradient(135deg, @(Model.Community.ThemeColor ?? "#1a73e8"), @(Model.Community.ThemeColor ?? "#4285f4"));">
+            @if (!string.IsNullOrEmpty(Model.Community.BannerUrl))
             {
-                <div class="community-banner" style="background-image: url('@Model.BannerUrl');"></div>
+                <div class="community-banner" style="background-image: url('@Model.Community.BannerUrl');"></div>
             }
             <div class="community-header-content">
                 <div class="community-info">
                     <div class="community-avatar">
-                        @if (!string.IsNullOrEmpty(Model.IconUrl))
+                        @if (!string.IsNullOrEmpty(Model.Community.IconUrl))
                         {
-                            <img src="@Model.IconUrl" alt="@Model.Name" class="community-icon-img" />
+                            <img src="@Model.Community.IconUrl" alt="@Model.Community.Name" class="community-icon-img" />
                         }
                         else
                         {
                             <div class="community-icon-placeholder">
-                                <i class="fas fa-users"></i>
+                                @Model.Community.Name.Substring(0, Math.Min(2, Model.Community.Name.Length)).ToUpper()
                             </div>
                         }
                     </div>
                     <div class="community-details">
-                        <h1 class="community-title">@Model.Title</h1>
-                        <p class="community-name">r/@Model.Name</p>
-                        <p class="community-description">@Model.ShortDescription</p>
+                        <h1>@Model.Community.Title</h1>
+                        <p class="community-name">r/@Model.Community.Name</p>
+                        <p class="community-description">@Model.Community.ShortDescription</p>
                         <div class="community-meta">
                             <span class="community-type">
-                                <i class="fas fa-@(Model.CommunityType == "public" ? "globe" : Model.CommunityType == "private" ? "lock" : "shield-alt")"></i>
-                                @Model.CommunityType.ToUpper()
+                                <i class="fas fa-@(Model.Community.CommunityType == "public" ? "globe" : Model.Community.CommunityType == "private" ? "lock" : "shield-alt")"></i>
+                                @Model.Community.CommunityType.ToUpper()
                             </span>
-                            @if (Model.IsNSFW)
+                            @if (Model.Community.IsNSFW)
                             {
                                 <span class="nsfw-badge">
                                     <i class="fas fa-exclamation-triangle"></i>
@@ -144,50 +862,78 @@
         <div class="tab-content">
             <!-- Posts Tab -->
             <div class="tab-pane active" id="posts-content">
-                <!-- Create Post Button -->
+                <!-- Create Post Section -->
                 <div class="create-post-section">
-                    <a href="/posts/create?community=@Model.Slug" class="btn btn-primary create-post-btn">
+                    <a href="/posts/create?community=@Model.Community.Slug" class="btn create-post-btn">
                         <i class="fas fa-plus"></i> Create Post
                     </a>
                 </div>
 
                 <!-- Posts List -->
                 <div class="posts-container">
-                    <!-- Sample Post Items -->
-                    <div class="post-item-detailed">
-                        <div class="post-stats">
-                            <div class="stat-box">
-                                <div class="stat-number">42</div>
-                                <div class="stat-label">votes</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-number">15</div>
-                                <div class="stat-label">replies</div>
-                            </div>
-                        </div>
-                        <div class="post-main-content">
-                            <h3><a href="/posts/sample-post">Welcome to our amazing community!</a></h3>
-                            <p class="post-excerpt">This is a sample post to show how posts appear in the community. Join our discussions and share your thoughts...</p>
-                            <div class="post-meta">
-                                <div class="post-info">
-                                    <span><i class="fas fa-user"></i> by <strong>CommunityMod</strong></span>
-                                    <span><i class="fas fa-clock"></i> 2 hours ago</span>
-                                    <span><i class="fas fa-eye"></i> 156 views</span>
+                    @if (Model.Posts?.Posts != null && Model.Posts.Posts.Any())
+                    {
+                        @foreach (var post in Model.Posts.Posts)
+                        {
+                            <div class="post-item-detailed">
+                                <div class="post-stats">
+                                    <button class="vote-button" data-vote="up">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <div class="vote-count">@post.Score</div>
+                                    <button class="vote-button" data-vote="down">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
                                 </div>
-                                <div class="post-tags">
-                                    <span class="tag">announcement</span>
-                                    <span class="tag">welcome</span>
+                                <div class="post-main-content">
+                                    <h3><a href="@post.PostUrl">@post.Title</a></h3>
+                                    @if (!string.IsNullOrEmpty(post.Content))
+                                    {
+                                        <p class="post-excerpt">@post.Excerpt</p>
+                                    }
+                                    <div class="post-meta">
+                                        <div class="post-info">
+                                            <span><i class="fas fa-user"></i> u/@post.AuthorDisplayName</span>
+                                            <span><i class="fas fa-clock"></i> @post.TimeAgo</span>
+                                            <span><i class="fas fa-comment"></i> @post.FormattedCommentCount comments</span>
+                                            <span><i class="fas fa-eye"></i> @post.FormattedViewCount views</span>
+                                        </div>
+                                        @if (post.Tags.Any())
+                                        {
+                                            <div class="post-tags">
+                                                @foreach (var tag in post.Tags.Take(3))
+                                                {
+                                                    <span class="tag">@tag</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="no-posts-message">
+                            <div class="icon">
+                                <i class="fas fa-newspaper"></i>
+                            </div>
+                            <h3>No posts yet</h3>
+                            <p>Be the first to share something with this community!</p>
+                            <a href="/posts/create?community=@Model.Community.Slug" class="btn">
+                                <i class="fas fa-plus"></i> Create the first post
+                            </a>
                         </div>
-                    </div>
+                    }
 
-                    <!-- More posts would be loaded here -->
-                    <div class="load-more-section">
-                        <button class="btn btn-outline-primary load-more-btn">
-                            <i class="fas fa-chevron-down"></i> Load More Posts
-                        </button>
-                    </div>
+                    @if (Model.Posts?.Posts != null && Model.Posts.Posts.Any())
+                    {
+                        <div class="load-more-section">
+                            <button class="btn load-more-btn">
+                                <i class="fas fa-chevron-down"></i> Load More Posts
+                            </button>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -196,13 +942,13 @@
                 <div class="about-section">
                     <h3>About This Community</h3>
                     <div class="about-content">
-                        @if (!string.IsNullOrEmpty(Model.Description))
+                        @if (!string.IsNullOrEmpty(Model.Community.Description))
                         {
-                            <p>@Html.Raw(Model.Description.Replace("\n", "<br>"))</p>
+                            <p>@Html.Raw(Model.Community.Description.Replace("\n", "<br>"))</p>
                         }
                         else
                         {
-                            <p>@Model.ShortDescription</p>
+                            <p>@Model.Community.ShortDescription</p>
                         }
                     </div>
 
@@ -210,28 +956,21 @@
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-users"></i></div>
                             <div class="stat-info">
-                                <div class="stat-number">1,234</div>
+                                <div class="stat-number">@Model.Community.FormattedMemberCount</div>
                                 <div class="stat-label">Members</div>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-newspaper"></i></div>
                             <div class="stat-info">
-                                <div class="stat-number">567</div>
+                                <div class="stat-number">@Model.Community.FormattedPostCount</div>
                                 <div class="stat-label">Posts</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fas fa-comments"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-number">2,890</div>
-                                <div class="stat-label">Comments</div>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-calendar"></i></div>
                             <div class="stat-info">
-                                <div class="stat-number">Jan 2024</div>
+                                <div class="stat-number">@Model.Community.CreatedAt.ToString("MMM yyyy")</div>
                                 <div class="stat-label">Created</div>
                             </div>
                         </div>
@@ -243,10 +982,10 @@
             <div class="tab-pane" id="rules-content">
                 <div class="rules-section">
                     <h3>Community Rules</h3>
-                    @if (!string.IsNullOrEmpty(Model.Rules))
+                    @if (!string.IsNullOrEmpty(Model.Community.Rules))
                     {
                         <div class="rules-content">
-                            @Html.Raw(Model.Rules.Replace("\n", "<br>"))
+                            @Html.Raw(Model.Community.Rules.Replace("\n", "<br>"))
                         </div>
                     }
                     else
@@ -264,19 +1003,26 @@
                 <div class="members-section">
                     <h3>Community Members</h3>
                     <div class="members-grid">
-                        <!-- Sample members -->
-                        <div class="member-card">
-                            <div class="member-avatar">JD</div>
-                            <div class="member-info">
-                                <div class="member-name">JohnDoe</div>
-                                <div class="member-role">Moderator</div>
-                                <div class="member-stats">
-                                    <span>42 posts</span>
-                                    <span>156 karma</span>
+                        @if (Model.Community.Moderators != null && Model.Community.Moderators.Any())
+                        {
+                            @foreach (var moderator in Model.Community.Moderators)
+                            {
+                                <div class="member-card">
+                                    <div class="member-avatar">@moderator.DisplayName?.Substring(0, 2).ToUpper()</div>
+                                    <div class="member-info">
+                                        <div class="member-name">@moderator.DisplayName</div>
+                                        <div class="member-role">@moderator.Role</div>
+                                    </div>
                                 </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="no-members">
+                                <i class="fas fa-users"></i>
+                                <p>No moderators to display.</p>
                             </div>
-                        </div>
-                        <!-- More members would be loaded here -->
+                        }
                     </div>
                 </div>
             </div>
@@ -305,65 +1051,10 @@
             <h3><i class="fas fa-chart-line"></i> Quick Stats</h3>
             <div class="stats">
                 <ul>
-                    <li><i class="fas fa-users"></i> <span>1,234 Members</span></li>
-                    <li><i class="fas fa-user-clock"></i> <span>89 Online</span></li>
-                    <li><i class="fas fa-newspaper"></i> <span>567 Posts</span></li>
-                    <li><i class="fas fa-comments"></i> <span>2,890 Comments</span></li>
-                    <li><i class="fas fa-calendar"></i> <span>Created Jan 2024</span></li>
+                    <li><i class="fas fa-users"></i> <span>@Model.Community.FormattedMemberCount Members</span></li>
+                    <li><i class="fas fa-newspaper"></i> <span>@Model.Community.FormattedPostCount Posts</span></li>
+                    <li><i class="fas fa-calendar"></i> <span>Created @Model.Community.CreatedAt.ToString("MMM yyyy")</span></li>
                 </ul>
-            </div>
-        </div>
-
-        <!-- Online Members -->
-        <div class="sidebar-section">
-            <h3><i class="fas fa-circle text-success"></i> Online Now</h3>
-            <div class="user-avatars">
-                <div class="user-avatar" title="User1">U1</div>
-                <div class="user-avatar" title="User2">U2</div>
-                <div class="user-avatar" title="User3">U3</div>
-                <div class="user-avatar" title="User4">U4</div>
-                <div class="user-avatar" title="User5">U5</div>
-                <div class="more-users">+84</div>
-            </div>
-        </div>
-
-        <!-- Trending Topics -->
-        <div class="sidebar-section">
-            <h3><i class="fas fa-fire"></i> Trending</h3>
-            <div class="trending-list">
-                <div class="trending-item">
-                    <div class="trending-title">Hot Discussion Topic</div>
-                    <div class="trending-meta">42 comments • 2h ago</div>
-                </div>
-                <div class="trending-item">
-                    <div class="trending-title">Weekly Challenge</div>
-                    <div class="trending-meta">28 participants • 1d ago</div>
-                </div>
-                <div class="trending-item">
-                    <div class="trending-title">Community Update</div>
-                    <div class="trending-meta">156 upvotes • 3h ago</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Related Communities -->
-        <div class="sidebar-section">
-            <h3><i class="fas fa-sitemap"></i> Related Communities</h3>
-            <div class="related-communities">
-                <a href="/community/tech-news" class="community-link">
-                    <div class="community-icon">TN</div>
-                    <div class="community-info">
-                        <div class="community-name">Tech News</div>
-                        <div class="community-members">2.1k members</div>
-                    </div>
-                </a>
-                <a href="/community/programming" class="community-link">
-                    <div class="community-icon">PR</div>
-                    <div class="community-info">
-                        <div class="community-name">Programming</div>
-                        <div class="community-members">5.7k members</div>
-                    </div>
-                </a>
             </div>
         </div>
 
@@ -418,99 +1109,66 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="Update" asp-controller="Community" method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Community.CommunityId" />
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label asp-for="Name" class="form-label">Community Name</label>
-                                <input asp-for="Name" class="form-control" readonly />
+                                <label asp-for="Community.Name" class="form-label">Community Name</label>
+                                <input asp-for="Community.Name" class="form-control" readonly />
                                 <div class="form-text">Community name cannot be changed</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label asp-for="Title" class="form-label">Title</label>
-                                <input asp-for="Title" class="form-control" />
-                                <span asp-validation-for="Title" class="text-danger"></span>
+                                <label asp-for="Community.Title" class="form-label">Title</label>
+                                <input asp-for="Community.Title" class="form-control" />
+                                <span asp-validation-for="Community.Title" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label asp-for="ShortDescription" class="form-label">Short Description</label>
-                        <textarea asp-for="ShortDescription" class="form-control" rows="2"></textarea>
-                        <span asp-validation-for="ShortDescription" class="text-danger"></span>
+                        <label asp-for="Community.ShortDescription" class="form-label">Short Description</label>
+                        <textarea asp-for="Community.ShortDescription" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Community.ShortDescription" class="text-danger"></span>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label asp-for="Description" class="form-label">Full Description</label>
-                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
+                        <label asp-for="Community.Description" class="form-label">Full Description</label>
+                        <textarea asp-for="Community.Description" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Community.Description" class="text-danger"></span>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label asp-for="CategoryId" class="form-label">Category</label>
-                                <select asp-for="CategoryId" class="form-select">
-                                    <option value="">Select Category</option>
-                                    @foreach (var category in Model.AvailableCategories)
-                                    {
-                                        <option value="@category.CategoryId">@category.Name</option>
-                                    }
-                                </select>
-                                <span asp-validation-for="CategoryId" class="text-danger"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label asp-for="CommunityType" class="form-label">Community Type</label>
-                                <select asp-for="CommunityType" class="form-select">
+                                <label asp-for="Community.CommunityType" class="form-label">Community Type</label>
+                                <select asp-for="Community.CommunityType" class="form-select">
                                     <option value="public">Public</option>
                                     <option value="private">Private</option>
                                     <option value="restricted">Restricted</option>
                                 </select>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
-                                <label asp-for="ThemeColor" class="form-label">Theme Color</label>
-                                <input asp-for="ThemeColor" type="color" class="form-control form-control-color" />
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check mt-4">
-                                <input asp-for="IsNSFW" class="form-check-input" type="checkbox" />
-                                <label asp-for="IsNSFW" class="form-check-label">
-                                    NSFW Content
-                                </label>
+                                <label asp-for="Community.ThemeColor" class="form-label">Theme Color</label>
+                                <input asp-for="Community.ThemeColor" type="color" class="form-control form-control-color" />
                             </div>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label asp-for="IconFile" class="form-label">Community Icon</label>
-                                <input asp-for="IconFile" type="file" class="form-control" accept="image/*" />
-                                <div class="form-text">Recommended: 256x256px, PNG or JPG</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label asp-for="BannerFile" class="form-label">Community Banner</label>
-                                <input asp-for="BannerFile" type="file" class="form-control" accept="image/*" />
-                                <div class="form-text">Recommended: 1920x384px, PNG or JPG</div>
-                            </div>
-                        </div>
+                    <div class="form-check mb-3">
+                        <input asp-for="Community.IsNSFW" class="form-check-input" type="checkbox" />
+                        <label asp-for="Community.IsNSFW" class="form-check-label">
+                            NSFW Content
+                        </label>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label asp-for="Rules" class="form-label">Community Rules</label>
-                        <textarea asp-for="Rules" class="form-control" rows="6" placeholder="Enter community rules, one per line..."></textarea>
+                        <label asp-for="Community.Rules" class="form-label">Community Rules</label>
+                        <textarea asp-for="Community.Rules" class="form-control" rows="6" placeholder="Enter community rules, one per line..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -562,6 +1220,25 @@
             }
         });
 
+        // Vote functionality
+        document.querySelectorAll('.vote-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const voteType = this.getAttribute('data-vote');
+                const postStats = this.closest('.post-stats');
+                const upButton = postStats.querySelector('[data-vote="up"]');
+                const downButton = postStats.querySelector('[data-vote="down"]');
+
+                // Toggle vote state
+                if (voteType === 'up') {
+                    upButton.classList.toggle('upvoted');
+                    downButton.classList.remove('downvoted');
+                } else {
+                    downButton.classList.toggle('downvoted');
+                    upButton.classList.remove('upvoted');
+                }
+            });
+        });
+
         // Dark mode toggle
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
@@ -573,17 +1250,6 @@
             document.body.classList.add('dark-mode');
         }
 
-        // Image preview for file uploads
-        function previewImage(input, previewId) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById(previewId).src = e.target.result;
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
         // Load more posts functionality
         document.querySelector('.load-more-btn')?.addEventListener('click', function() {
             // Simulate loading more posts
@@ -592,417 +1258,5 @@
                 this.innerHTML = '<i class="fas fa-chevron-down"></i> Load More Posts';
             }, 1000);
         });
-
-        // Form validation
-        document.querySelector('form')?.addEventListener('submit', function(e) {
-            const requiredFields = this.querySelectorAll('[required]');
-            let isValid = true;
-
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    field.classList.add('is-invalid');
-                    isValid = false;
-                } else {
-                    field.classList.remove('is-invalid');
-                }
-            });
-
-            if (!isValid) {
-                e.preventDefault();
-                alert('Please fill in all required fields.');
-            }
-        });
     </script>
 }
-
-<style>
-    /* Additional styles for community page */
-    .community-header {
-        position: relative;
-        color: white;
-        padding: 2rem 0;
-        margin-bottom: 0;
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    }
-
-    .community-banner {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-size: cover;
-        background-position: center;
-        opacity: 0.3;
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    }
-
-    .community-header-content {
-        position: relative;
-        z-index: 2;
-        padding: 0 1.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        gap: 2rem;
-    }
-
-    .community-info {
-        display: flex;
-        gap: 1.5rem;
-        align-items: flex-end;
-    }
-
-    .community-avatar {
-        width: 5rem;
-        height: 5rem;
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        border: 3px solid white;
-        background-color: white;
-    }
-
-    .community-icon-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .community-icon-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--primary-color);
-        color: white;
-        font-size: 1.5rem;
-    }
-
-    .community-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
-    }
-
-    .community-name {
-        font-size: 1rem;
-        opacity: 0.9;
-        margin-bottom: 0.5rem;
-    }
-
-    .community-description {
-        font-size: 0.95rem;
-        opacity: 0.9;
-        margin-bottom: 0.75rem;
-        max-width: 500px;
-    }
-
-    .community-meta {
-        display: flex;
-        gap: 1rem;
-        font-size: 0.875rem;
-    }
-
-    .community-type, .nsfw-badge {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.25rem 0.5rem;
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: var(--radius);
-    }
-
-    .nsfw-badge {
-        background-color: rgba(239, 68, 68, 0.8);
-    }
-
-    .community-actions {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-    }
-
-    .community-navigation {
-        background-color: var(--bg-color);
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .nav-pills .nav-link {
-        color: var(--text-color);
-        border-radius: var(--radius);
-        margin-right: 0.5rem;
-    }
-
-        .nav-pills .nav-link.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-    .tab-content {
-        padding: 1.5rem;
-    }
-
-    .tab-pane {
-        display: none;
-    }
-
-        .tab-pane.active {
-            display: block;
-        }
-
-    .create-post-section {
-        margin-bottom: 1.5rem;
-        text-align: center;
-    }
-
-    .create-post-btn {
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        border-radius: var(--radius-lg);
-    }
-
-    .community-stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1.5rem;
-    }
-
-    .stat-card {
-        background-color: var(--bg-light);
-        padding: 1.5rem;
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        transition: transform 0.2s ease;
-    }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-        }
-
-    .stat-icon {
-        width: 3rem;
-        height: 3rem;
-        background-color: var(--primary-color);
-        color: white;
-        border-radius: var(--radius-full);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-    }
-
-    .members-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-
-    .member-card {
-        background-color: var(--bg-light);
-        padding: 1rem;
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .member-avatar {
-        width: 3rem;
-        height: 3rem;
-        background-color: var(--primary-color);
-        color: white;
-        border-radius: var(--radius-full);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-    }
-
-    .member-role {
-        font-size: 0.875rem;
-        color: var(--primary-color);
-        font-weight: 500;
-    }
-
-    .member-stats {
-        font-size: 0.75rem;
-        color: var(--text-light);
-        display: flex;
-        gap: 1rem;
-    }
-
-    .trending-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .trending-item {
-        padding: 0.75rem;
-        background-color: var(--bg-light);
-        border-radius: var(--radius);
-        transition: background-color 0.2s ease;
-    }
-
-        .trending-item:hover {
-            background-color: var(--bg-dark);
-        }
-
-    .trending-title {
-        font-weight: 500;
-        margin-bottom: 0.25rem;
-    }
-
-    .trending-meta {
-        font-size: 0.75rem;
-        color: var(--text-light);
-    }
-
-    .related-communities {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .community-link {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background-color: var(--bg-light);
-        border-radius: var(--radius);
-        color: var(--text-color);
-        text-decoration: none;
-        transition: background-color 0.2s ease;
-    }
-
-        .community-link:hover {
-            background-color: var(--bg-dark);
-            color: var(--text-color);
-        }
-
-        .community-link .community-icon {
-            width: 2.5rem;
-            height: 2.5rem;
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: var(--radius);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-    .community-members {
-        font-size: 0.75rem;
-        color: var(--text-light);
-    }
-
-    .guidelines-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .guideline-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .ad-banner-section {
-        margin: 2rem 0;
-        text-align: center;
-    }
-
-    .no-rules {
-        text-align: center;
-        padding: 2rem;
-        color: var(--text-light);
-    }
-
-        .no-rules i {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-    /* Responsive Design */
-    @@media (max-width: 1200px) {
-        .main-container
-
-    {
-        grid-template-columns: 240px 1fr;
-    }
-
-    .right-sidebar {
-        display: none;
-    }
-
-    }
-
-    @@media (max-width: 992px) {
-        .main-container
-
-    {
-        grid-template-columns: 1fr;
-    }
-
-    .sidebar {
-        display: none;
-    }
-
-    .community-header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .community-actions {
-        align-self: stretch;
-        justify-content: center;
-    }
-
-    }
-
-    @@media (max-width: 768px) {
-        .community-info
-
-    {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-
-    .community-navigation {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .nav-pills {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .community-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .members-grid {
-        grid-template-columns: 1fr;
-    }
-
-    }
-</style>
-
