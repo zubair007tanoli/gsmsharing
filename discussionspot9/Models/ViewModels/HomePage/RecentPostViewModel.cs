@@ -113,7 +113,7 @@ namespace discussionspot9.Models.ViewModels.HomePage
         /// <summary>
         /// Full URL to the post
         /// </summary>
-        public string PostUrl => $"/r/{CategorySlug}/posts/{Slug}";
+        public string PostUrl => $"/c/{CategorySlug}/posts/{Slug}";
 
         /// <summary>
         /// Full URL to the author's profile
