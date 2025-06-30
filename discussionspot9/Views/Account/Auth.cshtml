@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Auth";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
 }
 
 <style>
@@ -281,9 +282,16 @@
                         <div class="auth-tab active" id="loginTab">Sign In</div>
                         <div class="auth-tab" id="registerTab">Register</div>
                     </div>
+                    @if(TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            You have successfully registered! Please check your email to confirm your account.
+                        </div>
+                    }
 
                     <!-- Login Form -->
                     <form id="loginForm" class="auth-form active" asp-controller="Account" asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="ReturnUrl" />
 
                         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
@@ -342,7 +350,7 @@
 
                     <!-- Register Form -->
                     <form id="registerForm" class="auth-form" asp-controller="Account" asp-action="Register" method="post">
-                        <input type="hidden" asp-for="ReturnUrl" />
+                        @* <input type="hidden" asp-for="ReturnUrl" /> *@
 
                         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
                         @if (ViewData["EmailError"] != null)
