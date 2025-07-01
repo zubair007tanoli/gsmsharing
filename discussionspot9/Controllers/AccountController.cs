@@ -54,6 +54,12 @@ namespace DiscussionSpot9.Controllers
 
             var result = await _userService.RegisterUserAsync(registerViewModelRegisterViewModel);
 
+            if (!result.Succeeded)
+            {
+                TempData["ErrorMessageUserName"] = "User Name Already Exist Choose Another Name.";
+                result.Errors.ToList().ForEach(error => ModelState.AddModelError(string.Empty, error.Description));
+            }
+            
             if (result.Succeeded)
             {
                 TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {registerViewModelRegisterViewModel.DisplayName}! Your account has been created successfully.";
