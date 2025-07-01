@@ -277,7 +277,8 @@
                     <div class="auth-logo">
                        <h3 class="alert">Discussion<b>Spot</b></h3>
                     </div>
-                    @if (ViewData["ErrorMessageUserName"] != null)
+                    <!-- FIX: Change from ViewData to TempData for error message -->
+                    @if (TempData["ErrorMessageUserName"] != null)
                     {
                         <div class="alert alert-danger" role="alert">
                             @TempData["ErrorMessageUserName"]
