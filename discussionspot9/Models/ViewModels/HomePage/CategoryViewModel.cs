@@ -74,7 +74,7 @@ namespace discussionspot9.Models.ViewModels.HomePage
         /// <summary>
         /// Full URL to the category
         /// </summary>
-        public string CategoryUrl => $"/r/{Slug}";
+        public string CategoryUrl => $"/c/{Slug}";
 
         /// <summary>
         /// CSS class for category styling

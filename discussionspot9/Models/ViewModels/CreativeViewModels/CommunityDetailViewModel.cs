@@ -21,6 +21,8 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string? Rules { get; set; }
         public bool IsNSFW { get; set; }
         public string CommunityType { get; set; } = "public";
+        public string ThemeColor { get; set; }
+        public string ShortDescription { get; set; }
 
         // Category info
         public string? CategoryName { get; set; }

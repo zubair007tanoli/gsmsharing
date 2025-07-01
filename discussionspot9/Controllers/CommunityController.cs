@@ -59,6 +59,7 @@ namespace discussionspot9.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(string slug, string sort = "hot", int page = 1)
         {
+            slug = "gsmsharing";
             if (string.IsNullOrEmpty(slug))
             {
                 return NotFound();

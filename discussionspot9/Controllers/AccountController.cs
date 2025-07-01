@@ -122,7 +122,7 @@ namespace DiscussionSpot9.Controllers
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
             }
 
-            return RedirectToAction("Auth");
+            return RedirectToAction("Auth", new { returnUrl = loginViewModel.ReturnUrl });
         }
         #endregion
 

@@ -1,0 +1,1262 @@
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommunityDetailPageViewModel
+@{
+    ViewData["Title"] = Model.Community.Title ?? "Community";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/modern-style.css" />
+    <link rel="stylesheet" href="~/css/dark-mode.css" />
+    <link rel="stylesheet" href="~/css/DiscussionMain.css" />
+    <link rel="stylesheet" href="~/css/Improve.css" />
+    <style>
+        /* Community Detail Page Styles - Reddit-like Design */
+        .community-detail-page {
+            display: grid;
+            grid-template-columns: 240px 1fr 280px;
+            gap: 1.5rem;
+            padding: 1.5rem 0;
+            max-width: 1440px;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+        }
+
+        /* Community Header - Reddit Style */
+        .community-header {
+            position: relative;
+            color: white;
+            padding: 1.5rem 2rem;
+            margin-bottom: 0;
+            border-radius: 0;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .community-banner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+        }
+
+        .community-header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .community-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Professional Community Icon */
+        .community-avatar {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .community-icon-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .community-icon-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .community-details h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 0.25rem 0;
+            line-height: 1.2;
+        }
+
+        .community-name {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0 0 0.5rem 0;
+            font-weight: 500;
+        }
+
+        .community-description {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin: 0;
+            max-width: 400px;
+            line-height: 1.3;
+        }
+
+        .community-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .community-type, .nsfw-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.5rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nsfw-badge {
+            background-color: rgba(239, 68, 68, 0.8);
+        }
+
+        /* Compact Action Buttons - Reddit Style */
+        .community-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+            .community-actions .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                transition: all 0.2s ease;
+                min-width: auto;
+                white-space: nowrap;
+            }
+
+            .community-actions .btn-primary {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+                .community-actions .btn-primary:hover {
+                    background-color: rgba(255, 255, 255, 0.3);
+                    border-color: rgba(255, 255, 255, 0.5);
+                    transform: translateY(-1px);
+                }
+
+            .community-actions .btn-outline-light {
+                background-color: transparent;
+                border-color: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+                .community-actions .btn-outline-light:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    border-color: rgba(255, 255, 255, 0.5);
+                }
+
+            .community-actions .dropdown-toggle::after {
+                display: none;
+            }
+
+        /* Navigation - Reddit Style */
+        .community-navigation {
+            background-color: white;
+            padding: 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .nav-pills {
+            display: flex;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+
+            .nav-pills .nav-link {
+                color: #6b7280;
+                border-radius: 0;
+                margin: 0;
+                padding: 1rem 1.5rem;
+                font-weight: 600;
+                font-size: 0.875rem;
+                border-bottom: 3px solid transparent;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+                .nav-pills .nav-link:hover {
+                    background-color: #f3f4f6;
+                    color: #1a73e8;
+                }
+
+                .nav-pills .nav-link.active {
+                    background-color: transparent;
+                    color: #1a73e8;
+                    border-bottom-color: #1a73e8;
+                }
+
+        .sort-options {
+            padding: 1rem 1.5rem;
+        }
+
+            .sort-options .form-select {
+                border: 1px solid #e5e7eb;
+                border-radius: 20px;
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+                background-color: white;
+                min-width: 120px;
+            }
+
+        /* Tab Content */
+        .tab-content {
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+            .tab-pane.active {
+                display: block;
+            }
+
+        /* Create Post Section */
+        .create-post-section {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .create-post-btn {
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            border: none;
+            color: white;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+
+            .create-post-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(26, 115, 232, 0.4);
+            }
+
+        /* No Posts Message */
+        .no-posts-message {
+            text-align: center;
+            padding: 3rem 2rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #e5e7eb;
+            margin: 2rem 0;
+        }
+
+            .no-posts-message .icon {
+                font-size: 3rem;
+                color: #9ca3af;
+                margin-bottom: 1rem;
+            }
+
+            .no-posts-message h3 {
+                color: #374151;
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+
+            .no-posts-message p {
+                color: #6b7280;
+                margin-bottom: 1.5rem;
+                font-size: 0.95rem;
+            }
+
+            .no-posts-message .btn {
+                background: linear-gradient(135deg, #1a73e8, #4285f4);
+                border: none;
+                color: white;
+                padding: 0.75rem 1.5rem;
+                border-radius: 20px;
+                font-weight: 600;
+                text-decoration: none;
+                display: inline-block;
+                transition: all 0.2s ease;
+            }
+
+                .no-posts-message .btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
+                    color: white;
+                }
+
+        /* Posts Container */
+        .posts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Post Item - Reddit Style */
+        .post-item-detailed {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: white;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+            .post-item-detailed:hover {
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
+            }
+
+        .post-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 3rem;
+            padding: 0.5rem 0;
+        }
+
+        .vote-button {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+            .vote-button:hover {
+                background-color: #f3f4f6;
+            }
+
+            .vote-button.upvoted {
+                color: #ff4500;
+            }
+
+            .vote-button.downvoted {
+                color: #7c3aed;
+            }
+
+        .vote-count {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .post-main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+            .post-main-content h3 {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+                line-height: 1.4;
+            }
+
+                .post-main-content h3 a {
+                    color: #1f2937;
+                    text-decoration: none;
+                    font-weight: 600;
+                }
+
+                    .post-main-content h3 a:hover {
+                        color: #1a73e8;
+                    }
+
+        .post-excerpt {
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+            font-size: 0.875rem;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .post-info {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+            .post-info span {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+        .post-tags {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background-color: #f3f4f6;
+            color: #6b7280;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .tag:hover {
+                background-color: #1a73e8;
+                color: white;
+            }
+
+        /* Stats Grid */
+        .community-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s ease;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+            .stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        /* Sidebar Styles */
+        .sidebar, .right-sidebar {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: fit-content;
+            position: sticky;
+            top: 1.5rem;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+            .sidebar-header h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin: 0;
+                color: #1f2937;
+            }
+
+        .sidebar-section {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+            .sidebar-section:last-child {
+                border-bottom: none;
+            }
+
+            .sidebar-section h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: 0.75rem;
+                color: #1f2937;
+            }
+
+        .category-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+            .category-list li a {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                color: #6b7280;
+                text-decoration: none;
+                transition: all 0.2s ease;
+                border-radius: 6px;
+                margin-bottom: 0.25rem;
+            }
+
+                .category-list li a:hover {
+                    background-color: #f3f4f6;
+                    color: #1a73e8;
+                }
+
+                .category-list li a.active {
+                    background-color: #1a73e8;
+                    color: white;
+                }
+
+                .category-list li a i {
+                    font-size: 1rem;
+                    width: 1.25rem;
+                    text-align: center;
+                }
+
+        /* Load More Button */
+        .load-more-section {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+        }
+
+        .load-more-btn {
+            background: transparent;
+            border: 2px solid #1a73e8;
+            color: #1a73e8;
+            padding: 0.75rem 2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+            .load-more-btn:hover {
+                background-color: #1a73e8;
+                color: white;
+                transform: translateY(-1px);
+            }
+
+        /* Ad Sections */
+        .ad-placeholder, .ad-banner-section {
+            background-color: #f8f9fa;
+            border: 1px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .ad-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 1200px) {
+            .community-detail-page
+
+        {
+            grid-template-columns: 240px 1fr;
+        }
+
+        .right-sidebar {
+            display: none;
+        }
+
+        }
+
+        @@media (max-width: 992px) {
+            .community-detail-page
+
+        {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .sidebar {
+            display: none;
+        }
+
+        .community-header-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .community-actions {
+            align-self: stretch;
+            justify-content: center;
+        }
+
+        }
+
+        @@media (max-width: 768px) {
+            .community-info
+
+        {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .community-navigation {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .nav-pills {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .community-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .post-item-detailed {
+            flex-direction: column;
+        }
+
+        .post-stats {
+            flex-direction: row;
+            justify-content: space-around;
+            min-width: auto;
+        }
+
+        }
+
+        /* Dark Mode Support */
+        body.dark-mode .community-detail-page {
+            background-color: #111827;
+            color: #f9fafb;
+        }
+
+        body.dark-mode .community-header {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+        }
+
+        body.dark-mode .community-navigation,
+        body.dark-mode .tab-content,
+        body.dark-mode .sidebar,
+        body.dark-mode .right-sidebar,
+        body.dark-mode .post-item-detailed,
+        body.dark-mode .stat-card {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+
+        body.dark-mode .nav-pills .nav-link {
+            color: #d1d5db;
+        }
+
+            body.dark-mode .nav-pills .nav-link:hover {
+                background-color: #374151;
+                color: #60a5fa;
+            }
+
+            body.dark-mode .nav-pills .nav-link.active {
+                color: #60a5fa;
+                border-bottom-color: #60a5fa;
+            }
+
+        body.dark-mode .no-posts-message {
+            background-color: #111827;
+            border-color: #374151;
+        }
+
+        body.dark-mode .create-post-section {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-color: #374151;
+        }
+    </style>
+}
+
+<div class="main-container community-detail-page">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-layer-group"></i> Categories</h3>
+        </div>
+        <ul class="category-list">
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/communities" class="active"><i class="fas fa-users"></i> Communities</a></li>
+            <li><a href="/categories/technology"><i class="fas fa-laptop-code"></i> Technology</a></li>
+            <li><a href="/categories/gaming"><i class="fas fa-gamepad"></i> Gaming</a></li>
+            <li><a href="/categories/creative-arts"><i class="fas fa-palette"></i> Creative Arts</a></li>
+            <li><a href="/categories/science"><i class="fas fa-flask"></i> Science</a></li>
+            <li><a href="/categories/sports"><i class="fas fa-football-ball"></i> Sports</a></li>
+            <li><a href="/categories/music"><i class="fas fa-music"></i> Music</a></li>
+            <li><a href="/categories/movies"><i class="fas fa-film"></i> Movies & TV</a></li>
+            <li><a href="/categories/books"><i class="fas fa-book"></i> Books</a></li>
+        </ul>
+
+        <!-- Sidebar Ad -->
+        <div class="sidebar-section">
+            <div class="ad-placeholder">
+                <div class="ad-label">Advertisement</div>
+                <!-- Google AdSense -->
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-xxxxxxxxxxxxxxxx"
+                     data-ad-slot="xxxxxxxxxx"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Community Header -->
+        <div class="community-header" style="background: linear-gradient(135deg, @(Model.Community.ThemeColor ?? "#1a73e8"), @(Model.Community.ThemeColor ?? "#4285f4"));">
+            @if (!string.IsNullOrEmpty(Model.Community.BannerUrl))
+            {
+                <div class="community-banner" style="background-image: url('@Model.Community.BannerUrl');"></div>
+            }
+            <div class="community-header-content">
+                <div class="community-info">
+                    <div class="community-avatar">
+                        @if (!string.IsNullOrEmpty(Model.Community.IconUrl))
+                        {
+                            <img src="@Model.Community.IconUrl" alt="@Model.Community.Name" class="community-icon-img" />
+                        }
+                        else
+                        {
+                            <div class="community-icon-placeholder">
+                                @Model.Community.Name.Substring(0, Math.Min(2, Model.Community.Name.Length)).ToUpper()
+                            </div>
+                        }
+                    </div>
+                    <div class="community-details">
+                        <h1>@Model.Community.Title</h1>
+                        <p class="community-name">r/@Model.Community.Name</p>
+                        <p class="community-description">@Model.Community.ShortDescription</p>
+                        <div class="community-meta">
+                            <span class="community-type">
+                                <i class="fas fa-@(Model.Community.CommunityType == "public" ? "globe" : Model.Community.CommunityType == "private" ? "lock" : "shield-alt")"></i>
+                                @Model.Community.CommunityType.ToUpper()
+                            </span>
+                            @if (Model.Community.IsNSFW)
+                            {
+                                <span class="nsfw-badge">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    NSFW
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="community-actions">
+                    <button class="btn btn-primary join-btn" id="joinCommunityBtn">
+                        <i class="fas fa-plus"></i> Join Community
+                    </button>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <button class="btn btn-outline-light edit-btn" data-bs-toggle="modal" data-bs-target="#editCommunityModal">
+                            <i class="fas fa-edit"></i> Edit Community
+                        </button>
+                    }
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-share"></i> Share</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag"></i> Report</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-bookmark"></i> Save</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Navigation -->
+        <div class="community-navigation">
+            <nav class="nav nav-pills">
+                <a class="nav-link active" href="#posts" data-tab="posts">
+                    <i class="fas fa-newspaper"></i> Posts
+                </a>
+                <a class="nav-link" href="#about" data-tab="about">
+                    <i class="fas fa-info-circle"></i> About
+                </a>
+                <a class="nav-link" href="#rules" data-tab="rules">
+                    <i class="fas fa-gavel"></i> Rules
+                </a>
+                <a class="nav-link" href="#members" data-tab="members">
+                    <i class="fas fa-users"></i> Members
+                </a>
+            </nav>
+            <div class="sort-options">
+                <select class="form-select form-select-sm">
+                    <option value="hot">🔥 Hot</option>
+                    <option value="new">🆕 New</option>
+                    <option value="top">⭐ Top</option>
+                    <option value="rising">📈 Rising</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Posts Tab -->
+            <div class="tab-pane active" id="posts-content">
+                <!-- Create Post Section -->
+                <div class="create-post-section">
+                    <a href="/posts/create?community=@Model.Community.Slug" class="btn create-post-btn">
+                        <i class="fas fa-plus"></i> Create Post
+                    </a>
+                </div>
+
+                <!-- Posts List -->
+                <div class="posts-container">
+                    @if (Model.Posts?.Posts != null && Model.Posts.Posts.Any())
+                    {
+                        @foreach (var post in Model.Posts.Posts)
+                        {
+                            <div class="post-item-detailed">
+                                <div class="post-stats">
+                                    <button class="vote-button" data-vote="up">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <div class="vote-count">@post.Score</div>
+                                    <button class="vote-button" data-vote="down">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-main-content">
+                                    <h3><a href="@post.PostUrl">@post.Title</a></h3>
+                                    @if (!string.IsNullOrEmpty(post.Content))
+                                    {
+                                        <p class="post-excerpt">@post.Excerpt</p>
+                                    }
+                                    <div class="post-meta">
+                                        <div class="post-info">
+                                            <span><i class="fas fa-user"></i> u/@post.AuthorDisplayName</span>
+                                            <span><i class="fas fa-clock"></i> @post.TimeAgo</span>
+                                            <span><i class="fas fa-comment"></i> @post.FormattedCommentCount comments</span>
+                                            <span><i class="fas fa-eye"></i> @post.FormattedViewCount views</span>
+                                        </div>
+                                        @if (post.Tags.Any())
+                                        {
+                                            <div class="post-tags">
+                                                @foreach (var tag in post.Tags.Take(3))
+                                                {
+                                                    <span class="tag">@tag</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="no-posts-message">
+                            <div class="icon">
+                                <i class="fas fa-newspaper"></i>
+                            </div>
+                            <h3>No posts yet</h3>
+                            <p>Be the first to share something with this community!</p>
+                            <a href="/posts/create?community=@Model.Community.Slug" class="btn">
+                                <i class="fas fa-plus"></i> Create the first post
+                            </a>
+                        </div>
+                    }
+
+                    @if (Model.Posts?.Posts != null && Model.Posts.Posts.Any())
+                    {
+                        <div class="load-more-section">
+                            <button class="btn load-more-btn">
+                                <i class="fas fa-chevron-down"></i> Load More Posts
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- About Tab -->
+            <div class="tab-pane" id="about-content">
+                <div class="about-section">
+                    <h3>About This Community</h3>
+                    <div class="about-content">
+                        @if (!string.IsNullOrEmpty(Model.Community.Description))
+                        {
+                            <p>@Html.Raw(Model.Community.Description.Replace("\n", "<br>"))</p>
+                        }
+                        else
+                        {
+                            <p>@Model.Community.ShortDescription</p>
+                        }
+                    </div>
+
+                    <div class="community-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-number">@Model.Community.FormattedMemberCount</div>
+                                <div class="stat-label">Members</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-newspaper"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-number">@Model.Community.FormattedPostCount</div>
+                                <div class="stat-label">Posts</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-calendar"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-number">@Model.Community.CreatedAt.ToString("MMM yyyy")</div>
+                                <div class="stat-label">Created</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Tab -->
+            <div class="tab-pane" id="rules-content">
+                <div class="rules-section">
+                    <h3>Community Rules</h3>
+                    @if (!string.IsNullOrEmpty(Model.Community.Rules))
+                    {
+                        <div class="rules-content">
+                            @Html.Raw(Model.Community.Rules.Replace("\n", "<br>"))
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-rules">
+                            <i class="fas fa-info-circle"></i>
+                            <p>No specific rules have been set for this community yet. Please follow general community guidelines.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Members Tab -->
+            <div class="tab-pane" id="members-content">
+                <div class="members-section">
+                    <h3>Community Members</h3>
+                    <div class="members-grid">
+                        @if (Model.Community.Moderators != null && Model.Community.Moderators.Any())
+                        {
+                            @foreach (var moderator in Model.Community.Moderators)
+                            {
+                                <div class="member-card">
+                                    <div class="member-avatar">@moderator.DisplayName?.Substring(0, 2).ToUpper()</div>
+                                    <div class="member-info">
+                                        <div class="member-name">@moderator.DisplayName</div>
+                                        <div class="member-role">@moderator.Role</div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="no-members">
+                                <i class="fas fa-users"></i>
+                                <p>No moderators to display.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Google AdSense Banner -->
+        <div class="ad-banner-section">
+            <div class="ad-label">Advertisement</div>
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-xxxxxxxxxxxxxxxx"
+                 data-ad-slot="xxxxxxxxxx"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside class="right-sidebar">
+        <!-- Community Quick Stats -->
+        <div class="sidebar-section">
+            <h3><i class="fas fa-chart-line"></i> Quick Stats</h3>
+            <div class="stats">
+                <ul>
+                    <li><i class="fas fa-users"></i> <span>@Model.Community.FormattedMemberCount Members</span></li>
+                    <li><i class="fas fa-newspaper"></i> <span>@Model.Community.FormattedPostCount Posts</span></li>
+                    <li><i class="fas fa-calendar"></i> <span>Created @Model.Community.CreatedAt.ToString("MMM yyyy")</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Google AdSense Sidebar -->
+        <div class="sidebar-section">
+            <div class="ad-label">Advertisement</div>
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-xxxxxxxxxxxxxxxx"
+                 data-ad-slot="xxxxxxxxxx"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <!-- Community Guidelines -->
+        <div class="sidebar-section">
+            <h3><i class="fas fa-shield-alt"></i> Guidelines</h3>
+            <div class="guidelines-list">
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Be respectful to all members</span>
+                </div>
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Stay on topic</span>
+                </div>
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>No spam or self-promotion</span>
+                </div>
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Use appropriate language</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Edit Community Modal -->
+<div class="modal fade" id="editCommunityModal" tabindex="-1" aria-labelledby="editCommunityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCommunityModalLabel">
+                    <i class="fas fa-edit"></i> Edit Community
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="Update" asp-controller="Community" method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Community.CommunityId" />
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Community.Name" class="form-label">Community Name</label>
+                                <input asp-for="Community.Name" class="form-control" readonly />
+                                <div class="form-text">Community name cannot be changed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Community.Title" class="form-label">Title</label>
+                                <input asp-for="Community.Title" class="form-control" />
+                                <span asp-validation-for="Community.Title" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Community.ShortDescription" class="form-label">Short Description</label>
+                        <textarea asp-for="Community.ShortDescription" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Community.ShortDescription" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Community.Description" class="form-label">Full Description</label>
+                        <textarea asp-for="Community.Description" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Community.Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Community.CommunityType" class="form-label">Community Type</label>
+                                <select asp-for="Community.CommunityType" class="form-select">
+                                    <option value="public">Public</option>
+                                    <option value="private">Private</option>
+                                    <option value="restricted">Restricted</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Community.ThemeColor" class="form-label">Theme Color</label>
+                                <input asp-for="Community.ThemeColor" type="color" class="form-control form-control-color" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="Community.IsNSFW" class="form-check-input" type="checkbox" />
+                        <label asp-for="Community.IsNSFW" class="form-check-label">
+                            NSFW Content
+                        </label>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Community.Rules" class="form-label">Community Rules</label>
+                        <textarea asp-for="Community.Rules" class="form-control" rows="6" placeholder="Enter community rules, one per line..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Remove active class from all tabs and content
+                document.querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Show corresponding content
+                const tabId = this.getAttribute('data-tab') + '-content';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Join community functionality
+        document.getElementById('joinCommunityBtn').addEventListener('click', function() {
+            const btn = this;
+            const isJoined = btn.textContent.includes('Leave');
+
+            if (isJoined) {
+                btn.innerHTML = '<i class="fas fa-plus"></i> Join Community';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.innerHTML = '<i class="fas fa-check"></i> Leave Community';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-danger');
+            }
+        });
+
+        // Vote functionality
+        document.querySelectorAll('.vote-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const voteType = this.getAttribute('data-vote');
+                const postStats = this.closest('.post-stats');
+                const upButton = postStats.querySelector('[data-vote="up"]');
+                const downButton = postStats.querySelector('[data-vote="down"]');
+
+                // Toggle vote state
+                if (voteType === 'up') {
+                    upButton.classList.toggle('upvoted');
+                    downButton.classList.remove('downvoted');
+                } else {
+                    downButton.classList.toggle('downvoted');
+                    upButton.classList.remove('upvoted');
+                }
+            });
+        });
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Load more posts functionality
+        document.querySelector('.load-more-btn')?.addEventListener('click', function() {
+            // Simulate loading more posts
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-chevron-down"></i> Load More Posts';
+            }, 1000);
+        });
+    </script>
+}

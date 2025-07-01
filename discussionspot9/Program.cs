@@ -4,6 +4,8 @@ using discussionspot9.Hubs;
 using discussionspot9.Interfaces;
 using discussionspot9.Services;
 using DiscussionSpot9.Services;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -26,9 +28,31 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
+// ADD THIS SECTION:
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "DiscussionSpot9Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.LoginPath = "/Account/Auth";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.SlidingExpiration = true;
+    options.Cookie.IsEssential = true;
+});
+
+// ADD DATA PROTECTION:
+builder.Services.AddDataProtection()
+    .SetApplicationName("DiscussionSpot9");
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 //Interfaces & Repositories
 builder.Services.AddScoped<IUserService, UserService>();
@@ -40,6 +64,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -49,6 +74,8 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseForwardedHeaders();
 app.MapHub<PostHub>("/posthub");
 app.MapHub<NotificationHub>("/notificationHub");
 app.UseHttpsRedirection();
