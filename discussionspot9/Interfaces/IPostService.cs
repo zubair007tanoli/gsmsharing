@@ -11,6 +11,7 @@ namespace discussionspot9.Interfaces
         Task<PostListViewModel> GetAllPostsAsync(string sort = "hot", string time = "all", int page = 1);
         Task<PostListViewModel> GetCommunityPostsAsync(int communityId, string sort = "hot", int page = 1);
         Task<PostDetailViewModel?> GetPostDetailsAsync(string communitySlug, string postSlug);
+        Task<PostDetailViewModel> GetPostDetailsByCategoryAsync(string categorySlug, string postSlug);
         Task IncrementViewCountAsync(int postId);
         Task<int?> GetUserVoteAsync(int postId, string userId);
         Task<CreatePostResult> CreatePostAsync(CreatePostViewModel model);

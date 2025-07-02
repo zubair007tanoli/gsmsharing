@@ -17,6 +17,7 @@ namespace discussionspot9.Controllers
         private readonly ILogger<PostController> _logger;
         private readonly INotificationService _notificationService;
         private readonly ILinkMetadataService _metadataService;
+        private readonly ICategoryService _categoryService;
         public PostController(
             IPostService postService,
             ICommunityService communityService,
@@ -99,64 +100,64 @@ namespace discussionspot9.Controllers
 
         [HttpGet]
         [Route("c/{categorySlug}/posts/{postSlug}")]
-        //public async Task<IActionResult> DetailByCategory(string categorySlug, string postSlug)
-        //{
-        //    var postDetails = await _postService.GetPostDetailsByCategoryAsync(categorySlug, postSlug);
-        //    if (postDetails == null)
-        //        return NotFound();
+        public async Task<IActionResult> DetailByCategory(string categorySlug, string postSlug)
+        {
+            var postDetails = await _postService.GetPostDetailsByCategoryAsync(categorySlug, postSlug);
+            if (postDetails == null)
+                return NotFound();
 
-        //    string? userId = null;
-        //    if (User.Identity?.IsAuthenticated == true)
-        //    {
-        //        userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        //        postDetails.CurrentUserVote = await _postService.GetUserVoteAsync(postDetails.PostId, userId);
-        //        postDetails.IsCurrentUserAuthor = postDetails.UserId == userId;
-        //        postDetails.IsSavedByUser = await _postService.IsPostSavedByUserAsync(postDetails.PostId, userId);
-        //    }
+            string? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                postDetails.CurrentUserVote = await _postService.GetUserVoteAsync(postDetails.PostId, userId);
+                postDetails.IsCurrentUserAuthor = postDetails.UserId == userId;
+                postDetails.IsSavedByUser = await _postService.IsPostSavedByUserAsync(postDetails.PostId, userId);
+            }
 
-        //    var categoryDetailsTask = _categoryService.GetCategoryDetailsAsync(categorySlug);
-        //    var commentsTask = _commentService.GetPostCommentsAsync(postDetails.PostId);
+            var categoryDetailsTask = _categoryService.GetCategoryDetailsAsync(categorySlug);
+            var commentsTask = _commentService.GetPostCommentsAsync(postDetails.PostId);
 
-        //    await Task.WhenAll(categoryDetailsTask, commentsTask);
+            await Task.WhenAll(categoryDetailsTask, commentsTask);
 
-        //    var model = new PostDetailPageViewModel
-        //    {
-        //        Post = postDetails,
-        //        CategorySlug = categorySlug,
-        //        PostSlug = postSlug,
-        //        Category = categoryDetailsTask.Result,
-        //        Comments = commentsTask.Result
-        //    };
+            var model = new PostDetailPageViewModel
+            {
+                Post = postDetails,
+                CategorySlug = categorySlug,
+                PostSlug = postSlug,
+                category = categoryDetailsTask.Result,
+                Comments = commentsTask.Result
+            };
 
-        //    if (model.Post.PostType == "link")
-        //    {
-        //        var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
-        //        model.Post.LinkModel = new LinkPreviewViewModel
-        //        {
-        //            Title = metadata.Title,
-        //            Description = metadata.Description,
-        //            ThumbnailUrl = metadata.ThumbnailUrl,
-        //            Domain = metadata.Domain
-        //        };
-        //    }
+            if (model.Post.PostType == "link")
+            {
+                var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
+                model.Post.LinkModel = new LinkPreviewViewModel
+                {
+                    Title = metadata.Title,
+                    Description = metadata.Description,
+                    ThumbnailUrl = metadata.ThumbnailUrl,
+                    Domain = metadata.Domain
+                };
+            }
 
-        //    if (postDetails.PostType == "poll" && postDetails.HasPoll)
-        //    {
-        //        var pollDetails = await _postService.GetPollDetailsAsync(postDetails.PostId, userId);
-        //        postDetails.Poll = new PollViewModel
-        //        {
-        //            Options = pollDetails.Options.Select(option => new PollOptionViewModel
-        //            {
-        //                OptionText = option.OptionText,
-        //                VoteCount = option.VoteCount
-        //            }).ToList()
-        //        };
-        //    }
+            if (postDetails.PostType == "poll" && postDetails.HasPoll)
+            {
+                var pollDetails = await _postService.GetPollDetailsAsync(postDetails.PostId, userId);
+                postDetails.Poll = new PollViewModel
+                {
+                    Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                    {
+                        OptionText = option.OptionText,
+                        VoteCount = option.VoteCount
+                    }).ToList()
+                };
+            }
 
-        //    await _postService.IncrementViewCountAsync(postDetails.PostId);
+            await _postService.IncrementViewCountAsync(postDetails.PostId);
 
-        //    return View("DetailByCategory", model);
-        //}
+            return View("DetailByCategory", model);
+        }
 
 
         public async Task<IActionResult> AllPostTestAsync(string sort = "hot", string time = "all", int page = 1)

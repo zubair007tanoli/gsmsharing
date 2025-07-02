@@ -138,6 +138,21 @@ namespace discussionspot9.Services
             };
         }
         // Add these methods to your existing PostService class
+        public async Task<PostDetailViewModel> GetPostDetailsByCategoryAsync(string categorySlug, string postSlug)
+        {
+            return await _context.Posts
+                .Include(p => p.Community)
+                .ThenInclude(c => c.Category)
+                .Where(p => p.Slug == postSlug && p.Community != null && p.Community.Category != null && p.Community.Category.Slug == categorySlug)
+                .Select(p => new PostDetailViewModel
+                {
+                    // Map properties from Post to PostDetailViewModel
+                    PostId = p.PostId,
+                    Title = p.Title,
+                    Content = p.Content,
+                    // ... other properties
+                }).FirstOrDefaultAsync();
+        }
         // Update the GetPollDetailsAsync method:
         public async Task<PollViewModel?> GetPollDetailsAsync(int postId, string? userId)
         {
