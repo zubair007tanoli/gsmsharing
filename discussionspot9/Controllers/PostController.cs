@@ -159,7 +159,6 @@ namespace discussionspot9.Controllers
             return View("DetailByCategory", model);
         }
 
-
         public async Task<IActionResult> AllPostTestAsync(string sort = "hot", string time = "all", int page = 1)
         {
             try

@@ -2,7 +2,10 @@
 {
     public class PostAwardViewModel
     {
+        public int PostAwardId { get; set; }
         public int AwardId { get; set; }
+        public string? AwardedByUserId { get; set; }
+        public string? AwardedByUserName { get; set; }
         public string AwardName { get; set; } = string.Empty;
         public string IconUrl { get; set; } = string.Empty;
         public string? AwardedByDisplayName { get; set; }

@@ -37,6 +37,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string CommunityName { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
         public string? CommunityIconUrl { get; set; }
+        public string? CategorySlug { get; set; } // Added for category filtering
 
         // Tags
         public List<string> Tags { get; set; } = new();
