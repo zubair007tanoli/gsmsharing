@@ -23,7 +23,7 @@
         <section class="random-posts-section mb-4">
             <div class="section-header d-flex justify-content-between align-items-center mb-3">
                 <h2>Random Discussions</h2>
-                <a href="@Url.All()" class="view-all">View all</a>
+                <a asp-action="All" asp-controller="Post" class="view-all">View all</a>
             </div>
 
             <div class="row">
@@ -36,7 +36,11 @@
                                     <span class="post-tag @post.CategoryCssClass">@post.CategoryName</span>
                                 </div>
                                 <h3 class="card-title h5">
-                                    <a href="@post.PostUrl">@post.Title</a>
+                                    <a asp-route="community_posts"
+                                       asp-route-communitySlug="@post.CommunitySlug"
+                                       asp-route-postSlug="@post.Slug">
+                                        @post.Title
+                                    </a>
                                 </h3>
                                 <div class="post-meta">
                                     <div class="d-flex align-items-center">

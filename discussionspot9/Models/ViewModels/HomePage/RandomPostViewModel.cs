@@ -1,4 +1,5 @@
 ﻿// Models/ViewModels/HomePage/RandomPostViewModel.cs
+using discussionspot9.Models.Domain;
 using System.ComponentModel.DataAnnotations;
 
 namespace discussionspot9.Models.ViewModels.HomePage
@@ -26,7 +27,8 @@ namespace discussionspot9.Models.ViewModels.HomePage
         [Required]
         [StringLength(320)]
         public string Slug { get; set; } = string.Empty;
-
+        public string CommunitySlug { get; set; } = string.Empty;
+        public string CommunityName { get; set; } = string.Empty;
         /// <summary>
         /// Name of the category this post belongs to
         /// </summary>

@@ -58,7 +58,30 @@ namespace discussionspot9.Services
 
             try
             {
-                var randomPosts = await _context.Posts
+            var randomPosts = await _context.Posts
+                .Where(p => p.Status == "published")
+                .Include(p => p.Community)
+                .ThenInclude(c => c!.Category)
+                .OrderBy(r => Guid.NewGuid())
+                .Take(count)
+                .Select(p => new RandomPostViewModel
+                {
+                    PostId = p.PostId,
+                    Title = p.Title,
+                    Slug = p.Slug,
+                    CommunityName = p.Community!.Name,
+                    CommunitySlug = p.Community.Slug,
+                    CategoryName = p.Community.Category!.Name,
+                    CategorySlug = p.Community.Category.Slug,
+                    AuthorDisplayName = _context.UserProfiles
+                        .Where(up => up.UserId == p.UserId)
+                        .Select(up => up.DisplayName)
+                        .FirstOrDefault() ?? "Unknown",
+                    CommentCount = p.CommentCount,
+                    CreatedAt = p.CreatedAt
+                })
+                .ToListAsync();
+                var OldQuery = await _context.Posts
                     .Where(p => p.Status == "published")
                     .Include(p => p.Community)
                     .ThenInclude(c => c!.Category)
