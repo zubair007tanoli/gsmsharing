@@ -32,7 +32,7 @@ public class NotificationService : INotificationService
         await _context.SaveChangesAsync();
     }
 
-    public async Task MarkAsReadAsync(int notificationId, string userId)
+    public async Task MarkAsReadAsync(int notificationId, string? userId)
     {
         var notification = await _context.Notifications
             .FirstOrDefaultAsync(n => n.NotificationId == notificationId && n.UserId == userId);
