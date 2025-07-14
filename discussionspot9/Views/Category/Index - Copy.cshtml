@@ -1,0 +1,704 @@
+﻿@model List<discussionspot9.Models.Domain.Category>
+@{
+    ViewData["Title"] = "Community Categories - DiscussionSpot";
+    ViewData["Description"] = "Explore all community categories and discover engaging discussions across various topics.";
+}
+
+@section Styles {
+    <style>
+        .category-tree {
+            background: var(--bg-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .category-node {
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .category-node:last-child {
+            border-bottom: none;
+        }
+        
+        .category-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        
+        .category-header:hover {
+            background: linear-gradient(135deg, var(--primary-hover), var(--secondary-hover));
+            transform: translateY(-1px);
+        }
+        
+        .category-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .category-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .category-details h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .category-description {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .category-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .expand-icon {
+            font-size: 1.25rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .category-node.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+        
+        .communities-container {
+            display: none;
+            background: var(--bg-light);
+            padding: 0;
+        }
+        
+        .category-node.expanded .communities-container {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+            }
+        }
+        
+        .community-item {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: var(--text-color);
+        }
+        
+        .community-item:hover {
+            background: var(--bg-color);
+            transform: translateX(0.5rem);
+            text-decoration: none;
+            color: var(--text-color);
+        }
+        
+        .community-item:last-child {
+            border-bottom: none;
+        }
+        
+        .community-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1rem;
+        }
+        
+        .community-details {
+            flex: 1;
+        }
+        
+        .community-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .community-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .community-metrics {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-lighter);
+        }
+        
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .metric i {
+            color: var(--primary-color);
+        }
+        
+        .ad-container {
+            background: var(--bg-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .ad-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .ad-placeholder {
+            background: var(--bg-dark);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 2rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .page-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .breadcrumb-nav {
+            background: var(--bg-color);
+            padding: 1rem 0;
+            margin-bottom: 1.5rem;
+            border-radius: var(--radius-lg);
+        }
+        
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .breadcrumb-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item.active {
+            color: var(--text-light);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-lighter);
+        }
+        
+        @@media (max-width: 992px) {
+            .category-stats {
+                gap: 1rem;
+            }
+            
+            .stat-number {
+                font-size: 1rem;
+            }
+            
+            .community-metrics {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+        }
+        
+        @@media (max-width: 768px) {
+            .category-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .category-stats {
+                justify-content: center;
+            }
+            
+            .community-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .community-metrics {
+                justify-content: center;
+            }
+        }
+    </style>
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-sitemap me-3"></i>Community Categories</h1>
+        <p>Discover and explore all our community categories. Join discussions, share knowledge, and connect with like-minded individuals across various topics and interests.</p>
+    </div>
+</div>
+
+<!-- Breadcrumb Navigation -->
+<div class="container">
+    <div class="breadcrumb-nav">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")"><i class="fas fa-home"></i> Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Categories</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container main-container">
+    <div class="row">
+        <!-- Left Sidebar with Top Ad -->
+        <div class="col-lg-3 order-lg-1 order-3">
+            <!-- Google AdSense - Top Sidebar -->
+            <div class="ad-container">
+                <div class="ad-label">Advertisement</div>
+                <div class="ad-placeholder">
+                    <!-- Replace with actual Google AdSense code -->
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="XXXXXXXXXX"
+                         data-ad-format="rectangle"
+                         data-full-width-responsive="true"></ins>
+                    <script>
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                    <!-- Fallback for development -->
+                    <div style="width: 300px; height: 250px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #666;">
+                        Google AdSense<br>300x250
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-chart-bar me-2"></i>Platform Statistics</h3>
+                <div class="stats">
+                    <ul>
+                        <li><i class="fas fa-users"></i> <span>@(Model?.SelectMany(c => c.Communities).Sum(com => com.MemberCount) ?? 0) Total Members</span></li>
+                        <li><i class="fas fa-comments"></i> <span>@(Model?.SelectMany(c => c.Communities).SelectMany(com => com.Posts).Count() ?? 0) Total Posts</span></li>
+                        <li><i class="fas fa-layer-group"></i> <span>@(Model?.Count ?? 0) Categories</span></li>
+                        <li><i class="fas fa-users-cog"></i> <span>@(Model?.SelectMany(c => c.Communities).Count() ?? 0) Communities</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-lg-6 order-lg-2 order-1">
+            @if (Model != null && Model.Any())
+            {
+                <div class="category-tree">
+                    @foreach (var category in Model.OrderBy(c => c.DisplayOrder))
+                    {
+                        <div class="category-node" data-category-id="@category.CategoryId">
+                            <div class="category-header" onclick="toggleCategory(@category.CategoryId)">
+                                <div class="category-info">
+                                    <div class="category-icon">
+                                        <i class="@GetCategoryIcon(category.Name)"></i>
+                                    </div>
+                                    <div class="category-details">
+                                        <h2>@category.Name</h2>
+                                        @if (!string.IsNullOrEmpty(category.Description))
+                                        {
+                                            <div class="category-description">@category.Description</div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="category-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-number">@(category.Communities?.Count ?? 0)</span>
+                                        <span class="stat-label">Communities</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">@(category.Communities?.Sum(c => c.MemberCount) ?? 0)</span>
+                                        <span class="stat-label">Members</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">@(category.Communities?.Sum(c => c.PostCount) ?? 0)</span>
+                                        <span class="stat-label">Posts</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down expand-icon"></i>
+                                </div>
+                            </div>
+
+                            @if (category.Communities != null && category.Communities.Any())
+                            {
+                                <div class="communities-container">
+                                    @foreach (var community in category.Communities.Where(c => !c.IsDeleted).OrderByDescending(c => c.MemberCount))
+                                    {
+                                        <a href="@Url.Action("Details", "Community", new { slug = community.Slug })" class="community-item">
+                                            <div class="community-icon">
+                                                <i class="@GetCommunityIcon(community.Name)"></i>
+                                            </div>
+                                            <div class="community-details">
+                                                <div class="community-name">@community.Name</div>
+                                                @if (!string.IsNullOrEmpty(community.ShortDescription))
+                                                {
+                                                    <div class="community-description">@community.ShortDescription</div>
+                                                }
+                                                <div class="community-metrics">
+                                                    <div class="metric">
+                                                        <i class="fas fa-users"></i>
+                                                        <span>@community.MemberCount members</span>
+                                                    </div>
+                                                    <div class="metric">
+                                                        <i class="fas fa-comments"></i>
+                                                        <span>@community.PostCount posts</span>
+                                                    </div>
+                                                    <div class="metric">
+                                                        <i class="fas fa-thumbs-up"></i>
+                                                        <span>@(community.Posts?.Sum(p => p.UpvoteCount) ?? 0) reactions</span>
+                                                    </div>
+                                                    <div class="metric">
+                                                        <i class="fas fa-poll"></i>
+                                                        <span>@(community.Posts?.Sum(p => p.UpvoteCount + p.DownvoteCount) ?? 0) votes</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="communities-container">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <h4>No Communities Yet</h4>
+                                        <p>This category doesn't have any communities yet. Be the first to create one!</p>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Child Categories -->
+                            @if (category.ChildCategories != null && category.ChildCategories.Any())
+                            {
+                                <div class="communities-container">
+                                    <div style="padding: 1rem 2rem; background: var(--bg-dark); border-bottom: 1px solid var(--border-color);">
+                                        <h4><i class="fas fa-folder me-2"></i>Subcategories</h4>
+                                    </div>
+                                    @foreach (var childCategory in category.ChildCategories.OrderBy(c => c.DisplayOrder))
+                                    {
+                                        <a href="@Url.Action("Details", "Category", new { slug = childCategory.Slug })" class="community-item">
+                                            <div class="community-icon" style="background: var(--secondary-color);">
+                                                <i class="@GetCategoryIcon(childCategory.Name)"></i>
+                                            </div>
+                                            <div class="community-details">
+                                                <div class="community-name">@childCategory.Name</div>
+                                                @if (!string.IsNullOrEmpty(childCategory.Description))
+                                                {
+                                                    <div class="community-description">@childCategory.Description</div>
+                                                }
+                                                <div class="community-metrics">
+                                                    <div class="metric">
+                                                        <i class="fas fa-layer-group"></i>
+                                                        <span>@(childCategory.Communities?.Count ?? 0) communities</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Between Content Ad -->
+                <div class="ad-container mt-4">
+                    <div class="ad-label">Advertisement</div>
+                    <div class="ad-placeholder">
+                        <!-- Replace with actual Google AdSense code -->
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-XXXXXXXXXX"
+                             data-ad-slot="XXXXXXXXXX"
+                             data-ad-format="horizontal"
+                             data-full-width-responsive="true"></ins>
+                        <script>
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                        <!-- Fallback for development -->
+                        <div style="width: 100%; height: 90px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #666;">
+                            Google AdSense - 728x90 Leaderboard
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="category-tree">
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>No Categories Available</h3>
+                        <p>There are currently no categories to display. Please check back later or contact an administrator.</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-3 order-lg-3 order-2">
+            <!-- Popular Communities -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-fire me-2"></i>Popular Communities</h3>
+                @if (Model != null && Model.Any())
+                {
+                    var popularCommunities = Model
+                        .SelectMany(c => c.Communities)
+                        .Where(c => !c.IsDeleted)
+                        .OrderByDescending(c => c.MemberCount)
+                        .Take(5)
+                        .ToList();
+
+                    @if (popularCommunities.Any())
+                    {
+                        <div class="contributor-list">
+                            @foreach (var community in popularCommunities)
+                            {
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="contributor-avatar me-3" style="background: var(--primary-color);">
+                                        <i class="@GetCommunityIcon(community.Name)"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <a href="@Url.Action("Details", "Community", new { slug = community.Slug })" class="contributor-name d-block text-decoration-none">@community.Name</a>
+                                        <small class="contributor-posts">@community.MemberCount members</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-clock me-2"></i>Recent Activity</h3>
+                @if (Model != null && Model.Any())
+                {
+                    var recentPosts = Model
+                        .SelectMany(c => c.Communities)
+                        .SelectMany(c => c.Posts)
+                        .OrderByDescending(p => p.CreatedAt)
+                        .Take(5)
+                        .ToList();
+
+                    @if (recentPosts.Any())
+                    {
+                        <div class="related-posts-list">
+                            @foreach (var post in recentPosts)
+                            {
+                                <div class="mb-3">
+                                    <a href="@Url.Action("Details", "Post", new { slug = post.Slug })" class="text-decoration-none">
+                                        @post.Title
+                                    </a>
+                                    <div class="related-post-meta">
+                                        <small>@post.CreatedAt.ToString("MMM dd") • @post.UpvoteCount votes</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Bottom Ad -->
+            <div class="ad-container">
+                <div class="ad-label">Advertisement</div>
+                <div class="ad-placeholder">
+                    <!-- Replace with actual Google AdSense code -->
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-XXXXXXXXXX"
+                         data-ad-slot="XXXXXXXXXX"
+                         data-ad-format="rectangle"
+                         data-full-width-responsive="true"></ins>
+                    <script>
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                    <!-- Fallback for development -->
+                    <div style="width: 300px; height: 250px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #666;">
+                        Google AdSense<br>300x250
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleCategory(categoryId) {
+            const categoryNode = document.querySelector(`[data-category-id="${categoryId}"]`);
+            if (categoryNode) {
+                categoryNode.classList.toggle('expanded');
+                
+                // Store expanded state in localStorage
+                const expandedCategories = JSON.parse(localStorage.getItem('expandedCategories') || '[]');
+                if (categoryNode.classList.contains('expanded')) {
+                    if (!expandedCategories.includes(categoryId)) {
+                        expandedCategories.push(categoryId);
+                    }
+                } else {
+                    const index = expandedCategories.indexOf(categoryId);
+                    if (index > -1) {
+                        expandedCategories.splice(index, 1);
+                    }
+                }
+                localStorage.setItem('expandedCategories', JSON.stringify(expandedCategories));
+            }
+        }
+
+        // Restore expanded state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const expandedCategories = JSON.parse(localStorage.getItem('expandedCategories') || '[]');
+            expandedCategories.forEach(categoryId => {
+                const categoryNode = document.querySelector(`[data-category-id="${categoryId}"]`);
+                if (categoryNode) {
+                    categoryNode.classList.add('expanded');
+                }
+            });
+        });
+
+        // Smooth scroll to category when linked
+        if (window.location.hash) {
+            const targetCategory = document.querySelector(window.location.hash);
+            if (targetCategory) {
+                targetCategory.scrollIntoView({ behavior: 'smooth' });
+                targetCategory.classList.add('expanded');
+            }
+        }
+    </script>
+}
+
+@functions {
+    private string GetCategoryIcon(string categoryName)
+    {
+        return categoryName?.ToLower() switch
+        {
+            var name when name.Contains("technology") || name.Contains("tech") => "fas fa-microchip",
+            var name when name.Contains("gaming") || name.Contains("game") => "fas fa-gamepad",
+            var name when name.Contains("art") || name.Contains("creative") => "fas fa-palette",
+            var name when name.Contains("music") => "fas fa-music",
+            var name when name.Contains("sports") => "fas fa-futbol",
+            var name when name.Contains("science") => "fas fa-flask",
+            var name when name.Contains("education") || name.Contains("learning") => "fas fa-graduation-cap",
+            var name when name.Contains("business") => "fas fa-briefcase",
+            var name when name.Contains("health") => "fas fa-heartbeat",
+            var name when name.Contains("food") => "fas fa-utensils",
+            var name when name.Contains("travel") => "fas fa-plane",
+            var name when name.Contains("movie") || name.Contains("film") => "fas fa-film",
+            var name when name.Contains("book") => "fas fa-book",
+            var name when name.Contains("news") => "fas fa-newspaper",
+            _ => "fas fa-folder"
+        };
+    }
+
+    private string GetCommunityIcon(string communityName)
+    {
+        return communityName?.ToLower() switch
+        {
+            var name when name.Contains("programming") || name.Contains("coding") => "fas fa-code",
+            var name when name.Contains("design") => "fas fa-paint-brush",
+            var name when name.Contains("photography") => "fas fa-camera",
+            var name when name.Contains("writing") => "fas fa-pen",
+            var name when name.Contains("fitness") => "fas fa-dumbbell",
+            var name when name.Contains("cooking") => "fas fa-utensils",
+            var name when name.Contains("music") => "fas fa-music",
+            var name when name.Contains("movie") => "fas fa-film",
+            var name when name.Contains("book") => "fas fa-book-open",
+            var name when name.Contains("gaming") => "fas fa-gamepad",
+            var name when name.Contains("crypto") => "fab fa-bitcoin",
+            var name when name.Contains("startup") => "fas fa-rocket",
+            _ => "fas fa-users"
+        };
+    }
+}

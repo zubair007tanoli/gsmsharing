@@ -1,4 +1,5 @@
-﻿using discussionspot9.Models.Domain;
+using discussionspot9.Models.Domain;
+using discussionspot9.Models.ViewModels.PollViewModels;
 
 namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {

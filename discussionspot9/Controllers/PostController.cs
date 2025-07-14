@@ -57,7 +57,7 @@ namespace discussionspot9.Controllers
 
             await Task.WhenAll(communityDetailsTask, commentsTask);
 
-            var model = new PostDetailPageViewModel
+            var model = new PostDetailPageViewModelCopy
             {
                 Post = postDetails,
                 CommunitySlug = communitySlug,
@@ -334,7 +334,7 @@ namespace discussionspot9.Controllers
                 // Load comments
                 var comments = await _commentService.GetPostCommentsAsync(post.PostId, "best");
 
-                var viewModel = new PostDetailPageViewModel
+                var viewModel = new PostDetailPageViewModelCopy
                 {
                     Post = post,
                     Comments = comments,
