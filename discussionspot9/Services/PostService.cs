@@ -649,7 +649,7 @@ namespace discussionspot9.Services
         {
             var viewModel = new PostCardViewModel
             {
-                PostId = p.PostId,                
+                PostId = p.PostId,
                 Title = p.Title,
                 Slug = p.Slug,
                 Content = p.Content,
@@ -665,12 +665,12 @@ namespace discussionspot9.Services
                 IsLocked = p.IsLocked,
                 IsNSFW = p.IsNSFW,
                 IsSpoiler = p.IsSpoiler,
-                AuthorDisplayName = p.UserProfile.DisplayName, // This should be fetched from UserProfile
-                AuthorInitials = GetInitials("Unknown"),
-                CommunityName = p.Community!.Name,
-                CommunitySlug = p.Community.Slug,             
-                Tags = p.PostTags.Select(pt => pt.Tag.Name).ToList(),
-                IsSavedByUser = false // Will be set in the controller
+                AuthorDisplayName = p.UserProfile?.DisplayName ?? "Unknown User",
+                AuthorInitials = GetInitials(p.UserProfile?.DisplayName ?? "Unknown"),
+                CommunityName = p.Community?.Name ?? "Unknown Community",
+                CommunitySlug = p.Community?.Slug ?? "unknown",
+                Tags = p.PostTags?.Select(pt => pt.Tag?.Name ?? string.Empty).ToList() ?? new List<string>(), // Fixed CS8619 and IDE0028
+                IsSavedByUser = false
             };
 
             // Set media URL for different post types
