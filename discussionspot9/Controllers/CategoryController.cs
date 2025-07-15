@@ -19,7 +19,7 @@ namespace discussionspot9.Controllers
             var Cat = await GetCategoriesWithCommunitiesAndPosts();
             return View(Cat);
         }
-
+       
         private async Task<List<Category>> GetCategoriesWithCommunitiesAndPosts()
         {
             return await DbContext.Categories

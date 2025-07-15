@@ -763,7 +763,7 @@
                                     <div class="communities-grid">
                                         @foreach (var community in category.Communities.Where(c => !c.IsDeleted).OrderByDescending(c => c.MemberCount))
                                         {
-                                            <a href="@Url.Action("Details", "Community", new { slug = community.Slug })" class="community-card">
+                                            <a asp-controller="Community" asp-action="Details" asp-route-communitySlug="@community.Slug" class="community-card">
                                                 <div class="community-card-header">
                                                     <div class="community-card-icon">
                                                         <i class="@GetCommunityIcon(community.Name)"></i>

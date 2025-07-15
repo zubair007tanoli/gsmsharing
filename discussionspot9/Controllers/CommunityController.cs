@@ -57,17 +57,18 @@ namespace discussionspot9.Controllers
         /// Display single community with its posts
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Details(string slug, string sort = "hot", int page = 1)
+        [Route("r/{communitySlug}/Community")]
+        public async Task<IActionResult> Details(string communitySlug, string sort = "hot", int page = 1)
         {
-            slug = "gsmsharing";
-            if (string.IsNullOrEmpty(slug))
+       
+            if (string.IsNullOrEmpty(communitySlug))
             {
                 return NotFound();
             }
 
             try
             {
-                var community = await _communityService.GetCommunityDetailsAsync(slug);
+                var community = await _communityService.GetCommunityDetailsAsync(communitySlug);
                 if (community == null)
                 {
                     return NotFound();
@@ -78,7 +79,7 @@ namespace discussionspot9.Controllers
 
                 ViewData["CurrentSort"] = sort;
                 ViewData["CurrentPage"] = page;
-                ViewData["CommunitySlug"] = slug;
+                ViewData["CommunitySlug"] = communitySlug;
 
                 var viewModel = new CommunityDetailPageViewModel
                 {
@@ -92,7 +93,7 @@ namespace discussionspot9.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching community details for slug: {Slug}", slug);
+                _logger.LogError(ex, "Error fetching community details for slug: {Slug}", communitySlug);
                 TempData["ErrorMessage"] = "An error occurred while loading the community.";
                 return RedirectToAction("Index");
             }
