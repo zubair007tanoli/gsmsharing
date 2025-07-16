@@ -349,11 +349,18 @@ namespace discussionspot9.Services
             const int pageSize = 25;
             var skip = (page - 1) * pageSize;
 
+            //var query = _context.Posts
+            //    .Include(p => p.Community)
+            //    .Include(p => p.PostTags)
+            //    .ThenInclude(pt => pt.Tag)
+            //    .Where(p => p.CommunityId == communityId && p.Status == "published");
             var query = _context.Posts
-                .Include(p => p.Community)
-                .Include(p => p.PostTags)
+            .Include(p => p.Community)
+            .Include(p => p.PostTags)
                 .ThenInclude(pt => pt.Tag)
-                .Where(p => p.CommunityId == communityId && p.Status == "published");
+            .Include(p => p.User)
+            .Include(p => p.UserProfile)
+            .Where(p => p.CommunityId == communityId && p.Status == "published");
 
             var totalPosts = await query.CountAsync();
 
