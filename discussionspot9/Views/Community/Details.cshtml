@@ -864,7 +864,10 @@
             <div class="tab-pane active" id="posts-content">
                 <!-- Create Post Section -->
                 <div class="create-post-section">
-                    <a href="/posts/create?community=@Model.Community.Slug" class="btn create-post-btn">
+                    <a asp-controller="Post"
+                       asp-action="Create"
+                       asp-route-communitySlug="@Model.Community.Slug"
+                       class="btn create-post-btn">
                         <i class="fas fa-plus"></i> Create Post
                     </a>
                 </div>

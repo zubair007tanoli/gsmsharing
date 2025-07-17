@@ -405,6 +405,7 @@ namespace discussionspot9.Controllers
         /// </summary>
         [HttpGet]
         [Authorize]
+        [Route("r/{communitySlug}/create")]
         public async Task<IActionResult> Create(string communitySlug)
         {
             if (string.IsNullOrEmpty(communitySlug))
