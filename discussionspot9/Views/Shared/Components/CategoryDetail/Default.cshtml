@@ -1,0 +1,14 @@
+﻿@model List<discussionspot9.Components.CategoryNavItem>
+
+<ul class="category-list">
+    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+    <li><a href="/communities" class="active"><i class="fas fa-users"></i> Communities</a></li>
+    @foreach (var category in Model)
+    {
+        <li>
+            <a href="/categories/@category.Slug">
+                <i class="@category.Icon"></i> @category.Name
+            </a>
+        </li>
+    }
+</ul>
