@@ -117,7 +117,7 @@ namespace discussionspot9.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Create(CreateCommunityViewModel model)
+        public async Task<IActionResult> Create(CreateCommunityViewModel model, string returnUrl)
         {
             if (!ModelState.IsValid)
             {

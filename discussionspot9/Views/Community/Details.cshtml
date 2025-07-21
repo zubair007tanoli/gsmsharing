@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = Model.Community.Title ?? "Community";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
 }
 
 @section Styles {
@@ -868,10 +869,12 @@
                     <a asp-controller="Post"
                        asp-action="Create"
                        asp-route-communitySlug="@Model.Community.Slug"
+                       asp-route-returnUrl="@Context.Request.Path"
                        class="btn create-post-btn">
                         <i class="fas fa-plus"></i> Create Post
                     </a>
                 </div>
+
 
                 <!-- Posts List -->
                 <div class="posts-container">
