@@ -1,0 +1,77 @@
+﻿@using discussionspot9.Models.Domain
+@{
+    var posts = ViewBag.Posts as List<Post> ?? new List<Post>();
+}
+
+@if (posts.Any())
+{
+    <div class="activity-feed">
+        @foreach (var post in posts)
+        {
+            <div class="activity-item">
+                <div class="activity-header">
+                    <div class="activity-icon post">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="activity-info">
+                        <div class="activity-title">
+                            <a href="/r/@post.Community?.Slug/posts/@post.Slug" class="text-decoration-none">
+                                @post.Title
+                            </a>
+                        </div>
+                        <div class="activity-meta">
+                            Posted in r/@post.Community?.Name • @GetTimeAgo(post.CreatedAt)
+                        </div>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(post.Content))
+                {
+                    <div class="activity-content">
+                        <p>@(post.Content.Length > 300 ? post.Content.Substring(0, 300) + "..." : post.Content)</p>
+                    </div>
+                }
+                <div class="activity-actions">
+                    <div class="activity-action">
+                        <i class="far fa-thumbs-up"></i>
+                        <span>@post.UpvoteCount</span>
+                    </div>
+                    <div class="activity-action">
+                        <i class="far fa-thumbs-down"></i>
+                        <span>@post.DownvoteCount</span>
+                    </div>
+                    <div class="activity-action">
+                        <i class="far fa-comment-alt"></i>
+                        <span>@post.CommentCount Comments</span>
+                    </div>
+                    <div class="activity-action">
+                        <i class="fas fa-eye"></i>
+                        <span>@post.ViewCount Views</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No posts to display.
+    </div>
+}
+@functions {
+    private string GetTimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime.ToUniversalTime();
+
+        if (timeSpan.TotalSeconds < 60)
+            return "just now";
+        else if (timeSpan.TotalSeconds < 3600)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        else if (timeSpan.TotalSeconds < 86400)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        else
+            return dateTime.ToString("MMM dd, yyyy");
+    }
+}
+

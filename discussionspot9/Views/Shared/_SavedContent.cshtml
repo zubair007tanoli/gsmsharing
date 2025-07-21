@@ -1,0 +1,101 @@
+﻿@using discussionspot9.Models.Domain  
+@{
+    var savedPosts = ViewBag.SavedPosts as List<SavedPost> ?? new List<SavedPost>();
+
+    // Define the GetTimeAgo function using if-else instead of switch
+    Func<DateTime, string> GetTimeAgo = (dateTime) =>
+    {
+        var timeSpan = DateTime.UtcNow - dateTime.ToUniversalTime();
+
+        if (timeSpan.TotalSeconds < 60)
+            return "just now";
+        else if (timeSpan.TotalSeconds < 3600)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        else if (timeSpan.TotalSeconds < 86400)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        else
+            return dateTime.ToString("MMM dd, yyyy");
+    };
+}
+
+@if (savedPosts.Any())  
+{  
+    <div class="activity-feed">  
+        @foreach (var savedPost in savedPosts)  
+        {  
+            <div class="activity-item">  
+                <div class="activity-header">  
+                    <div class="activity-icon" style="background-color: #ffa500;">  
+                        <i class="fas fa-bookmark"></i>  
+                    </div>  
+                    <div class="activity-info">  
+                        <div class="activity-title">  
+                            <a href="/r/@savedPost.Post?.Community?.Slug/posts/@savedPost.Post?.Slug" class="text-decoration-none">  
+                                @savedPost.Post?.Title  
+                            </a>  
+                        </div>  
+                        <div class="activity-meta">  
+                            Saved @GetTimeAgo(savedPost.SavedAt) • Originally posted in r/@savedPost.Post?.Community?.Name  
+                        </div>  
+                    </div>  
+                </div>  
+                @if (!string.IsNullOrEmpty(savedPost.Post?.Content))  
+                {  
+                    <div class="activity-content">  
+                        <p>@(savedPost.Post.Content.Length > 300 ? savedPost.Post.Content.Substring(0, 300) + "..." : savedPost.Post.Content)</p>  
+                    </div>  
+                }  
+                <div class="activity-actions">  
+                    <div class="activity-action">  
+                        <i class="far fa-thumbs-up"></i>  
+                        <span>@savedPost.Post?.UpvoteCount</span>  
+                    </div>  
+                    <div class="activity-action">  
+                        <i class="far fa-comment-alt"></i>  
+                        <span>@savedPost.Post?.CommentCount Comments</span>  
+                    </div>  
+                    <div class="activity-action">  
+                        <button class="btn btn-sm btn-outline-danger" onclick="unsavePost(@savedPost.PostId)">  
+                            <i class="fas fa-bookmark-slash"></i>  
+                            <span>Unsave</span>  
+                        </button>  
+                    </div>  
+                </div>  
+            </div>  
+        }  
+    </div>  
+}  
+else  
+{  
+    <div class="alert alert-info">  
+        <i class="fas fa-info-circle me-2"></i>  
+        You haven't saved any posts yet. Save posts to view them here later.  
+    </div>  
+}  
+
+<script>  
+function unsavePost(postId) {  
+    if (confirm('Are you sure you want to unsave this post?')) {  
+        fetch('/Profile/UnsavePost', {  
+            method: 'POST',  
+            headers: {  
+                'Content-Type': 'application/json',  
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value  
+            },  
+            body: JSON.stringify({ postId: postId })  
+        })  
+        .then(response => response.json())  
+        .then(data => {  
+            if (data.success) {  
+                location.reload(); // Reload to update the saved posts list  
+            } else {  
+                alert('Error unsaving post. Please try again.');  
+            }  
+        })  
+        .catch(error => {  
+            console.error('Error:', error);  
+            alert('Error unsaving post. Please try again.');  
+        });  
+    }  
+}  
+</script>

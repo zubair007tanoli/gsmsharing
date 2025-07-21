@@ -1,0 +1,121 @@
+﻿@{
+    var activities = ViewBag.Activities as List<object> ?? new List<object>();
+}
+
+@if (activities.Any())
+{
+    <div class="activity-feed">
+        @foreach (var activity in activities)
+        {
+            var activityType = activity.GetType().GetProperty("Type")?.GetValue(activity)?.ToString();
+            var createdAt = (DateTime)(activity.GetType().GetProperty("CreatedAt")?.GetValue(activity) ?? DateTime.Now);
+            var timeAgo = GetTimeAgo(createdAt);
+
+            @if (activityType == "post")
+            {
+                var title = activity.GetType().GetProperty("Title")?.GetValue(activity)?.ToString();
+                var content = activity.GetType().GetProperty("Content")?.GetValue(activity)?.ToString();
+                var communityName = activity.GetType().GetProperty("CommunityName")?.GetValue(activity)?.ToString();
+                var upvoteCount = (int)(activity.GetType().GetProperty("UpvoteCount")?.GetValue(activity) ?? 0);
+                var commentCount = (int)(activity.GetType().GetProperty("CommentCount")?.GetValue(activity) ?? 0);
+                var url = activity.GetType().GetProperty("Url")?.GetValue(activity)?.ToString();
+
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <div class="activity-icon post">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="activity-info">
+                            <div class="activity-title">Created a post in r/@communityName</div>
+                            <div class="activity-meta">@timeAgo</div>
+                        </div>
+                    </div>
+                    <div class="activity-content">
+                        <h5><a href="@url" class="text-decoration-none">@title</a></h5>
+                        @if (!string.IsNullOrEmpty(content))
+                        {
+                            <p>@(content.Length > 200 ? content.Substring(0, 200) + "..." : content)</p>
+                        }
+                    </div>
+                    <div class="activity-actions">
+                        <div class="activity-action">
+                            <i class="far fa-thumbs-up"></i>
+                            <span>@upvoteCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <i class="far fa-comment-alt"></i>
+                            <span>@commentCount Comments</span>
+                        </div>
+                        <div class="activity-action">
+                            <a href="@url" class="text-decoration-none">
+                                <i class="fas fa-external-link-alt"></i>
+                                <span>View Post</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (activityType == "comment")
+            {
+                var content = activity.GetType().GetProperty("Content")?.GetValue(activity)?.ToString();
+                var postTitle = activity.GetType().GetProperty("PostTitle")?.GetValue(activity)?.ToString();
+                var communityName = activity.GetType().GetProperty("CommunityName")?.GetValue(activity)?.ToString();
+                var upvoteCount = (int)(activity.GetType().GetProperty("UpvoteCount")?.GetValue(activity) ?? 0);
+                var url = activity.GetType().GetProperty("Url")?.GetValue(activity)?.ToString();
+
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <div class="activity-icon comment">
+                            <i class="fas fa-comment-alt"></i>
+                        </div>
+                        <div class="activity-info">
+                            <div class="activity-title">Commented on a post in r/@communityName</div>
+                            <div class="activity-meta">@timeAgo</div>
+                        </div>
+                    </div>
+                    <div class="activity-content">
+                        <h6>@postTitle</h6>
+                        <p>@(content?.Length > 200 ? content.Substring(0, 200) + "..." : content)</p>
+                    </div>
+                    <div class="activity-actions">
+                        <div class="activity-action">
+                            <i class="far fa-thumbs-up"></i>
+                            <span>@upvoteCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <a href="@url" class="text-decoration-none">
+                                <i class="fas fa-external-link-alt"></i>
+                                <span>View Comment</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No recent activity to display.
+    </div>
+}
+
+@functions {
+    private string GetTimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime.ToUniversalTime();
+
+        if (timeSpan.TotalSeconds < 60)
+            return "just now";
+        else if (timeSpan.TotalSeconds < 3600)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        else if (timeSpan.TotalSeconds < 86400)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        else
+            return dateTime.ToString("MMM dd, yyyy");
+    }
+}
+
+
