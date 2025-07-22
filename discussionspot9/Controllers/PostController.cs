@@ -405,7 +405,7 @@ namespace discussionspot9.Controllers
         /// </summary>
         [HttpGet]
         [Authorize]
-        [Route("r/{communitySlug}/create")]
+        
         public async Task<IActionResult> Create(string communitySlug)
         {
             if (string.IsNullOrEmpty(communitySlug))
@@ -437,10 +437,15 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("Details", "Community", new { slug = communitySlug });
             }
         }
+       
+        
         [HttpGet]
-        public async Task<IActionResult> CreateTest()
+        [Authorize]
+        [Route("r/{communitySlug}/create")]
+        public async Task<IActionResult> CreateTest(string communitySlug)
         {
             var model = new CreatePostViewModel();
+            model.CommunitySlug = communitySlug;
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!string.IsNullOrEmpty(userId))
             {
@@ -455,12 +460,19 @@ namespace discussionspot9.Controllers
             return View(model);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateTest(CreatePostViewModel createPostView)
-        {
-           
-            return RedirectToAction("CreateTest");
-        }
+        //[HttpGet]
+        //public IActionResult CreateTest(string communitySlug)
+        //{
+        //    CreatePostViewModel createPostView = new CreatePostViewModel();
+            
+        //    if (!string.IsNullOrEmpty(communitySlug))
+        //    {
+        //        createPostView.CommunitySlug = communitySlug;
+        //    }
+       
+        //    return View(createPostView);
+        //}
+
         /// <summary>
         /// Create new post - POST
         /// </summary>
