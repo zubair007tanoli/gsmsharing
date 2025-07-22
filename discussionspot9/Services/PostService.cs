@@ -466,6 +466,178 @@ namespace discussionspot9.Services
             };
         }
 
+        public async Task<PostDetailViewModel?> GetPostDetailsUpdateAsync(string communitySlug, string postSlug, string? currentUserId = null)
+        {
+            var post = await _context.Posts
+                .Include(p => p.Community)
+                    .ThenInclude(c => c.Category) // Include category for CategorySlug
+                .Include(p => p.UserProfile) // Include user profile directly
+                .Include(p => p.PostTags)
+                    .ThenInclude(pt => pt.Tag)
+                .Include(p => p.Media)
+                .Include(p => p.PollOptions)
+                    .ThenInclude(po => po.Votes)
+                .Include(p => p.PollConfiguration) // Add this for poll settings
+                .Include(p => p.Awards)
+                    .ThenInclude(pa => pa.Award)
+                .Include(p => p.Votes) // For checking current user vote
+                .FirstOrDefaultAsync(p => p.Slug == postSlug &&
+                    p.Community!.Slug == communitySlug &&
+                    p.Status == "published");
+
+            if (post == null) return null;
+
+            // Get current user's vote if user is logged in
+            int? currentUserVote = null;
+            bool isSavedByUser = false;
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                var userVote = await _context.PostVotes
+                    .FirstOrDefaultAsync(pv => pv.PostId == post.PostId && pv.UserId == currentUserId);
+                currentUserVote = userVote?.VoteType;
+
+                // Check if post is saved by current user
+                isSavedByUser = await _context.SavedPosts
+                    .AnyAsync(sp => sp.PostId == post.PostId && sp.UserId == currentUserId);
+            }
+
+            // Map poll data if it exists
+            var pollViewModel = new PollViewModel();
+            if (post.HasPoll && post.PollOptions.Any())
+            {
+                // Get user's poll votes if logged in
+                List<int> userPollVotes = new();
+                if (!string.IsNullOrEmpty(currentUserId))
+                {
+                    userPollVotes = await _context.PollVotes
+                        .Where(pv => pv.PollOption.PostId == post.PostId && pv.UserId == currentUserId)
+                        .Select(pv => pv.PollOptionId)
+                        .ToListAsync();
+                }
+
+                pollViewModel = new PollViewModel
+                {
+                    PostId = post.PostId,
+                    Question = post.Title, // Poll question is typically the post title, or you might have a separate PollQuestion field
+                    Options = post.PollOptions.OrderBy(po => po.DisplayOrder).Select(po => new PollOptionViewModel
+                    {
+                        PollOptionId = po.PollOptionId,
+                        OptionText = po.OptionText,
+                        VoteCount = po.VoteCount,
+                        VotePercentage = post.PollVoteCount > 0 ? (double)po.VoteCount / post.PollVoteCount * 100 : 0,
+                        IsSelected = userPollVotes.Contains(po.PollOptionId) // Mark if user voted for this option
+                    }).ToList(),
+                    TotalVotes = post.PollVoteCount,
+
+                    // Configuration settings
+                    AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false,
+                    ShowResultsBeforeVoting = post.PollConfiguration?.ShowResultsBeforeVoting ?? true,
+                    ShowResultsBeforeEnd = post.PollConfiguration?.ShowResultsBeforeEnd ?? true,
+                    AllowAddingOptions = post.PollConfiguration?.AllowAddingOptions ?? false,
+
+                    // Date and expiration
+                    EndDate = post.PollExpiresAt ?? post.PollConfiguration?.EndDate,
+                    IsExpired = (post.PollExpiresAt.HasValue && post.PollExpiresAt < DateTime.UtcNow) ||
+                               (post.PollConfiguration?.EndDate.HasValue == true && post.PollConfiguration.EndDate < DateTime.UtcNow),
+
+                    // User interaction
+                    HasUserVoted = userPollVotes.Any(),
+                    UserVotedOptionIds = userPollVotes,
+                    UserVotes = userPollVotes // Seems like UserVotes is duplicate of UserVotedOptionIds based on your model
+                };
+            }
+
+            // Handle link preview data
+            var linkModel = new LinkPreviewViewModel();
+            if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
+            {
+                linkModel = new LinkPreviewViewModel
+                {
+                    Url = post.Url,
+                    Title = post.LinkPreviewTitle,
+                    Description = post.LinkPreviewDescription,
+                    ImageUrl = post.LinkPreviewImage,
+                    Domain = post.LinkDomain
+                };
+            }
+
+            return new PostDetailViewModel
+            {
+                PostId = post.PostId,
+                Title = post.Title,
+                Slug = post.Slug,
+                Content = post.Content,
+                PostType = post.PostType,
+                Url = post.Url,
+                LinkPreviewImage = post.LinkPreviewImage,
+                LinkPreviewDescription = post.LinkPreviewDescription,
+                LinkDomain = post.LinkDomain,
+                CreatedAt = post.CreatedAt,
+                UpdatedAt = post.UpdatedAt,
+                UpvoteCount = post.UpvoteCount,
+                DownvoteCount = post.DownvoteCount,
+                CommentCount = post.CommentCount,
+                ViewCount = post.ViewCount,
+                HasPoll = post.HasPoll,
+                IsPinned = post.IsPinned,
+                IsLocked = post.IsLocked,
+                IsNSFW = post.IsNSFW,
+                IsSpoiler = post.IsSpoiler,
+                IsSavedByUser = isSavedByUser,
+
+                // User info
+                UserId = post.UserId,
+                AuthorDisplayName = post.UserProfile?.DisplayName ?? "Unknown",
+                AuthorInitials = GetInitials(post.UserProfile?.DisplayName ?? "Unknown"),
+                AuthorKarma = post.UserProfile?.KarmaPoints ?? 0,
+                IsCurrentUserAuthor = post.UserId == currentUserId,
+
+                // Community info
+                CommunityId = post.CommunityId,
+                CommunityName = post.Community!.Name,
+                CommunitySlug = post.Community.Slug,
+                CommunityIconUrl = post.Community.IconUrl,
+                CategorySlug = post.Community.Category?.Slug,
+
+                // Tags
+                Tags = post.PostTags.Select(pt => pt.Tag.Name).ToList(),
+
+                // Media
+                Media = post.Media.OrderBy(m => m.DisplayOrder).Select(m => new MediaViewModel
+                {
+                    MediaId = m.MediaId,
+                    Url = m.Url,
+                    ThumbnailUrl = m.ThumbnailUrl,
+                    MediaType = m.MediaType,
+                    Caption = m.Caption,
+                    AltText = m.AltText,
+                    Width = m.Width,
+                    Height = m.Height
+                }).ToList(),
+
+                // Poll - Complete mapping
+                Poll = pollViewModel,
+
+                // Link preview
+                LinkModel = linkModel,
+
+                // Awards
+                Awards = post.Awards.Select(pa => new PostAwardViewModel
+                {
+                    PostAwardId = pa.PostAwardId,
+                    AwardName = pa.Award.Name,
+                    AwardIconUrl = pa.Award.IconUrl,
+                    AwardedAt = pa.AwardedAt,
+                    IsAnonymous = pa.IsAnonymous,
+                    Message = pa.Message,
+                    AwardedByDisplayName = pa.IsAnonymous ? "Anonymous" : pa.AwardedByUser?.DisplayName ?? "Unknown"
+                }).ToList(),
+
+                // Current user interaction
+                CurrentUserVote = currentUserVote
+            };
+        }
         public async Task IncrementViewCountAsync(int postId)
         {
             var post = await _context.Posts.FindAsync(postId);

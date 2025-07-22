@@ -1,9 +1,13 @@
-﻿using discussionspot9.Interfaces;
+﻿using discussionspot9.Data.DbContext;
+using discussionspot9.Extensions;
+using discussionspot9.Interfaces;
+using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Security.Claims;
 
@@ -18,13 +22,15 @@ namespace discussionspot9.Controllers
         private readonly INotificationService _notificationService;
         private readonly ILinkMetadataService _metadataService;
         private readonly ICategoryService _categoryService;
+        private readonly ApplicationDbContext _context; // Assuming you have a DbContext for database access
         public PostController(
             IPostService postService,
             ICommunityService communityService,
             ICommentService commentService,
             ILogger<PostController> logger,
             INotificationService notificationService,
-            ILinkMetadataService metadataService)
+            ILinkMetadataService metadataService,
+            ApplicationDbContext context)
         {
             _postService = postService;
             _communityService = communityService;
@@ -32,6 +38,7 @@ namespace discussionspot9.Controllers
             _logger = logger;
             _notificationService = notificationService;
             _metadataService = metadataService;
+            _context = context;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -618,6 +625,31 @@ namespace discussionspot9.Controllers
                 _logger.LogError(ex, "Error deleting post");
                 TempData["ErrorMessage"] = "An error occurred while deleting the post.";
                 return RedirectToAction("Index", "Home");
+            }
+        }
+
+        private async Task AddTagsToPostAsync(Post post, IEnumerable<string> tagNames)
+        {
+            foreach (var tagName in tagNames)
+            {
+                var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tagName);
+                if (tag == null)
+                {
+                    tag = new Tag
+                    {
+                        Name = tagName,
+                        Slug = tagName.ToSlug(),
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Tags.Add(tag);
+                    await _context.SaveChangesAsync(); // Ensure TagId is generated
+                }
+
+                _context.PostTags.Add(new PostTag
+                {
+                    PostId = post.PostId,
+                    TagId = tag.TagId
+                });
             }
         }
     }
