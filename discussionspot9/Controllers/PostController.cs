@@ -481,13 +481,23 @@ namespace discussionspot9.Controllers
         [Authorize]
         public async Task<IActionResult> Create(CreatePostViewModel model)
         {
+        
             if (!ModelState.IsValid)
             {
-                return View(model);
-            }
+                foreach (var state in ModelState)
+                {
+                    var key = state.Key;
+                    var errors = state.Value.Errors;
 
+                    foreach (var error in errors)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Validation error on '{key}': {error.ErrorMessage}");
+                    }
+                }        
+                return RedirectToAction("CreateTest");
+            }
             try
-            {
+            {                
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.UserId = userId;
 
