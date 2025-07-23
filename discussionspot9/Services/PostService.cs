@@ -655,7 +655,7 @@ namespace discussionspot9.Services
             return vote?.VoteType;
         }
 
-        public async Task<CreatePostResult> CreatePostAsync(CreatePostViewModel model)
+        public async Task<CreatePostResult> CreatePostUpdatedAsync(CreatePostViewModel model)
         {
             var slug = model.Title.ToSlug();
 
@@ -728,6 +728,186 @@ namespace discussionspot9.Services
             return new CreatePostResult { Success = true, PostSlug = slug };
         }
 
+        public async Task<CreatePostResult> CreatePostAsync(CreatePostViewModel model)
+        {
+            var slug = model.Title.ToSlug();
+
+            // Ensure unique slug within the community
+            var existingCount = await _context.Posts
+                .Where(p => p.CommunityId == model.CommunityId && p.Slug.StartsWith(slug))
+                .CountAsync();
+            if (existingCount > 0)
+            {
+                slug = $"{slug}-{existingCount + 1}";
+            }
+
+            var post = new Post
+            {
+                Title = model.Title,
+                Slug = slug,
+                Content = model.Content,
+                PostType = model.PostType,
+                Url = model.Url,
+                UserId = model.UserId,
+                CommunityId = model.CommunityId,
+                IsNSFW = model.IsNSFW,
+                IsSpoiler = model.IsSpoiler,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Status = "published",
+                // Initialize poll-related fields
+                HasPoll = model.PostType == "poll",
+                PollOptionCount = model.PostType == "poll" ? (model.PollOptions?.Count ?? 0) : 0,
+                PollVoteCount = 0
+            };
+
+            // Set poll expiration if it's a poll post
+            if (model.PostType == "poll" && model.PollExpiresAt.HasValue)
+            {
+                post.PollExpiresAt = model.PollExpiresAt.Value;
+            }
+
+            _context.Posts.Add(post);
+            await _context.SaveChangesAsync(); // Save to get the PostId
+
+            // Process poll configuration and options if it's a poll
+            if (model.PostType == "poll")
+            {
+                // Create poll configuration
+                var pollConfig = new PollConfiguration
+                {
+                    PostId = post.PostId,
+                    AllowMultipleChoices = model.AllowMultipleChoices ?? false,
+                    ShowResultsBeforeVoting = model.ShowResultsBeforeVoting ?? true,
+                    ShowResultsBeforeEnd = model.ShowResultsBeforeEnd ?? true,
+                    AllowAddingOptions = model.AllowAddingOptions ?? false,
+                    MinOptions = model.MinOptions ?? 2,
+                    MaxOptions = model.MaxOptions ?? 10,
+                    EndDate = model.PollExpiresAt,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.PollConfigurations.Add(pollConfig);
+
+                // Create poll options
+                if (model.PollOptions != null && model.PollOptions.Any())
+                {
+                    for (int i = 0; i < model.PollOptions.Count; i++)
+                    {
+                        var option = new PollOption
+                        {
+                            PostId = post.PostId,
+                            OptionText = model.PollOptions[i],
+                            DisplayOrder = i,
+                            VoteCount = 0,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.PollOptions.Add(option);
+                    }
+                }
+            }
+
+            // Process media (images, videos, etc.)
+            if (model.MediaUrls != null && model.MediaUrls.Any())
+            {
+                foreach (var mediaUrl in model.MediaUrls)
+                {
+                    if (!string.IsNullOrEmpty(mediaUrl))
+                    {
+                        var media = new Media
+                        {
+                            PostId = post.PostId,
+                            Url = mediaUrl,
+                            UserId = model.UserId,
+                            MediaType = DetermineMediaType(mediaUrl), // You'll need to implement this method
+                            UploadedAt = DateTime.UtcNow,
+                            StorageProvider = "external", // or determine based on your setup
+                            IsProcessed = true
+                        };
+                        _context.Media.Add(media);
+                    }
+                }
+            }
+
+            // Process tags
+            if (!string.IsNullOrEmpty(model.TagsInput))
+            {
+                var tagNames = model.TagsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(t => t.Trim().ToLower())
+                    .Where(t => !string.IsNullOrEmpty(t))
+                    .Distinct()
+                    .ToList();
+
+                foreach (var tagName in tagNames)
+                {
+                    // Check if tag already exists
+                    var existingTag = await _context.Tags
+                        .FirstOrDefaultAsync(t => t.Name.ToLower() == tagName);
+
+                    Tag tag;
+                    if (existingTag == null)
+                    {
+                        // Create new tag
+                        tag = new Tag
+                        {
+                            Name = tagName,
+                            Slug = tagName.ToSlug(),
+                            CreatedAt = DateTime.UtcNow,
+                            PostCount = 1
+                        };
+                        _context.Tags.Add(tag);
+                        await _context.SaveChangesAsync(); // Save to get TagId
+                    }
+                    else
+                    {
+                        tag = existingTag;
+                        // Increment post count for existing tag
+                        tag.PostCount++;
+                    }
+
+                    // Create PostTag relationship
+                    var postTag = new PostTag
+                    {
+                        PostId = post.PostId,
+                        TagId = tag.TagId
+                    };
+                    _context.PostTags.Add(postTag);
+                }
+            }
+
+            // Update community post count
+            var community = await _context.Communities.FindAsync(model.CommunityId);
+            if (community != null)
+            {
+                community.PostCount++;
+                community.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return new CreatePostResult
+            {
+                Success = true,
+                PostSlug = slug,
+                PostId = post.PostId
+            };
+        }
+
+        // Helper method to determine media type from URL
+        private string DetermineMediaType(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+                return "document";
+
+            var extension = Path.GetExtension(url).ToLower();
+            return extension switch
+            {
+                ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".svg" => "image",
+                ".mp4" or ".avi" or ".mov" or ".wmv" or ".flv" or ".webm" => "video",
+                ".mp3" or ".wav" or ".flac" or ".aac" or ".ogg" => "audio",
+                _ => "document"
+            };
+        }
         public async Task<VoteResult> VotePostAsync(int postId, string userId, int voteType)
         {
             var existingVote = await _context.PostVotes

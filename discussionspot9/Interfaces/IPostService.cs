@@ -15,6 +15,7 @@ namespace discussionspot9.Interfaces
         Task IncrementViewCountAsync(int postId);
         Task<int?> GetUserVoteAsync(int postId, string userId);
         Task<CreatePostResult> CreatePostAsync(CreatePostViewModel model);
+        Task<CreatePostResult> CreatePostUpdatedAsync(CreatePostViewModel model);
         Task<VoteResult> VotePostAsync(int postId, string userId, int voteType);
         Task<int> GetPostVoteCountAsync(int postId);
         Task IncrementShareCountAsync(int postId);
