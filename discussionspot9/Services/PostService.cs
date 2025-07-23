@@ -22,7 +22,7 @@ namespace discussionspot9.Services
         {
             _context = context;
             _cache = cache;
-            _logger = logger;
+            _logger = logger; // Correctly assign the logger
             _notificationService = notificationService;
         }
 
@@ -435,6 +435,9 @@ namespace discussionspot9.Services
                 Content = post.Content,
                 PostType = post.PostType,
                 Url = post.Url,
+                LinkPreviewImage = post.LinkPreviewImage,
+                LinkPreviewDescription = post.LinkPreviewDescription,
+                LinkDomain = post.LinkDomain,
                 CreatedAt = post.CreatedAt,
                 UpdatedAt = post.UpdatedAt,
                 UpvoteCount = post.UpvoteCount,
@@ -446,6 +449,7 @@ namespace discussionspot9.Services
                 IsLocked = post.IsLocked,
                 IsNSFW = post.IsNSFW,
                 IsSpoiler = post.IsSpoiler,
+                IsSavedByUser = false,
                 UserId = post.UserId,
                 AuthorDisplayName = authorProfile?.DisplayName ?? "Unknown",
                 AuthorInitials = GetInitials(authorProfile?.DisplayName ?? "Unknown"),
@@ -525,7 +529,7 @@ namespace discussionspot9.Services
                         PollOptionId = po.PollOptionId,
                         OptionText = po.OptionText,
                         VoteCount = po.VoteCount,
-                        VotePercentage = post.PollVoteCount > 0 ? (double)po.VoteCount / post.PollVoteCount * 100 : 0,
+                        VotePercentage = (decimal)(post.PollVoteCount > 0 ? (double)po.VoteCount / post.PollVoteCount * 100 : 0),
                         IsSelected = userPollVotes.Contains(po.PollOptionId) // Mark if user voted for this option
                     }).ToList(),
                     TotalVotes = post.PollVoteCount,
@@ -888,8 +892,8 @@ namespace discussionspot9.Services
             return new CreatePostResult
             {
                 Success = true,
-                PostSlug = slug,
-                PostId = post.PostId
+                PostSlug = slug                
+                
             };
         }
 

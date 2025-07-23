@@ -508,7 +508,7 @@ namespace discussionspot9.Controllers
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.UserId = userId;
 
-                var result = await _postService.CreatePostAsync(model);
+                var result = await _postService.CreatePostUpdatedAsync(model);
 
                 if (result.Success)
                 {
