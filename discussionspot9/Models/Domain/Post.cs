@@ -29,6 +29,14 @@ namespace discussionspot9.Models.Domain
         public int PollVoteCount { get; set; }
         public DateTime? PollExpiresAt { get; set; }       
         public UserProfile UserProfile { get; set; }
+
+        public string? Summary { get; set; }      
+        public DateTime? PublicationDate { get; set; }
+        public string? LinkDomain { get; set; }
+        public string? LinkPreviewTitle { get; set; }
+        public string? LinkPreviewDescription { get; set; }
+        public string? LinkPreviewImage { get; set; }
+
         // Navigation properties
         public virtual IdentityUser? User { get; set; }
         public virtual Community Community { get; set; } = null!;

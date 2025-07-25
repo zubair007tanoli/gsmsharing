@@ -616,7 +616,7 @@ namespace discussionspot9.Services
                     MediaType = m.MediaType,
                     Caption = m.Caption,
                     AltText = m.AltText,
-                    Width = m.Width,
+                    Width = (int)m.Width,
                     Height = m.Height
                 }).ToList(),
 
@@ -634,8 +634,7 @@ namespace discussionspot9.Services
                     AwardIconUrl = pa.Award.IconUrl,
                     AwardedAt = pa.AwardedAt,
                     IsAnonymous = pa.IsAnonymous,
-                    Message = pa.Message,
-                    AwardedByDisplayName = pa.IsAnonymous ? "Anonymous" : pa.AwardedByUser?.DisplayName ?? "Unknown"
+                    Message = pa.Message                
                 }).ToList(),
 
                 // Current user interaction
@@ -658,7 +657,6 @@ namespace discussionspot9.Services
                 .FirstOrDefaultAsync(pv => pv.PostId == postId && pv.UserId == userId);
             return vote?.VoteType;
         }
-
         public async Task<CreatePostResult> CreatePostUpdatedAsync(CreatePostViewModel model)
         {
             var slug = model.Title.ToSlug();
@@ -667,7 +665,6 @@ namespace discussionspot9.Services
             var existingCount = await _context.Posts
                 .Where(p => p.CommunityId == model.CommunityId && p.Slug.StartsWith(slug))
                 .CountAsync();
-
             if (existingCount > 0)
             {
                 slug = $"{slug}-{existingCount + 1}";
@@ -686,7 +683,23 @@ namespace discussionspot9.Services
                 IsSpoiler = model.IsSpoiler,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                Status = "published"
+                Status = !string.IsNullOrEmpty(model.Status) ? model.Status : "published",
+                Summary = model.Summary,
+                IsPinned = model.IsPinned,
+                IsLocked = model.IsLocked,
+                PublicationDate = model.PublicationDate ?? DateTime.UtcNow,
+
+                // Link preview properties
+                LinkDomain = !string.IsNullOrEmpty(model.Url) ? new Uri(model.Url).Host : null,
+                LinkPreviewTitle = null,
+                LinkPreviewDescription = null,
+                LinkPreviewImage = null,
+
+                // Poll properties
+                HasPoll = model.PostType == "poll",
+                PollExpiresAt = model.PollEndDate ?? model.PollExpiresAt,
+                PollOptionCount = model.PollOptions?.Count ?? 0,
+                PollVoteCount = 0
             };
 
             _context.Posts.Add(post);
@@ -711,6 +724,7 @@ namespace discussionspot9.Services
                             CreatedAt = DateTime.UtcNow
                         };
                         _context.Tags.Add(tag);
+                        await _context.SaveChangesAsync();
                     }
 
                     _context.PostTags.Add(new PostTag
@@ -718,6 +732,83 @@ namespace discussionspot9.Services
                         PostId = post.PostId,
                         TagId = tag.TagId
                     });
+                }
+            }
+
+            // Process media files
+            if (model.MediaFiles != null && model.MediaFiles.Count > 0)
+            {
+                int displayOrder = 0;
+                foreach (var file in model.MediaFiles)
+                {
+                    var media = new Media
+                    {
+                        PostId = post.PostId,
+                        Url = $"/uploads/{file.FileName}",
+                        MediaType = file.ContentType.StartsWith("image/") ? "image" :
+                                   file.ContentType.StartsWith("video/") ? "video" : "document",
+                        ContentType = file.ContentType,
+                        FileName = file.FileName,
+                        Caption = model.MediaCaption,
+                        AltText = model.MediaAltText,
+                        DisplayOrder = displayOrder++,
+                        UploadedAt = DateTime.UtcNow,
+                        UserId = model.UserId
+                    };
+                    _context.Media.Add(media);
+                }
+            }
+
+            // Process MediaUrls if provided
+            if (model.MediaUrls != null && model.MediaUrls.Count > 0)
+            {
+                int displayOrder = 0;
+                foreach (var url in model.MediaUrls)
+                {
+                    var media = new Media
+                    {
+                        PostId = post.PostId,
+                        Url = url,
+                        MediaType = "image",
+                        DisplayOrder = displayOrder++,
+                        UploadedAt = DateTime.UtcNow,
+                        UserId = model.UserId
+                    };
+                    _context.Media.Add(media);
+                }
+            }
+
+            // Create poll if it's a poll post
+            if (model.PostType == "poll" && model.PollOptions != null && model.PollOptions.Count > 0)
+            {
+                // Create poll configuration
+                var pollConfig = new PollConfiguration
+                {
+                    PostId = post.PostId,
+                    AllowMultipleChoices = model.AllowMultipleChoices,
+                    ShowResultsBeforeVoting = model.ShowResultsBeforeVoting,
+                    ShowResultsBeforeEnd = model.ShowResultsBeforeEnd,
+                    AllowAddingOptions = model.AllowAddingOptions,
+                    MinOptions = model.MinOptions > 0 ? model.MinOptions : 2,
+                    MaxOptions = model.MaxOptions > 0 ? model.MaxOptions : 10,
+                    EndDate = model.PollEndDate ?? model.PollExpiresAt,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.PollConfigurations.Add(pollConfig);
+
+                // Add poll options
+                for (int i = 0; i < model.PollOptions.Count; i++)
+                {
+                    var option = new PollOption
+                    {
+                        PostId = post.PostId,
+                        OptionText = model.PollOptions[i],
+                        DisplayOrder = i,
+                        VoteCount = 0,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.PollOptions.Add(option);
                 }
             }
 
@@ -729,9 +820,9 @@ namespace discussionspot9.Services
             }
 
             await _context.SaveChangesAsync();
+
             return new CreatePostResult { Success = true, PostSlug = slug };
         }
-
         public async Task<CreatePostResult> CreatePostAsync(CreatePostViewModel model)
         {
             var slug = model.Title.ToSlug();

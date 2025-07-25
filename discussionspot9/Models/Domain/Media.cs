@@ -26,5 +26,8 @@ namespace discussionspot9.Models.Domain
         // Navigation properties
         public virtual IdentityUser? User { get; set; }
         public virtual Post? Post { get; set; }
+        public object? DisplayOrder { get; internal set; }
+        public DateTime CreatedAt { get; internal set; }
+        public DateTime UpdatedAt { get; set; }
     }
 }

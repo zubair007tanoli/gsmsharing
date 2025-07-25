@@ -8,5 +8,7 @@
         public string Domain { get; set; }
         public string ThumbnailUrl { get; set; }
         public string FaviconUrl { get; set; }
+        public string ImageUrl { get; set; }
+
     }
 }

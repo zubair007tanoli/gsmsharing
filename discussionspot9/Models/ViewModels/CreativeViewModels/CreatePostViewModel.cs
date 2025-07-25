@@ -99,6 +99,26 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         [Display(Name = "Social Media Image")]
         public IFormFile? OgImage { get; set; }
 
+        // Add these properties to the CreatePostViewModel class
+
+        [Display(Name = "Media URLs")]
+        public List<string> MediaUrls { get; set; } = new();
+
+        [Display(Name = "Poll Expires At")]
+        [DataType(DataType.DateTime)]
+        public DateTime? PollExpiresAt { get; set; }
+
+        [Display(Name = "Maximum Options")]
+        [Range(1, 20, ErrorMessage = "Maximum options must be between 1 and 20")]
+        public int MaxOptions { get; set; } = 10;
+
+        [Display(Name = "Minimum Options")]
+        [Range(1, 20, ErrorMessage = "Minimum options must be between 1 and 20")]
+        public int MinOptions { get; set; } = 1;
+
+        [Display(Name = "Maximum Options")]
+        [Range(1, 20, ErrorMessage = "Maximum options must be between 1 and 20")]
+
         // Set by controller
         public int CommunityId { get; set; }
         public string CommunityName { get; set; } = string.Empty;
