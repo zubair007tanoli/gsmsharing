@@ -11,7 +11,7 @@
             @* This ID should ideally be unique if multiple polls on page. For single post, it's fine. *@
             @foreach (var option in Model.Options)
             {
-                <div class="poll-option @(option.HasUserVoted ? "selected voted" : "")" data-option="@option.PollOptionId">
+                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "")" data-option="@option.PollOptionId">
                     <div class="poll-radio"></div>
                     <div class="poll-option-content">
                         <span class="poll-option-text">@option.OptionText</span>

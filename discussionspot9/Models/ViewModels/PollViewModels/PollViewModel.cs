@@ -15,5 +15,7 @@
         public bool HasUserVoted { get; set; }
         public List<int> UserVotedOptionIds { get; set; } = new();
         public List<int> UserVotes { get; set; } = new();
+        public int MinOptions { get; set; }
+        public int MaxOptions { get; set; }
     }
 }

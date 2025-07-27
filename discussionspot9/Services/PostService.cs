@@ -8,6 +8,7 @@ using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services.ServiceResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Security.Principal;
 
 namespace discussionspot9.Services
 {
@@ -465,7 +466,8 @@ namespace discussionspot9.Services
                     Url = m.Url,
                     ThumbnailUrl = m.ThumbnailUrl,
                     MediaType = m.MediaType,
-                    Caption = m.Caption
+                    Caption = m.Caption,
+                    Height = m.Height ?? 0
                 }).ToList()
             };
         }
@@ -534,11 +536,11 @@ namespace discussionspot9.Services
                     }).ToList(),
                     TotalVotes = post.PollVoteCount,
 
-                    // Configuration settings
-                    AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false,
-                    ShowResultsBeforeVoting = post.PollConfiguration?.ShowResultsBeforeVoting ?? true,
-                    ShowResultsBeforeEnd = post.PollConfiguration?.ShowResultsBeforeEnd ?? true,
-                    AllowAddingOptions = post.PollConfiguration?.AllowAddingOptions ?? false,
+                    // Configuration settings - use direct values since they're non-nullable
+                    AllowMultipleChoices = post.PollConfiguration != null ? post.PollConfiguration.AllowMultipleChoices : false,
+                    ShowResultsBeforeVoting = post.PollConfiguration != null ? post.PollConfiguration.ShowResultsBeforeVoting : true,
+                    ShowResultsBeforeEnd = post.PollConfiguration != null ? post.PollConfiguration.ShowResultsBeforeEnd : true,
+                    AllowAddingOptions = post.PollConfiguration != null ? post.PollConfiguration.AllowAddingOptions : false,
 
                     // Date and expiration
                     EndDate = post.PollExpiresAt ?? post.PollConfiguration?.EndDate,
@@ -551,7 +553,6 @@ namespace discussionspot9.Services
                     UserVotes = userPollVotes // Seems like UserVotes is duplicate of UserVotedOptionIds based on your model
                 };
             }
-
             // Handle link preview data
             var linkModel = new LinkPreviewViewModel();
             if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
@@ -617,7 +618,7 @@ namespace discussionspot9.Services
                     Caption = m.Caption,
                     AltText = m.AltText,
                     Width = (int)m.Width,
-                    Height = m.Height
+                    Height = m.Height ?? 0
                 }).ToList(),
 
                 // Poll - Complete mapping
@@ -786,9 +787,9 @@ namespace discussionspot9.Services
                 {
                     PostId = post.PostId,
                     AllowMultipleChoices = model.AllowMultipleChoices,
-                    ShowResultsBeforeVoting = model.ShowResultsBeforeVoting,
-                    ShowResultsBeforeEnd = model.ShowResultsBeforeEnd,
-                    AllowAddingOptions = model.AllowAddingOptions,
+                    ShowResultsBeforeVoting = model.ShowResultsBeforeVoting ? model.ShowResultsBeforeVoting : true,
+                    ShowResultsBeforeEnd = model.ShowResultsBeforeEnd ? model.ShowResultsBeforeEnd : true,
+                    AllowAddingOptions = model.AllowAddingOptions ? model.AllowAddingOptions : false,
                     MinOptions = model.MinOptions > 0 ? model.MinOptions : 2,
                     MaxOptions = model.MaxOptions > 0 ? model.MaxOptions : 10,
                     EndDate = model.PollEndDate ?? model.PollExpiresAt,
@@ -826,7 +827,7 @@ namespace discussionspot9.Services
         public async Task<CreatePostResult> CreatePostAsync(CreatePostViewModel model)
         {
             var slug = model.Title.ToSlug();
-
+            string currentUserId = string.Empty;
             // Ensure unique slug within the community
             var existingCount = await _context.Posts
                 .Where(p => p.CommunityId == model.CommunityId && p.Slug.StartsWith(slug))
@@ -866,40 +867,52 @@ namespace discussionspot9.Services
             await _context.SaveChangesAsync(); // Save to get the PostId
 
             // Process poll configuration and options if it's a poll
-            if (model.PostType == "poll")
+            // Map poll data if it exists
+            var pollViewModel = new PollViewModel();
+            if (post.HasPoll && post.PollOptions.Any())
             {
-                // Create poll configuration
-                var pollConfig = new PollConfiguration
+                // Get user's poll votes if logged in
+                List<int> userPollVotes = new();
+                if (!string.IsNullOrEmpty(currentUserId))
+                {
+                    userPollVotes = await _context.PollVotes
+                        .Where(pv => pv.PollOption.PostId == post.PostId && pv.UserId == currentUserId)
+                        .Select(pv => pv.PollOptionId)
+                        .ToListAsync();
+                }
+
+                pollViewModel = new PollViewModel
                 {
                     PostId = post.PostId,
-                    AllowMultipleChoices = model.AllowMultipleChoices ?? false,
-                    ShowResultsBeforeVoting = model.ShowResultsBeforeVoting ?? true,
-                    ShowResultsBeforeEnd = model.ShowResultsBeforeEnd ?? true,
-                    AllowAddingOptions = model.AllowAddingOptions ?? false,
-                    MinOptions = model.MinOptions ?? 2,
-                    MaxOptions = model.MaxOptions ?? 10,
-                    EndDate = model.PollExpiresAt,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _context.PollConfigurations.Add(pollConfig);
-
-                // Create poll options
-                if (model.PollOptions != null && model.PollOptions.Any())
-                {
-                    for (int i = 0; i < model.PollOptions.Count; i++)
+                    Question = post.Title, // Poll question is typically the post title, or you might have a separate PollQuestion field
+                    Options = post.PollOptions.OrderBy(po => po.DisplayOrder).Select(po => new PollOptionViewModel
                     {
-                        var option = new PollOption
-                        {
-                            PostId = post.PostId,
-                            OptionText = model.PollOptions[i],
-                            DisplayOrder = i,
-                            VoteCount = 0,
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        _context.PollOptions.Add(option);
-                    }
-                }
+                        PollOptionId = po.PollOptionId,
+                        OptionText = po.OptionText,
+                        VoteCount = po.VoteCount,
+                        VotePercentage = (decimal)(post.PollVoteCount > 0 ? (double)po.VoteCount / post.PollVoteCount * 100 : 0),
+                        IsSelected = userPollVotes.Contains(po.PollOptionId) // Mark if user voted for this option
+                    }).ToList(),
+                    TotalVotes = post.PollVoteCount,
+
+                    // Configuration settings - handle potentially null PollConfiguration
+                    AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false,
+                    ShowResultsBeforeVoting = post.PollConfiguration?.ShowResultsBeforeVoting ?? true,
+                    ShowResultsBeforeEnd = post.PollConfiguration?.ShowResultsBeforeEnd ?? true,
+                    AllowAddingOptions = post.PollConfiguration?.AllowAddingOptions ?? false,
+                    MinOptions = post.PollConfiguration?.MinOptions ?? 2,
+                    MaxOptions = post.PollConfiguration?.MaxOptions ?? 10,
+
+                    // Date and expiration
+                    EndDate = post.PollExpiresAt ?? post.PollConfiguration?.EndDate,
+                    IsExpired = (post.PollExpiresAt.HasValue && post.PollExpiresAt < DateTime.UtcNow) ||
+                               (post.PollConfiguration?.EndDate.HasValue == true && post.PollConfiguration.EndDate < DateTime.UtcNow),
+
+                    // User interaction
+                    HasUserVoted = userPollVotes.Any(),
+                    UserVotedOptionIds = userPollVotes,
+                    UserVotes = userPollVotes // Seems like UserVotes is duplicate of UserVotedOptionIds based on your model
+                };
             }
 
             // Process media (images, videos, etc.)
