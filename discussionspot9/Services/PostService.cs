@@ -435,10 +435,7 @@ namespace discussionspot9.Services
                 Slug = post.Slug,
                 Content = post.Content,
                 PostType = post.PostType,
-                Url = post.Url,
-                LinkPreviewImage = post.LinkPreviewImage,
-                LinkPreviewDescription = post.LinkPreviewDescription,
-                LinkDomain = post.LinkDomain,
+                Url = post.Url,              
                 CreatedAt = post.CreatedAt,
                 UpdatedAt = post.UpdatedAt,
                 UpvoteCount = post.UpvoteCount,
@@ -557,14 +554,14 @@ namespace discussionspot9.Services
             var linkModel = new LinkPreviewViewModel();
             if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
             {
-                linkModel = new LinkPreviewViewModel
-                {
-                    Url = post.Url,
-                    Title = post.LinkPreviewTitle,
-                    Description = post.LinkPreviewDescription,
-                    ImageUrl = post.LinkPreviewImage,
-                    Domain = post.LinkDomain
-                };
+                //linkModel = new LinkPreviewViewModel
+                //{
+                //    Url = post.Url,
+                //    Title = post.LinkPreviewTitle,
+                //    Description = post.LinkPreviewDescription,
+                //    ImageUrl = post.LinkPreviewImage,
+                //    Domain = post.LinkDomain
+                //};
             }
 
             return new PostDetailViewModel
@@ -575,9 +572,7 @@ namespace discussionspot9.Services
                 Content = post.Content,
                 PostType = post.PostType,
                 Url = post.Url,
-                LinkPreviewImage = post.LinkPreviewImage,
-                LinkPreviewDescription = post.LinkPreviewDescription,
-                LinkDomain = post.LinkDomain,
+           
                 CreatedAt = post.CreatedAt,
                 UpdatedAt = post.UpdatedAt,
                 UpvoteCount = post.UpvoteCount,
@@ -609,7 +604,7 @@ namespace discussionspot9.Services
                 Tags = post.PostTags.Select(pt => pt.Tag.Name).ToList(),
 
                 // Media
-                Media = post.Media.OrderBy(m => m.DisplayOrder).Select(m => new MediaViewModel
+                Media = post.Media.Select(m => new MediaViewModel
                 {
                     MediaId = m.MediaId,
                     Url = m.Url,
@@ -685,16 +680,16 @@ namespace discussionspot9.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Status = !string.IsNullOrEmpty(model.Status) ? model.Status : "published",
-                Summary = model.Summary,
+              
                 IsPinned = model.IsPinned,
                 IsLocked = model.IsLocked,
-                PublicationDate = model.PublicationDate ?? DateTime.UtcNow,
+                
 
                 // Link preview properties
-                LinkDomain = !string.IsNullOrEmpty(model.Url) ? new Uri(model.Url).Host : null,
-                LinkPreviewTitle = null,
-                LinkPreviewDescription = null,
-                LinkPreviewImage = null,
+                //LinkDomain = !string.IsNullOrEmpty(model.Url) ? new Uri(model.Url).Host : null,
+                //LinkPreviewTitle = null,
+                //LinkPreviewDescription = null,
+                //LinkPreviewImage = null,
 
                 // Poll properties
                 HasPoll = model.PostType == "poll",
@@ -751,8 +746,7 @@ namespace discussionspot9.Services
                         ContentType = file.ContentType,
                         FileName = file.FileName,
                         Caption = model.MediaCaption,
-                        AltText = model.MediaAltText,
-                        DisplayOrder = displayOrder++,
+                        AltText = model.MediaAltText,                      
                         UploadedAt = DateTime.UtcNow,
                         UserId = model.UserId
                     };
@@ -770,8 +764,7 @@ namespace discussionspot9.Services
                     {
                         PostId = post.PostId,
                         Url = url,
-                        MediaType = "image",
-                        DisplayOrder = displayOrder++,
+                        MediaType = "image",                   
                         UploadedAt = DateTime.UtcNow,
                         UserId = model.UserId
                     };
