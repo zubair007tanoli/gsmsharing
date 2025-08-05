@@ -63,6 +63,7 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
+builder.Services.AddScoped<IPostTest, PostTest>();
 builder.Services.AddSignalR();
 
 var app = builder.Build();
@@ -220,6 +221,11 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "api_routes",
     pattern: "api/{controller}/{action}/{id?}");
+
+app.MapControllerRoute(
+    name: "post_create_general",
+    pattern: "create",
+    defaults: new { controller = "Post", action = "CreateTest" });
 
 // Default fallback route (keep this last)
 app.MapControllerRoute(

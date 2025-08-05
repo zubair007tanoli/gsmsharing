@@ -15,6 +15,7 @@ namespace discussionspot9.Controllers
 {
     public class PostController : Controller
     {
+        private readonly IPostTest _postTest; // Assuming you have a test service for posts
         private readonly IPostService _postService;
         private readonly ICommunityService _communityService;
         private readonly ICommentService _commentService;
@@ -30,7 +31,8 @@ namespace discussionspot9.Controllers
             ILogger<PostController> logger,
             INotificationService notificationService,
             ILinkMetadataService metadataService,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IPostTest postTest)
         {
             _postService = postService;
             _communityService = communityService;
@@ -39,6 +41,7 @@ namespace discussionspot9.Controllers
             _notificationService = notificationService;
             _metadataService = metadataService;
             _context = context;
+            _postTest = postTest;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -444,12 +447,13 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("Details", "Community", new { slug = communitySlug });
             }
         }
-       
-        
+
+
         [HttpGet]
         [Authorize]
+        [Route("create")]
         [Route("r/{communitySlug}/create")]
-        public async Task<IActionResult> CreateTest(string communitySlug)
+        public async Task<IActionResult> CreateTest(string? communitySlug)
         {
             var model = new CreatePostViewModel();
             model.CommunitySlug = communitySlug;
@@ -507,8 +511,8 @@ namespace discussionspot9.Controllers
             {                
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.UserId = userId;
-
-                var result = await _postService.CreatePostUpdatedAsync(model);
+                var result = await _postTest.CreatePostUpdatedAsync(model);
+                //var result = await _postService.CreatePostUpdatedAsync(model);
 
                 if (result.Success)
                 {
