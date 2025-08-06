@@ -56,15 +56,12 @@ namespace discussionspot9.Services
             await _context.SaveChangesAsync(); // Initial save to get PostId
 
             // Process all content types in parallel
-            var tasks = new List<Task>
-    {
-        ProcessTagsAsync(post.PostId, model),
-        ProcessMediaFilesAsync(post.PostId, model),
-        ProcessMediaUrlsAsync(post.PostId, model),
-        ProcessPollAsync(post.PostId, model)
-    };
 
-            await Task.WhenAll(tasks);
+            await ProcessTagsAsync(post.PostId, model);
+            await ProcessMediaFilesAsync(post.PostId, model);
+            await ProcessMediaUrlsAsync(post.PostId, model);
+            await ProcessPollAsync(post.PostId, model);
+               
 
             // Update community post count
             var community = await _context.Communities.FindAsync(model.CommunityId);
@@ -88,25 +85,31 @@ namespace discussionspot9.Services
 
             foreach (var tagName in tagNames)
             {
-                var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tagName)
-                       ?? new Tag
-                       {
-                           Name = tagName,
-                           Slug = tagName.ToSlug(),
-                           CreatedAt = DateTime.UtcNow
-                       };
+                var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tagName);
 
-                if (tag.TagId == 0) _context.Tags.Add(tag);
+                if (tag == null)
+                {
+                    // Create new tag
+                    tag = new Tag
+                    {
+                        Name = tagName,
+                        Slug = tagName.ToSlug(),
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Tags.Add(tag);
+                    await _context.SaveChangesAsync(); // Save to get the TagId
+                }
 
+                // Now we have a valid TagId
                 _context.PostTags.Add(new PostTag
                 {
                     PostId = postId,
                     TagId = tag.TagId
                 });
             }
-            await _context.SaveChangesAsync();
-        }
 
+            await _context.SaveChangesAsync(); // Save the PostTag relationships
+        }
         private async Task ProcessMediaFilesAsync(int postId, CreatePostViewModel model)
         {
             if (model.MediaFiles == null || model.MediaFiles.Count == 0)
