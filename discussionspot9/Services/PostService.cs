@@ -237,6 +237,96 @@ namespace discussionspot9.Services
             }
         }
 
+        /// <summary>
+        /// Casts or uncasts a poll vote for a user.
+        /// </summary>
+        /// <param name="postId">The ID of the post containing the poll.</param>
+        /// <param name="pollOptionId">The ID of the poll option being voted on.</param>
+        /// <param name="userId">The ID of the user casting the vote.</param>
+        /// <returns>A VotePollResult containing the new vote counts or an error message.</returns>
+        public async Task<VotePollResult> CastPollVoteAsync(int postId, int pollOptionId, string userId)
+        {
+            // Use a transaction to ensure all database operations are atomic.
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Check if the user has already voted for this poll option.
+                var existingVote = await _context.PollVotes
+                    .FirstOrDefaultAsync(pv => pv.PollOptionId == pollOptionId && pv.UserId == userId);
+
+                // Retrieve the poll configuration to check if multiple choices are allowed
+                // This is a direct lookup using the postId, as 'PollConfiguration' is a defined DbSet.
+                var pollConfig = await _context.PollConfigurations
+                    .FirstOrDefaultAsync(pc => pc.PostId == postId);
+
+                if (pollConfig == null)
+                {
+                    _logger.LogError($"Poll configuration not found for PostId: {postId}");
+                    return new VotePollResult
+                    {
+                        Success = false,
+                        Message = "Poll configuration not found."
+                    };
+                }
+
+                if (existingVote != null)
+                {
+                    // If a vote exists, remove it (uncast the vote).
+                    _context.PollVotes.Remove(existingVote);
+                    _logger.LogInformation($"Uncasting vote for User: {userId} on PollOption: {pollOptionId}");
+                }
+                else
+                {
+                    // If multiple choices are not allowed, remove any other votes by this user for the same poll.
+                    if (!pollConfig.AllowMultipleChoices)
+                    {
+                        var existingVotesForPost = await _context.PollVotes
+                            .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
+                            .ToListAsync();
+
+                        if (existingVotesForPost.Any())
+                        {
+                            _context.PollVotes.RemoveRange(existingVotesForPost);
+                        }
+                    }
+
+                    // Create a new vote.
+                    var newVote = new PollVote
+                    {
+                        PollOptionId = pollOptionId,
+                        UserId = userId,
+                        VotedAt = DateTime.UtcNow
+                    };
+                    _context.PollVotes.Add(newVote);
+                    _logger.LogInformation($"Casting vote for User: {userId} on PollOption: {pollOptionId}");
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // After saving, get the updated vote counts for all options in the poll.
+                var updatedVoteCounts = await _context.PollOptions
+                    .Where(po => po.PostId == postId)
+                    .Select(po => new { po.PollOptionId, po.VoteCount })
+                    .ToDictionaryAsync(x => x.PollOptionId, x => x.VoteCount);
+
+                return new VotePollResult
+                {
+                    Success = true,
+                    UpdatedVoteCounts = updatedVoteCounts
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error casting poll vote for PostId: {postId}, PollOptionId: {pollOptionId}");
+                return new VotePollResult
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your vote."
+                };
+            }
+        }
         private static string GetUserInitials(string userName)
         {
             if (string.IsNullOrWhiteSpace(userName))

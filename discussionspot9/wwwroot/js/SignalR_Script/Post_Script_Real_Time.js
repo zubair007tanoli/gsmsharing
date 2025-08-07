@@ -692,31 +692,30 @@ class SignalRManager {
     }
 
     // This function will find the necessary data attributes and call the server-side method.
-    handlePollVoteButtonClick(event) {
-        // Prevent the default button action
-        event.preventDefault();
+  handlePollVoteButtonClick(event) {
+    // Prevent the default button action
+    event.preventDefault();
 
-        // Find the closest button element to the clicked target
-        const button = event.target.closest('.poll-vote-btn');
-        if (!button) return; // Exit if the clicked element is not a poll button
+    // Find the closest button element to the clicked target
+    const button = event.target.closest('.poll-vote-btn');
+    if (!button) return; // Exit if the clicked element is not a poll button
 
-        // Extract the post ID from the main post container
-        const postId = this.pagePostId;
-        // Extract the poll option ID from the button's data attribute
-        const pollOptionId = parseInt(button.dataset.pollOptionId);
+    // Extract the post ID from the main post container
+    const postId = this.pagePostId;
+    // Extract the poll option ID from the button's data attribute
+    const pollOptionId = parseInt(button.dataset.pollOptionId);
 
-        if (postId && pollOptionId) {
-            console.log(`Casting vote for PostId: ${postId}, PollOptionId: ${pollOptionId}`);
-            // Invoke the new server-side hub method
-            this.postConnection.invoke("CastPollVote", postId, pollOptionId)
-                .then(() => console.log("Poll vote sent to server."))
-                .catch(err => console.error("Error casting poll vote:", err.toString()));
-        } else {
-            console.error("Missing postId or pollOptionId. Cannot cast vote.");
-            this.showNotification("Error: Missing poll data to cast vote.", 'error');
-        }
+    if (postId && pollOptionId) {
+        console.log(`Casting vote for PostId: ${postId}, PollOptionId: ${pollOptionId}`);
+        // Invoke the new server-side hub method
+        this.postConnection.invoke("CastPollVote", postId, pollOptionId)
+            .then(() => console.log("Poll vote sent to server."))
+            .catch(err => console.error("Error casting poll vote:", err.toString()));
+    } else {
+        console.error("Missing postId or pollOptionId. Cannot cast vote.");
+        this.showNotification("Error: Missing poll data to cast vote.", 'error');
     }
-
+}
     // Event handler for poll vote buttons.
     async handlePollVoteButtonClick(event) {
         const button = event.currentTarget;

@@ -31,27 +31,29 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
         public async Task CastPollVote(int postId, int pollOptionId)
         {
             // Log the vote attempt for debugging purposes
-           var userId = GetUserId(); // Assuming GetUserId is a helper method
+            _logger.LogInformation($"User '{Context.UserIdentifier}' is casting a vote for PostId: {postId}, PollOptionId: {pollOptionId}");
+
+            var userId = GetUserId(); // Assuming GetUserId is a helper method
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogError("User ID is null or empty. Cannot cast poll vote.");
-                return; // Exit if user is not authenticated or user ID is not found
+                // Consider sending a specific error message to the client if needed
+                return;
             }
 
             // Call your service layer to handle the voting logic.
-            // This is where you would save the vote to the database.
             var pollResult = await _postService.CastPollVoteAsync(postId, pollOptionId, userId);
 
-            if (pollResult != null)
+            if (pollResult.Success)
             {
-                // If the vote was successful, broadcast the updated poll data
+                // If the vote was successful, broadcast the updated vote counts
                 // to all clients in the post's SignalR group.
                 // The 'ReceivePollUpdate' is the client-side method name we will define.
-                await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollResult);
+                await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollResult.UpdatedVoteCounts);
             }
             else
             {
-                _logger.LogWarning($"Poll vote failed for PostId: {postId}, PollOptionId: {pollOptionId}.");
+                _logger.LogWarning($"Poll vote failed for PostId: {postId}, PollOptionId: {pollOptionId}. Message: {pollResult.Message}");
             }
         }
         /// <summary>
