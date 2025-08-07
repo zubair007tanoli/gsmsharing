@@ -27,33 +27,58 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             _viewRenderService = viewRenderService;
         }
 
+        private string GetUserId()
+        {
+            return Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        }
+
         [Authorize] // Ensure only authenticated users can cast a vote
         public async Task CastPollVote(int postId, int pollOptionId)
         {
             // Log the vote attempt for debugging purposes
             _logger.LogInformation($"User '{Context.UserIdentifier}' is casting a vote for PostId: {postId}, PollOptionId: {pollOptionId}");
 
-            var userId = GetUserId(); // Assuming GetUserId is a helper method
+            var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogError("User ID is null or empty. Cannot cast poll vote.");
-                // Consider sending a specific error message to the client if needed
+                await Clients.Caller.SendAsync("ReceivePollVoteError", "User not authenticated.");
                 return;
             }
 
-            // Call your service layer to handle the voting logic.
-            var pollResult = await _postService.CastPollVoteAsync(postId, pollOptionId, userId);
-
-            if (pollResult.Success)
+            // Check if user has already voted on this poll
+            bool hasVoted = await _postService.HasUserVotedInPollAsync(postId, userId);
+            if (hasVoted)
             {
-                // If the vote was successful, broadcast the updated vote counts
-                // to all clients in the post's SignalR group.
-                // The 'ReceivePollUpdate' is the client-side method name we will define.
-                await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollResult.UpdatedVoteCounts);
+                await Clients.Caller.SendAsync("ReceivePollVoteError", "You have already voted in this poll.");
+                return;
             }
-            else
+
+            try
             {
-                _logger.LogWarning($"Poll vote failed for PostId: {postId}, PollOptionId: {pollOptionId}. Message: {pollResult.Message}");
+                // Call your service layer to handle the voting logic.
+                var pollResult = await _postService.CastPollVoteAsync(postId, pollOptionId, userId);
+
+                if (pollResult.Success)
+                {
+                    // If the vote was successful, broadcast the updated poll data
+                    // to all clients in the post's group.
+                    await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollResult.UpdatedVoteCounts);
+
+                    // Additionally, send a success message to the user who voted
+                    await Clients.Caller.SendAsync("ReceivePollVoteSuccess", "Your vote was recorded successfully!");
+                }
+                else
+                {
+                    // If the service call failed, send an error back to the caller.
+                    _logger.LogError($"Poll vote failed for PostId: {postId}. Message: {pollResult.Message}");
+                    await Clients.Caller.SendAsync("ReceivePollVoteError", pollResult.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while casting poll vote for PostId: {postId}");
+                await Clients.Caller.SendAsync("ReceivePollVoteError", "An unexpected error occurred. Please try again.");
             }
         }
         /// <summary>
