@@ -27,6 +27,33 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             _viewRenderService = viewRenderService;
         }
 
+        [Authorize] // Ensure only authenticated users can cast a vote
+        public async Task CastPollVote(int postId, int pollOptionId)
+        {
+            // Log the vote attempt for debugging purposes
+           var userId = GetUserId(); // Assuming GetUserId is a helper method
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogError("User ID is null or empty. Cannot cast poll vote.");
+                return; // Exit if user is not authenticated or user ID is not found
+            }
+
+            // Call your service layer to handle the voting logic.
+            // This is where you would save the vote to the database.
+            var pollResult = await _postService.CastPollVoteAsync(postId, pollOptionId, userId);
+
+            if (pollResult != null)
+            {
+                // If the vote was successful, broadcast the updated poll data
+                // to all clients in the post's SignalR group.
+                // The 'ReceivePollUpdate' is the client-side method name we will define.
+                await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollResult);
+            }
+            else
+            {
+                _logger.LogWarning($"Poll vote failed for PostId: {postId}, PollOptionId: {pollOptionId}.");
+            }
+        }
         /// <summary>
         /// Allows a client to join a SignalR group specific to a post.
         /// This enables real-time updates for all clients viewing the same post.
