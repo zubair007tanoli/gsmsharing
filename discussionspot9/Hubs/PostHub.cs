@@ -26,11 +26,7 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             _logger = logger;
             _viewRenderService = viewRenderService;
         }
-
-        private string GetUserId()
-        {
-            return Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        }
+   
 
         [Authorize] // Ensure only authenticated users can cast a vote
         public async Task CastPollVote(int postId, int pollOptionId)
