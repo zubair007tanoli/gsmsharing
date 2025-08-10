@@ -1,31 +1,34 @@
 ﻿@model discussionspot9.Models.ViewModels.PollViewModels.PollViewModel
 @if (Model != null)
 {
-    <div class="poll-container">
+    <div class="poll-container @(Model.HasUserVoted ? "voted" : "")">
         <div class="poll-badge">
             <i class="fas fa-poll"></i>
             <span>POLL</span>
         </div>
         <h5 class="poll-question">@Model.Question</h5>
+
+        @if (!Model.HasUserVoted)
+        {
+            <p class="text-muted text-center small mb-3">Click on an option to cast your vote.</p>
+        }
+
         <div class="poll-options" id="pollOptions">
-            @* This ID should ideally be unique if multiple polls on page. For single post, it's fine. *@
             @foreach (var option in Model.Options)
             {
-                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "")" data-option="@option.PollOptionId">
+                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected" : "")" data-option="@option.PollOptionId">
                     <div class="poll-radio"></div>
                     <div class="poll-option-content">
                         <span class="poll-option-text">@option.OptionText</span>
-                        <span class="poll-percentage">@option.VotePercentage.ToString("F0")%</span> @* Format to 0 decimal places *@
+                        <span class="poll-percentage" style="display: @(Model.HasUserVoted ? "block" : "none");">@option.VotePercentage.ToString("F0")%</span>
                     </div>
-                    <div class="poll-progress" style="width: @(option.VotePercentage.ToString("F0"))%"></div>
+                    <div class="poll-progress" style="width: @(Model.HasUserVoted? option.VotePercentage.ToString("F0") : "0")%;"></div>
                 </div>
             }
         </div>
-        <div class="d-flex justify-content-center mb-3">
-            <button class="vote-button" id="submitVote" @(Model.HasUserVoted ? "disabled" : "")>
-                @(Model.HasUserVoted ? "Vote Submitted" : "Cast Your Vote")
-            </button>
-        </div>
+
+        <!-- The "Cast Your Vote" button has been removed to align with the instant-click voting logic. -->
+
         <div class="poll-stats">
             <div class="poll-votes">
                 <i class="fas fa-chart-bar"></i>
@@ -33,7 +36,23 @@
             </div>
             <div class="poll-time">
                 <i class="fas fa-clock"></i>
-                <span>Poll closes in @(Model.EndDate.HasValue ? (Model.EndDate.Value - DateTime.UtcNow).TotalDays.ToString("F0") + " days" : "N/A")</span>
+                <span>
+                    @if (Model.EndDate.HasValue)
+                    {
+                        if (Model.EndDate.Value > DateTime.UtcNow)
+                        {
+                            @:Poll closes in @((Model.EndDate.Value - DateTime.UtcNow).TotalDays.ToString("F0")) days
+                        }
+                        else
+                        {
+                            @:Poll closed
+                        }
+                    }
+                    else
+                    {
+                        @:No end date
+                    }
+                </span>
             </div>
         </div>
     </div>
