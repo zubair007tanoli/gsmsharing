@@ -254,19 +254,14 @@ namespace discussionspot9.Services
                 var existingVote = await _context.PollVotes
                     .FirstOrDefaultAsync(pv => pv.PollOptionId == pollOptionId && pv.UserId == userId);
 
-                // Retrieve the poll configuration to check if multiple choices are allowed
-                // This is a direct lookup using the postId, as 'PollConfiguration' is a defined DbSet.
                 var pollConfig = await _context.PollConfigurations
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(pc => pc.PostId == postId);
 
                 if (pollConfig == null)
                 {
                     _logger.LogError($"Poll configuration not found for PostId: {postId}");
-                    return new VotePollResult
-                    {
-                        Success = false,
-                        Message = "Poll configuration not found."
-                    };
+                    return new VotePollResult { Success = false, Message = "Poll configuration not found." };
                 }
 
                 if (existingVote != null)
@@ -301,14 +296,31 @@ namespace discussionspot9.Services
                     _logger.LogInformation($"Casting vote for User: {userId} on PollOption: {pollOptionId}");
                 }
 
+                // Save changes to votes before recalculating counts
                 await _context.SaveChangesAsync();
+
+                // **FIX**: Recalculate and update the denormalized VoteCount on each PollOption
+                var pollOptions = await _context.PollOptions.Where(po => po.PostId == postId).ToListAsync();
+                foreach (var option in pollOptions)
+                {
+                    option.VoteCount = await _context.PollVotes.CountAsync(v => v.PollOptionId == option.PollOptionId);
+                }
+
+                // **FIX**: Update the total vote count on the Post itself
+                var post = await _context.Posts.FindAsync(postId);
+                if (post != null)
+                {
+                    post.PollVoteCount = pollOptions.Sum(po => po.VoteCount);
+                }
+
+                // Save the updated counts
+                await _context.SaveChangesAsync();
+
                 await transaction.CommitAsync();
 
                 // After saving, get the updated vote counts for all options in the poll.
-                var updatedVoteCounts = await _context.PollOptions
-                    .Where(po => po.PostId == postId)
-                    .Select(po => new { po.PollOptionId, po.VoteCount })
-                    .ToDictionaryAsync(x => x.PollOptionId, x => x.VoteCount);
+                var updatedVoteCounts = pollOptions
+                    .ToDictionary(x => x.PollOptionId, x => x.VoteCount);
 
                 return new VotePollResult
                 {
