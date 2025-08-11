@@ -1,21 +1,22 @@
 ﻿@model discussionspot9.Models.ViewModels.PollViewModels.PollViewModel
 @if (Model != null)
 {
-    <div class="poll-container">
+    <div class="poll-container @(Model.HasUserVoted ? "voted" : "")" data-post-id="@Model.PostId">
         <div class="poll-badge">
             <i class="fas fa-poll"></i>
             <span>POLL</span>
         </div>
         <h5 class="poll-question">@Model.Question</h5>
         <div class="poll-options" id="pollOptions">
-            @* This ID should ideally be unique if multiple polls on page. For single post, it's fine. *@
             @foreach (var option in Model.Options)
             {
-                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "")" data-option="@option.PollOptionId">
+                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "")"
+                     data-option="@option.PollOptionId"
+                     data-post-id="@Model.PostId">
                     <div class="poll-radio"></div>
                     <div class="poll-option-content">
                         <span class="poll-option-text">@option.OptionText</span>
-                        <span class="poll-percentage">@option.VotePercentage.ToString("F0")%</span> @* Format to 0 decimal places *@
+                        <span class="poll-percentage">@option.VotePercentage.ToString("F0")%</span>
                     </div>
                     <div class="poll-progress" style="width: @(option.VotePercentage.ToString("F0"))%"></div>
                 </div>
