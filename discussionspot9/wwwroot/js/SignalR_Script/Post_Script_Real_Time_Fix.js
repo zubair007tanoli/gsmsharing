@@ -20,6 +20,8 @@ class SignalRManager {
         this.handleShareOptionClick = this.handleShareOptionClick.bind(this);
         this.handlePostVoteButtonClick = this.handlePostVoteButtonClick.bind(this);
         this.handlePollVoteButtonClick = this.handlePollVoteButtonClick.bind(this);
+        this.handleDeleteCommentClick = this.handleDeleteCommentClick.bind(this);
+        this.handleEditCommentClick = this.handleEditCommentClick.bind(this); // Restored
         this.checkConnectionState = this.checkConnectionState.bind(this);
     }
 
@@ -106,25 +108,46 @@ class SignalRManager {
         this.postConnection.on("ReceiveComment", (commentHtml, commentId, parentCommentId) => {
             try {
                 if (parentCommentId) {
-                    let parentCommentReplies = document.getElementById(`commentReplies-${parentCommentId}`);
-                    if (!parentCommentReplies) {
-                        const parentCommentItem = document.getElementById(`commentsContainer${parentCommentId}`);
-                        if (parentCommentItem) {
-                            parentCommentReplies = document.createElement('div');
-                            parentCommentReplies.className = 'comment-replies';
-                            parentCommentReplies.id = `commentReplies-${parentCommentId}`;
-                            parentCommentItem.appendChild(parentCommentReplies);
+                    const parentCommentItem = document.querySelector(`.pd-comment-item[data-comment-id="${parentCommentId}"]`);
+                    if (parentCommentItem) {
+                        let repliesContainer = parentCommentItem.querySelector('.pd-comment-replies');
+                        if (!repliesContainer) {
+                            repliesContainer = document.createElement('div');
+                            repliesContainer.className = 'pd-comment-replies';
+                            parentCommentItem.appendChild(repliesContainer);
                         }
-                    }
-                    if (parentCommentReplies) {
-                        parentCommentReplies.insertAdjacentHTML('beforeend', commentHtml);
+                        repliesContainer.insertAdjacentHTML('beforeend', commentHtml);
                     }
                 } else {
-                    document.getElementById('commentsList')?.insertAdjacentHTML('beforeend', commentHtml);
+                    const commentsContainer = document.querySelector('.comment-list');
+                    if (commentsContainer) {
+                        commentsContainer.insertAdjacentHTML('beforeend', commentHtml);
+                    } else {
+                        console.error("Could not find the '.comment-list' container to append new comment.");
+                    }
                 }
                 this.rebindCommentEvents();
             } catch (error) {
                 console.error("Error processing received comment:", error);
+            }
+        });
+
+        this.postConnection.on("CommentEdited", (comment) => { // Restored
+            const commentTextElement = document.querySelector(`.pd-comment-item[data-comment-id="${comment.commentId}"] .pd-comment-text`);
+            const editedTimestampElement = document.querySelector(`.pd-comment-item[data-comment-id="${comment.commentId}"] .pd-comment-meta .text-muted.small`);
+            if (commentTextElement) {
+                commentTextElement.innerHTML = comment.content;
+            }
+            if (editedTimestampElement && !editedTimestampElement.textContent.includes('(edited)')) {
+                editedTimestampElement.textContent += ' (edited)';
+            }
+        });
+
+        this.postConnection.on("CommentDeleted", (commentId) => {
+            const commentElement = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
+            if (commentElement) {
+                commentElement.remove();
+                this.showNotification("Comment deleted.", "info");
             }
         });
 
@@ -186,12 +209,37 @@ class SignalRManager {
         });
     }
 
-    async voteComment(commentId, isUpvote) {
+    // Restored editComment method
+    async editComment(commentId, newContent) {
         if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
             this.showNotification("Not connected.", 'error');
             return;
         }
-        await this.postConnection.invoke("VoteComment", commentId, isUpvote ? 1 : -1).catch(err => {
+        await this.postConnection.invoke("EditComment", commentId, newContent).catch(err => {
+            console.error("Error editing comment:", err);
+            this.showNotification("Failed to edit comment.", 'error');
+        });
+    }
+
+    async deleteComment(commentId) {
+        this.showConfirmationModal("Are you sure you want to delete this comment?", async () => {
+            if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
+                this.showNotification("Not connected.", 'error');
+                return;
+            }
+            await this.postConnection.invoke("DeleteComment", commentId).catch(err => {
+                console.error("Error deleting comment:", err);
+                this.showNotification("Failed to delete comment.", 'error');
+            });
+        });
+    }
+
+    async voteComment(commentId, voteType) {
+        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
+            this.showNotification("Not connected.", 'error');
+            return;
+        }
+        await this.postConnection.invoke("VoteComment", commentId, voteType).catch(err => {
             console.error("Error voting on comment:", err);
             this.showNotification("Failed to vote on comment.", 'error');
         });
@@ -238,21 +286,30 @@ class SignalRManager {
     }
 
     rebindCommentEvents() {
-        document.querySelectorAll('.comment-vote-btn').forEach(b => {
+        document.querySelectorAll('.pd-comment-vote-btn').forEach(b => {
             b.removeEventListener('click', this.handleVoteButtonClick);
             b.addEventListener('click', this.handleVoteButtonClick);
         });
-        document.querySelectorAll('.comment-reply-btn').forEach(b => {
+        document.querySelectorAll('.pd-comment-reply-btn').forEach(b => {
             b.removeEventListener('click', this.handleReplyButtonClick);
             b.addEventListener('click', this.handleReplyButtonClick);
         });
-        document.querySelectorAll('.reply-submit-btn').forEach(b => {
+        document.querySelectorAll('.pd-submit-reply').forEach(b => {
             b.removeEventListener('click', this.handleSubmitReplyButtonClick);
             b.addEventListener('click', this.handleSubmitReplyButtonClick);
         });
-        document.querySelectorAll('.reply-cancel-btn').forEach(b => {
+        document.querySelectorAll('.pd-cancel-reply').forEach(b => {
             b.removeEventListener('click', this.handleReplyCancel);
             b.addEventListener('click', this.handleReplyCancel);
+        });
+        document.querySelectorAll('.pd-comment-delete-btn').forEach(b => {
+            b.removeEventListener('click', this.handleDeleteCommentClick);
+            b.addEventListener('click', this.handleDeleteCommentClick);
+        });
+        // Restored edit button binding
+        document.querySelectorAll('.pd-comment-edit-btn').forEach(b => {
+            b.removeEventListener('click', this.handleEditCommentClick);
+            b.addEventListener('click', this.handleEditCommentClick);
         });
         this.rebindShareButtons();
         this.rebindPostVoteButtons();
@@ -262,7 +319,10 @@ class SignalRManager {
     handleVoteButtonClick(event) {
         event.preventDefault();
         const btn = event.currentTarget;
-        this.voteComment(parseInt(btn.dataset.commentId), parseInt(btn.dataset.voteType) === 1);
+        const commentId = parseInt(btn.dataset.commentId);
+        const voteTypeString = btn.dataset.voteType;
+        const voteType = voteTypeString === 'up' ? 1 : -1;
+        this.voteComment(commentId, voteType);
     }
 
     handleReplyButtonClick(event) {
@@ -270,22 +330,35 @@ class SignalRManager {
         this.showReplyForm(event.currentTarget.dataset.commentId);
     }
 
+    // Restored edit handler
+    handleEditCommentClick(event) {
+        event.preventDefault();
+        const commentId = event.currentTarget.dataset.commentId;
+        this.showEditForm(commentId);
+    }
+
+    handleDeleteCommentClick(event) {
+        event.preventDefault();
+        const btn = event.currentTarget;
+        this.deleteComment(parseInt(btn.dataset.commentId));
+    }
+
     async handleSubmitReplyButtonClick(event) {
         event.preventDefault();
-        const form = event.currentTarget.closest('.reply-form');
+        const form = event.currentTarget.closest('.pd-reply-form');
         const content = form.querySelector('textarea').value.trim();
         if (content && this.pagePostId) {
             const parentId = parseInt(form.dataset.commentId);
             await this.sendComment(this.pagePostId, content, parentId);
             form.querySelector('textarea').value = '';
-            form.classList.remove('active');
+            form.style.display = 'none';
         }
     }
 
     handleReplyCancel(event) {
         event.preventDefault();
-        const form = event.currentTarget.closest('.reply-form');
-        form.classList.remove('active');
+        const form = event.currentTarget.closest('.pd-reply-form');
+        form.style.display = 'none';
         form.querySelector('textarea').value = '';
     }
 
@@ -341,7 +414,7 @@ class SignalRManager {
         event.stopPropagation();
         const platform = event.currentTarget.dataset.platform;
         const postId = event.currentTarget.closest('.share-dropdown-menu').dataset.postId;
-        const postUrl = `${window.location.origin}/r/communitySlug/posts/${postId}`; // Adjust URL structure if needed
+        const postUrl = `${window.location.origin}/r/communitySlug/posts/${postId}`;
         const postTitle = document.title;
         let shareUrl = '';
 
@@ -389,19 +462,80 @@ class SignalRManager {
         toast.addEventListener('hidden.bs.toast', () => toast.remove());
     }
 
+    showConfirmationModal(message, onConfirm) {
+        const modalId = 'customConfirmationModal';
+        let modal = document.getElementById(modalId);
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.className = 'modal fade';
+            modal.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirm Action</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${message}</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button></div></div></div>`;
+            document.body.appendChild(modal);
+        } else {
+            modal.querySelector('.modal-body').textContent = message;
+        }
+        const bsModal = new bootstrap.Modal(modal);
+        const confirmBtn = document.getElementById('confirmActionBtn');
+        const confirmHandler = () => {
+            onConfirm();
+            bsModal.hide();
+            confirmBtn.removeEventListener('click', confirmHandler);
+        };
+        confirmBtn.addEventListener('click', confirmHandler);
+        modal.addEventListener('hidden.bs.modal', () => confirmBtn.removeEventListener('click', confirmHandler), { once: true });
+        bsModal.show();
+    }
+
     showReplyForm(commentId) {
-        document.querySelectorAll('.reply-form.active').forEach(form => form.classList.remove('active'));
-        const replyForm = document.getElementById(`replyForm${commentId}`);
+        document.querySelectorAll('.pd-reply-form').forEach(form => form.style.display = 'none');
+        const replyForm = document.getElementById(`reply-form-${commentId}`);
         if (replyForm) {
-            replyForm.classList.add('active');
+            replyForm.style.display = 'block';
             replyForm.querySelector('textarea')?.focus();
         }
     }
 
+    // Restored showEditForm logic
+    showEditForm(commentId) {
+        const commentItem = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
+        const commentTextElement = commentItem.querySelector('.pd-comment-text');
+        const originalContent = commentTextElement.innerHTML;
+
+        // Create textarea for editing
+        const editForm = document.createElement('div');
+        editForm.className = 'edit-form mt-2';
+        editForm.innerHTML = `
+            <textarea class="form-control" rows="3">${originalContent.replace(/<br\s*\/?>/gi, "\n")}</textarea>
+            <div class="mt-2">
+                <button class="btn btn-sm btn-primary save-edit-btn">Save</button>
+                <button class="btn btn-sm btn-outline-secondary cancel-edit-btn">Cancel</button>
+            </div>
+        `;
+
+        commentTextElement.style.display = 'none';
+        commentTextElement.after(editForm);
+
+        editForm.querySelector('.save-edit-btn').addEventListener('click', async () => {
+            const newContent = editForm.querySelector('textarea').value.trim();
+            if (newContent) {
+                await this.editComment(commentId, newContent);
+                // The 'CommentEdited' SignalR event will handle updating the UI
+            }
+            editForm.remove();
+            commentTextElement.style.display = 'block';
+        });
+
+        editForm.querySelector('.cancel-edit-btn').addEventListener('click', () => {
+            editForm.remove();
+            commentTextElement.style.display = 'block';
+        });
+    }
+
     updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote) {
-        const el = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+        const el = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
         if (!el) return;
-        el.querySelector(`#commentVote${commentId}`).textContent = upvoteCount - downvoteCount;
+        const scoreEl = el.querySelector(`.pd-comment-vote-count`);
+        if (scoreEl) scoreEl.textContent = upvoteCount - downvoteCount;
         el.querySelector('.upvote').classList.toggle('active', currentUserVote === 1);
         el.querySelector('.downvote').classList.toggle('active', currentUserVote === -1);
     }
@@ -438,7 +572,7 @@ class SignalRManager {
                 optionEl.querySelector('.poll-option-count').textContent = optionData.voteCount;
                 optionEl.querySelector('.poll-option-percent').textContent = `${percentage.toFixed(0)}%`;
 
-                const button = optionEl.querySelector('button');
+                const button = optionEl.querySelector('.poll-option-vote-btn');
                 if (button) {
                     button.disabled = true;
                     button.style.cursor = 'default';
