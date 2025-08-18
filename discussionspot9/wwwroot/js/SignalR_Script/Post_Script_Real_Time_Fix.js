@@ -21,7 +21,7 @@ class SignalRManager {
         this.handlePostVoteButtonClick = this.handlePostVoteButtonClick.bind(this);
         this.handlePollVoteButtonClick = this.handlePollVoteButtonClick.bind(this);
         this.handleDeleteCommentClick = this.handleDeleteCommentClick.bind(this);
-        this.handleEditCommentClick = this.handleEditCommentClick.bind(this); // Restored
+        this.handleEditCommentClick = this.handleEditCommentClick.bind(this);
         this.checkConnectionState = this.checkConnectionState.bind(this);
     }
 
@@ -73,13 +73,13 @@ class SignalRManager {
 
         try {
             await this.postConnection.start();
-            console.log("PostHub connection started.");
+            console.log("PostHub connection started successfully.");
             await this.notificationConnection.start();
-            console.log("NotificationHub connection started.");
+            console.log("NotificationHub connection started successfully.");
             this.startConnectionStateCheck();
         } catch (err) {
             console.error("SignalR connection start failed: ", err);
-            this.showNotification("Failed to connect to real-time features.", 'error');
+            this.showNotification("Failed to connect to real-time features. Please refresh the page.", 'error');
         }
 
         document.addEventListener('click', this.handleDocumentClick);
@@ -94,7 +94,9 @@ class SignalRManager {
 
     checkConnectionState() {
         const stateMap = { 0: 'Disconnected', 1: 'Connecting', 2: 'Connected', 4: 'Reconnecting' };
-        console.log(`SignalR Status: PostHub: ${stateMap[this.postConnection?.state] ?? 'Uninitialized'}, NotificationHub: ${stateMap[this.notificationConnection?.state] ?? 'Uninitialized'}`);
+        const postState = this.postConnection ? stateMap[this.postConnection.state] : 'Uninitialized';
+        const notifState = this.notificationConnection ? stateMap[this.notificationConnection.state] : 'Uninitialized';
+        console.log(`SignalR Status: PostHub: ${postState}, NotificationHub: ${notifState}`);
     }
 
     handleDocumentClick(event) {
@@ -132,7 +134,7 @@ class SignalRManager {
             }
         });
 
-        this.postConnection.on("CommentEdited", (comment) => { // Restored
+        this.postConnection.on("CommentEdited", (comment) => {
             const commentTextElement = document.querySelector(`.pd-comment-item[data-comment-id="${comment.commentId}"] .pd-comment-text`);
             const editedTimestampElement = document.querySelector(`.pd-comment-item[data-comment-id="${comment.commentId}"] .pd-comment-meta .text-muted.small`);
             if (commentTextElement) {
@@ -209,7 +211,6 @@ class SignalRManager {
         });
     }
 
-    // Restored editComment method
     async editComment(commentId, newContent) {
         if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
             this.showNotification("Not connected.", 'error');
@@ -306,7 +307,6 @@ class SignalRManager {
             b.removeEventListener('click', this.handleDeleteCommentClick);
             b.addEventListener('click', this.handleDeleteCommentClick);
         });
-        // Restored edit button binding
         document.querySelectorAll('.pd-comment-edit-btn').forEach(b => {
             b.removeEventListener('click', this.handleEditCommentClick);
             b.addEventListener('click', this.handleEditCommentClick);
@@ -330,7 +330,6 @@ class SignalRManager {
         this.showReplyForm(event.currentTarget.dataset.commentId);
     }
 
-    // Restored edit handler
     handleEditCommentClick(event) {
         event.preventDefault();
         const commentId = event.currentTarget.dataset.commentId;
@@ -348,7 +347,7 @@ class SignalRManager {
         const form = event.currentTarget.closest('.pd-reply-form');
         const content = form.querySelector('textarea').value.trim();
         if (content && this.pagePostId) {
-            const parentId = parseInt(form.dataset.commentId);
+            const parentId = parseInt(form.querySelector('textarea').dataset.commentId);
             await this.sendComment(this.pagePostId, content, parentId);
             form.querySelector('textarea').value = '';
             form.style.display = 'none';
@@ -495,13 +494,11 @@ class SignalRManager {
         }
     }
 
-    // Restored showEditForm logic
     showEditForm(commentId) {
         const commentItem = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
         const commentTextElement = commentItem.querySelector('.pd-comment-text');
         const originalContent = commentTextElement.innerHTML;
 
-        // Create textarea for editing
         const editForm = document.createElement('div');
         editForm.className = 'edit-form mt-2';
         editForm.innerHTML = `
@@ -519,7 +516,6 @@ class SignalRManager {
             const newContent = editForm.querySelector('textarea').value.trim();
             if (newContent) {
                 await this.editComment(commentId, newContent);
-                // The 'CommentEdited' SignalR event will handle updating the UI
             }
             editForm.remove();
             commentTextElement.style.display = 'block';
@@ -612,29 +608,73 @@ const signalRManager = new SignalRManager();
 window.signalRManager = signalRManager;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // This function will be called once the DOM is fully loaded and parsed.
+
+    // 1. Initialize SignalR Connections
     await signalRManager.initializeConnections();
-    signalRManager.rebindCommentEvents();
 
-    const postIdElement = document.getElementById('pagePostId');
-    if (postIdElement) {
-        signalRManager.pagePostId = parseInt(postIdElement.value);
-        if (!isNaN(signalRManager.pagePostId)) {
-            await signalRManager.joinPostGroup(signalRManager.pagePostId);
+    // 2. Wait until the connection is actually established before proceeding
+    // This is a critical fix to prevent race conditions.
+    const waitForConnection = new Promise((resolve, reject) => {
+        let timeout = setTimeout(() => reject("SignalR connection timed out."), 10000); // 10-second timeout
+
+        // Check periodically
+        const interval = setInterval(() => {
+            if (signalRManager.postConnection.state === signalR.HubConnectionState.Connected) {
+                clearTimeout(timeout);
+                clearInterval(interval);
+                resolve();
+            }
+        }, 100);
+    });
+
+    try {
+        await waitForConnection;
+        console.log("SignalR connection confirmed. Proceeding with page setup.");
+
+        // 3. Find the Post ID
+        const postIdElement = document.getElementById('pagePostId') || document.querySelector('[data-post-id]');
+        if (postIdElement) {
+            signalRManager.pagePostId = parseInt(postIdElement.dataset.postId || postIdElement.value);
+            if (!isNaN(signalRManager.pagePostId)) {
+                // 4. Join the SignalR group for this specific post
+                await signalRManager.joinPostGroup(signalRManager.pagePostId);
+            } else {
+                console.error("Could not parse Post ID from element:", postIdElement);
+            }
+        } else {
+            console.error("No element found with ID 'pagePostId' or attribute 'data-post-id'. Real-time features will be limited.");
         }
-    }
 
-    const commentTextarea = document.getElementById('mainCommentContent');
-    if (commentTextarea) {
-        commentTextarea.addEventListener('input', () => {
-            if (signalRManager.pagePostId) signalRManager.startTyping(signalRManager.pagePostId);
-        });
-    }
+        // 5. Bind all initial event handlers for comments, votes, etc.
+        signalRManager.rebindCommentEvents();
 
-    document.getElementById('submitMainComment')?.addEventListener('click', async () => {
-        const content = document.getElementById('mainCommentContent').value;
-        if (content.trim() && signalRManager.pagePostId) {
+        // 6. Set up the main comment form
+        const commentTextarea = document.getElementById('mainCommentContent');
+        if (commentTextarea) {
+            commentTextarea.addEventListener('input', () => {
+                if (signalRManager.pagePostId) signalRManager.startTyping(signalRManager.pagePostId);
+            });
+        }
+
+        document.getElementById('submitMainComment')?.addEventListener('click', async () => {
+            const content = document.getElementById('mainCommentContent').value;
+
+            if (!signalRManager.pagePostId) {
+                signalRManager.showNotification("Error: Could not determine the post ID. Please refresh the page.", "error");
+                return;
+            }
+            if (!content.trim()) {
+                signalRManager.showNotification("Please enter a comment.", "error");
+                return;
+            }
+
             await signalRManager.sendComment(signalRManager.pagePostId, content.trim());
             document.getElementById('mainCommentContent').value = '';
-        }
-    });
+        });
+
+    } catch (error) {
+        console.error(error);
+        signalRManager.showNotification("Could not establish a real-time connection with the server.", "error");
+    }
 });
