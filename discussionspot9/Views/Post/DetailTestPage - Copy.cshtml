@@ -1107,13 +1107,6 @@
 
             <!-- Main Content Column -->
             <div class="col-xl-6 col-lg-6">
-                <!-- ================================================================= -->
-                <!-- CRITICAL FIX: Add a reliable hidden input for the Post ID       -->
-                <!-- This ensures the script can always find the ID, regardless of   -->
-                <!-- whether the post is a poll or not.                              -->
-                <!-- ================================================================= -->
-                <input type="hidden" id="pagePostId" value="@Model.Post.PostId" />
-
                 <!-- Post Container -->
                 <div class="post-container">
                     <div class="post-header">
@@ -1215,7 +1208,7 @@
                     </div>
 
                     <div class="post-actions">
-             @* <div class="vote-buttons">                          
+             @*            <div class="vote-buttons">                          
                             <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")" id="upvoteBtn-@Model.Post.PostId" data-post-id="@Model.Post.PostId" data-vote-type="1">
                                 <i class="fas fa-arrow-up"></i>
                             </button>
@@ -1244,7 +1237,7 @@
                             </button>
                             <span class="total-score" id="totalScore-@Model.Post.PostId">Score @Model.Post.Score</span>
                         </div>
-                      @* <div class="vote-buttons">
+                      @*   <div class="vote-buttons">
                             <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")"
                                     id="upvoteBtn-@Model.Post.PostId"
                                     data-post-id="@Model.Post.PostId"
@@ -1349,7 +1342,7 @@
                     <div><small>300x250</small></div>
                 </div>
 
-               @* @* Render Community Rules View Component 
+               @*  @* Render Community Rules View Component 
                 @await Component.InvokeAsync("CommunityRules", new { communityId = Model.Post.CommunityId })
 
                 @* Render Related Posts View Component *@
@@ -1364,4 +1357,322 @@
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/SignalR_Script/Post_Script_Real_Time_Fix.js"></script>
     @* <script src="~/js/SignalR_Script/poll-vote-handler.js"></script> *@
+
+
+   @*  <script>
+        // Post voting functionality
+        document.querySelectorAll('[id^="upvoteBtn-"], [id^="downvoteBtn-"]').forEach(button => {
+            button.addEventListener('click', async function() {
+                const postId = this.getAttribute('data-post-id');
+                const voteType = parseInt(this.getAttribute('data-vote-type')); // 1 for up, -1 for down
+                const voteCountElement = document.getElementById(`voteCount-${postId}`);
+                const upBtn = document.getElementById(`upvoteBtn-${postId}`);
+                const downBtn = document.getElementById(`downvoteBtn-${postId}`);
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/vote`, { // Adjust API endpoint as needed
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Add Anti-forgery token if using:
+                            // '__RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                        },
+                        body: JSON.stringify({ voteType: voteType })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json(); // Expected: { success: true, userVote: int, newScore: int }
+                        if (result.userVote === 1) {
+                            upBtn.classList.add('active');
+                            downBtn.classList.remove('active');
+                        } else if (result.userVote === -1) {
+                            upBtn.classList.remove('active');
+                            downBtn.classList.add('active');
+                        } else { // Vote removed (userVote is 0 or null)
+                            upBtn.classList.remove('active');
+                            downBtn.classList.remove('active');
+                        }
+                        voteCountElement.textContent = result.newScore;
+                    } else {
+                        console.error('Failed to vote:', response.statusText);
+                        // Implement user-friendly error display (e.g., a toast notification)
+                    }
+                } catch (error) {
+                    console.error('Error during vote API call:', error);
+                    // Implement user-friendly error display
+                }
+            });
+        });
+
+        // Toggle Save Post functionality
+        document.querySelectorAll('[id^="saveBtn-"]').forEach(button => {
+            button.addEventListener('click', async function() {
+                const postId = this.getAttribute('data-post-id');
+                const icon = this.querySelector('.fas');
+                const textSpan = this.querySelector('span');
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/save`, { // Adjust API endpoint
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json(); // Expected: { success: true, isSaved: true/false, message: "" }
+                        if (result.isSaved) {
+                            icon.classList.add('text-primary');
+                            textSpan.textContent = 'Saved';
+                            this.setAttribute('data-issaved', 'true');
+                        } else {
+                            icon.classList.remove('text-primary');
+                            textSpan.textContent = 'Save';
+                            this.setAttribute('data-issaved', 'false');
+                        }
+                    } else {
+                        console.error('Failed to toggle save status:', response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error toggling save status:', error);
+                }
+            });
+        });
+
+        // Poll functionality
+        // This targets the specific poll container, assuming only one per post
+        const pollOptionsContainer = document.querySelector('.poll-container .poll-options');
+        const submitVoteBtn = document.getElementById('submitVote');
+        const totalVotesElement = document.getElementById('totalVotes');
+
+        if (pollOptionsContainer && submitVoteBtn) {
+            pollOptionsContainer.addEventListener('click', function(event) {
+                let targetOption = event.target.closest('.poll-option');
+                // Check if user has already voted by looking for 'voted' class on any option
+                const hasVoted = pollOptionsContainer.querySelector('.poll-option.voted');
+
+                if (targetOption && !hasVoted) {
+                    // This poll logic assumes single choice. For multiple choice, adjust.
+                    pollOptionsContainer.querySelectorAll('.poll-option').forEach(opt => opt.classList.remove('selected'));
+                    targetOption.classList.add('selected');
+                    submitVoteBtn.disabled = false;
+                }
+            });
+
+            submitVoteBtn.addEventListener('click', async function() {
+                const postId = @Model.Post.PostId; // Get postId from C# model
+                const selectedOptions = Array.from(pollOptionsContainer.querySelectorAll('.poll-option.selected'))
+                                            .map(opt => parseInt(opt.getAttribute('data-option')));
+
+                if (selectedOptions.length === 0) return;
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/vote-poll`, { // Adjust API endpoint
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ optionIds: selectedOptions }) // Send an array of selected option IDs
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json(); // Expected: { success: true, updatedVoteCounts: { optionId: count, ... } }
+                        // Update UI with new vote counts and percentages
+                        let totalVotes = 0;
+                        if (result.updatedVoteCounts) {
+                            totalVotes = Object.values(result.updatedVoteCounts).reduce((a, b) => a + b, 0);
+                        }
+
+                        for (const option of pollOptionsContainer.querySelectorAll('.poll-option')) {
+                            const optionId = parseInt(option.getAttribute('data-option'));
+                            if (result.updatedVoteCounts && result.updatedVoteCounts[optionId] !== undefined) {
+                                const newCount = result.updatedVoteCounts[optionId];
+                                const newPercentage = totalVotes > 0 ? (newCount / totalVotes * 100).toFixed(0) : 0;
+
+                                option.querySelector('.poll-percentage').textContent = `${newPercentage}%`;
+                                option.querySelector('.poll-progress').style.width = `${newPercentage}%`;
+                            }
+                            option.classList.add('voted'); // Mark all options as voted
+                        }
+
+                        if (totalVotesElement) {
+                            totalVotesElement.textContent = `${totalVotes.toLocaleString()} votes`;
+                        }
+                        this.disabled = true;
+                        this.textContent = 'Vote Submitted';
+                    } else {
+                        console.error('Failed to submit poll vote:', response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error during poll vote API call:', error);
+                }
+            });
+        }
+
+        // Comment reply functionality
+        document.querySelectorAll('.comment-reply-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const commentId = this.getAttribute('data-comment-id');
+                const replyForm = document.getElementById(`replyForm${commentId}`);
+
+                document.querySelectorAll('.reply-form.active').forEach(form => {
+                    if (form !== replyForm) {
+                        form.classList.remove('active');
+                    }
+                });
+
+                replyForm.classList.toggle('active');
+
+                if (replyForm.classList.contains('active')) {
+                    const textarea = replyForm.querySelector('textarea');
+                    textarea.focus();
+                }
+            });
+        });
+
+        document.querySelectorAll('.reply-cancel-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const commentId = this.getAttribute('data-comment-id');
+                const replyForm = document.getElementById(`replyForm${commentId}`);
+                replyForm.classList.remove('active');
+
+                const textarea = replyForm.querySelector('textarea');
+                textarea.value = '';
+            });
+        });
+
+        // Share dropdown functionality
+        const shareBtn = document.getElementById('shareBtn-@Model.Post.PostId');
+        const shareDropdown = shareBtn?.closest('.share-dropdown');
+
+        if (shareBtn && shareDropdown) {
+            shareBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                shareDropdown.classList.toggle('active');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!shareDropdown.contains(e.target)) {
+                    shareDropdown.classList.remove('active');
+                }
+            });
+        }
+
+        document.querySelectorAll('.share-option').forEach(option => {
+            option.addEventListener('click', async function(e) {
+                e.preventDefault();
+                const platform = this.getAttribute('data-platform');
+                const postTitle = "@Model.Post.Title"; // Get from C# model
+                const postUrl = window.location.href; // Current URL
+
+                let shareUrl = '';
+
+                switch(platform) {
+                    case 'facebook':
+                        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+                        break;
+                    case 'twitter':
+                        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(postTitle)}&url=${encodeURIComponent(postUrl)}`;
+                        break;
+                    case 'reddit':
+                        shareUrl = `https://www.reddit.com/submit?url=${encodeURIComponent(postUrl)}&title=${encodeURIComponent(postTitle)}`;
+                        break;
+                    case 'linkedin':
+                        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`;
+                        break;
+                    case 'whatsapp':
+                        shareUrl = `https://wa.me/?text=${encodeURIComponent(postTitle + ' ' + postUrl)}`;
+                        break;
+                    case 'copy':
+                        try {
+                            // Using document.execCommand for better compatibility in iframe
+                            const tempInput = document.createElement('textarea');
+                            tempInput.value = postUrl;
+                            document.body.appendChild(tempInput);
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+
+                            const originalText = this.querySelector('span').textContent;
+                            this.querySelector('span').textContent = 'Copied!';
+                            setTimeout(() => {
+                                this.querySelector('span').textContent = originalText;
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Failed to copy text:', err);
+                        }
+                        shareDropdown?.classList.remove('active'); // Use optional chaining
+                        return;
+                }
+
+                if (shareUrl) {
+                    window.open(shareUrl, '_blank', 'width=600,height=400');
+                }
+
+                shareDropdown?.classList.remove('active'); // Use optional chaining
+            });
+        });
+
+        // Handle video overlay for multiple videos
+        document.querySelectorAll('[id^="videoOverlay-"]').forEach(overlay => {
+            overlay.addEventListener('click', function() {
+                const mediaId = this.id.split('-')[1];
+                const videoContainer = this.parentElement;
+                const videoSourceInput = document.getElementById(`videoSource-${mediaId}`);
+
+                if (videoSourceInput) {
+                    this.style.display = 'none'; // Hide overlay
+
+                    const video = document.createElement('iframe');
+                    video.src = `${videoSourceInput.value}?autoplay=1`; // Use hidden input's value for video source
+                    video.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                    video.allowFullscreen = true;
+
+                    // Replace the thumbnail with the video
+                    videoContainer.querySelector('img')?.remove(); // Use optional chaining for robustness
+                    videoContainer.appendChild(video);
+                }
+            });
+        });
+
+        // Main comment submission
+        document.getElementById('submitMainComment')?.addEventListener('click', async function() {
+            const postId = this.getAttribute('data-post-id');
+            const commentContent = document.getElementById('mainCommentContent').value;
+
+            if (!commentContent.trim()) {
+                console.warn("Comment content cannot be empty.");
+                return;
+            }
+
+            try {
+                // Get the anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                const response = await fetch(`/Comment/Create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token // Add anti-forgery token
+                    },
+                    body: JSON.stringify({
+                        postId: postId,
+                        content: commentContent,
+                        parentCommentId: null
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('mainCommentContent').value = '';
+                    console.log('Comment submitted successfully!');
+                } else {
+                    const errorText = await response.text();
+                    console.error('Failed to submit comment:', response.status, errorText);
+                }
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+            }
+        });
+    </script> *@
 }
+

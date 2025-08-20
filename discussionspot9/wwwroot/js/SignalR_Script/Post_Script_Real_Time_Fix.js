@@ -21,7 +21,6 @@ class SignalRManager {
         this.handlePostVoteButtonClick = this.handlePostVoteButtonClick.bind(this);
         this.handlePollVoteButtonClick = this.handlePollVoteButtonClick.bind(this);
         this.handleDeleteCommentClick = this.handleDeleteCommentClick.bind(this);
-        this.handleEditCommentClick = this.handleEditCommentClick.bind(this);
         this.checkConnectionState = this.checkConnectionState.bind(this);
     }
 
@@ -49,9 +48,10 @@ class SignalRManager {
             return;
         }
 
+        // Setup lifecycle events
         this.postConnection.onclose(error => {
             console.error("SignalR PostHub connection closed.", error);
-            this.showNotification("Real-time features disconnected. Reconnecting...", 'error');
+            this.showNotification("Real-time features disconnected.", 'error');
             clearInterval(this.connectionCheckInterval);
         });
         this.postConnection.onreconnecting(error => {
@@ -62,12 +62,12 @@ class SignalRManager {
             console.log(`SignalR PostHub reconnected. ID: ${connectionId}`);
             this.showNotification("Real-time features reconnected!", 'success');
             if (this.pagePostId) {
-                this.postConnection.invoke("JoinPostGroup", this.pagePostId)
-                    .catch(err => console.error(`Error re-joining post group on reconnect:`, err));
+                this.joinPostGroup(this.pagePostId).catch(err => console.error(`Error re-joining post group on reconnect:`, err));
             }
             this.startConnectionStateCheck();
         });
 
+        // Setup message handlers
         await this.setupPostEventHandlers();
         await this.setupNotificationEventHandlers();
 
@@ -88,14 +88,14 @@ class SignalRManager {
     startConnectionStateCheck() {
         if (this.connectionCheckInterval) clearInterval(this.connectionCheckInterval);
         if (this.postConnection && this.notificationConnection) {
-            this.connectionCheckInterval = setInterval(this.checkConnectionState, 5000);
+            this.connectionCheckInterval = setInterval(this.checkConnectionState, 10000); // Check every 10 seconds
         }
     }
 
     checkConnectionState() {
         const stateMap = { 0: 'Disconnected', 1: 'Connecting', 2: 'Connected', 4: 'Reconnecting' };
-        const postState = this.postConnection ? stateMap[this.postConnection.state] : 'Uninitialized';
-        const notifState = this.notificationConnection ? stateMap[this.notificationConnection.state] : 'Uninitialized';
+        const postState = this.postConnection ? stateMap[this.postConnection.state] || 'Unknown' : 'Uninitialized';
+        const notifState = this.notificationConnection ? stateMap[this.notificationConnection.state] || 'Unknown' : 'Uninitialized';
         console.log(`SignalR Status: PostHub: ${postState}, NotificationHub: ${notifState}`);
     }
 
@@ -107,52 +107,36 @@ class SignalRManager {
     }
 
     async setupPostEventHandlers() {
+        // --- COMMENT HANDLERS ---
         this.postConnection.on("ReceiveComment", (commentHtml, commentId, parentCommentId) => {
             try {
                 if (parentCommentId) {
-                    const parentCommentItem = document.querySelector(`.pd-comment-item[data-comment-id="${parentCommentId}"]`);
+                    const parentCommentItem = document.querySelector(`.comment-item[data-comment-id="${parentCommentId}"]`);
                     if (parentCommentItem) {
-                        let repliesContainer = parentCommentItem.querySelector('.pd-comment-replies');
+                        let repliesContainer = parentCommentItem.querySelector('.comment-replies');
                         if (!repliesContainer) {
                             repliesContainer = document.createElement('div');
-                            repliesContainer.className = 'pd-comment-replies';
-                            parentCommentItem.appendChild(repliesContainer);
+                            repliesContainer.className = 'comment-replies';
+                            // Insert after the parent's content, before any existing replies container
+                            parentCommentItem.querySelector('.comment-content').after(repliesContainer);
                         }
                         repliesContainer.insertAdjacentHTML('beforeend', commentHtml);
                     }
                 } else {
-                    const commentsContainer = document.querySelector('.comment-list');
-                    if (commentsContainer) {
-                        commentsContainer.insertAdjacentHTML('beforeend', commentHtml);
-                    } else {
-                        console.error("Could not find the '.comment-list' container to append new comment.");
-                    }
+                    document.querySelector('.comment-list')?.insertAdjacentHTML('beforeend', commentHtml);
                 }
-                this.rebindCommentEvents();
+                this.rebindAllEvents(); // Rebind for new comment
             } catch (error) {
                 console.error("Error processing received comment:", error);
             }
         });
 
-        this.postConnection.on("CommentEdited", (comment) => {
-            const commentTextElement = document.querySelector(`.pd-comment-item[data-comment-id="${comment.commentId}"] .pd-comment-text`);
-            const editedTimestampElement = document.querySelector(`.pd-comment-item[data-comment-id="${comment.commentId}"] .pd-comment-meta .text-muted.small`);
-            if (commentTextElement) {
-                commentTextElement.innerHTML = comment.content;
-            }
-            if (editedTimestampElement && !editedTimestampElement.textContent.includes('(edited)')) {
-                editedTimestampElement.textContent += ' (edited)';
-            }
-        });
-
         this.postConnection.on("CommentDeleted", (commentId) => {
-            const commentElement = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
-            if (commentElement) {
-                commentElement.remove();
-                this.showNotification("Comment deleted.", "info");
-            }
+            document.querySelector(`.comment-item[data-comment-id="${commentId}"]`)?.remove();
+            this.showNotification("Comment deleted.", "info");
         });
 
+        // --- VOTE HANDLERS ---
         this.postConnection.on("CommentVoteUpdated", (commentId, upvoteCount, downvoteCount, currentUserVote) => {
             this.updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote);
         });
@@ -161,16 +145,18 @@ class SignalRManager {
             this.updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote);
         });
 
-        this.postConnection.on("ReceivePollUpdate", (updatedVoteCounts) => {
-            if (updatedVoteCounts && updatedVoteCounts.length > 0) {
-                const postId = updatedVoteCounts[0].postId;
-                this.updatePollResultsUI(postId, updatedVoteCounts);
-            }
+        // --- POLL HANDLER ---
+        this.postConnection.on("ReceivePollUpdate", (pollData) => {
+            this.updatePollResultsUI(pollData);
         });
 
+        // --- ERROR & NOTIFICATION HANDLERS ---
+        this.postConnection.on("VoteError", (errorMessage) => this.showNotification(errorMessage, 'error'));
+        this.postConnection.on("CommentError", (errorMessage) => this.showNotification(errorMessage, 'error'));
         this.postConnection.on("ReceivePollVoteSuccess", (message) => this.showNotification(message, 'success'));
         this.postConnection.on("ReceivePollVoteError", (errorMessage) => this.showNotification(errorMessage, 'error'));
-        this.postConnection.on("VoteError", (errorMessage) => this.showNotification(errorMessage, 'error'));
+
+        // --- TYPING INDICATOR HANDLERS ---
         this.postConnection.on("UserStartedTyping", (userName) => this.showTypingIndicator(userName));
         this.postConnection.on("UserStoppedTyping", (userName) => this.hideTypingIndicator(userName));
     }
@@ -183,13 +169,22 @@ class SignalRManager {
         this.notificationConnection.on("UnreadNotificationCount", (count) => this.updateNotificationBadge(count));
     }
 
+    // --- HUB INVOCATION METHODS ---
+
     async joinPostGroup(postId) {
         if (this.currentPostId && this.currentPostId !== postId) {
             await this.leavePostGroup(this.currentPostId);
         }
         this.currentPostId = postId;
         if (this.postConnection?.state === signalR.HubConnectionState.Connected) {
-            await this.postConnection.invoke("JoinPostGroup", postId).catch(err => console.error(`Error joining post group ${postId}:`, err));
+            try {
+                await this.postConnection.invoke("JoinPostGroup", postId);
+                console.log(`Successfully joined post group ${postId}`);
+            } catch (err) {
+                console.error(`Error invoking JoinPostGroup for post-${postId}:`, err);
+            }
+        } else {
+            console.warn(`Cannot join group post-${postId}. Connection not established.`);
         }
     }
 
@@ -201,71 +196,30 @@ class SignalRManager {
     }
 
     async sendComment(postId, commentContent, parentCommentId = null) {
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected.", 'error');
-            return;
-        }
-        await this.postConnection.invoke("SendComment", postId, commentContent, parentCommentId).catch(err => {
-            console.error("Error sending comment:", err);
-            this.showNotification("Failed to post comment.", 'error');
-        });
-    }
-
-    async editComment(commentId, newContent) {
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected.", 'error');
-            return;
-        }
-        await this.postConnection.invoke("EditComment", commentId, newContent).catch(err => {
-            console.error("Error editing comment:", err);
-            this.showNotification("Failed to edit comment.", 'error');
-        });
+        if (this.postConnection.state !== signalR.HubConnectionState.Connected) return this.showNotification("Not connected.", 'error');
+        await this.postConnection.invoke("SendComment", postId, commentContent, parentCommentId).catch(err => this.showNotification("Failed to post comment.", 'error'));
     }
 
     async deleteComment(commentId) {
         this.showConfirmationModal("Are you sure you want to delete this comment?", async () => {
-            if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-                this.showNotification("Not connected.", 'error');
-                return;
-            }
-            await this.postConnection.invoke("DeleteComment", commentId).catch(err => {
-                console.error("Error deleting comment:", err);
-                this.showNotification("Failed to delete comment.", 'error');
-            });
+            if (this.postConnection.state !== signalR.HubConnectionState.Connected) return this.showNotification("Not connected.", 'error');
+            await this.postConnection.invoke("DeleteComment", commentId).catch(err => this.showNotification("Failed to delete comment.", 'error'));
         });
     }
 
     async voteComment(commentId, voteType) {
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected.", 'error');
-            return;
-        }
-        await this.postConnection.invoke("VoteComment", commentId, voteType).catch(err => {
-            console.error("Error voting on comment:", err);
-            this.showNotification("Failed to vote on comment.", 'error');
-        });
+        if (this.postConnection.state !== signalR.HubConnectionState.Connected) return this.showNotification("Not connected.", 'error');
+        await this.postConnection.invoke("VoteComment", commentId, voteType).catch(err => this.showNotification("Failed to vote on comment.", 'error'));
     }
 
     async votePost(postId, voteType) {
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected.", 'error');
-            return;
-        }
-        await this.postConnection.invoke("VotePost", postId, voteType).catch(err => {
-            console.error("Error voting on post:", err);
-            this.showNotification("Failed to vote on post.", 'error');
-        });
+        if (this.postConnection.state !== signalR.HubConnectionState.Connected) return this.showNotification("Not connected.", 'error');
+        await this.postConnection.invoke("VotePost", postId, voteType).catch(err => this.showNotification("Failed to vote on post.", 'error'));
     }
 
     async castPollVote(postId, optionId) {
-        if (this.postConnection.state !== signalR.HubConnectionState.Connected) {
-            this.showNotification("Not connected.", 'error');
-            return;
-        }
-        await this.postConnection.invoke("CastPollVote", postId, optionId).catch(err => {
-            console.error("Error casting poll vote:", err);
-            this.showNotification("Failed to cast your vote.", 'error');
-        });
+        if (this.postConnection.state !== signalR.HubConnectionState.Connected) return this.showNotification("Not connected.", 'error');
+        await this.postConnection.invoke("CastPollVote", postId, optionId).catch(err => this.showNotification("Failed to cast your vote.", 'error'));
     }
 
     async startTyping(postId) {
@@ -274,7 +228,7 @@ class SignalRManager {
             await this.postConnection.invoke("StartTyping", postId);
         }
         clearTimeout(this.typingTimeout);
-        this.typingTimeout = setTimeout(() => this.stopTyping(postId), 1000);
+        this.typingTimeout = setTimeout(() => this.stopTyping(postId), 1500); // 1.5 second timeout
     }
 
     async stopTyping(postId) {
@@ -286,31 +240,32 @@ class SignalRManager {
         }
     }
 
-    rebindCommentEvents() {
-        document.querySelectorAll('.pd-comment-vote-btn').forEach(b => {
+    // --- EVENT BINDING & HANDLING ---
+
+    rebindAllEvents() {
+        // Comment-related buttons
+        document.querySelectorAll('.comment-vote-btn').forEach(b => {
             b.removeEventListener('click', this.handleVoteButtonClick);
             b.addEventListener('click', this.handleVoteButtonClick);
         });
-        document.querySelectorAll('.pd-comment-reply-btn').forEach(b => {
+        document.querySelectorAll('.comment-reply-btn').forEach(b => {
             b.removeEventListener('click', this.handleReplyButtonClick);
             b.addEventListener('click', this.handleReplyButtonClick);
         });
-        document.querySelectorAll('.pd-submit-reply').forEach(b => {
+        document.querySelectorAll('.reply-submit-btn').forEach(b => {
             b.removeEventListener('click', this.handleSubmitReplyButtonClick);
             b.addEventListener('click', this.handleSubmitReplyButtonClick);
         });
-        document.querySelectorAll('.pd-cancel-reply').forEach(b => {
+        document.querySelectorAll('.reply-cancel-btn').forEach(b => {
             b.removeEventListener('click', this.handleReplyCancel);
             b.addEventListener('click', this.handleReplyCancel);
         });
-        document.querySelectorAll('.pd-comment-delete-btn').forEach(b => {
+        document.querySelectorAll('.comment-delete-btn').forEach(b => {
             b.removeEventListener('click', this.handleDeleteCommentClick);
             b.addEventListener('click', this.handleDeleteCommentClick);
         });
-        document.querySelectorAll('.pd-comment-edit-btn').forEach(b => {
-            b.removeEventListener('click', this.handleEditCommentClick);
-            b.addEventListener('click', this.handleEditCommentClick);
-        });
+
+        // Post-level buttons
         this.rebindShareButtons();
         this.rebindPostVoteButtons();
         this.rebindPollVoteButtons();
@@ -320,8 +275,7 @@ class SignalRManager {
         event.preventDefault();
         const btn = event.currentTarget;
         const commentId = parseInt(btn.dataset.commentId);
-        const voteTypeString = btn.dataset.voteType;
-        const voteType = voteTypeString === 'up' ? 1 : -1;
+        const voteType = parseInt(btn.dataset.voteType);
         this.voteComment(commentId, voteType);
     }
 
@@ -330,34 +284,27 @@ class SignalRManager {
         this.showReplyForm(event.currentTarget.dataset.commentId);
     }
 
-    handleEditCommentClick(event) {
-        event.preventDefault();
-        const commentId = event.currentTarget.dataset.commentId;
-        this.showEditForm(commentId);
-    }
-
     handleDeleteCommentClick(event) {
         event.preventDefault();
-        const btn = event.currentTarget;
-        this.deleteComment(parseInt(btn.dataset.commentId));
+        this.deleteComment(parseInt(event.currentTarget.dataset.commentId));
     }
 
     async handleSubmitReplyButtonClick(event) {
         event.preventDefault();
-        const form = event.currentTarget.closest('.pd-reply-form');
+        const form = event.currentTarget.closest('.reply-form');
         const content = form.querySelector('textarea').value.trim();
         if (content && this.pagePostId) {
-            const parentId = parseInt(form.querySelector('textarea').dataset.commentId);
+            const parentId = parseInt(form.dataset.commentId);
             await this.sendComment(this.pagePostId, content, parentId);
             form.querySelector('textarea').value = '';
-            form.style.display = 'none';
+            form.classList.remove('active');
         }
     }
 
     handleReplyCancel(event) {
         event.preventDefault();
-        const form = event.currentTarget.closest('.pd-reply-form');
-        form.style.display = 'none';
+        const form = event.currentTarget.closest('.reply-form');
+        form.classList.remove('active');
         form.querySelector('textarea').value = '';
     }
 
@@ -387,7 +334,7 @@ class SignalRManager {
     }
 
     rebindShareButtons() {
-        document.querySelectorAll('.share-button, [id^="shareBtn-"]').forEach(button => {
+        document.querySelectorAll('.share-dropdown .action-btn').forEach(button => {
             button.removeEventListener('click', this.handleShareButtonClick);
             button.addEventListener('click', this.handleShareButtonClick);
         });
@@ -413,7 +360,7 @@ class SignalRManager {
         event.stopPropagation();
         const platform = event.currentTarget.dataset.platform;
         const postId = event.currentTarget.closest('.share-dropdown-menu').dataset.postId;
-        const postUrl = `${window.location.origin}/r/communitySlug/posts/${postId}`;
+        const postUrl = `${window.location.origin}/r/communitySlug/posts/${postId}`; // Adjust slug dynamically if needed
         const postTitle = document.title;
         let shareUrl = '';
 
@@ -425,16 +372,10 @@ class SignalRManager {
             case 'whatsapp': shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(postTitle + ' ' + postUrl)}`; break;
             case 'copy':
                 try {
-                    const ta = document.createElement('textarea');
-                    ta.value = postUrl;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
+                    await navigator.clipboard.writeText(postUrl);
                     this.showNotification('Link copied!', 'success');
                 } catch (err) { this.showNotification("Failed to copy link.", 'error'); }
                 if (this.openShareDropdown) this.openShareDropdown.classList.remove('active');
-                this.openShareDropdown = null;
                 return;
         }
         if (shareUrl) window.open(shareUrl, '_blank');
@@ -442,7 +383,7 @@ class SignalRManager {
         this.openShareDropdown = null;
     }
 
-    // --- UI Update Helper Methods ---
+    // --- UI UPDATE & HELPER METHODS ---
 
     showNotification(message, type = 'info') {
         const container = document.getElementById('toast-container') || (() => {
@@ -456,17 +397,16 @@ class SignalRManager {
         toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type} border-0`;
         toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
         container.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
         bsToast.show();
         toast.addEventListener('hidden.bs.toast', () => toast.remove());
     }
 
     showConfirmationModal(message, onConfirm) {
-        const modalId = 'customConfirmationModal';
-        let modal = document.getElementById(modalId);
+        let modal = document.getElementById('customConfirmationModal');
         if (!modal) {
             modal = document.createElement('div');
-            modal.id = modalId;
+            modal.id = 'customConfirmationModal';
             modal.className = 'modal fade';
             modal.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirm Action</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${message}</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button></div></div></div>`;
             document.body.appendChild(modal);
@@ -478,62 +418,30 @@ class SignalRManager {
         const confirmHandler = () => {
             onConfirm();
             bsModal.hide();
-            confirmBtn.removeEventListener('click', confirmHandler);
         };
-        confirmBtn.addEventListener('click', confirmHandler);
+        confirmBtn.addEventListener('click', confirmHandler, { once: true });
         modal.addEventListener('hidden.bs.modal', () => confirmBtn.removeEventListener('click', confirmHandler), { once: true });
         bsModal.show();
     }
 
     showReplyForm(commentId) {
-        document.querySelectorAll('.pd-reply-form').forEach(form => form.style.display = 'none');
-        const replyForm = document.getElementById(`reply-form-${commentId}`);
+        document.querySelectorAll('.reply-form.active').forEach(f => f.classList.remove('active'));
+        const replyForm = document.getElementById(`replyForm${commentId}`);
         if (replyForm) {
-            replyForm.style.display = 'block';
+            replyForm.classList.add('active');
             replyForm.querySelector('textarea')?.focus();
         }
     }
 
-    showEditForm(commentId) {
-        const commentItem = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
-        const commentTextElement = commentItem.querySelector('.pd-comment-text');
-        const originalContent = commentTextElement.innerHTML;
-
-        const editForm = document.createElement('div');
-        editForm.className = 'edit-form mt-2';
-        editForm.innerHTML = `
-            <textarea class="form-control" rows="3">${originalContent.replace(/<br\s*\/?>/gi, "\n")}</textarea>
-            <div class="mt-2">
-                <button class="btn btn-sm btn-primary save-edit-btn">Save</button>
-                <button class="btn btn-sm btn-outline-secondary cancel-edit-btn">Cancel</button>
-            </div>
-        `;
-
-        commentTextElement.style.display = 'none';
-        commentTextElement.after(editForm);
-
-        editForm.querySelector('.save-edit-btn').addEventListener('click', async () => {
-            const newContent = editForm.querySelector('textarea').value.trim();
-            if (newContent) {
-                await this.editComment(commentId, newContent);
-            }
-            editForm.remove();
-            commentTextElement.style.display = 'block';
-        });
-
-        editForm.querySelector('.cancel-edit-btn').addEventListener('click', () => {
-            editForm.remove();
-            commentTextElement.style.display = 'block';
-        });
-    }
-
     updateCommentVotes(commentId, upvoteCount, downvoteCount, currentUserVote) {
-        const el = document.querySelector(`.pd-comment-item[data-comment-id="${commentId}"]`);
+        const el = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
         if (!el) return;
-        const scoreEl = el.querySelector(`.pd-comment-vote-count`);
+
+        const scoreEl = el.querySelector(`.comment-vote-count`);
         if (scoreEl) scoreEl.textContent = upvoteCount - downvoteCount;
-        el.querySelector('.upvote').classList.toggle('active', currentUserVote === 1);
-        el.querySelector('.downvote').classList.toggle('active', currentUserVote === -1);
+
+        el.querySelector('.comment-vote-btn.upvote')?.classList.toggle('active', currentUserVote === 1);
+        el.querySelector('.comment-vote-btn.downvote')?.classList.toggle('active', currentUserVote === -1);
     }
 
     updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote) {
@@ -544,36 +452,55 @@ class SignalRManager {
         document.getElementById(`downvoteBtn-${postId}`).classList.toggle('active', currentUserVote === -1);
     }
 
-    updatePollResultsUI(postId, pollOptionsData) {
+    updatePollResultsUI(pollData) {
+        const { postId, options, totalVotes, hasUserVoted } = pollData;
         const pollContainer = document.querySelector(`.poll-container[data-post-id="${postId}"]`);
         if (!pollContainer) return;
 
-        const totalVotes = pollOptionsData.reduce((sum, opt) => sum + opt.voteCount, 0);
         pollContainer.querySelector('.poll-total-votes').textContent = `${totalVotes.toLocaleString()} votes`;
 
-        const votedIndicator = pollContainer.querySelector('.text-success');
-        if (!votedIndicator) {
-            pollContainer.querySelector('.text-muted')?.remove();
-            const newIndicator = document.createElement('p');
-            newIndicator.className = 'text-success text-center small mb-3';
-            newIndicator.innerHTML = `<i class="fas fa-check-circle"></i> You have voted in this poll`;
-            pollContainer.querySelector('.poll-question').after(newIndicator);
+        // Show "You have voted" message
+        if (hasUserVoted) {
+            pollContainer.querySelector('.text-muted.text-center')?.remove(); // Remove "Click to vote"
+            if (!pollContainer.querySelector('.text-success.text-center')) {
+                const votedText = document.createElement('p');
+                votedText.className = 'text-success text-center small mb-3';
+                votedText.innerHTML = `<i class="fas fa-check-circle"></i> You have voted in this poll`;
+                pollContainer.querySelector('.poll-question').after(votedText);
+            }
         }
 
-        pollOptionsData.forEach(optionData => {
+        options.forEach(optionData => {
             const optionEl = pollContainer.querySelector(`.poll-option[data-option-id="${optionData.pollOptionId}"]`);
             if (optionEl) {
                 const percentage = totalVotes > 0 ? (optionData.voteCount / totalVotes) * 100 : 0;
+
+                // Update UI elements
                 optionEl.querySelector('.poll-option-bar').style.width = `${percentage.toFixed(0)}%`;
                 optionEl.querySelector('.poll-option-count').textContent = optionData.voteCount;
                 optionEl.querySelector('.poll-option-percent').textContent = `${percentage.toFixed(0)}%`;
 
+                // Handle the button state
                 const button = optionEl.querySelector('.poll-option-vote-btn');
-                if (button) {
-                    button.disabled = true;
-                    button.style.cursor = 'default';
+                if (button && hasUserVoted) {
+                    // If the user has voted, replace the button with a static div to prevent further clicks
+                    const staticContent = button.innerHTML;
+                    const staticDiv = document.createElement('div');
+                    staticDiv.className = 'poll-option-inner';
+                    staticDiv.innerHTML = staticContent;
+                    button.replaceWith(staticDiv);
                 }
-                optionEl.classList.add('voted');
+
+                // Visually mark the option the user selected
+                if (optionData.hasUserVoted) {
+                    optionEl.classList.add('selected', 'voted');
+                    const radio = optionEl.querySelector('.radio-circle');
+                    if (radio) {
+                        radio.classList.add('selected');
+                        radio.innerHTML = '<i class="fas fa-check"></i>';
+                    }
+                }
+                optionEl.classList.add('voted'); // Mark as voted to show results
             }
         });
     }
@@ -603,24 +530,19 @@ class SignalRManager {
     }
 }
 
-// Instantiate and initialize
+// --- INITIALIZATION ---
 const signalRManager = new SignalRManager();
-window.signalRManager = signalRManager;
+window.signalRManager = signalRManager; // For debugging
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // This function will be called once the DOM is fully loaded and parsed.
-
     // 1. Initialize SignalR Connections
     await signalRManager.initializeConnections();
 
-    // 2. Wait until the connection is actually established before proceeding
-    // This is a critical fix to prevent race conditions.
+    // 2. CRITICAL FIX: Wait for the connection to be fully established before proceeding
     const waitForConnection = new Promise((resolve, reject) => {
-        let timeout = setTimeout(() => reject("SignalR connection timed out."), 10000); // 10-second timeout
-
-        // Check periodically
+        const timeout = setTimeout(() => reject("SignalR connection timed out."), 10000); // 10-second timeout
         const interval = setInterval(() => {
-            if (signalRManager.postConnection.state === signalR.HubConnectionState.Connected) {
+            if (signalRManager.postConnection?.state === signalR.HubConnectionState.Connected) {
                 clearTimeout(timeout);
                 clearInterval(interval);
                 resolve();
@@ -633,9 +555,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("SignalR connection confirmed. Proceeding with page setup.");
 
         // 3. Find the Post ID
-        const postIdElement = document.getElementById('pagePostId') || document.querySelector('[data-post-id]');
+        const postIdElement = document.getElementById('pagePostId');
         if (postIdElement) {
-            signalRManager.pagePostId = parseInt(postIdElement.dataset.postId || postIdElement.value);
+            signalRManager.pagePostId = parseInt(postIdElement.value);
             if (!isNaN(signalRManager.pagePostId)) {
                 // 4. Join the SignalR group for this specific post
                 await signalRManager.joinPostGroup(signalRManager.pagePostId);
@@ -643,11 +565,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error("Could not parse Post ID from element:", postIdElement);
             }
         } else {
-            console.error("No element found with ID 'pagePostId' or attribute 'data-post-id'. Real-time features will be limited.");
+            console.log("No Post ID element found on this page. Some real-time features may be limited.");
         }
 
-        // 5. Bind all initial event handlers for comments, votes, etc.
-        signalRManager.rebindCommentEvents();
+        // 5. Bind all initial event handlers
+        signalRManager.rebindAllEvents();
 
         // 6. Set up the main comment form
         const commentTextarea = document.getElementById('mainCommentContent');
@@ -658,23 +580,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         document.getElementById('submitMainComment')?.addEventListener('click', async () => {
-            const content = document.getElementById('mainCommentContent').value;
+            if (!signalRManager.pagePostId) return signalRManager.showNotification("Error: Post ID is missing.", "error");
 
-            if (!signalRManager.pagePostId) {
-                signalRManager.showNotification("Error: Could not determine the post ID. Please refresh the page.", "error");
-                return;
-            }
-            if (!content.trim()) {
-                signalRManager.showNotification("Please enter a comment.", "error");
-                return;
-            }
+            const contentElement = document.getElementById('mainCommentContent');
+            const content = contentElement.value;
+
+            if (!content.trim()) return signalRManager.showNotification("Please enter a comment.", "error");
 
             await signalRManager.sendComment(signalRManager.pagePostId, content.trim());
-            document.getElementById('mainCommentContent').value = '';
+            contentElement.value = '';
         });
 
     } catch (error) {
-        console.error(error);
-        signalRManager.showNotification("Could not establish a real-time connection with the server.", "error");
+        console.error("Initialization failed:", error);
+        signalRManager.showNotification("Could not establish a real-time connection.", "error");
     }
 });
