@@ -17,6 +17,7 @@
     <Compile Remove="Hubs\PostHub - Copy.cs" />
     <Compile Remove="Models\ViewModels\CreativeViewModels\CreatePostViewModelCopyl.cs" />
     <Compile Remove="Models\ViewModels\PostDetailPageViewModelCopy.cs" />
+    <Compile Remove="Services\PostService - Copy.cs" />
   </ItemGroup>
 
   <ItemGroup>
