@@ -19,7 +19,8 @@ class SignalRManager {
         this.handleShareButtonClick = this.handleShareButtonClick.bind(this);
         this.handleShareOptionClick = this.handleShareOptionClick.bind(this);
         this.handlePostVoteButtonClick = this.handlePostVoteButtonClick.bind(this);
-        this.handlePollVoteButtonClick = this.handlePollVoteButtonClick.bind(this);
+        this.
+        = this.handlePollVoteButtonClick.bind(this);
         this.checkConnectionState = this.checkConnectionState.bind(this); // Bind for interval
     }
 

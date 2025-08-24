@@ -297,37 +297,20 @@ class SignalRManager {
             const parentId = parseInt(form.dataset.commentId);
             await this.sendComment(this.pagePostId, content, parentId);
             form.querySelector('textarea').value = '';
-            // CORRECTED: Hide the form after submission
-            form.classList.add('d-none');
-            form.classList.remove('d-flex');
+            form.classList.remove('active');
         }
     }
 
     handleReplyCancel(event) {
         event.preventDefault();
         const form = event.currentTarget.closest('.reply-form');
-        // CORRECTED: Hide the form on cancel
-        form.classList.add('d-none');
-        form.classList.remove('d-flex');
+        form.classList.remove('active');
         form.querySelector('textarea').value = '';
     }
 
     async handlePollVoteButtonClick(event) {
         const button = event.currentTarget;
-        // This validation is correct and crucial for preventing errors.
-        const postId = parseInt(button.dataset.postId, 10);
-        const optionId = parseInt(button.dataset.optionId, 10);
-
-        if (isNaN(postId) || isNaN(optionId) || postId <= 0 || optionId <= 0) {
-            console.error("Invalid Post ID or Option ID. Cannot cast vote.", {
-                postId: button.dataset.postId,
-                optionId: button.dataset.optionId
-            });
-            this.showNotification("Could not cast vote due to an internal error.", 'error');
-            return;
-        }
-
-        await this.castPollVote(postId, optionId);
+        await this.castPollVote(parseInt(button.dataset.postId), parseInt(button.dataset.optionId));
     }
 
     rebindPollVoteButtons() {
@@ -442,20 +425,10 @@ class SignalRManager {
     }
 
     showReplyForm(commentId) {
-        // CORRECTED: This function now correctly toggles visibility using Bootstrap's display classes
-        // which matches the classes in the `_CommentItem.cshtml` partial view.
-
-        // Hide all other reply forms to ensure only one is open at a time
-        document.querySelectorAll('.reply-form').forEach(form => {
-            form.classList.add('d-none');
-            form.classList.remove('d-flex');
-        });
-
+        document.querySelectorAll('.reply-form.active').forEach(f => f.classList.remove('active'));
         const replyForm = document.getElementById(`replyForm${commentId}`);
         if (replyForm) {
-            // Show the target reply form by removing d-none and adding d-flex
-            replyForm.classList.remove('d-none');
-            replyForm.classList.add('d-flex');
+            replyForm.classList.add('active');
             replyForm.querySelector('textarea')?.focus();
         }
     }
@@ -472,20 +445,12 @@ class SignalRManager {
     }
 
     updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote) {
-        const upvoteCountElement = document.getElementById(`upvoteCount-${postId}`);
-        const downvoteCountElement = document.getElementById(`downvoteCount-${postId}`);
-        const totalScoreElement = document.getElementById(`totalScore-${postId}`);
-        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
-        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
-
-        if (upvoteCountElement) upvoteCountElement.textContent = upvoteCount;
-        if (downvoteCountElement) downvoteCountElement.textContent = `-${downvoteCount}`; // Assuming you want to show a negative sign
-        if (totalScoreElement) totalScoreElement.textContent = `Score ${upvoteCount - downvoteCount}`;
-
-        if (upvoteBtn) upvoteBtn.classList.toggle('active', currentUserVote === 1);
-        if (downvoteBtn) downvoteBtn.classList.toggle('active', currentUserVote === -1);
+        document.getElementById(`upvoteCount-${postId}`).textContent = upvoteCount;
+        document.getElementById(`downvoteCount-${postId}`).textContent = `-${downvoteCount}`;
+        document.getElementById(`totalScore-${postId}`).textContent = `Score ${upvoteCount - downvoteCount}`;
+        document.getElementById(`upvoteBtn-${postId}`).classList.toggle('active', currentUserVote === 1);
+        document.getElementById(`downvoteBtn-${postId}`).classList.toggle('active', currentUserVote === -1);
     }
-
 
     updatePollResultsUI(pollData) {
         const { postId, options, totalVotes, hasUserVoted } = pollData;

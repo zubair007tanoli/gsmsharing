@@ -694,8 +694,8 @@ class SignalRManager {
     // Event handler for poll vote buttons.
     async handlePollVoteButtonClick(event) {
         const button = event.currentTarget;
-        const postId = parseInt(button.getAttribute('data-post-id'));
-        const optionId = parseInt(button.getAttribute('data-option-id'));
+        const postId = parseInt(document.getElementById('pagePostId'));
+        const optionId = parseInt(button.dataset.optionId);
 
         // For simplicity, assuming single choice poll. Adjust this logic for multiple choice if needed.
         await this.votePoll(postId, [optionId]); // Pass selected option(s) in an array

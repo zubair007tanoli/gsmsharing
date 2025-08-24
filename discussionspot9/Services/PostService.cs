@@ -254,6 +254,20 @@ namespace discussionspot9.Services
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // First check if the post exists and is a poll
+                var post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
+                if (post == null)
+                {
+                    _logger.LogError($"Post not found: {postId}");
+                    return new VotePollResult { Success = false, Message = "Post not found." };
+                }
+
+                if (!post.HasPoll)
+                {
+                    _logger.LogError($"Post {postId} is not a poll.");
+                    return new VotePollResult { Success = false, Message = "This post is not a poll." };
+                }
+
                 var existingVote = await _context.PollVotes
                     .FirstOrDefaultAsync(pv => pv.PollOptionId == pollOptionId && pv.UserId == userId);
 
@@ -261,10 +275,26 @@ namespace discussionspot9.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync(pc => pc.PostId == postId);
 
+                // Create default configuration if missing
                 if (pollConfig == null)
                 {
-                    _logger.LogError($"Poll configuration not found for PostId: {postId}");
-                    return new VotePollResult { Success = false, Message = "Poll configuration not found." };
+                    _logger.LogWarning($"Poll configuration not found for PostId: {postId}. Creating default configuration.");
+
+                    pollConfig = new PollConfiguration
+                    {
+                        PostId = postId,
+                        AllowMultipleChoices = false,
+                        ShowResultsBeforeVoting = true,
+                        ShowResultsBeforeEnd = true,
+                        AllowAddingOptions = false,
+                        MinOptions = 2,
+                        MaxOptions = 10,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    _context.PollConfigurations.Add(pollConfig);
+                    await _context.SaveChangesAsync();
                 }
 
                 if (existingVote != null)
@@ -302,7 +332,6 @@ namespace discussionspot9.Services
                     option.VoteCount = await _context.PollVotes.CountAsync(v => v.PollOptionId == option.PollOptionId);
                 }
 
-                var post = await _context.Posts.FindAsync(postId);
                 if (post != null)
                 {
                     post.PollVoteCount = pollOptions.Sum(po => po.VoteCount);
@@ -331,7 +360,6 @@ namespace discussionspot9.Services
                 };
             }
         }
-
         public async Task<List<PostAwardViewModel>> GetPostAwardsAsync(int postId)
         {
             return await _context.PostAwards
@@ -552,6 +580,7 @@ namespace discussionspot9.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
+
             _context.PollConfigurations.Add(pollConfig);
 
             for (int i = 0; i < model.PollOptions.Count; i++)
@@ -569,8 +598,10 @@ namespace discussionspot9.Services
                     _context.PollOptions.Add(option);
                 }
             }
-        }
 
+            // Make sure to save changes
+            await _context.SaveChangesAsync();
+        }
         // ... (The rest of the file remains unchanged) ...
 
         public async Task<PostDetailViewModel?> GetPostDetailsUpdateAsync(string communitySlug, string postSlug, string? currentUserId = null)

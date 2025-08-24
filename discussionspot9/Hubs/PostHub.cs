@@ -29,9 +29,9 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
    
 
         [Authorize] // Ensure only authenticated users can cast a vote
+    
         public async Task CastPollVote(int postId, int pollOptionId)
         {
-            // Log the vote attempt for debugging purposes
             _logger.LogInformation($"User '{Context.UserIdentifier}' is casting a vote for PostId: {postId}, PollOptionId: {pollOptionId}");
 
             var userId = GetUserId();
@@ -39,6 +39,29 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             {
                 _logger.LogError("User ID is null or empty. Cannot cast poll vote.");
                 await Clients.Caller.SendAsync("ReceivePollVoteError", "User not authenticated.");
+                return;
+            }
+
+            // First verify the post exists and is a poll
+            try
+            {
+                var post = await _postService.GetPostByIdAsync(postId);
+                if (post == null)
+                {
+                    await Clients.Caller.SendAsync("ReceivePollVoteError", "Post not found.");
+                    return;
+                }
+
+                if (!post.HasPoll)
+                {
+                    await Clients.Caller.SendAsync("ReceivePollVoteError", "This post is not a poll.");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error validating post {postId}");
+                await Clients.Caller.SendAsync("ReceivePollVoteError", "Error validating post.");
                 return;
             }
 
@@ -57,9 +80,12 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
 
                 if (pollResult.Success)
                 {
+                    // Get updated poll data to broadcast
+                    var pollData = await _postService.GetPollDetailsAsync(postId, userId);
+
                     // If the vote was successful, broadcast the updated poll data
                     // to all clients in the post's group.
-                    await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollResult.UpdatedVoteCounts);
+                    await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollData);
 
                     // Additionally, send a success message to the user who voted
                     await Clients.Caller.SendAsync("ReceivePollVoteSuccess", "Your vote was recorded successfully!");
