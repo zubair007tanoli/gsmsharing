@@ -26,68 +26,53 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             _logger = logger;
             _viewRenderService = viewRenderService;
         }
-   
+
 
         [Authorize] // Ensure only authenticated users can cast a vote
-    
         public async Task CastPollVote(int postId, int pollOptionId)
         {
-            _logger.LogInformation($"User '{Context.UserIdentifier}' is casting a vote for PostId: {postId}, PollOptionId: {pollOptionId}");
-
             var userId = GetUserId();
+            _logger.LogInformation($"Attempting to cast poll vote. User: '{userId}', PostId: {postId}, OptionId: {pollOptionId}");
+
             if (string.IsNullOrEmpty(userId))
             {
-                _logger.LogError("User ID is null or empty. Cannot cast poll vote.");
-                await Clients.Caller.SendAsync("ReceivePollVoteError", "User not authenticated.");
-                return;
-            }
-
-            // First verify the post exists and is a poll
-            try
-            {
-                var post = await _postService.GetPostByIdAsync(postId);
-                if (post == null)
-                {
-                    await Clients.Caller.SendAsync("ReceivePollVoteError", "Post not found.");
-                    return;
-                }
-
-                if (!post.HasPoll)
-                {
-                    await Clients.Caller.SendAsync("ReceivePollVoteError", "This post is not a poll.");
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error validating post {postId}");
-                await Clients.Caller.SendAsync("ReceivePollVoteError", "Error validating post.");
-                return;
-            }
-
-            // Check if user has already voted on this poll
-            bool hasVoted = await _postService.HasUserVotedInPollAsync(postId, userId);
-            if (hasVoted)
-            {
-                await Clients.Caller.SendAsync("ReceivePollVoteError", "You have already voted in this poll.");
+                _logger.LogWarning("Unauthorized vote attempt: User ID is null or empty.");
+                await Clients.Caller.SendAsync("ReceivePollVoteError", "You must be logged in to vote.");
                 return;
             }
 
             try
             {
-                // Call your service layer to handle the voting logic.
+                // **FIX:** The premature check for whether a user has already voted has been removed.
+                // The service layer (`PostService`) is designed to handle vote changes (i.e., removing
+                // the old vote and adding the new one). This hub was incorrectly preventing that logic
+                // from ever being reached. By removing the block, we allow the service to correctly
+                // process new votes and vote changes.
+
+                // Call the service layer to handle the voting logic.
                 var pollResult = await _postService.CastPollVoteAsync(postId, pollOptionId, userId);
 
                 if (pollResult.Success)
                 {
-                    // Get updated poll data to broadcast
-                    var pollData = await _postService.GetPollDetailsAsync(postId, userId);
+                    _logger.LogInformation($"Successfully cast vote for PostId: {postId} by User: '{userId}'.");
 
-                    // If the vote was successful, broadcast the updated poll data
-                    // to all clients in the post's group.
-                    await Clients.Group($"post-{postId}").SendAsync("ReceivePollUpdate", pollData);
+                    // **FIX:** To ensure correct UI updates for all clients, we now generate two separate payloads.
+                    // 1. A personalized payload for the user who cast the vote, which will correctly
+                    //    show their selected option and "You have voted" status.
+                    var pollDataForCaller = await _postService.GetPollDetailsAsync(postId, userId);
 
-                    // Additionally, send a success message to the user who voted
+                    // 2. A generic payload for all other users in the group. This payload contains
+                    //    the updated vote counts and percentages but does not include any user-specific
+                    //    data, so it won't incorrectly change their view of the poll.
+                    var pollDataForOthers = await _postService.GetPollDetailsAsync(postId, null);
+
+                    // Send the personalized update directly to the user who voted.
+                    await Clients.Caller.SendAsync("ReceivePollUpdate", pollDataForCaller);
+
+                    // Broadcast the generic update to everyone else viewing the post.
+                    await Clients.OthersInGroup($"post-{postId}").SendAsync("ReceivePollUpdate", pollDataForOthers);
+
+                    // Send a success notification toast to the caller.
                     await Clients.Caller.SendAsync("ReceivePollVoteSuccess", "Your vote was recorded successfully!");
                 }
                 else
@@ -99,7 +84,7 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"An error occurred while casting poll vote for PostId: {postId}");
+                _logger.LogError(ex, $"An unexpected error occurred while casting poll vote for PostId: {postId}");
                 await Clients.Caller.SendAsync("ReceivePollVoteError", "An unexpected error occurred. Please try again.");
             }
         }

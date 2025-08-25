@@ -19,7 +19,7 @@ class SignalRManager {
         this.handleShareButtonClick = this.handleShareButtonClick.bind(this);
         this.handleShareOptionClick = this.handleShareOptionClick.bind(this);
         this.handlePostVoteButtonClick = this.handlePostVoteButtonClick.bind(this);
-        this.handlePollVote = this.handlePollVote.bind(this);
+        this.handlePollVoteButtonClick = this.handlePollVoteButtonClick.bind(this);
         this.handleDeleteCommentClick = this.handleDeleteCommentClick.bind(this);
         this.checkConnectionState = this.checkConnectionState.bind(this);
     }
@@ -117,6 +117,7 @@ class SignalRManager {
                         if (!repliesContainer) {
                             repliesContainer = document.createElement('div');
                             repliesContainer.className = 'comment-replies';
+                            // Insert after the parent's content, before any existing replies container
                             parentCommentItem.querySelector('.comment-content').after(repliesContainer);
                         }
                         repliesContainer.insertAdjacentHTML('beforeend', commentHtml);
@@ -296,6 +297,7 @@ class SignalRManager {
             const parentId = parseInt(form.dataset.commentId);
             await this.sendComment(this.pagePostId, content, parentId);
             form.querySelector('textarea').value = '';
+            // CORRECTED: Hide the form after submission
             form.classList.add('d-none');
             form.classList.remove('d-flex');
         }
@@ -304,30 +306,22 @@ class SignalRManager {
     handleReplyCancel(event) {
         event.preventDefault();
         const form = event.currentTarget.closest('.reply-form');
+        // CORRECTED: Hide the form on cancel
         form.classList.add('d-none');
         form.classList.remove('d-flex');
         form.querySelector('textarea').value = '';
     }
 
-    // **FIX:** This handler is now more robust.
-    async handlePollVote(event) {
-        // It finds the closest '.poll-option' container from the click target.
-        const optionContainer = event.target.closest('.poll-option');
-        if (!optionContainer) return; // Click was outside any option, do nothing.
+    async handlePollVoteButtonClick(event) {
+        const button = event.currentTarget;
+        // This validation is correct and crucial for preventing errors.
+        const postId = parseInt(button.dataset.postId, 10);
+        const optionId = parseInt(button.dataset.optionId, 10);
 
-        // It then finds the main '.poll-container' to reliably get the Post ID.
-        const pollContainer = optionContainer.closest('.poll-container');
-        if (!pollContainer) return; // Should not happen if HTML is correct.
-
-        // Get IDs from the reliable parent containers, not the click target itself.
-        const postId = parseInt(pollContainer.dataset.postId, 10);
-        const optionId = parseInt(optionContainer.dataset.optionId, 10);
-
-        // The validation remains the same.
         if (isNaN(postId) || isNaN(optionId) || postId <= 0 || optionId <= 0) {
-            console.error("Invalid Post ID or Option ID from data attributes.", {
-                postId: pollContainer.dataset.postId,
-                optionId: optionContainer.dataset.optionId
+            console.error("Invalid Post ID or Option ID. Cannot cast vote.", {
+                postId: button.dataset.postId,
+                optionId: button.dataset.optionId
             });
             this.showNotification("Could not cast vote due to an internal error.", 'error');
             return;
@@ -337,12 +331,10 @@ class SignalRManager {
     }
 
     rebindPollVoteButtons() {
-        // The event delegation setup remains correct.
-        const pollOptionsContainer = document.getElementById('pollOptions');
-        if (pollOptionsContainer) {
-            pollOptionsContainer.removeEventListener('click', this.handlePollVote);
-            pollOptionsContainer.addEventListener('click', this.handlePollVote);
-        }
+        document.querySelectorAll('.poll-option-vote-btn').forEach(button => {
+            button.removeEventListener('click', this.handlePollVoteButtonClick);
+            button.addEventListener('click', this.handlePollVoteButtonClick);
+        });
     }
 
     handlePostVoteButtonClick(event) {
@@ -385,7 +377,7 @@ class SignalRManager {
         event.stopPropagation();
         const platform = event.currentTarget.dataset.platform;
         const postId = event.currentTarget.closest('.share-dropdown-menu').dataset.postId;
-        const postUrl = `${window.location.origin}/r/communitySlug/posts/${postId}`;
+        const postUrl = `${window.location.origin}/r/communitySlug/posts/${postId}`; // Adjust slug dynamically if needed
         const postTitle = document.title;
         let shareUrl = '';
 
@@ -450,6 +442,10 @@ class SignalRManager {
     }
 
     showReplyForm(commentId) {
+        // CORRECTED: This function now correctly toggles visibility using Bootstrap's display classes
+        // which matches the classes in the `_CommentItem.cshtml` partial view.
+
+        // Hide all other reply forms to ensure only one is open at a time
         document.querySelectorAll('.reply-form').forEach(form => {
             form.classList.add('d-none');
             form.classList.remove('d-flex');
@@ -457,6 +453,7 @@ class SignalRManager {
 
         const replyForm = document.getElementById(`replyForm${commentId}`);
         if (replyForm) {
+            // Show the target reply form by removing d-none and adding d-flex
             replyForm.classList.remove('d-none');
             replyForm.classList.add('d-flex');
             replyForm.querySelector('textarea')?.focus();
@@ -482,7 +479,7 @@ class SignalRManager {
         const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
 
         if (upvoteCountElement) upvoteCountElement.textContent = upvoteCount;
-        if (downvoteCountElement) downvoteCountElement.textContent = `-${downvoteCount}`;
+        if (downvoteCountElement) downvoteCountElement.textContent = `-${downvoteCount}`; // Assuming you want to show a negative sign
         if (totalScoreElement) totalScoreElement.textContent = `Score ${upvoteCount - downvoteCount}`;
 
         if (upvoteBtn) upvoteBtn.classList.toggle('active', currentUserVote === 1);
@@ -497,8 +494,9 @@ class SignalRManager {
 
         pollContainer.querySelector('.poll-total-votes').textContent = `${totalVotes.toLocaleString()} votes`;
 
+        // Show "You have voted" message
         if (hasUserVoted) {
-            pollContainer.querySelector('.text-muted.text-center')?.remove();
+            pollContainer.querySelector('.text-muted.text-center')?.remove(); // Remove "Click to vote"
             if (!pollContainer.querySelector('.text-success.text-center')) {
                 const votedText = document.createElement('p');
                 votedText.className = 'text-success text-center small mb-3';
@@ -512,17 +510,15 @@ class SignalRManager {
             if (optionEl) {
                 const percentage = totalVotes > 0 ? (optionData.voteCount / totalVotes) * 100 : 0;
 
-                const bar = optionEl.querySelector('.poll-option-bar');
-                if (bar) bar.style.width = `${percentage.toFixed(0)}%`;
+                // Update UI elements
+                optionEl.querySelector('.poll-option-bar').style.width = `${percentage.toFixed(0)}%`;
+                optionEl.querySelector('.poll-option-count').textContent = optionData.voteCount;
+                optionEl.querySelector('.poll-option-percent').textContent = `${percentage.toFixed(0)}%`;
 
-                const count = optionEl.querySelector('.poll-option-count');
-                if (count) count.textContent = optionData.voteCount;
-
-                const percent = optionEl.querySelector('.poll-option-percent');
-                if (percent) percent.textContent = `${percentage.toFixed(0)}%`;
-
+                // Handle the button state
                 const button = optionEl.querySelector('.poll-option-vote-btn');
                 if (button && hasUserVoted) {
+                    // If the user has voted, replace the button with a static div to prevent further clicks
                     const staticContent = button.innerHTML;
                     const staticDiv = document.createElement('div');
                     staticDiv.className = 'poll-option-inner';
@@ -530,6 +526,7 @@ class SignalRManager {
                     button.replaceWith(staticDiv);
                 }
 
+                // Visually mark the option the user selected
                 if (optionData.hasUserVoted) {
                     optionEl.classList.add('selected', 'voted');
                     const radio = optionEl.querySelector('.radio-circle');
@@ -538,7 +535,7 @@ class SignalRManager {
                         radio.innerHTML = '<i class="fas fa-check"></i>';
                     }
                 }
-                optionEl.classList.add('voted');
+                optionEl.classList.add('voted'); // Mark as voted to show results
             }
         });
     }
@@ -576,7 +573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize SignalR Connections
     await signalRManager.initializeConnections();
 
-    // 2. Wait for the connection to be fully established before proceeding
+    // 2. CRITICAL FIX: Wait for the connection to be fully established before proceeding
     const waitForConnection = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject("SignalR connection timed out."), 10000); // 10-second timeout
         const interval = setInterval(() => {
