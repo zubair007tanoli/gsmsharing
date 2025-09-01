@@ -57,8 +57,9 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public bool IsCurrentUserAuthor { get; set; }
 
         public LinkPreviewViewModel LinkModel = new();
-        // Calculated properties
-        public int Score => UpvoteCount - DownvoteCount;      
+   
+        public int Score => UpvoteCount - DownvoteCount;   
+        
         public string TimeAgo => GetTimeAgo(CreatedAt);
         public string PostUrl => $"/r/{CommunitySlug}/posts/{Slug}";
         public string AuthorUrl => $"/u/{AuthorDisplayName}";

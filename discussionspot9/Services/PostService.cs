@@ -6,7 +6,6 @@ using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Models.ViewModels.HomePage;
 using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services.ServiceResults;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Security.Principal;
@@ -19,15 +18,13 @@ namespace discussionspot9.Services
         private readonly IMemoryCache _cache;
         private readonly ILogger<PostService> _logger;
         private readonly INotificationService _notificationService;
-        private readonly IUserHelper _userHelper;
 
-        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService, IUserHelper userHelper)
+        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService)
         {
             _context = context;
             _cache = cache;
             _logger = logger;
             _notificationService = notificationService;
-            _userHelper = userHelper;
         }
 
         public async Task<PostListViewModel> GetAllPostsAsync(string sort = "hot", string time = "all", int page = 1)
@@ -208,24 +205,6 @@ namespace discussionspot9.Services
 
             if (post == null) return null;
 
-            int? currentUserVote = null;
-            bool isSavedByUser = false;
-            string? currentUserId =  _userHelper.GetCurrentUserId();
-
-            if (!string.IsNullOrEmpty(currentUserId))
-            {
-                var userVote = await _context.PostVotes
-                    .FirstOrDefaultAsync(pv => pv.PostId == post.PostId && pv.UserId == currentUserId);
-                currentUserVote = userVote?.VoteType;
-
-                isSavedByUser = await _context.SavedPosts
-                    .AnyAsync(sp => sp.PostId == post.PostId && sp.UserId == currentUserId);
-            }
-
-            // --- FIX STARTS HERE ---
-            // Call the GetPollDetailsAsync method to populate the poll view model
-            var pollViewModel = await GetPollDetailsAsync(post.PostId, currentUserId);
-
             var authorProfile = await _context.UserProfiles
                 .FirstOrDefaultAsync(up => up.UserId == post.UserId);
 
@@ -272,10 +251,14 @@ namespace discussionspot9.Services
 
         public async Task<VotePollResult> CastPollVoteAsync(int postId, int pollOptionId, string userId)
         {
+            if (pollOptionId <= 0)
+            {
+                return new VotePollResult { Success = false, Message = "Invalid poll option selected." };
+            }
+
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // First check if the post exists and is a poll
                 var post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
                 if (post == null)
                 {
@@ -289,51 +272,41 @@ namespace discussionspot9.Services
                     return new VotePollResult { Success = false, Message = "This post is not a poll." };
                 }
 
-                var existingVote = await _context.PollVotes
-                    .FirstOrDefaultAsync(pv => pv.PollOptionId == pollOptionId && pv.UserId == userId);
-
                 var pollConfig = await _context.PollConfigurations
                     .AsNoTracking()
                     .FirstOrDefaultAsync(pc => pc.PostId == postId);
 
-                // Create default configuration if missing
                 if (pollConfig == null)
                 {
                     _logger.LogWarning($"Poll configuration not found for PostId: {postId}. Creating default configuration.");
-
                     pollConfig = new PollConfiguration
                     {
                         PostId = postId,
                         AllowMultipleChoices = false,
                         ShowResultsBeforeVoting = true,
                         ShowResultsBeforeEnd = true,
-                        AllowAddingOptions = false,
-                        MinOptions = 2,
-                        MaxOptions = 10,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
-
                     _context.PollConfigurations.Add(pollConfig);
                     await _context.SaveChangesAsync();
                 }
 
-                if (existingVote != null)
+                var userVotesForPost = await _context.PollVotes
+                    .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
+                    .ToListAsync();
+
+                var existingVoteForOption = userVotesForPost.FirstOrDefault(v => v.PollOptionId == pollOptionId);
+
+                if (existingVoteForOption != null)
                 {
-                    _context.PollVotes.Remove(existingVote);
+                    _context.PollVotes.Remove(existingVoteForOption);
                 }
                 else
                 {
-                    if (!pollConfig.AllowMultipleChoices)
+                    if (!pollConfig.AllowMultipleChoices && userVotesForPost.Any())
                     {
-                        var existingVotesForPost = await _context.PollVotes
-                            .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
-                            .ToListAsync();
-
-                        if (existingVotesForPost.Any())
-                        {
-                            _context.PollVotes.RemoveRange(existingVotesForPost);
-                        }
+                        _context.PollVotes.RemoveRange(userVotesForPost);
                     }
 
                     var newVote = new PollVote
@@ -353,10 +326,7 @@ namespace discussionspot9.Services
                     option.VoteCount = await _context.PollVotes.CountAsync(v => v.PollOptionId == option.PollOptionId);
                 }
 
-                if (post != null)
-                {
-                    post.PollVoteCount = pollOptions.Sum(po => po.VoteCount);
-                }
+                post.PollVoteCount = pollOptions.Sum(po => po.VoteCount);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -620,26 +590,24 @@ namespace discussionspot9.Services
                 }
             }
 
-            // Make sure to save changes
             await _context.SaveChangesAsync();
         }
-        // ... (The rest of the file remains unchanged) ...
 
         public async Task<PostDetailViewModel?> GetPostDetailsUpdateAsync(string communitySlug, string postSlug, string? currentUserId = null)
         {
             var post = await _context.Posts
                 .Include(p => p.Community)
-                    .ThenInclude(c => c.Category) // Include category for CategorySlug
-                .Include(p => p.UserProfile) // Include user profile directly
+                    .ThenInclude(c => c.Category)
+                .Include(p => p.UserProfile)
                 .Include(p => p.PostTags)
                     .ThenInclude(pt => pt.Tag)
                 .Include(p => p.Media)
                 .Include(p => p.PollOptions)
                     .ThenInclude(po => po.Votes)
-                .Include(p => p.PollConfiguration) // Add this for poll settings
+                .Include(p => p.PollConfiguration)
                 .Include(p => p.Awards)
                     .ThenInclude(pa => pa.Award)
-                .Include(p => p.Votes) // For checking current user vote
+                .Include(p => p.Votes)
                 .FirstOrDefaultAsync(p => p.Slug == postSlug &&
                     p.Community!.Slug == communitySlug &&
                     p.Status == "published");
@@ -659,48 +627,24 @@ namespace discussionspot9.Services
                     .AnyAsync(sp => sp.PostId == post.PostId && sp.UserId == currentUserId);
             }
 
-            var pollViewModel = new PollViewModel();
-            if (post.HasPoll && post.PollOptions.Any())
-            {
-                List<int> userPollVotes = new();
-                if (!string.IsNullOrEmpty(currentUserId))
-                {
-                    userPollVotes = await _context.PollVotes
-                        .Where(pv => pv.PollOption.PostId == post.PostId && pv.UserId == currentUserId)
-                        .Select(pv => pv.PollOptionId)
-                        .ToListAsync();
-                }
-
-                pollViewModel = new PollViewModel
-                {
-                    PostId = post.PostId,
-                    Question = post.Title,
-                    Options = post.PollOptions.OrderBy(po => po.DisplayOrder).Select(po => new PollOptionViewModel
-                    {
-                        PollOptionId = po.PollOptionId,
-                        OptionText = po.OptionText,
-                        VoteCount = po.VoteCount,
-                        VotePercentage = (decimal)(post.PollVoteCount > 0 ? (double)po.VoteCount / post.PollVoteCount * 100 : 0),
-                        IsSelected = userPollVotes.Contains(po.PollOptionId)
-                    }).ToList(),
-                    TotalVotes = post.PollVoteCount,
-                    AllowMultipleChoices = post.PollConfiguration != null ? post.PollConfiguration.AllowMultipleChoices : false,
-                    ShowResultsBeforeVoting = post.PollConfiguration != null ? post.PollConfiguration.ShowResultsBeforeVoting : true,
-                    ShowResultsBeforeEnd = post.PollConfiguration != null ? post.PollConfiguration.ShowResultsBeforeEnd : true,
-                    AllowAddingOptions = post.PollConfiguration != null ? post.PollConfiguration.AllowAddingOptions : false,
-                    EndDate = post.PollExpiresAt ?? post.PollConfiguration?.EndDate,
-                    IsExpired = (post.PollExpiresAt.HasValue && post.PollExpiresAt < DateTime.UtcNow) ||
-                               (post.PollConfiguration?.EndDate.HasValue == true && post.PollConfiguration.EndDate < DateTime.UtcNow),
-                    HasUserVoted = userPollVotes.Any(),
-                    UserVotedOptionIds = userPollVotes,
-                    UserVotes = userPollVotes
-                };
-            }
+            var pollViewModel = await GetPollDetailsAsync(post.PostId, currentUserId);
 
             var linkModel = new LinkPreviewViewModel();
             if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
             {
-                // Logic for link preview
+                try
+                {
+                    var uri = new Uri(post.Url);
+                    linkModel.Title = post.Title;
+                    linkModel.Description = $"A link to {uri.Host}.";
+                    linkModel.Url = uri.Host;
+                }
+                catch (UriFormatException)
+                {
+                    linkModel.Title = post.Title;
+                    linkModel.Description = "An external link.";
+                    linkModel.Url = "invalid.url";
+                }
             }
 
             return new PostDetailViewModel
@@ -717,6 +661,7 @@ namespace discussionspot9.Services
                 DownvoteCount = post.DownvoteCount,
                 CommentCount = post.CommentCount,
                 ViewCount = post.ViewCount,
+                Score = post.Score,
                 HasPoll = post.HasPoll,
                 IsPinned = post.IsPinned,
                 IsLocked = post.IsLocked,
@@ -725,6 +670,7 @@ namespace discussionspot9.Services
                 IsSavedByUser = isSavedByUser,
                 UserId = post.UserId,
                 AuthorDisplayName = post.UserProfile?.DisplayName ?? "Unknown",
+                AuthorUrl = $"/user/{post.UserProfile?.DisplayName}",
                 AuthorInitials = GetInitials(post.UserProfile?.DisplayName ?? "Unknown"),
                 AuthorKarma = post.UserProfile?.KarmaPoints ?? 0,
                 IsCurrentUserAuthor = post.UserId == currentUserId,
@@ -1171,38 +1117,52 @@ namespace discussionspot9.Services
             return posts ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
         }
 
-        // Update the GetPollDetailsAsync method:
         public async Task<PollViewModel?> GetPollDetailsAsync(int postId, string? userId)
         {
             var post = await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.PollOptions)
                 .ThenInclude(po => po.Votes)
-                .Include(p => p.PollConfiguration) // Add this include
+                .Include(p => p.PollConfiguration)
                 .FirstOrDefaultAsync(p => p.PostId == postId);
 
-            if (post == null || post.PollOptions == null || !post.PollOptions.Any())
+            if (post == null || !post.HasPoll || post.PollOptions == null || !post.PollOptions.Any())
                 return null;
 
             var totalVotes = post.PollOptions.Sum(po => po.Votes.Count);
-            var hasUserVoted = userId != null && post.PollOptions.Any(po => po.Votes.Any(v => v.UserId == userId));
+
+            List<int> userVotedOptionIds = new List<int>();
+            if (userId != null)
+            {
+                userVotedOptionIds = await _context.PollVotes
+                    .Where(v => v.UserId == userId && v.PollOption.PostId == postId)
+                    .Select(v => v.PollOptionId)
+                    .ToListAsync();
+            }
+            var hasUserVoted = userVotedOptionIds.Any();
 
             return new PollViewModel
             {
-                PostId = postId,
-                Question = post.Content,
+                PostId = post.PostId,
+                Question = post.Title,
                 TotalVotes = totalVotes,
                 HasUserVoted = hasUserVoted,
-                EndDate = post.PollConfiguration?.EndDate, // Changed from PollExpiresAt
-                AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false, // Changed
+                UserVotes = userVotedOptionIds,
+                EndDate = post.PollConfiguration?.EndDate,
+                AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false,
                 Options = post.PollOptions.Select(po => new PollOptionViewModel
                 {
-                    PollOptionId = po.PollOptionId, // Changed from po.Id
-                    OptionText = po.OptionText, // Changed from po.Text
+                    PollOptionId = po.PollOptionId,
+                    OptionText = po.OptionText,
                     VoteCount = po.Votes.Count,
-                    HasUserVoted = userId != null && po.Votes.Any(v => v.UserId == userId),
-                    VotePercentage = totalVotes > 0 ? (decimal)po.Votes.Count / totalVotes * 100 : 0
-                }).OrderBy(o => o.PollOptionId).ToList()
+                    HasUserVoted = userVotedOptionIds.Contains(po.PollOptionId),
+                    VotePercentage = totalVotes > 0 ? (decimal)po.Votes.Count / totalVotes * 100 : 0,
+                    DisplayOrder = po.DisplayOrder
+                })
+                .OrderBy(o => o.DisplayOrder)
+                .ToList()
             };
         }
     }
 }
+

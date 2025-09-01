@@ -1,4 +1,5 @@
 ﻿using discussionspot9.Models.Domain;
+using discussionspot9.Models.ViewModels.PollViewModels;
 
 namespace discussionspot9.Models.ViewModels.CreativeViewModels
 {
@@ -11,6 +12,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string PostSlug { get; set; }
         public CommunityDetailViewModel? Community { get; set; }
         public string CategorySlug { get; set; } // Added this property
-        public List<PostCardViewModel> RelatedPosts { get; set; }
+        public List<PostCardViewModel> RelatedPosts { get; set; }     
+
     }
 }
