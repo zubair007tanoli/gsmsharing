@@ -6,6 +6,7 @@ using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Models.ViewModels.HomePage;
 using discussionspot9.Models.ViewModels.PollViewModels;
 using discussionspot9.Services.ServiceResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Security.Principal;
@@ -18,13 +19,15 @@ namespace discussionspot9.Services
         private readonly IMemoryCache _cache;
         private readonly ILogger<PostService> _logger;
         private readonly INotificationService _notificationService;
+        private readonly IUserHelper _userHelper;
 
-        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService)
+        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService, IUserHelper userHelper)
         {
             _context = context;
             _cache = cache;
             _logger = logger;
             _notificationService = notificationService;
+            _userHelper = userHelper;
         }
 
         public async Task<PostListViewModel> GetAllPostsAsync(string sort = "hot", string time = "all", int page = 1)
@@ -204,6 +207,24 @@ namespace discussionspot9.Services
                     p.Status == "published");
 
             if (post == null) return null;
+
+            int? currentUserVote = null;
+            bool isSavedByUser = false;
+            string? currentUserId =  _userHelper.GetCurrentUserId();
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                var userVote = await _context.PostVotes
+                    .FirstOrDefaultAsync(pv => pv.PostId == post.PostId && pv.UserId == currentUserId);
+                currentUserVote = userVote?.VoteType;
+
+                isSavedByUser = await _context.SavedPosts
+                    .AnyAsync(sp => sp.PostId == post.PostId && sp.UserId == currentUserId);
+            }
+
+            // --- FIX STARTS HERE ---
+            // Call the GetPollDetailsAsync method to populate the poll view model
+            var pollViewModel = await GetPollDetailsAsync(post.PostId, currentUserId);
 
             var authorProfile = await _context.UserProfiles
                 .FirstOrDefaultAsync(up => up.UserId == post.UserId);

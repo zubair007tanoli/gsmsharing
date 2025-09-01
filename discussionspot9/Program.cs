@@ -1,5 +1,6 @@
 
 using discussionspot9.Data.DbContext;
+using discussionspot9.Helpers;
 using discussionspot9.Hubs;
 using discussionspot9.Interfaces;
 using discussionspot9.Services;
@@ -64,6 +65,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddScoped<IPostTest, PostTest>();
+builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddSignalR();
 
 var app = builder.Build();
