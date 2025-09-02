@@ -661,7 +661,7 @@ namespace discussionspot9.Services
                 DownvoteCount = post.DownvoteCount,
                 CommentCount = post.CommentCount,
                 ViewCount = post.ViewCount,
-                Score = post.Score,
+                //Score = post.Score,
                 HasPoll = post.HasPoll,
                 IsPinned = post.IsPinned,
                 IsLocked = post.IsLocked,
@@ -670,7 +670,7 @@ namespace discussionspot9.Services
                 IsSavedByUser = isSavedByUser,
                 UserId = post.UserId,
                 AuthorDisplayName = post.UserProfile?.DisplayName ?? "Unknown",
-                AuthorUrl = $"/user/{post.UserProfile?.DisplayName}",
+                //AuthorUrl = $"/user/{post.UserProfile?.DisplayName}",
                 AuthorInitials = GetInitials(post.UserProfile?.DisplayName ?? "Unknown"),
                 AuthorKarma = post.UserProfile?.KarmaPoints ?? 0,
                 IsCurrentUserAuthor = post.UserId == currentUserId,
@@ -680,6 +680,7 @@ namespace discussionspot9.Services
                 CommunityIconUrl = post.Community.IconUrl,
                 CategorySlug = post.Community.Category?.Slug,
                 Tags = post.PostTags.Select(pt => pt.Tag.Name).ToList(),
+                // Poll data to populate PollViewModel
                 Media = post.Media.Select(m => new MediaViewModel
                 {
                     MediaId = m.MediaId,
