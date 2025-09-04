@@ -1207,6 +1207,10 @@
                         @if (Model.Post.HasPoll && Model.Post.Poll != null)
                         {
                             @await Html.PartialAsync("Partials/V1/_PostPoll", Model.Post.Poll)
+
+                            @await Component.InvokeAsync("PollView", new { postId = Model.Post.PostId })
+
+
                         }
                     </div>
 
