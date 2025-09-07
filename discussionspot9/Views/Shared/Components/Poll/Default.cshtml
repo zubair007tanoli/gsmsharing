@@ -1,0 +1,109 @@
+﻿@model discussionspot9.Models.ViewModels.PollViewModels.PollViewModel
+@if (Model != null)
+{
+    <div class="poll-container" data-post-id="@Model.PostId">
+        <div class="poll-badge">
+            <i class="fas fa-poll"></i>
+            <span>POLL</span>
+        </div>
+        <h5 class="poll-question">@Model.Question</h5>
+
+        @if (!Model.HasUserVoted)
+        {
+            <p class="text-muted text-center small mb-3">Click on an option to cast your vote.</p>
+        }
+        else
+        {
+            <p class="text-success text-center small mb-3">
+                <i class="fas fa-check-circle"></i> You have voted in this poll
+            </p>
+        }
+
+        <div class="poll-options" id="pollOptions">
+            @foreach (var option in Model.Options)
+            {
+                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "")"
+                     data-option-id="@option.PollOptionId">
+
+                    @if (!Model.HasUserVoted)
+                    {
+                        <!-- Clickable vote button when user hasn't voted -->
+                        <button type="button"
+                                class="poll-option-vote-btn w-100 border-0 bg-transparent p-0 text-start"
+                                data-post-id="@Model.PostId"
+                                data-option-id="@option.PollOptionId"
+                                style="cursor: pointer;">
+                            <div class="poll-option-inner">
+                                <div class="poll-radio">
+                                    <div class="radio-circle"></div>
+                                </div>
+                                <div class="poll-option-content">
+                                    <span class="poll-option-text">@option.OptionText</span>
+                                    <div class="poll-stats-inline">
+                                        <span class="poll-option-count">@option.VoteCount</span>
+                                        <span class="poll-option-percent">@option.VotePercentage.ToString("F0")%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                    }
+                    else
+                    {
+                        <!-- Static display when user has voted -->
+                        <div class="poll-option-inner">
+                            <div class="poll-radio">
+                                @if (option.HasUserVoted.HasValue && option.HasUserVoted.Value)
+                                {
+                                    <div class="radio-circle selected">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="radio-circle"></div>
+                                }
+                            </div>
+                            <div class="poll-option-content">
+                                <span class="poll-option-text">@option.OptionText</span>
+                                <div class="poll-stats-inline">
+                                    <span class="poll-option-count">@option.VoteCount</span>
+                                    <span class="poll-option-percent">@option.VotePercentage.ToString("F0")%</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Progress bar -->
+                    <div class="poll-option-bar" style="width: @(Model.HasUserVoted? option.VotePercentage.ToString("F0") : "0")%;"></div>
+                </div>
+            }
+        </div>
+
+        <div class="poll-stats">
+            <div class="poll-votes">
+                <i class="fas fa-chart-bar"></i>
+                <span class="poll-total-votes">@Model.TotalVotes.ToString("N0") votes</span>
+            </div>
+            <div class="poll-time">
+                <i class="fas fa-clock"></i>
+                <span>
+                    @if (Model.EndDate.HasValue)
+                    {
+                        if (Model.EndDate.Value > DateTime.UtcNow)
+                        {
+                            @:Poll closes in @((Model.EndDate.Value - DateTime.UtcNow).TotalDays.ToString("F0")) days
+                        }
+                        else
+                        {
+                            @:Poll closed
+                        }
+                    }
+                    else
+                    {
+                        @:No end date
+                    }
+                </span>
+            </div>
+        </div>
+    </div>
+}

@@ -8,15 +8,8 @@
     ViewData["Title"] = Model.Post.Title;
 }
 
+
 @section HeadScripts {
-    <link href="~/css/StyleTest/DetailPostStyles.css" rel="stylesheet" />
-}
-#<!-- #region name -->
-
-
-
-<!-- #endregion -->
-@*  @section HeadScripts { 
      <style>
         :root {
             --primary-color: #4f46e5;
@@ -678,7 +671,7 @@
 
             .comment-vote-btn.upvote:hover,
             .comment-vote-btn.upvote.active {
-                color: var (--success-color);
+                color: var(--success-color);
                 background-color: rgba(16, 185, 129, 0.1);
             }
 
@@ -1075,13 +1068,13 @@
         }
     </style>
 }
- *@
+
 <div class="post-detail-page">
     <div class="container-fluid" style="max-width: 90%;">
         <div class="row">
             <!-- Left Sidebar -->
             <div class="col-xl-3 col-lg-3 left-sidebar">
-                 Render Trending Topics View Component
+                @* Render Trending Topics View Component
                 @await Component.InvokeAsync("LeftSideBar")
 
                 <!-- Ad Banner -->
@@ -1100,11 +1093,11 @@
                     <div class="sidebar-content">
                         <div class="d-flex justify-content-between mb-2">
                             <span>New Posts:</span>
-                            <strong>1,247</strong>  Replace with dynamic data from a service/model 
+                            <strong>1,247</strong> @* Replace with dynamic data from a service/model *@
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Active Users:</span>
-                            <strong>15.2K</strong>  Replace with dynamic data 
+                            <strong>15.2K</strong> @* Replace with dynamic data *@
                         </div>
                         <div class="d-flex justify-content-between">
                             <span>Comments:</span>
@@ -1324,8 +1317,8 @@
                     <h3>Add a Comment</h3>
                     <div class="d-flex gap-3 mb-3">
                         @* Assuming User object is available from ASP.NET Core Identity *@
-                        <div class="user-avatar" style="background-color: @(User.Identity?.IsAuthenticated == true ? (User.Identity.Name ?? "Anonymous").ToAvatarColor() : "gray")">
-                            @(User.Identity?.IsAuthenticated == true ? (User.Identity.Name ?? "Anonymous").ToInitials() : "U")
+                        <div class="user-avatar" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
+                            @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
                         </div>
 
                         <!-- Typing indicators -->
@@ -1360,88 +1353,11 @@
 
                 @* Render Related Posts View Component *@
                 @await Component.InvokeAsync("RelatedPosts", new { postId = Model.Post.PostId })
-            </div> <!-- Closes right-sidebar -->
-        </div> <!-- Closes row -->
-    </div> <!-- Closes container-fluid -->
-</div> <!-- Closes post-detail-page -->
+            </div>
+        </div>
+    </div>
+</div>
 
-<!-- The issue "HTML0102: End tag is missing matching start tag" typically occurs when there is an unmatched closing tag. -->
-<!-- After reviewing the provided code, it seems there are unmatched closing tags in the `@@media` sections. -->
-<!-- Specifically, the `@@media` blocks for `max-width: 1200px`, `max-width: 992px`, and `max-width: 768px` are incomplete. -->
-<!-- Below is the corrected code for these sections. -->
-
-<style>
-    /* Responsive Styles */
-    @@media (max-width: 1200px) {
-        .left-sidebar {
-            display: none;
-        }
-
-        .col-xl-8 {
-            flex: 0 0 75%;
-            max-width: 75%;
-        }
-
-        .col-xl-2:last-child {
-            flex: 0 0 25%;
-            max-width: 25%;
-        }
-    }
-
-    @@media (max-width: 992px) {
-        .sidebar {
-            margin-top: 1.5rem;
-        }
-    }
-
-    @@media (max-width: 768px) {
-        .gallery-container {
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        }
-
-        .link-preview {
-            flex-direction: column;
-        }
-
-        .link-thumbnail {
-            width: 100%;
-            height: 150px;
-        }
-
-        .comment-replies {
-            margin-left: 1rem;
-            padding-left: 0.75rem;
-        }
-
-        .poll-container {
-            padding: 1.5rem;
-        }
-    }
-
-    @@media (max-width: 576px) {
-        .post-actions {
-            flex-wrap: wrap;
-        }
-
-        .action-buttons {
-            margin-top: 0.75rem;
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .gallery-container {
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        }
-
-        .poll-options {
-            gap: 0.75rem;
-        }
-
-        .poll-option {
-            padding: 0.75rem 1rem;
-        }
-    }
-</style>
 @section Scripts {
     <!-- Include SignalR and your script -->
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
