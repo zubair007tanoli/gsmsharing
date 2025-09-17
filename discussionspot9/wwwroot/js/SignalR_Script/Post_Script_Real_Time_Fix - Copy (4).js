@@ -490,25 +490,15 @@ class SignalRManager {
     }
 
 
-    // Replace this entire function in your file with the corrected version below.
     updatePollResultsUI(pollData) {
         const { postId, options, totalVotes, hasUserVoted } = pollData;
         const pollContainer = document.querySelector(`.poll-container[data-post-id="${postId}"]`);
         if (!pollContainer) return;
 
-        // Update total votes display
-        const totalVotesEl = pollContainer.querySelector('.poll-total-votes');
-        if (totalVotesEl) {
-            totalVotesEl.textContent = `${totalVotes.toLocaleString()} votes`;
-        }
+        pollContainer.querySelector('.poll-total-votes').textContent = `${totalVotes.toLocaleString()} votes`;
 
-        // If the user has voted, ensure the "You have voted" message is visible
         if (hasUserVoted) {
-            // Remove the initial "Click to cast..." message if it exists
-            const initialMessage = pollContainer.querySelector('.text-muted.text-center');
-            if (initialMessage) initialMessage.remove();
-
-            // Add the "You have voted" message if it doesn't exist
+            pollContainer.querySelector('.text-muted.text-center')?.remove();
             if (!pollContainer.querySelector('.text-success.text-center')) {
                 const votedText = document.createElement('p');
                 votedText.className = 'text-success text-center small mb-3';
@@ -517,52 +507,38 @@ class SignalRManager {
             }
         }
 
-        // Loop through each poll option to update its display
         options.forEach(optionData => {
             const optionEl = pollContainer.querySelector(`.poll-option[data-option-id="${optionData.pollOptionId}"]`);
             if (optionEl) {
                 const percentage = totalVotes > 0 ? (optionData.voteCount / totalVotes) * 100 : 0;
 
-                // FIX 1: Changed selector from '.poll-option-bar' to '.poll-progress'
-                const bar = optionEl.querySelector('.poll-progress');
+                const bar = optionEl.querySelector('.poll-option-bar');
                 if (bar) bar.style.width = `${percentage.toFixed(0)}%`;
 
-                // FIX 2: Updated selectors and content for vote counts and percentages.
-                // Your new HTML combines this into one element, so we'll target that.
-                const statsEl = optionEl.querySelector('.poll-percentage, .poll-stats-inline'); // Target both old and new for robustness
-                if (statsEl) {
-                    // The view now shows different text based on voted state. We need to handle this.
-                    // This will update the stats for everyone viewing the poll.
-                    const statsContainer = statsEl.parentElement;
-                    statsContainer.innerHTML = `
-                    <span class="poll-option-text">${optionData.optionText}</span>
-                    <div class="poll-stats-inline">
-                        <span class="poll-option-count">${optionData.voteCount}</span>
-                        <span class="poll-option-percent">${percentage.toFixed(0)}%</span>
-                    </div>
-                 `;
-                }
+                const count = optionEl.querySelector('.poll-option-count');
+                if (count) count.textContent = optionData.voteCount;
 
-                // Remove the vote button and replace it with a static div if the user has voted
+                const percent = optionEl.querySelector('.poll-option-percent');
+                if (percent) percent.textContent = `${percentage.toFixed(0)}%`;
+
                 const button = optionEl.querySelector('.poll-option-vote-btn');
                 if (button && hasUserVoted) {
-                    const staticContent = button.innerHTML; // Grab the inner content
+                    const staticContent = button.innerHTML;
                     const staticDiv = document.createElement('div');
                     staticDiv.className = 'poll-option-inner';
                     staticDiv.innerHTML = staticContent;
                     button.replaceWith(staticDiv);
                 }
 
-                // Add 'selected' and 'voted' classes to reflect the vote state
-                optionEl.classList.add('voted');
                 if (optionData.hasUserVoted) {
-                    optionEl.classList.add('selected');
+                    optionEl.classList.add('selected', 'voted');
                     const radio = optionEl.querySelector('.radio-circle');
                     if (radio) {
                         radio.classList.add('selected');
                         radio.innerHTML = '<i class="fas fa-check"></i>';
                     }
                 }
+                optionEl.classList.add('voted');
             }
         });
     }

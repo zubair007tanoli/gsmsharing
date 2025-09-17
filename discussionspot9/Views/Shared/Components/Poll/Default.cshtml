@@ -152,7 +152,7 @@
                                 </div>
                                 <div class="poll-option-content">
                                     <span class="poll-option-text">@option.OptionText</span>
-                                    <span class="poll-percentage">@option.VotePercentage.ToString("F0")%</span>
+                                    <span class="poll-percentage">@option.VoteCount.ToString("N0") Votes</span>
                                 </div>
                             </div>
                         </button>
@@ -175,13 +175,13 @@
                             </div>
                             <div class="poll-option-content">
                                 <span class="poll-option-text">@option.OptionText</span>
-                                <span class="poll-percentage">@option.VotePercentage.ToString("F0")%</span>
+                                <span class="poll-percentage">@option.VoteCount.ToString("N0") Count</span>
                             </div>
                         </div>
                     }
 
                     <!-- Progress bar -->
-                    <div class="poll-progress" style="width: @(Model.HasUserVoted? option.VotePercentage.ToString("F0") : "0")%;"></div>
+                    <div class="poll-progress" style="width: @(Model.HasUserVoted? option.VoteCount.ToString("N0") : "0")%;"></div>
                 </div>
             }
         </div>
