@@ -8,7 +8,7 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
 {
     // The PostHub handles real-time interactions related to posts and comments,
     // including commenting, voting, typing indicators, and notifications.
-    public class PostHub : Hub
+    public class PostHubs : Hub
     {
         private readonly IPostService _postService;
         private readonly ICommentService _commentService;
@@ -17,7 +17,7 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
         private readonly IViewRenderService _viewRenderService;
 
         // Constructor for dependency injection
-        public PostHub(IPostService postService, ICommentService commentService,
+        public PostHubs(IPostService postService, ICommentService commentService,
                       INotificationService notificationService, ILogger<PostHub> logger, IViewRenderService viewRenderService)
         {
             _postService = postService;
@@ -330,7 +330,7 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
                     if (comment != null)
                     {
 
-
+          
                         // Broadcast updated vote counts and user's vote status to all clients in the post group
                         await Clients.Group($"post-{comment.PostId}")
                             .SendAsync("CommentVoteUpdated", commentId,
