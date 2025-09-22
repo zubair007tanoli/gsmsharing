@@ -119,7 +119,7 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
         [Authorize] // Ensures only authenticated users can send comments
         public async Task SendComment(int postId, string content, int? parentCommentId)
         {
-            _logger.LogInformation($"*** DEBUG: SendComment method ENTERED. PostId: {postId}, Content: '{content}', ParentCommentId: {parentCommentId}. ConnectionId: {Context.ConnectionId}");
+            _logger.LogInformation($"Comment submission received for PostId: {postId}.");
 
             var htmlContent = string.Empty;
             var commentId = 0;
@@ -131,12 +131,13 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    // This scenario should be caught by [Authorize], but provides an additional safeguard.
                     await Clients.Caller.SendAsync("CommentError", "Unauthorized access. Please log in to comment.");
                     return;
                 }
 
-                // Create the comment via the CommentService
+                // --- PERFORMANCE OPTIMIZATION SUGGESTION ---
+                // Consider modifying your CreateCommentAsync service method to return the full comment object.
+                // This would avoid the second database call (`GetCommentByIdAsync`) and speed up the response.
                 var commentResult = await _commentService.CreateCommentAsync(new CreateCommentViewModel
                 {
                     PostId = postId,
@@ -154,15 +155,20 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
                 commentId = commentResult.CommentId;
                 var comment = await _commentService.GetCommentByIdAsync(commentId);
 
-                // Calculate depth for proper indentation in the UI
+                if (comment == null)
+                {
+                    _logger.LogError("Comment could not be found with ID {CommentId} after creation.", commentId);
+                    await Clients.Caller.SendAsync("CommentError", "Could not retrieve comment after saving.");
+                    return;
+                }
+
                 int depth = 0;
                 if (parentCommentId.HasValue)
                 {
                     var parentComment = await _commentService.GetCommentByIdAsync(parentCommentId.Value);
-                    depth = parentComment?.TreeLevel + 1 ?? 1; // Increment depth if it's a reply
+                    depth = parentComment?.TreeLevel + 1 ?? 1;
                 }
 
-                // Prepare the view model for rendering the comment HTML
                 var commentModel = new CommentTreeViewModel()
                 {
                     Comment = comment,
@@ -170,19 +176,10 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
                     Depth = depth
                 };
 
-                // Render the comment partial view to HTML string
-                try
-                {
-                    htmlContent = await _viewRenderService.RenderToStringAsync("Partials/V1/_CommentItem", commentModel);
-                }
-                catch (Exception renderEx)
-                {
-                    _logger.LogError(renderEx, "Error rendering comment HTML for PostId {PostId}, CommentId {CommentId}", postId, commentId);
-                    await Clients.Caller.SendAsync("CommentError", "Failed to render comment in the UI.");
-                    return;
-                }
+                // Render the partial view to an HTML string on the server.
+                htmlContent = await _viewRenderService.RenderToStringAsync("Partials/V1/_CommentItem", commentModel);
 
-                // Send notifications to post author or parent comment author if different from current user
+                // Send notifications
                 var post = await _postService.GetPostByIdAsync(postId);
                 if (post != null && post.UserId != userId)
                 {
@@ -194,19 +191,20 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
                     var parentComment = await _commentService.GetCommentByIdAsync(parentCommentId.Value);
                     if (parentComment != null && parentComment.UserId != userId && parentComment.UserId != post?.UserId)
                     {
-                        // Avoid double-notifying if parent comment author is also post author
                         await SendNotification(parentComment.UserId, $"{userName} replied to your comment", postId, "reply");
                     }
                 }
 
-                // Broadcast the new comment HTML to all clients in the post group
+                // Broadcast the final rendered HTML to all clients in the group.
                 await Clients.Group($"post-{postId}").SendAsync("ReceiveComment", htmlContent, commentId, parentCommentId);
-                _logger.LogInformation($"Comment {commentId} for post {postId} sent to group.");
+                _logger.LogInformation($"Successfully broadcasted comment {commentId} for post {postId} to group.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending comment for post {PostId}", postId);
-                await Clients.Caller.SendAsync("CommentError", "An unexpected error occurred while sending your comment.");
+                _logger.LogError(ex, "An error occurred in SendComment for post {PostId}", postId);
+                // Inform the caller that their comment failed.
+                // The client-side JS should handle removing the optimistic comment.
+                await Clients.Caller.SendAsync("CommentError", "An unexpected error occurred. Your comment was not posted.");
             }
         }
 
