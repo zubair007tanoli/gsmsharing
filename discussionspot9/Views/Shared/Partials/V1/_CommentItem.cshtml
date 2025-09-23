@@ -30,7 +30,8 @@
             </button>
         </div>
         <!-- Reply Form -->
-        <div class="reply-form d-none flex-column" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
+        <!-- FIX: Added 'd-flex' class to ensure the form displays correctly as a flex container when 'd-none' is removed. -->
+        <div class="reply-form d-none d-flex flex-column" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
             <div class="d-flex gap-2">
                 <div class="user-avatar small" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
                     @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")

@@ -123,7 +123,7 @@
     }
 
     /**
-     * Shows a loading spinner on a button and disables it.
+     * NEW: Shows a loading spinner on a button and disables it.
      * @param {HTMLElement} button The button element to update.
      * @param {boolean} isLoading True to show spinner, false to restore original content.
      */
@@ -131,14 +131,16 @@
         if (!button) return;
         if (isLoading) {
             button.disabled = true;
+            // Store original content if it's not already stored
             if (!button.dataset.originalHtml) {
                 button.dataset.originalHtml = button.innerHTML;
             }
             button.innerHTML = '<i class="fas fa-spinner fa-spin" style="line-height: 1;"></i>';
         } else {
+            // Restore original content if it was stored
             if (button.dataset.originalHtml) {
                 button.innerHTML = button.dataset.originalHtml;
-                delete button.dataset.originalHtml;
+                delete button.dataset.originalHtml; // Clean up the attribute
             }
             button.disabled = false;
         }
@@ -437,7 +439,6 @@
         });
     }
 
-    // FIX: Refactored to use CSS classes for animations for better reliability.
     showNotification(message, type = 'info') {
         let toastContainer = document.getElementById('toast-container');
         if (!toastContainer) {
@@ -456,68 +457,24 @@
         const textColor = type === 'warning' ? '#000' : '#fff';
 
         toast.style.cssText = `
-            background-color: ${bgColor}; 
-            color: ${textColor}; 
-            padding: 15px 20px; 
-            margin-bottom: 10px; 
-            border-radius: 5px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            max-width: 350px;`;
+            background-color: ${bgColor}; color: ${textColor}; padding: 15px 20px; 
+            margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 350px; animation: slideIn 0.3s ease-out;`;
         toast.textContent = message;
-
-        // Add class to trigger animation
-        toast.classList.add('toast-animating-in');
         toastContainer.appendChild(toast);
 
-        // Auto-remove after 4 seconds
         setTimeout(() => {
-            toast.classList.remove('toast-animating-in');
-            toast.classList.add('toast-animating-out');
-
-            // Remove the element from the DOM after the animation completes
-            toast.addEventListener('animationend', () => {
-                toast.remove();
-            });
+            toast.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => toast.remove(), 300);
         }, 4000);
     }
 }
 
-// FIX: Added a more robust style block to ensure animations work correctly.
 const style = document.createElement('style');
 style.textContent = `
-    /* Keyframes for the notification toast slide-in/out animations */
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-
-    /* Keyframes for the Font Awesome spinner icon. Ensures it works even if the main FA CSS is missing. */
-    @keyframes fa-spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    /* This rule ensures animations run unless the user has explicitly requested to reduce motion. */
-    @media (prefers-reduced-motion: no-preference) {
-        .fa-spin {
-            animation: fa-spin 2s infinite linear;
-        }
-
-        .toast-animating-in {
-            animation: slideIn 0.3s ease-out forwards;
-        }
-        
-        .toast-animating-out {
-            animation: slideOut 0.3s ease-in forwards;
-        }
-    }
-`;
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }`;
 document.head.appendChild(style);
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     const signalRManager = new SignalRManager();
@@ -575,4 +532,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Failed to initialize SignalR:', error);
     }
 });
-
