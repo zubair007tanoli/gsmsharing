@@ -1,34 +1,6 @@
 ﻿/* Modern Style CSS for ForumHub with Bootstrap integration */
 
-:root {
-    /* Colors */
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --secondary-color: #6366f1;
-    --text-color: #1f2937;
-    --text-light: #6b7280;
-    --bg-color: #DFE3EE;
-    --bg-light: #f9fafb;
-    --bg-dark: #f3f4f6;
-    --border-color: #e5e7eb;
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
-    --error-color: #ef4444;
-    /* Category Colors */
-    --general-color: #6366f1;
-    --technology-color: #3b82f6;
-    --gaming-color: #8b5cf6;
-    --creative-arts-color: #ec4899;
-    /* Navbar Colors */
-    --navbar-bg: #f8f9fa;
-    --navbar-border: #e5e7eb;
-}
 
-/* Base Styles */
-body {
-    color: var(--text-color);
-    background-color: var(--bg-color);
-}
 
 a {
     color: var(--primary-color);

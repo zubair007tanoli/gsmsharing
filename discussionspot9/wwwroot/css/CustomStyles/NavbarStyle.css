@@ -1,14 +1,38 @@
 ﻿:root {
-    --primary-color: #4e73df;
-    --secondary-color: #f8f9fc;
-    --text-color: #333;
-    --border-color: #e3e6f0;
+    /* Primary & Secondary */
+    --primary-color: #4f46e5; /* modern indigo */
+    --primary-hover: #4338ca;
+    --secondary-bg-color: #f8f9fc; /* from first set */
+    --secondary-accent-color: #6366f1; /* from second set */
+    /* Text */
+    --text-color: #1f2937; /* replaced #333 */
+    --text-light: #6b7280;
+    /* Backgrounds */
+    --bg-color: #DFE3EE;
+    --bg-light: #f9fafb;
+    --bg-dark: #f3f4f6;
+    /* Borders */
+    --border-color: #e5e7eb; /* standardized */
+    /* Status Colors */
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    /* Category Colors */
+    --general-color: #6366f1;
+    --technology-color: #3b82f6;
+    --gaming-color: #8b5cf6;
+    --creative-arts-color: #ec4899;
+    /* Navbar */
+    --navbar-bg: #f8f9fa;
+    --navbar-border: #e5e7eb;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-color);
+    background-color: var(--bg-color);
 }
+
 
 .main-header {
     background-color: #fff;
