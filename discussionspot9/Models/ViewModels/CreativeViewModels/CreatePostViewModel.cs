@@ -8,6 +8,9 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         [StringLength(300, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 300 characters")]
         public string Title { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Please select a community")]
+        public int CommunityId { get; set; }
+
         [Display(Name = "Post Type")]
         public string PostType { get; set; } = "text";
 
@@ -17,154 +20,54 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         [Url(ErrorMessage = "Please enter a valid URL")]
         public string? Url { get; set; }
 
-        [Display(Name = "Tags")]
         public List<string> Tags { get; set; } = new();
 
-        public string TagsInput { get; set; } // Add this property
+        public string? TagsInput { get; set; }
 
-        [Display(Name = "NSFW")]
         public bool IsNSFW { get; set; }
-
-        [Display(Name = "Spoiler")]
         public bool IsSpoiler { get; set; }
-
-        // New fields from CreateTest.cshtml
-        [StringLength(500, ErrorMessage = "Summary cannot exceed 500 characters")]
         public string? Summary { get; set; }
-
-        [Display(Name = "Status")]
         public string Status { get; set; } = "published";
-
-        [Display(Name = "Pin to Profile")]
         public bool IsPinned { get; set; }
-
-        [Display(Name = "Lock Comments")]
         public bool IsLocked { get; set; }
-
-        [Display(Name = "Publication Date")]
-        [DataType(DataType.DateTime)]
         public DateTime? PublicationDate { get; set; }
-        public string Question { get; set; }
-        // Poll configuration
-        [Display(Name = "Poll Options")]
+        public string? Question { get; set; }
         public List<string> PollOptions { get; set; } = new();
-
-        [Display(Name = "Allow Multiple Choices")]
         public bool AllowMultipleChoices { get; set; }
-
-        [Display(Name = "Show Results Before Voting")]
         public bool ShowResultsBeforeVoting { get; set; } = true;
-
-        [Display(Name = "Show Results Before End")]
         public bool ShowResultsBeforeEnd { get; set; } = true;
-
-        [Display(Name = "Allow Adding Options")]
         public bool AllowAddingOptions { get; set; }
-
-        [Display(Name = "Poll End Date")]
-        [DataType(DataType.DateTime)]
         public DateTime? PollEndDate { get; set; }
-
-        // Media uploads
-        [Display(Name = "Media Files")]
         public IFormFileCollection? MediaFiles { get; set; }
-
-        [Display(Name = "Featured Image")]
         public IFormFile? FeaturedImage { get; set; }
-
-        [Display(Name = "Media Caption")]
-        [StringLength(500, ErrorMessage = "Caption cannot exceed 500 characters")]
         public string? MediaCaption { get; set; }
-
-        [Display(Name = "Alt Text")]
-        [StringLength(500, ErrorMessage = "Alt text cannot exceed 500 characters")]
         public string? MediaAltText { get; set; }
-
-        // SEO metadata
-        [Display(Name = "Meta Title")]
-        [StringLength(200, ErrorMessage = "Meta title cannot exceed 200 characters")]
         public string? MetaTitle { get; set; }
-
-        [Display(Name = "Meta Description")]
-        [StringLength(500, ErrorMessage = "Meta description cannot exceed 500 characters")]
         public string? MetaDescription { get; set; }
-
-        [Display(Name = "Canonical URL")]
-        [Url(ErrorMessage = "Please enter a valid URL")]
         public string? CanonicalUrl { get; set; }
-
-        [Display(Name = "Keywords")]
         public string? Keywords { get; set; }
-
-        [Display(Name = "Social Media Image")]
         public IFormFile? OgImage { get; set; }
-
-        // Add these properties to the CreatePostViewModel class
-
-        [Display(Name = "Media URLs")]
         public List<string> MediaUrls { get; set; } = new();
-
-        [Display(Name = "Poll Expires At")]
-        [DataType(DataType.DateTime)]
         public DateTime? PollExpiresAt { get; set; }
-
-        [Display(Name = "Maximum Options")]
-        [Range(1, 20, ErrorMessage = "Maximum options must be between 1 and 20")]
         public int MaxOptions { get; set; } = 10;
-
-        [Display(Name = "Minimum Options")]
-        [Range(1, 20, ErrorMessage = "Minimum options must be between 1 and 20")]
         public int MinOptions { get; set; } = 1;
-
-        [Display(Name = "Maximum Options")]
-        [Range(1, 20, ErrorMessage = "Maximum options must be between 1 and 20")]
-
-        // Set by controller
-        public int CommunityId { get; set; }
         public string CommunityName { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
         public string? UserId { get; set; }
-        
-        //user communities and suggested communities
         public List<CommunityViewModel> UserCommunities { get; set; } = new List<CommunityViewModel>();
         public List<CommunityViewModel> SuggestedCommunities { get; set; } = new List<CommunityViewModel>();
-        // Validation
+        
+        // Override the default validation
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            // Content validation
-            if (PostType == "text" && string.IsNullOrWhiteSpace(Content))
+            if (string.IsNullOrEmpty(Title))
             {
-                yield return new ValidationResult("Content is required for text posts", new[] { nameof(Content) });
+                yield return new ValidationResult("Title is required", new[] { nameof(Title) });
             }
-
-            if (PostType == "link" && string.IsNullOrWhiteSpace(Url))
+            
+            if (CommunityId <= 0)
             {
-                yield return new ValidationResult("URL is required for link posts", new[] { nameof(Url) });
-            }
-
-            // Media validation
-            if (PostType == "image" && (MediaFiles == null || MediaFiles.Count == 0))
-            {
-                yield return new ValidationResult("At least one image is required", new[] { nameof(MediaFiles) });
-            }
-
-            if (PostType == "video" && (MediaFiles == null || MediaFiles.Count == 0))
-            {
-                yield return new ValidationResult("Video file is required", new[] { nameof(MediaFiles) });
-            }
-
-            // Poll validation
-            if (PostType == "poll")
-            {
-                if (PollOptions == null || PollOptions.Count < 2)
-                {
-                    yield return new ValidationResult("At least 2 options are required for polls", new[] { nameof(PollOptions) });
-                }
-
-                if (PollOptions.Any(string.IsNullOrWhiteSpace))
-                {
-                    yield return new ValidationResult("Poll options cannot be empty", new[] { nameof(PollOptions) });
-                }
+                yield return new ValidationResult("Please select a community", new[] { nameof(CommunityId) });
             }
         }
     }
