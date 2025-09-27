@@ -14,9 +14,10 @@ namespace discussionspot9.Services
             _httpClient = httpClient;
             _logger = logger;
 
-            // Set a user agent to avoid being blocked by some sites
+            // Set a more complete user agent string
             _httpClient.DefaultRequestHeaders.Add("User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            _httpClient.Timeout = TimeSpan.FromSeconds(10); // Add timeout
         }
 
         public async Task<LinkPreviewViewModel> GetMetadataAsync(string url)
@@ -25,156 +26,159 @@ namespace discussionspot9.Services
 
             try
             {
-                // Extract domain
                 var uri = new Uri(url);
                 metadata.Domain = uri.Host;
 
-                // Fetch HTML content
-                var response = await _httpClient.GetAsync(url);
+                using var response = await _httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
+
+                // Check if content is HTML
+                var contentType = response.Content.Headers.ContentType?.MediaType;
+                if (!contentType?.Contains("text/html", StringComparison.OrdinalIgnoreCase) ?? true)
+                {
+                    metadata.Title = "Non-HTML Content";
+                    metadata.Description = $"Content type: {contentType}";
+                    return metadata;
+                }
 
                 var html = await response.Content.ReadAsStringAsync();
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                // Extract title
-                metadata.Title = ExtractTitle(doc);
+                // Extract metadata in order of preference
+                metadata.Title = ExtractMetadata(doc, new[]
+                {
+                    "//meta[@property='og:title']/@content",
+                    "//meta[@name='twitter:title']/@content",
+                    "//title/text()",
+                    "//h1/text()"
+                }) ?? uri.Host;
 
-                // Extract description
-                metadata.Description = ExtractDescription(doc);
+                metadata.Description = ExtractMetadata(doc, new[]
+                {
+                    "//meta[@property='og:description']/@content",
+                    "//meta[@name='twitter:description']/@content",
+                    "//meta[@name='description']/@content",
+                    "//meta[@property='description']/@content"
+                }) ?? "";
 
-                // Extract thumbnail/image
-                metadata.ThumbnailUrl = ExtractThumbnail(doc, uri);
+                metadata.ThumbnailUrl = ExtractMetadata(doc, new[]
+                {
+                    "//meta[@property='og:image']/@content",
+                    "//meta[@name='twitter:image']/@content",
+                    "//link[@rel='image_src']/@href",
+                    "//img[@id='main-image']/@src",
+                    "//img[contains(@class, 'hero')]/@src"
+                });
 
-                // Extract favicon
+                if (string.IsNullOrEmpty(metadata.ThumbnailUrl))
+                {
+                    // Find first meaningful image (skip tiny images and icons)
+                    var imgs = doc.DocumentNode.SelectNodes("//img[@src]")?
+                        .Select(img => img.GetAttributeValue("src", ""))
+                        .Where(src => !src.Contains("icon", StringComparison.OrdinalIgnoreCase) 
+                                  && !src.Contains("logo", StringComparison.OrdinalIgnoreCase))
+                        .FirstOrDefault();
+                    
+                    if (!string.IsNullOrEmpty(imgs))
+                    {
+                        metadata.ThumbnailUrl = MakeAbsoluteUrl(imgs, uri);
+                    }
+                }
+
                 metadata.FaviconUrl = ExtractFavicon(doc, uri);
+
+                // Clean up and validate URLs
+                metadata.ThumbnailUrl = CleanUrl(metadata.ThumbnailUrl, uri);
+                metadata.FaviconUrl = CleanUrl(metadata.FaviconUrl, uri);
+
+                // Trim metadata
+                metadata.Title = TrimMetadata(metadata.Title, 200);
+                metadata.Description = TrimMetadata(metadata.Description, 500);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error extracting metadata from {Url}", url);
+                metadata.Title = metadata.Domain;
+                metadata.Description = "Unable to load preview";
             }
 
             return metadata;
         }
 
-        private string ExtractTitle(HtmlDocument doc)
+        private string? ExtractMetadata(HtmlDocument doc, string[] xpaths)
         {
-            // Try Open Graph title first
-            var ogTitle = doc.DocumentNode
-                .SelectSingleNode("//meta[@property='og:title']")
-                ?.GetAttributeValue("content", "");
-
-            if (!string.IsNullOrEmpty(ogTitle))
-                return ogTitle;
-
-            // Try Twitter title
-            var twitterTitle = doc.DocumentNode
-                .SelectSingleNode("//meta[@name='twitter:title']")
-                ?.GetAttributeValue("content", "");
-
-            if (!string.IsNullOrEmpty(twitterTitle))
-                return twitterTitle;
-
-            // Fallback to HTML title tag
-            var titleNode = doc.DocumentNode.SelectSingleNode("//title");
-            return titleNode?.InnerText?.Trim() ?? "";
-        }
-
-        private string ExtractDescription(HtmlDocument doc)
-        {
-            // Try Open Graph description first
-            var ogDescription = doc.DocumentNode
-                .SelectSingleNode("//meta[@property='og:description']")
-                ?.GetAttributeValue("content", "");
-
-            if (!string.IsNullOrEmpty(ogDescription))
-                return ogDescription;
-
-            // Try Twitter description
-            var twitterDescription = doc.DocumentNode
-                .SelectSingleNode("//meta[@name='twitter:description']")
-                ?.GetAttributeValue("content", "");
-
-            if (!string.IsNullOrEmpty(twitterDescription))
-                return twitterDescription;
-
-            // Try standard meta description
-            var metaDescription = doc.DocumentNode
-                .SelectSingleNode("//meta[@name='description']")
-                ?.GetAttributeValue("content", "");
-
-            return metaDescription ?? "";
-        }
-
-        private string ExtractThumbnail(HtmlDocument doc, Uri baseUri)
-        {
-            // Try Open Graph image first
-            var ogImage = doc.DocumentNode
-                .SelectSingleNode("//meta[@property='og:image']")
-                ?.GetAttributeValue("content", "");
-
-            if (!string.IsNullOrEmpty(ogImage))
-                return MakeAbsoluteUrl(ogImage, baseUri);
-
-            // Try Twitter image
-            var twitterImage = doc.DocumentNode
-                .SelectSingleNode("//meta[@name='twitter:image']")
-                ?.GetAttributeValue("content", "");
-
-            if (!string.IsNullOrEmpty(twitterImage))
-                return MakeAbsoluteUrl(twitterImage, baseUri);
-
-            // Try to find first meaningful image
-            var imgNode = doc.DocumentNode
-                .SelectSingleNode("//img[@src]");
-
-            if (imgNode != null)
+            foreach (var xpath in xpaths)
             {
-                var src = imgNode.GetAttributeValue("src", "");
-                if (!string.IsNullOrEmpty(src))
-                    return MakeAbsoluteUrl(src, baseUri);
+                var node = doc.DocumentNode.SelectSingleNode(xpath);
+                var value = node?.InnerText.Trim();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
             }
-
-            return "";
+            return null;
         }
 
         private string ExtractFavicon(HtmlDocument doc, Uri baseUri)
         {
-            // Try to find favicon link tags
-            var faviconSelectors = new[]
+            var faviconUrl = ExtractMetadata(doc, new[]
             {
-            "//link[@rel='icon']",
-            "//link[@rel='shortcut icon']",
-            "//link[@rel='apple-touch-icon']"
-        };
+                "//link[@rel='icon' and contains(@sizes, '32')]/@href",
+                "//link[@rel='shortcut icon']/@href",
+                "//link[@rel='icon']/@href",
+                "//link[@rel='apple-touch-icon']/@href"
+            });
 
-            foreach (var selector in faviconSelectors)
+            if (string.IsNullOrEmpty(faviconUrl))
             {
-                var faviconNode = doc.DocumentNode.SelectSingleNode(selector);
-                if (faviconNode != null)
-                {
-                    var href = faviconNode.GetAttributeValue("href", "");
-                    if (!string.IsNullOrEmpty(href))
-                        return MakeAbsoluteUrl(href, baseUri);
-                }
+                return $"{baseUri.Scheme}://{baseUri.Host}/favicon.ico";
             }
 
-            // Default favicon location
-            return $"{baseUri.Scheme}://{baseUri.Host}/favicon.ico";
+            return MakeAbsoluteUrl(faviconUrl, baseUri);
         }
 
         private string MakeAbsoluteUrl(string url, Uri baseUri)
         {
-            if (string.IsNullOrEmpty(url))
-                return "";
+            if (string.IsNullOrEmpty(url)) return "";
+            
+            // Handle data URLs
+            if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            // Remove whitespace and invalid characters
+            url = url.Trim().Replace(" ", "%20");
 
             if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 return url;
 
+            if (url.StartsWith("//"))
+                return $"{baseUri.Scheme}:{url}";
+
             if (Uri.TryCreate(baseUri, url, out var absoluteUri))
                 return absoluteUri.ToString();
 
-            return url;
+            return "";
+        }
+
+        private string CleanUrl(string url, Uri baseUri)
+        {
+            if (string.IsNullOrEmpty(url)) return "";
+            try
+            {
+                return MakeAbsoluteUrl(url, baseUri);
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private string TrimMetadata(string text, int maxLength)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+            text = text.Trim();
+            return text.Length <= maxLength ? text : text.Substring(0, maxLength - 3) + "...";
         }
     }
 }

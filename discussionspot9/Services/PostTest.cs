@@ -47,7 +47,7 @@ namespace discussionspot9.Services
                 IsPinned = model.IsPinned,
                 IsLocked = model.IsLocked,
                 HasPoll = model.PostType == "poll" && model.PollOptions?.Count > 0,
-                PollExpiresAt = model.PollEndDate ?? model.PollExpiresAt,
+                PollExpiresAt = model.PollEndDate,
                 PollOptionCount = model.PollOptions?.Count ?? 0,
                 PollVoteCount = 0
             };
@@ -176,15 +176,19 @@ namespace discussionspot9.Services
             var pollConfig = new PollConfiguration
             {
                 PostId = postId,
+                PollQuestion = model.PollQuestion, // Ensure this is set
+                PollDescription = model.PollDescription, // Ensure this is set
                 AllowMultipleChoices = model.AllowMultipleChoices,
                 ShowResultsBeforeVoting = model.ShowResultsBeforeVoting,
                 ShowResultsBeforeEnd = model.ShowResultsBeforeEnd,
                 AllowAddingOptions = model.AllowAddingOptions,
                 MinOptions = Math.Max(2, model.MinOptions),
                 MaxOptions = Math.Min(20, model.MaxOptions),
-                EndDate = model.PollEndDate ?? model.PollExpiresAt,
+                EndDate = model.PollEndDate,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                ClosedByUserId = null,
+                ClosedAt = null
             };
             _context.PollConfigurations.Add(pollConfig);
 

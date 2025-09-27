@@ -511,7 +511,7 @@ namespace discussionspot9.Services
                 IsPinned = model.IsPinned,
                 IsLocked = model.IsLocked,
                 HasPoll = model.PostType == "poll",
-                PollExpiresAt = model.PollEndDate ?? model.PollExpiresAt,
+                PollExpiresAt = model.PollEndDate ?? model.PollEndDate,
                 PollOptionCount = model.PollOptions?.Count ?? 0,
                 PollVoteCount = 0
             };
@@ -567,7 +567,7 @@ namespace discussionspot9.Services
                 AllowAddingOptions = model.AllowAddingOptions,
                 MinOptions = model.MinOptions > 0 ? model.MinOptions : 2,
                 MaxOptions = model.MaxOptions > 0 ? model.MaxOptions : 10,
-                EndDate = model.PollEndDate ?? model.PollExpiresAt,
+                EndDate = model.PollEndDate,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -754,9 +754,9 @@ namespace discussionspot9.Services
                 PollVoteCount = 0
             };
 
-            if (model.PostType == "poll" && model.PollExpiresAt.HasValue)
+            if (model.PostType == "poll" && model.PollEndDate.HasValue)
             {
-                post.PollExpiresAt = model.PollExpiresAt.Value;
+                post.PollExpiresAt = model.PollEndDate.Value;
             }
 
             _context.Posts.Add(post);
@@ -1123,7 +1123,7 @@ namespace discussionspot9.Services
             var post = await _context.Posts
                 .AsNoTracking()
                 .Include(p => p.PollOptions)
-                .ThenInclude(po => po.Votes)
+                    .ThenInclude(po => po.Votes)
                 .Include(p => p.PollConfiguration)
                 .FirstOrDefaultAsync(p => p.PostId == postId);
 
@@ -1142,15 +1142,25 @@ namespace discussionspot9.Services
             }
             var hasUserVoted = userVotedOptionIds.Any();
 
+            // Map all poll configuration fields
             return new PollViewModel
             {
                 PostId = post.PostId,
-                Question = post.Title,
+                Question = post.PollConfiguration?.PollQuestion ?? post.Title,
+                PollDescription = post.PollConfiguration?.PollDescription,
+                ClosedByUserId = post.PollConfiguration?.ClosedByUserId,
+                ClosedAt = post.PollConfiguration?.ClosedAt,
                 TotalVotes = totalVotes,
                 HasUserVoted = hasUserVoted,
                 UserVotes = userVotedOptionIds,
                 EndDate = post.PollConfiguration?.EndDate,
                 AllowMultipleChoices = post.PollConfiguration?.AllowMultipleChoices ?? false,
+                ShowResultsBeforeVoting = post.PollConfiguration?.ShowResultsBeforeVoting ?? true,
+                ShowResultsBeforeEnd = post.PollConfiguration?.ShowResultsBeforeEnd ?? true,
+                AllowAddingOptions = post.PollConfiguration?.AllowAddingOptions ?? false,
+                MinOptions = post.PollConfiguration?.MinOptions ?? 2,
+                MaxOptions = post.PollConfiguration?.MaxOptions ?? 10,
+                IsExpired = (post.PollConfiguration?.EndDate.HasValue == true && post.PollConfiguration.EndDate < DateTime.UtcNow),
                 Options = post.PollOptions.Select(po => new PollOptionViewModel
                 {
                     PollOptionId = po.PollOptionId,

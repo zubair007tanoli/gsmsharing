@@ -17,5 +17,9 @@
         public List<int> UserVotes { get; set; } = new();
         public int MinOptions { get; set; }
         public int MaxOptions { get; set; }
+        // Add these properties if missing:
+        public string? PollDescription { get; set; }
+        public string? ClosedByUserId { get; set; }
+        public DateTime? ClosedAt { get; set; }
     }
 }

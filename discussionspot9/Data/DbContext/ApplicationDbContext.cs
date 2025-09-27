@@ -500,6 +500,8 @@ namespace discussionspot9.Data.DbContext
             builder.Entity<PollConfiguration>(entity =>
             {
                 entity.HasKey(e => e.PostId);
+                
+                // Property configurations
                 entity.Property(e => e.AllowMultipleChoices).HasDefaultValue(false);
                 entity.Property(e => e.ShowResultsBeforeVoting).HasDefaultValue(true);
                 entity.Property(e => e.ShowResultsBeforeEnd).HasDefaultValue(true);
@@ -508,14 +510,26 @@ namespace discussionspot9.Data.DbContext
                 entity.Property(e => e.MaxOptions).HasDefaultValue(10);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.PollQuestion).HasMaxLength(500);
+                entity.Property(e => e.PollDescription).HasMaxLength(1000);
+                entity.Property(e => e.ClosedByUserId).HasMaxLength(450);
 
+                // Indexes
                 entity.HasIndex(e => e.EndDate);
+                entity.HasIndex(e => e.ClosedByUserId);
 
+                // Relationships
                 entity.HasOne(e => e.Post)
                     .WithOne(e => e.PollConfiguration)
                     .HasForeignKey<PollConfiguration>(e => e.PostId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                entity.HasOne(e => e.ClosedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClosedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                // Check constraints
                 entity.ToTable(t => { t.HasCheckConstraint("CK_PollConfiguration_MinOptions", "MinOptions >= 2"); });
                 entity.ToTable(t => { t.HasCheckConstraint("CK_PollConfiguration_MaxOptions", "MaxOptions >= MinOptions"); });
             });

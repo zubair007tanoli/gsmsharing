@@ -47,7 +47,7 @@ namespace discussionspot9.Controllers
         [Route("r/{communitySlug}/posts/{postSlug}")]
         public async Task<IActionResult> DetailTestPage(string communitySlug, string postSlug)
         {
-            var postDetails = await _postService.GetPostDetailsAsync(communitySlug, postSlug);
+            var postDetails = await _postService.GetPostDetailsUpdateAsync(communitySlug, postSlug);
             if (postDetails == null)
                 return NotFound();
          
