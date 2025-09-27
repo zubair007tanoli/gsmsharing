@@ -485,7 +485,7 @@ namespace discussionspot9.Controllers
         //}
 
         /// <summary>
-        /// Create new post - POST
+        /// Create new post - POST Working
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
