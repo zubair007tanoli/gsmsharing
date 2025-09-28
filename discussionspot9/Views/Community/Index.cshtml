@@ -3,38 +3,473 @@
 @{
     ViewData["Title"] = "Communities - DiscussionSpot";
 }
+<style>
+    :root {
+        /* If your theme defines tokens, these fallbacks won’t conflict */
+        --radius: 12px;
+        --ui-h: 40px;
+    }
 
-<main class="container py-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h1 class="h3 mb-0">Communities</h1>
-                        <div class="d-flex gap-2">
-                            @if (User.Identity?.IsAuthenticated == true)
-                            {
-                                <a href="@Url.CreateCommunity()" class="btn btn-primary">
-                                    <i class="fas fa-plus me-1"></i>Create Community
-                                </a>
-                            }
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Global layout spacing */
+    .page-wrap {
+        padding-block: 1.25rem;
+    }
+
+    /* Search and sort toolbar */
+    .toolbar {
+        gap: .75rem;
+    }
+
+        /* Actions container for better wrap and consistent spacing */
+        .toolbar .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            align-items: center;
+        }
+
+    /* Community card */
+    .community-card {
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: var(--radius);
+        transition: transform .15s ease, box-shadow .15s ease;
+        background: var(--card-bg, var(--bs-body-bg));
+    }
+
+        .community-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+        }
+
+        .community-card .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+    .metric {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .25rem .5rem;
+        border-radius: 999px;
+        font-size: .875rem;
+        border: 1px solid rgba(0,0,0,0.08);
+        background: var(--metric-bg, rgba(0,0,0,0.03));
+    }
+
+    .tag {
+        display: inline-block;
+        font-size: .75rem;
+        padding: .25rem .5rem;
+        border-radius: 999px;
+        border: 1px solid rgba(0,0,0,0.08);
+        background: rgba(0,0,0,0.03);
+    }
+
+    /* Ad slot placeholders (replace with real AdSense snips) */
+    .ad-slot {
+        width: 100%;
+        min-height: 120px;
+        border: 1px dashed rgba(0,0,0,0.2);
+        border-radius: var(--radius);
+        background: repeating-linear-gradient( 45deg, rgba(0,0,0,0.025), rgba(0,0,0,0.025) 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px );
+        display: grid;
+        place-items: center;
+        color: rgba(0,0,0,0.55);
+        font-size: .9rem;
+    }
+
+    /* Sidebar blocks */
+    .side-block {
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: var(--radius);
+        background: var(--card-bg, var(--bs-body-bg));
+    }
+
+    /* Featured list */
+    .featured-item {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .5rem 0;
+    }
+
+        .featured-item img {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+    /* Make cards dense on smaller screens */
+    @@media (max-width: 576px) {
+        .community-card .card-body {
+            padding: .75rem;
+        }
+    }
+
+    /* Ensure Bootstrap grid isn’t overridden by any custom CSS */
+    .row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
+    /* unify control sizes and modernize controls */
+    .ui-ctl, .ui-btn {
+        height: var(--ui-h);
+        padding: 0 .875rem;
+        border-radius: 10px;
+    }
+
+    .form-control.ui-ctl, .form-select.ui-ctl {
+        line-height: 1.2;
+    }
+
+    /* smaller min-width to prevent overflow; scale up on larger screens */
+    .ui-btn-minw {
+        min-width: 120px;
+    }
+    @@media (min-width: 768px) {
+        .ui-btn-minw {
+            min-width: 140px;
+        }
+    }
+
+    /* make buttons flex with icon + label that truncates */
+    .ui-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        line-height: 1;
+        overflow: hidden;
+    }
+
+        .ui-btn .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 14ch;
+        }
+    @@media (max-width: 576px) {
+        .ui-btn .label {
+            display: none;
+        }
+    }
+
+    .min-w-0 {
+        min-width: 0;
+    }
+
+    /* keep existing toolbar rounding */
+    .toolbar .btn, .toolbar .form-select, .toolbar .form-control {
+        border-radius: 10px;
+    }
+
+    /* restore search icon alignment and input left padding */
+    .search-wrap {
+        position: relative;
+    }
+
+        .search-wrap .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: .6;
+            pointer-events: none;
+        }
+
+        .search-wrap input.ui-ctl {
+            padding-left: 2.25rem;
+        }
+</style>
+<main class="page-wrap">
+    <div class="container">
+        <!-- Toolbar -->
+        <section class="d-flex flex-wrap toolbar align-items-center justify-content-between mb-4" aria-label="Search and actions">
+            <div class="d-flex flex-grow-1 me-2 search-wrap">
+                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+                <input class="form-control ui-ctl" type="search" placeholder="Search communities by name or topic..." aria-label="Search communities" />
+            </div>
+            <div class="d-flex align-items-center gap-2 sort-wrap">
+                <label for="sort" class="small text-secondary d-none d-md-inline">Sort</label>
+                <select id="sort" class="form-select ui-ctl ui-btn-minw" aria-label="Sort communities">
+                    <option value="trending">Sort: Trending</option>
+                    <option value="newest">Newest</option>
+                    <option value="active">Most Active</option>
+                    <option value="members">Most Members</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- 3-column layout -->
+        <div class="row g-4">
+            <!-- Left Sidebar -->
+            <aside class="col-12 col-lg-3" aria-label="Filters">
+                <div class="side-block p-3 mb-3">
+                    <h2 class="h6 mb-3">Filters</h2>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select">
+                            <option>All</option>
+                            <option>Technology</option>
+                            <option>Design</option>
+                            <option>Gaming</option>
+                            <option>Science</option>
+                            <option>Finance</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Minimum Members</label>
+                        <input type="number" class="form-control" placeholder="e.g. 1000" />
+                    </div>
+                    <div>
+                        <label class="form-label">Active Posts</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="tag">Daily</span>
+                            <span class="tag">Weekly</span>
+                            <span class="tag">Monthly</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="communities-grid">
-                @foreach (var community in Model.Communities)
-                {
-                    <partial name="_CommunityCard" model="community" />
-                }
-            </div>
+                <div class="side-block p-3 mb-3">
+                    <h2 class="h6 mb-3">Trending Tags</h2>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="#" class="tag text-decoration-none">AI</a>
+                        <a href="#" class="tag text-decoration-none">React</a>
+                        <a href="#" class="tag text-decoration-none">Crypto</a>
+                        <a href="#" class="tag text-decoration-none">Startups</a>
+                        <a href="#" class="tag text-decoration-none">Photography</a>
+                        <a href="#" class="tag text-decoration-none">Books</a>
+                    </div>
+                </div>
 
-            <partial name="_Pagination" model="Model" />
-        </div>
+                <!-- Ad slot (sidebar) -->
+                <div class="ad-slot mb-3" role="complementary" aria-label="Advertisement">
+                    <!-- Replace with real AdSense snippet -->
+                    <span>Ad — 300 × 250</span>
+                </div>
+            </aside>
 
-        <div class="col-lg-4">
-            <!-- Sidebar content -->
+            <!-- Main Content -->
+            <section class="col-12 col-lg-6" aria-label="Community directory">
+                <h1 class="h4 mb-3 text-balance">Discover Communities</h1>
+                <p class="text-secondary mb-4">Browse popular groups by topic. See member counts and post volume at a glance.</p>
+
+                <!-- Ad slot (in-feed) -->
+                <div class="ad-slot mb-3" role="complementary" aria-label="Advertisement">
+                    <span>In-Feed Ad — Responsive</span>
+                </div>
+
+                <div class="vstack gap-3">
+                    <!-- Community card 1 -->
+                    <article class="card community-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <div class="d-flex align-items-start gap-3">
+                                    <img class="avatar" src="/placeholder.svg?height=48&width=48" alt="Tech Nexus community icon" />
+                                    <div>
+                                        <h2 class="h6 mb-1"><a href="#" class="text-decoration-none">Tech Nexus</a></h2>
+                                        <p class="mb-2 text-secondary">Deep dives into software, hardware, and everything in between.</p>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <span class="metric" aria-label="Members"><span class="visually-hidden">Members:</span> <strong>128k</strong> members</span>
+                                            <span class="metric" aria-label="Posts per month"><span class="visually-hidden">Posts per month:</span> <strong>4.8k</strong> posts/mo</span>
+                                            <span class="metric" aria-label="Active now"><span class="visually-hidden">Active users now:</span> <strong>932</strong> online</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            <span class="tag">AI</span>
+                                            <span class="tag">Web Dev</span>
+                                            <span class="tag">Open Source</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-outline-primary btn-sm">Join</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Community card 2 -->
+                    <article class="card community-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <div class="d-flex align-items-start gap-3">
+                                    <img class="avatar" src="/placeholder.svg?height=48&width=48" alt="Design Guild community icon" />
+                                    <div>
+                                        <h2 class="h6 mb-1"><a href="#" class="text-decoration-none">Design Guild</a></h2>
+                                        <p class="mb-2 text-secondary">Interface, typography, accessibility, and delightful UX.</p>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <span class="metric"><strong>64k</strong> members</span>
+                                            <span class="metric"><strong>2.1k</strong> posts/mo</span>
+                                            <span class="metric"><strong>412</strong> online</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            <span class="tag">UI</span>
+                                            <span class="tag">Typography</span>
+                                            <span class="tag">Accessibility</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-outline-primary btn-sm">Join</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Community card 3 -->
+                    <article class="card community-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <div class="d-flex align-items-start gap-3">
+                                    <img class="avatar" src="/placeholder.svg?height=48&width=48" alt="PlayForge community icon" />
+                                    <div>
+                                        <h2 class="h6 mb-1"><a href="#" class="text-decoration-none">PlayForge</a></h2>
+                                        <p class="mb-2 text-secondary">PC, console, and indie titles. Tips, guides, and tournaments.</p>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <span class="metric"><strong>92k</strong> members</span>
+                                            <span class="metric"><strong>3.4k</strong> posts/mo</span>
+                                            <span class="metric"><strong>1.2k</strong> online</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            <span class="tag">FPS</span>
+                                            <span class="tag">RPG</span>
+                                            <span class="tag">Indie</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-outline-primary btn-sm">Join</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- More results -->
+                    <div class="text-center">
+                        <button class="btn btn-secondary">Load more</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Sidebar -->
+            <aside class="col-12 col-lg-3" aria-label="Featured and ads">
+                <!-- Ad slot -->
+                <div class="ad-slot mb-3" role="complementary" aria-label="Advertisement">
+                    <span>Ad — 300 × 600</span>
+                </div>
+
+                <!-- Featured communities -->
+                <div class="side-block p-3 mb-3">
+                    <h2 class="h6 mb-3">Featured Communities</h2>
+
+                    <div class="featured-item">
+                        <img src="/placeholder.svg?height=36&width=36" alt="" />
+                        <div>
+                            <a href="#" class="text-decoration-none d-block">DataLab</a>
+                            <small class="text-secondary">54k members</small>
+                        </div>
+                    </div>
+
+                    <div class="featured-item">
+                        <img src="/placeholder.svg?height=36&width=36" alt="" />
+                        <div>
+                            <a href="#" class="text-decoration-none d-block">LightRoom</a>
+                            <small class="text-secondary">31k members</small>
+                        </div>
+                    </div>
+
+                    <div class="featured-item">
+                        <img src="/placeholder.svg?height=36&width=36" alt="" />
+                        <div>
+                            <a href="#" class="text-decoration-none d-block">FintechOps</a>
+                            <small class="text-secondary">27k members</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions feature card -->
+                <div class="side-block p-3 mb-3">
+                    <h2 class="h6 mb-3">Quick Actions</h2>
+                    <div class="vstack gap-2">
+                        <button class="btn btn-outline-secondary ui-btn w-100" type="button" title="My Communities" aria-label="My Communities">
+                            <i class="fa-solid fa-users" aria-hidden="true"></i>
+                            <span class="label">My Communities</span>
+                        </button>
+                        <button class="btn btn-secondary ui-btn w-100" type="button" title="New Post" aria-label="New Post">
+                            <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+                            <span class="label">New Post</span>
+                        </button>
+                        <button class="btn btn-primary ui-btn w-100" type="button" title="Create Community" aria-label="Create Community">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                            <span class="label">Create</span>
+                        </button>
+
+                        <hr class="my-2" />
+
+                        <button class="btn btn-outline-primary ui-btn w-100" type="button">
+                            <i class="fa-regular fa-comments" aria-hidden="true"></i>
+                            <span class="label">Start a Discussion</span>
+                        </button>
+                        <button class="btn btn-outline-secondary ui-btn w-100" type="button">
+                            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                            <span class="label">Invite Friends</span>
+                        </button>
+                        <button class="btn btn-outline-secondary ui-btn w-100" type="button">
+                            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                            <span class="label">Manage Subscriptions</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Top Contributors card for engagement -->
+                <div class="side-block p-3 mb-3">
+                    <h2 class="h6 mb-3">Top Contributors</h2>
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="/placeholder-user.jpg" alt="" width="28" height="28" style="border-radius:50%;object-fit:cover" />
+                            <span>Avi</span>
+                        </div>
+                        <small class="text-secondary">1.2k pts</small>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="/placeholder-user.jpg" alt="" width="28" height="28" style="border-radius:50%;object-fit:cover" />
+                            <span>Nina</span>
+                        </div>
+                        <small class="text-secondary">980 pts</small>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="/placeholder-user.jpg" alt="" width="28" height="28" style="border-radius:50%;object-fit:cover" />
+                            <span>Omar</span>
+                        </div>
+                        <small class="text-secondary">864 pts</small>
+                    </div>
+                </div>
+
+                <!-- Newsletter / CTA -->
+                <div class="side-block p-3">
+                    <h2 class="h6 mb-2">Weekly Highlights</h2>
+                    <p class="text-secondary">Top posts and communities, delivered every Friday.</p>
+                    <form class="vstack gap-2" aria-label="Subscribe to highlights">
+                        <label for="email" class="visually-hidden">Email address</label>
+                        <input id="email" type="email" class="form-control" placeholder="you@example.com" />
+                        <button class="btn btn-primary w-100" type="button">Subscribe</button>
+                    </form>
+                </div>
+            </aside>
         </div>
     </div>
 </main>

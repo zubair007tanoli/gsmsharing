@@ -33,7 +33,9 @@ namespace discussionspot9.Controllers
         /// <summary>
         /// Display all communities/categories
         /// </summary>
+        // Route: /communities
         [HttpGet]
+        [Route("communities")]
         public async Task<IActionResult> Index(string sort = "popular", int page = 1)
         {
             try
@@ -56,8 +58,9 @@ namespace discussionspot9.Controllers
         /// <summary>
         /// Display single community with its posts
         /// </summary>
+        // Route: /r/{slug}
         [HttpGet]
-        [Route("r/{communitySlug}/Community")]
+        [Route("r/{communitySlug}")]
         public async Task<IActionResult> Details(string communitySlug, string sort = "hot", int page = 1)
         {
        
@@ -102,7 +105,9 @@ namespace discussionspot9.Controllers
         /// <summary>
         /// Create new community - GET
         /// </summary>
+        // Route: /create-community
         [HttpGet]
+        [Route("create-community")]
         [Authorize]
         public IActionResult Create(string returnUrl)
         {
@@ -114,7 +119,9 @@ namespace discussionspot9.Controllers
         /// <summary>
         /// Create new community - POST
         /// </summary>
+        // Route: /create-community (POST)
         [HttpPost]
+        [Route("create-community")]
         [ValidateAntiForgeryToken]
         [Authorize]
         public async Task<IActionResult> Create(CreateCommunityViewModel model, string returnUrl)
@@ -156,6 +163,7 @@ namespace discussionspot9.Controllers
         /// Join or leave a community (AJAX)
         /// </summary>
         [HttpPost]
+        [Route("api/community/togglemembership")]
         [Authorize]
         public async Task<IActionResult> ToggleMembership(int communityId)
         {
@@ -181,6 +189,7 @@ namespace discussionspot9.Controllers
         /// Get community members (AJAX)
         /// </summary>
         [HttpGet]
+        [Route("api/community/getmembers")]
         public async Task<IActionResult> GetMembers(int communityId, int page = 1)
         {
             try
