@@ -47,16 +47,15 @@ namespace discussionspot9.Services
                 .Take(pageSize)
                 .Select(c => new CommunityCardViewModel
                 {
-                    Id = c.CommunityId,
+                    CommunityId = c.CommunityId,
                     Name = c.Name,
                     Slug = c.Slug,
                     Description = c.ShortDescription ?? c.Description.Substring(0, Math.Min(c.Description.Length, 200)),
                     IconUrl = c.IconUrl,
                     MemberCount = c.MemberCount,
-                    PostCount = c.PostCount,
-                    OnlineMembers = 0, // You can implement real-time tracking later
-                    Categories = c.Category != null ? new List<string> { c.Category.Name } : new List<string>(),
-                    IsUserMember = false // Will be populated if user is authenticated
+                    PostCount = c.PostCount,                    
+                    //Categories = c.Category != null ? new List<string> { c.Category.Name } : new List<string>(),
+                    IsCurrentUserMember = false // Will be populated if user is authenticated
                 })
                 .ToListAsync();
 
@@ -74,13 +73,13 @@ namespace discussionspot9.Services
                 if (!string.IsNullOrEmpty(userId))
                 {
                     var userMemberships = await _context.CommunityMembers
-                        .Where(cm => cm.UserId == userId && communities.Select(c => c.Id).Contains(cm.CommunityId))
+                        .Where(cm => cm.UserId == userId && communities.Select(c => c.CommunityId).Contains(cm.CommunityId))
                         .Select(cm => cm.CommunityId)
                         .ToListAsync();
 
                     foreach (var community in communities)
                     {
-                        community.IsUserMember = userMemberships.Contains(community.Id);
+                        community.IsUserMember = userMemberships.Contains(community.CommunityId);
                     }
                 }
             }

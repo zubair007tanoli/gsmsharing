@@ -269,92 +269,86 @@
                 <div class="ad-slot mb-3" role="complementary" aria-label="Advertisement">
                     <span>In-Feed Ad — Responsive</span>
                 </div>
-
-                @if (Model.Communities != null && Model.Communities.Any())
-                {
-                    <div class="vstack gap-3">
-                        @foreach (var community in Model.Communities)
-                        {
-                            <article class="card community-card">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-start justify-content-between">
-                                        <div class="d-flex align-items-start gap-3">
-                                            <img class="avatar" src="@(string.IsNullOrEmpty(community.IconUrl) ? "/placeholder.svg?height=48&width=48" : community.IconUrl)" 
-                                                 alt="@community.Name community icon" />
-                                            <div>
-                                                <h2 class="h6 mb-1">
-                                                    <a href="/r/@community.Slug" class="text-decoration-none">@community.Name</a>
-                                                </h2>
-                                                <p class="mb-2 text-secondary">@community.Description</p>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    <span class="metric" aria-label="Members">
-                                                        <span class="visually-hidden">Members:</span>
-                                                        <strong>@community.MemberCount</strong> members
-                                                    </span>
-                                                    <span class="metric" aria-label="Posts">
-                                                        <span class="visually-hidden">Posts:</span>
-                                                        <strong>@community.PostCount</strong> posts
-                                                    </span>
-                                                    @if (community.OnlineMembers > 0)
-                                                    {
-                                                        <span class="metric" aria-label="Active now">
-                                                            <span class="visually-hidden">Active users now:</span>
-                                                            <strong>@community.OnlineMembers</strong> online
-                                                        </span>
-                                                    }
-                                                </div>
-                                                @if (community.Categories != null && community.Categories.Any())
-                                                {
-                                                    <div class="d-flex flex-wrap gap-2 mt-2">
-                                                        @foreach (var category in community.Categories.Take(3))
-                                                        {
-                                                            <span class="tag">@category</span>
-                                                        }
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            @if (User.Identity.IsAuthenticated)
-                                            {
-                                                @if (community.IsCurrentUserMember)
-                                                {
-                                                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleMembership(@community.CommunityId)">Leave</button>
-                                                }
-                                                else
-                                                {
-                                                    <button class="btn btn-outline-primary btn-sm" onclick="toggleMembership(@community.CommunityId)">Join</button>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <a href="/auth" class="btn btn-outline-primary btn-sm">Join</a>
-                                            }
-                                        </div>
-                                    </div>
+@if (Model.Communities != null && Model.Communities.Any())
+{
+    <div class="vstack gap-3">
+        @foreach (var community in Model.Communities)
+        {
+            <article class="card community-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="d-flex align-items-start gap-3">
+                            <img class="avatar" src="@(string.IsNullOrEmpty(community.IconUrl) ? "/placeholder.svg?height=48&width=48" : community.IconUrl)" 
+                                 alt="@community.Name community icon" />
+                            <div>
+                                <h2 class="h6 mb-1">
+                                    <a href="/r/@community.Slug" class="text-decoration-none">@community.Name</a>
+                                </h2>
+                                <p class="mb-2 text-secondary">@community.Description</p>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="metric" aria-label="Members">
+                                        <span class="visually-hidden">Members:</span>
+                                        <strong>@community.MemberCount.ToString("N0")</strong> members
+                                    </span>
+                                    <span class="metric" aria-label="Posts">
+                                        <span class="visually-hidden">Posts:</span>
+                                        <strong>@community.PostCount.ToString("N0")</strong> posts
+                                    </span>
+                                    @if (community.OnlineMembers > 0)
+                                    {
+                                        <span class="metric" aria-label="Active now">
+                                            <span class="visually-hidden">Active users now:</span>
+                                            <strong>@community.OnlineMembers.ToString("N0")</strong> online
+                                        </span>
+                                    }
                                 </div>
-                            </article>
-                        }
-
-                        @if (Model.TotalPages > 1)
-                        {
-                            <div class="text-center">
-                                @if (Model.CurrentPage < Model.TotalPages)
+                                @if (community.Categories != null && community.Categories.Any())
                                 {
-                                    <button class="btn btn-secondary" onclick="loadMoreCommunities(@(Model.CurrentPage + 1))">
-                                        Load more
-                                    </button>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @foreach (var cat in community.Categories.Take(3))
+                                        {
+                                            <span class="tag">@cat</span>
+                                        }
+                                    </div>
                                 }
                             </div>
-                        }
+                        </div>
+                        <div class="ms-3">
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                @if (community.IsCurrentUserMember)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleMembership(@community.CommunityId)">Leave</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-outline-primary btn-sm" onclick="toggleMembership(@community.CommunityId)">Join</button>
+                                }
+                            }
+                            else
+                            {
+                                <a href="/Identity/Account/Login" class="btn btn-outline-primary btn-sm">Join</a>
+                            }
+                        </div>
                     </div>
-                }
-                else
+                </div>
+            </article>
+        }
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="text-center">
+                @if (Model.CurrentPage < Model.TotalPages)
                 {
-                    <div class="alert alert-info">
-                        No communities found.
-                    </div>
+                    <button class="btn btn-secondary" onclick="loadMoreCommunities(@(Model.CurrentPage + 1))">
+                        Load more (@(Model.TotalCount - (Model.CurrentPage * 12)) remaining)
+                    </button>
                 }
+            </div>
+        }
+    </div>
+}         
+            
             </section>
 
             <!-- Right Sidebar -->
@@ -467,21 +461,15 @@
         </div>
     </div>
 </main>
-
 @section Scripts {
     <script>
-        function updateSort(sortValue) {
-            window.location.href = `/communities?sort=${sortValue}`;
-        }
-
-        function loadMoreCommunities(page) {
-            window.location.href = `/communities?sort=@Model.CurrentSort&page=${page}`;
-        }
-
         function toggleMembership(communityId) {
-            if (!@User.Identity.IsAuthenticated.ToString().ToLower()) {
-                window.location.href = '/auth';
-                return;
+            @if (!User.Identity.IsAuthenticated)
+            {
+                    <text>
+                    window.location.href = '/Identity/Account/Login';
+                    return;
+                    </text>
             }
 
             fetch('/api/community/togglemembership', {
@@ -513,16 +501,32 @@
             } else {
                 url.searchParams.delete('category');
             }
+            url.searchParams.delete('page'); // Reset to page 1
             window.location.href = url.toString();
         }
 
-        // Update sort dropdown
+        function updateSort(sortValue) {
+            const url = new URL(window.location);
+            url.searchParams.set('sort', sortValue);
+            url.searchParams.delete('page'); // Reset to page 1
+            window.location.href = url.toString();
+        }
+
+        function loadMoreCommunities(page) {
+            const url = new URL(window.location);
+            url.searchParams.set('page', page);
+            window.location.href = url.toString();
+        }
+
+        // Update sort dropdown on page load
         document.addEventListener('DOMContentLoaded', function() {
             const sortSelect = document.getElementById('sort');
-            sortSelect.value = '@Model.CurrentSort';
-            sortSelect.addEventListener('change', function() {
-                updateSort(this.value);
-            });
+            if (sortSelect) {
+                sortSelect.value = '@Model.CurrentSort';
+                sortSelect.addEventListener('change', function() {
+                    updateSort(this.value);
+                });
+            }
         });
     </script>
 }

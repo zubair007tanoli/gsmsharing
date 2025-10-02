@@ -2,6 +2,7 @@
 using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -34,27 +35,108 @@ namespace discussionspot9.Controllers
         /// Display all communities/categories
         /// </summary>
         // Route: /communities
+    
         [HttpGet]
         [Route("communities")]
-        public async Task<IActionResult> Index(string sort = "popular", int page = 1)
+        public async Task<IActionResult> Index(string sort = "trending", string category = null, int page = 1)
         {
             try
             {
-                var model = await _communityService.GetAllCommunitiesAsync(sort, page);
+                const int pageSize = 12;
+                var userId = User.Identity.IsAuthenticated ?
+                    (await _userManager.GetUserAsync(User))?.Id : null;
 
-                ViewData["CurrentSort"] = sort;
-                ViewData["CurrentPage"] = page;
+                // Build query
+                var query = _context.Communities
+                    .Include(c => c.Category)
+                    .Include(c => c.Members)
+                    .Where(c => !c.IsDeleted);
 
-                return View(model);
+                // Apply category filter
+                if (!string.IsNullOrEmpty(category))
+                {
+                    query = query.Where(c => c.Category != null && c.Category.Name == category);
+                }
+
+                // Apply sorting
+                query = sort switch
+                {
+                    "newest" => query.OrderByDescending(c => c.CreatedAt),
+                    "active" => query.OrderByDescending(c => c.UpdatedAt),
+                    "members" => query.OrderByDescending(c => c.MemberCount),
+                    _ => query.OrderByDescending(c => c.MemberCount * 0.7 + c.PostCount * 0.3) // "trending" default
+                };
+
+                // Get total count for pagination
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+                // Get paginated communities
+                var communities = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(c => new CommunityListItemViewModel
+                    {
+                        CommunityId = c.CommunityId,
+                        Name = c.Name,
+                        Slug = c.Slug,
+                        Description = c.ShortDescription ?? c.Description,
+                        IconUrl = c.IconUrl,
+                        MemberCount = c.MemberCount,
+                        PostCount = c.PostCount,
+                        CategoryName = c.Category != null ? c.Category.Name : null,
+                        IsCurrentUserMember = userId != null &&
+                            c.Members.Any(m => m.UserId == userId),
+                        CreatedAt = c.CreatedAt
+                    })
+                    .ToListAsync();
+
+                // Calculate online members (mock data for now - you'd implement real tracking)
+                foreach (var community in communities)
+                {
+                    community.OnlineMembers = Random.Shared.Next(0, Math.Max(1, community.MemberCount / 10));
+                    community.Categories = community.CategoryName != null
+                        ? new List<string> { community.CategoryName }
+                        : new List<string>();
+                }
+
+                // Get category counts for filter
+                var categoryCounts = await _context.Communities
+                    .Where(c => !c.IsDeleted && c.Category != null)
+                    .GroupBy(c => c.Category.Name)
+                    .Select(g => new { Category = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.Category, x => x.Count);
+
+                var viewModel = new CommunityListViewModel
+                {
+                    Communities = communities,
+                    CategoryCounts = categoryCounts,
+                    CurrentSort = sort,
+                    CurrentPage = page,
+                    TotalPages = totalPages,
+                    TotalCount = totalCount,
+                    CurrentCategory = category
+                };
+
+                return View(viewModel);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching communities");
                 TempData["ErrorMessage"] = "An error occurred while loading communities.";
-                return RedirectToAction("Index", "Home");
+
+                // Return empty model on error
+                return View(new CommunityListViewModel
+                {
+                    Communities = new List<CommunityListItemViewModel>(),
+                    CategoryCounts = new Dictionary<string, int>(),
+                    CurrentSort = sort,
+                    CurrentPage = page,
+                    TotalPages = 0,
+                    TotalCount = 0
+                });
             }
         }
-
         /// <summary>
         /// Display single community with its posts
         /// </summary>
