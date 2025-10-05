@@ -689,7 +689,7 @@ namespace discussionspot9.Services
                     MediaType = m.MediaType,
                     Caption = m.Caption,
                     AltText = m.AltText,
-                    Width = (int)m.Width,
+                    Width = m.Width ?? 0,      // ← Use null-coalescing operator
                     Height = m.Height ?? 0
                 }).ToList(),
                 Poll = pollViewModel,
