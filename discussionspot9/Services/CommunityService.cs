@@ -23,77 +23,77 @@ namespace discussionspot9.Services
             _logger = logger;
         }
 
-        public async Task<CommunityListViewModel> GetAllCommunitiesAsync(string sort, int page)
-        {
-            const int pageSize = 20;
-            var skip = (page - 1) * pageSize;
+        //public async Task<CommunityListViewModel> GetAllCommunitiesAsync(string sort, int page)
+        //{
+        //    const int pageSize = 20;
+        //    var skip = (page - 1) * pageSize;
 
-            var query = _context.Communities
-                .Include(c => c.Category)
-                .Where(c => !c.IsDeleted);
+        //    var query = _context.Communities
+        //        .Include(c => c.Category)
+        //        .Where(c => !c.IsDeleted);
 
-            // Apply sorting
-            query = sort switch
-            {
-                "newest" => query.OrderByDescending(c => c.CreatedAt),
-                "active" => query.OrderByDescending(c => c.UpdatedAt),
-                "members" => query.OrderByDescending(c => c.MemberCount),
-                _ => query.OrderByDescending(c => c.PostCount).ThenByDescending(c => c.MemberCount) // "popular" or default
-            };
+        //    // Apply sorting
+        //    query = sort switch
+        //    {
+        //        "newest" => query.OrderByDescending(c => c.CreatedAt),
+        //        "active" => query.OrderByDescending(c => c.UpdatedAt),
+        //        "members" => query.OrderByDescending(c => c.MemberCount),
+        //        _ => query.OrderByDescending(c => c.PostCount).ThenByDescending(c => c.MemberCount) // "popular" or default
+        //    };
 
-            var totalCommunities = await query.CountAsync();
-            var communities = await query
-                .Skip(skip)
-                .Take(pageSize)
-                .Select(c => new CommunityCardViewModel
-                {
-                    CommunityId = c.CommunityId,
-                    Name = c.Name,
-                    Slug = c.Slug,
-                    Description = c.ShortDescription ?? c.Description.Substring(0, Math.Min(c.Description.Length, 200)),
-                    IconUrl = c.IconUrl,
-                    MemberCount = c.MemberCount,
-                    PostCount = c.PostCount,                    
-                    //Categories = c.Category != null ? new List<string> { c.Category.Name } : new List<string>(),
-                    IsCurrentUserMember = false // Will be populated if user is authenticated
-                })
-                .ToListAsync();
+        //    var totalCommunities = await query.CountAsync();
+        //    var communities = await query
+        //        .Skip(skip)
+        //        .Take(pageSize)
+        //        .Select(c => new CommunityCardViewModel
+        //        {
+        //            CommunityId = c.CommunityId,
+        //            Name = c.Name,
+        //            Slug = c.Slug,
+        //            Description = c.ShortDescription ?? c.Description.Substring(0, Math.Min(c.Description.Length, 200)),
+        //            IconUrl = c.IconUrl,
+        //            MemberCount = c.MemberCount,
+        //            PostCount = c.PostCount,                    
+        //            //Categories = c.Category != null ? new List<string> { c.Category.Name } : new List<string>(),
+        //            IsCurrentUserMember = false // Will be populated if user is authenticated
+        //        })
+        //        .ToListAsync();
 
-            // Get category counts for filters
-            var categoryCounts = await _context.Communities
-                .Where(c => !c.IsDeleted && c.Category != null)
-                .GroupBy(c => c.Category.Name)
-                .Select(g => new { Category = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.Category, x => x.Count);
+        //    // Get category counts for filters
+        //    var categoryCounts = await _context.Communities
+        //        .Where(c => !c.IsDeleted && c.Category != null)
+        //        .GroupBy(c => c.Category.Name)
+        //        .Select(g => new { Category = g.Key, Count = g.Count() })
+        //        .ToDictionaryAsync(x => x.Category, x => x.Count);
 
-            // If user is authenticated, check membership status
-            if (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
-            {
-                var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    var userMemberships = await _context.CommunityMembers
-                        .Where(cm => cm.UserId == userId && communities.Select(c => c.CommunityId).Contains(cm.CommunityId))
-                        .Select(cm => cm.CommunityId)
-                        .ToListAsync();
+        //    // If user is authenticated, check membership status
+        //    if (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
+        //    {
+        //        var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //        if (!string.IsNullOrEmpty(userId))
+        //        {
+        //            var userMemberships = await _context.CommunityMembers
+        //                .Where(cm => cm.UserId == userId && communities.Select(c => c.CommunityId).Contains(cm.CommunityId))
+        //                .Select(cm => cm.CommunityId)
+        //                .ToListAsync();
 
-                    foreach (var community in communities)
-                    {
-                        community.IsUserMember = userMemberships.Contains(community.CommunityId);
-                    }
-                }
-            }
+        //            foreach (var community in communities)
+        //            {
+        //                community.IsUserMember = userMemberships.Contains(community.CommunityId);
+        //            }
+        //        }
+        //    }
 
-            return new CommunityListViewModel
-            {
-                Communities = communities,
-                TotalCommunities = totalCommunities,
-                CurrentPage = page,
-                TotalPages = (int)Math.Ceiling(totalCommunities / (double)pageSize),
-                CurrentSort = sort,
-                CategoryCounts = categoryCounts
-            };
-        }
+        //    return new CommunityListViewModel
+        //    {
+        //        Communities = communities,
+        //        TotalCommunities = totalCommunities,
+        //        CurrentPage = page,
+        //        TotalPages = (int)Math.Ceiling(totalCommunities / (double)pageSize),
+        //        CurrentSort = sort,
+        //        CategoryCounts = categoryCounts
+        //    };
+        //}
         //public async Task<CommunityListViewModel> GetAllCommunitiesAsync(string sort = "popular", int page = 1)
         //{
         //    const int pageSize = 20;
@@ -501,5 +501,9 @@ namespace discussionspot9.Services
             return suggestedCommunities;
         }
 
+        public Task<CommunityListViewModel> GetAllCommunitiesAsync(string sort = "popular", int page = 1)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

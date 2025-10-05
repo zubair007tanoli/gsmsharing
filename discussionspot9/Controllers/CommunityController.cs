@@ -16,26 +16,32 @@ namespace discussionspot9.Controllers
         private readonly ApplicationDbContext _context; // Assuming you have a DbContext for database access
         private readonly IMemoryCache _cache;
         private readonly ILogger<CommunityController> _logger;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public CommunityController(
             ICommunityService communityService,
             IPostService postService,
             IMemoryCache cache,
             ILogger<CommunityController> logger,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            UserManager<IdentityUser> userManager,
+            IHttpContextAccessor httpContextAccessor)
         {
             _communityService = communityService;
             _postService = postService;
             _cache = cache;
             _logger = logger;
             _context = context;
+            _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
         /// Display all communities/categories
         /// </summary>
         // Route: /communities
-    
+
         [HttpGet]
         [Route("communities")]
         public async Task<IActionResult> Index(string sort = "trending", string category = null, int page = 1)

@@ -1,0 +1,197 @@
+# Product Requirements Document (PRD)
+
+**Project Name:** DiscussionSpot
+**Version:** 2.1
+**Date:** October 2025
+**Prepared by:** Uzair
+
+---
+
+## 1. Introduction
+
+**Vision:**
+DiscussionSpot is a modern online discussion platform designed to connect people around shared interests. It provides topic-based communities, post sharing, comments, voting, and multimedia support while being optimized for engagement, discoverability, and scalability.
+
+**Goals:**
+
+* Build a **user-friendly forum platform** with communities and categories.
+* Support rich content types (text, images, video, polls).
+* Enable **social engagement features** such as voting, awards, notifications.
+* Integrate **Python-powered AI services** for moderation, recommendations, SEO, and analytics.
+* Ensure **scalability, performance, and SEO-friendliness**.
+
+---
+
+## 2. Scope
+
+### In Scope
+
+* User authentication & profiles.
+* Communities and categories management.
+* Post creation (text, media, polls).
+* Comments, replies, voting.
+* Tags, SEO metadata, awards system.
+* Real-time notifications.
+* Python-based AI services (moderation, SEO, analytics).
+
+### Out of Scope (Phase 1)
+
+* Direct messaging between users.
+* Marketplace/commerce features.
+* Mobile app (future release).
+
+---
+
+## 3. User Roles
+
+* **Guest**: Browse content, view posts and comments.
+* **Registered User**: Join communities, create posts, comment, vote, receive notifications.
+* **Moderator**: Manage community posts, rules, and members.
+* **Admin**: Manage entire platform (categories, SEO, global settings).
+
+---
+
+## 4. Functional Requirements
+
+### 4.1 User Accounts & Profiles
+
+* **FR-101:** Users can sign up via email, Google, or Facebook.
+* **FR-102:** Users can reset passwords through a “Forgot Password” flow.
+* **FR-103:** Users can manage their profiles (avatar, banner, bio, website link).
+* **FR-104:** Users can view other profiles with post history, comments, karma.
+* **FR-105:** Admins can assign “Verified” badges to trusted users.
+* **FR-106:** Profiles display user’s join date, last active time, awards, and achievements.
+* **FR-107:** Karma score updates based on community engagement.
+
+---
+
+### 4.2 Communities & Categories
+
+* **FR-201:** Users can browse communities under categories and subcategories.
+* **FR-202:** Users can create communities with a name, description, banner, icon, and rules.
+* **FR-203:** Communities can be public, private, or restricted.
+* **FR-204:** Community admins can manage membership (add/remove members, assign moderators).
+* **FR-205:** Community statistics (member count, post count) update in real-time.
+* **FR-206:** Communities can be associated with categories for organization.
+* **FR-207:** Deleted or banned communities should retain archived posts for audit purposes.
+
+---
+
+### 4.3 Posts & Media
+
+* **FR-301:** Users can create posts of type text, link, image, video, or poll.
+* **FR-302:** Posts must support rich text formatting (bold, links, lists, code blocks).
+* **FR-303:** Media uploads should support images, videos, and documents with captions.
+* **FR-304:** Polls allow multiple choice, with options set by the creator.
+* **FR-305:** Posts can be pinned, locked, marked NSFW, or as spoilers by moderators.
+* **FR-306:** Each post should track views, votes, comments, and awards.
+* **FR-307:** Post slugs should be unique per community for SEO purposes.
+
+---
+
+### 4.4 Comments
+
+* **FR-401:** Users can post comments and threaded replies.
+* **FR-402:** Users can edit or delete their own comments.
+* **FR-403:** Comments can be upvoted/downvoted.
+* **FR-404:** Comments display time created, last updated, and edited status.
+* **FR-405:** Moderators can remove or lock comment threads.
+* **FR-406:** Comment nesting supports up to a configurable depth (default 5 levels).
+
+---
+
+### 4.5 Voting & Awards
+
+* **FR-501:** Users can upvote or downvote posts and comments.
+* **FR-502:** Vote score updates immediately and affects post ranking.
+* **FR-503:** Users can give awards (free or paid) to posts and comments.
+* **FR-504:** Awards should display icons and grant karma points to the receiver.
+* **FR-505:** Award messages (optional notes) are displayed with awards.
+
+---
+
+### 4.6 Notifications
+
+* **FR-601:** Users receive notifications for replies, mentions, votes, awards, and moderator actions.
+* **FR-602:** Notifications can be marked as read/unread.
+* **FR-603:** Notification preferences can be managed at the community level (all, important, none).
+* **FR-604:** Notifications should appear in real-time if the user is online.
+
+---
+
+### 4.7 Tags & SEO
+
+* **FR-701:** Users can tag posts with multiple relevant tags.
+* **FR-702:** SEO metadata (title, description, keywords) can be customized for posts and communities.
+* **FR-703:** Canonical URLs, Open Graph (OG), and Twitter card data should be supported.
+* **FR-704:** Python microservice can auto-generate SEO suggestions when creating posts/communities.
+
+---
+
+### 4.8 Moderation & Safety
+
+* **FR-801:** Moderators can remove posts, comments, and ban users from communities.
+* **FR-802:** Users can report posts or comments for review.
+* **FR-803:** NSFW and Spoiler flags hide sensitive content behind warnings.
+* **FR-804:** Python AI service scans new posts/comments and flags harmful/spam content.
+* **FR-805:** Audit logs track moderator actions for accountability.
+
+---
+
+### 4.9 Python-Powered Features
+
+* **FR-901:** AI Moderation microservice flags toxic, spam, or NSFW content.
+* **FR-902:** Recommendation engine suggests communities and posts to users.
+* **FR-903:** SEO microservice generates suggested meta titles, keywords, and descriptions.
+* **FR-904:** Analytics microservice provides insights (active users, trending tags, sentiment analysis).
+* **FR-905:** Semantic search microservice improves search accuracy with AI embeddings.
+
+---
+
+## 5. Non-Functional Requirements
+
+* **NFR-101:** Handle at least 10,000 concurrent users.
+* **NFR-102:** Response time for key actions (posting, commenting, voting) should be < 1 second.
+* **NFR-103:** Secure with HTTPS, role-based access, CSRF/XSS protection.
+* **NFR-104:** Python microservices must be decoupled and scalable.
+* **NFR-105:** UI must be mobile-responsive.
+* **NFR-106:** SEO best practices applied globally.
+
+---
+
+## 6. Success Metrics
+
+* Daily active users.
+* Average posts and comments per user.
+* Percentage of spam removed automatically.
+* Organic traffic growth.
+* Retention rate (returning users).
+
+---
+
+## 7. Roadmap (Phased Delivery)
+
+### Phase 1 (MVP)
+
+* User accounts & profiles.
+* Communities, categories, posts, comments.
+* Voting, notifications.
+
+### Phase 2
+
+* Awards system.
+* Polls.
+* SEO metadata & tags.
+* Moderator tools.
+
+### Phase 3 (Python Integration)
+
+* AI moderation.
+* SEO automation.
+* Recommendations.
+* Analytics dashboard.
+* Semantic search.
+
+---
+
+**End of Document**
