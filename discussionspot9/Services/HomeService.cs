@@ -188,6 +188,7 @@ namespace discussionspot9.Services
                         Content = p.Content ?? "",
                         CategoryName = p.Community!.Category!.Name,
                         CategorySlug = p.Community.Category.Slug,
+                        CommunitySlug = p.Community.Slug,
                         AuthorDisplayName = _context.UserProfiles
                             .Where(up => up.UserId == p.UserId)
                             .Select(up => up.DisplayName)

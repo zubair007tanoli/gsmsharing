@@ -51,6 +51,12 @@ namespace discussionspot9.Models.ViewModels.HomePage
         public string CategorySlug { get; set; } = string.Empty;
 
         /// <summary>
+        /// URL-friendly community identifier
+        /// </summary>
+        [Required]
+        public string CommunitySlug { get; set; } = string.Empty;
+
+        /// <summary>
         /// Display name of the post author
         /// </summary>
         [Required]
@@ -111,9 +117,9 @@ namespace discussionspot9.Models.ViewModels.HomePage
         public string TimeAgo => GetTimeAgo(CreatedAt);
 
         /// <summary>
-        /// Full URL to the post
+        /// Full URL to the post (community-based route)
         /// </summary>
-        public string PostUrl => $"/c/{CategorySlug}/posts/{Slug}";
+        public string PostUrl => $"/r/{CommunitySlug}/posts/{Slug}";
 
         /// <summary>
         /// Full URL to the author's profile
