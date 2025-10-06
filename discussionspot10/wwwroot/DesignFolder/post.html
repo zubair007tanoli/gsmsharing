@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Post - DiscussHub</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="post-styles.css" />
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="index(4).html">
+        <i class="fas fa-comments text-primary fs-4"></i>
+        <span>DiscussHub</span>
+      </a>
+      <form class="search-form d-none d-md-block">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="form-control search-input" placeholder="Search communities, topics, or users..." />
+      </form>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="index(4).html">
+              <i class="fas fa-home"></i>
+              <span class="d-none d-lg-inline">Home</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <i class="fas fa-fire"></i>
+              <span class="d-none d-lg-inline">Trending</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link btn-ask-question" href="#">
+              <i class="fas fa-plus-circle"></i>
+              <span class="d-none d-lg-inline">Ask Question</span>
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <img src="https://i.pravatar.cc/150?img=12" alt="User" class="user-avatar" />
+              <span class="d-none d-lg-inline">JohnDoe</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    <div class="container">
+      <div class="row">
+        <!-- Left Sidebar -->
+        <div class="col-lg-3 d-none d-lg-block">
+          <aside class="sidebar">
+            <div class="sidebar-card">
+              <div class="sidebar-header">Left Sidebar</div>
+              <div class="sidebar-content">
+                <p class="mb-2">Navigation</p>
+                <ul class="guidelines-list">
+                  <li>Home</li>
+                  <li>Trending</li>
+                  <li>Communities</li>
+                </ul>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Main Post Column -->
+        <div class="col-lg-6">
+          <!-- Post Detail Card -->
+          <div class="post-detail-card">
+            <!-- Post Header -->
+            <div class="post-detail-header">
+              <div class="post-community-info">
+                <div class="community-icon-large">t</div>
+                <div>
+                  <a href="#" class="community-name">r/technology</a>
+                  <div class="post-author-info">
+                    Posted by <a href="#">u/techreview</a> • 5 hours ago
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-primary join-btn">
+                <i class="fas fa-plus"></i> Join
+              </button>
+            </div>
+
+            <!-- Post Content -->
+            <div class="post-detail-content">
+              <!-- Post Voting Sidebar -->
+              <div class="post-voting-sidebar">
+                <button class="vote-button-large upvote" onclick="handlePostVote(this, 'upvote')">
+                  <i class="fas fa-arrow-up"></i>
+                </button>
+                <span class="vote-count-large">1.8k</span>
+                <button class="vote-button-large downvote" onclick="handlePostVote(this, 'downvote')">
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+              </div>
+
+              <div class="post-main-content">
+                <h1 class="post-detail-title">iPhone 15 Pro Max Battery Life Exceeds Expectations in Latest Tests</h1>
+
+                <div class="tags-container mb-3">
+                  <span class="tag-badge">Apple</span>
+                  <span class="tag-badge">iPhone</span>
+                  <span class="tag-badge">Battery</span>
+                </div>
+
+                <!-- Image Post Example -->
+                <div class="post-media-container">
+                  <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=1200" alt="iPhone 15 Pro Max" class="post-detail-image" />
+                </div>
+
+                <!-- Post Body Text -->
+                <div class="post-detail-body">
+                  <p>In comprehensive battery tests conducted over the past week, the iPhone 15 Pro Max has demonstrated exceptional battery performance that surpasses Apple's official claims and previous generation models.</p>
+                  <p>Our testing methodology included real-world usage scenarios such as video streaming, gaming, web browsing, and social media usage. The results were consistently impressive across all categories.</p>
+                  <h3>Key Findings:</h3>
+                  <ul>
+                    <li>Video playback: 28 hours (vs. 29 hours claimed)</li>
+                    <li>Web browsing: 22 hours (vs. 20 hours claimed)</li>
+                    <li>Gaming: 12 hours of continuous gameplay</li>
+                    <li>Mixed usage: Full day with 35% remaining</li>
+                  </ul>
+                  <p>The A17 Pro chip's efficiency improvements combined with the larger battery capacity make this the best iPhone for battery life to date.</p>
+                </div>
+
+                <!-- Link Preview Example -->
+                <div class="link-preview-card">
+                  <img src="https://images.unsplash.com/photo-1611532736597-de2d4265fba3?q=80&w=400" alt="Link preview" class="link-preview-image" />
+                  <div class="link-preview-content">
+                    <div class="link-preview-domain">
+                      <i class="fas fa-external-link-alt"></i>
+                      techcrunch.com
+                    </div>
+                    <h4 class="link-preview-title">Apple announces new iPhone 15 lineup with USB-C</h4>
+                    <p class="link-preview-description">Apple has officially unveiled the iPhone 15 series, featuring USB-C connectivity, improved cameras, and the new A17 Pro chip.</p>
+                  </div>
+                </div>
+
+                <!-- Image Gallery Example -->
+                <div class="image-gallery">
+                  <div class="gallery-main">
+                    <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=1200" alt="Gallery image 1" class="gallery-main-image" id="gallery-main-image" />
+                  </div>
+                  <div class="gallery-thumbnails">
+                    <img src="https://images.unsplash.com/photo-1678911820864-e2c567c655d7?q=80&w=200" alt="Thumbnail 1" class="gallery-thumbnail active" onclick="changeGalleryImage(this)" />
+                    <img src="https://images.unsplash.com/photo-1611532736597-de2d4265fba3?q=80&w=200" alt="Thumbnail 2" class="gallery-thumbnail" onclick="changeGalleryImage(this)" />
+                    <img src="https://images.unsplash.com/photo-1592286927505-b0c2e0a13e20?q=80&w=200" alt="Thumbnail 3" class="gallery-thumbnail" onclick="changeGalleryImage(this)" />
+                    <img src="https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?q=80&w=200" alt="Thumbnail 4" class="gallery-thumbnail" onclick="changeGalleryImage(this)" />
+                  </div>
+                </div>
+
+                <!-- Video Player Example -->
+                <div class="video-player-container">
+                  <video controls class="post-video-player" poster="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200">
+                    <source src="sample-video.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+
+                <!-- Poll Example -->
+                <div class="poll-container-detailed">
+                  <h3 class="poll-question">Which smartphone has the best battery life?</h3>
+                  <div class="poll-options-list">
+                    <div class="poll-option-detailed" onclick="voteOnPoll(this)">
+                      <div class="poll-option-bar" style="width: 42%"></div>
+                      <div class="poll-option-content">
+                        <div class="poll-option-text">iPhone 15 Pro Max</div>
+                        <div class="poll-option-stats">
+                          <span class="poll-option-percentage">42%</span>
+                          <span class="poll-option-votes">2,341 votes</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="poll-option-detailed" onclick="voteOnPoll(this)">
+                      <div class="poll-option-bar" style="width: 28%"></div>
+                      <div class="poll-option-content">
+                        <div class="poll-option-text">Samsung Galaxy S24 Ultra</div>
+                        <div class="poll-option-stats">
+                          <span class="poll-option-percentage">28%</span>
+                          <span class="poll-option-votes">1,562 votes</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="poll-option-detailed" onclick="voteOnPoll(this)">
+                      <div class="poll-option-bar" style="width: 18%"></div>
+                      <div class="poll-option-content">
+                        <div class="poll-option-text">Google Pixel 8 Pro</div>
+                        <div class="poll-option-stats">
+                          <span class="poll-option-percentage">18%</span>
+                          <span class="poll-option-votes">1,004 votes</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="poll-option-detailed" onclick="voteOnPoll(this)">
+                      <div class="poll-option-bar" style="width: 12%"></div>
+                      <div class="poll-option-content">
+                        <div class="poll-option-text">OnePlus 12</div>
+                        <div class="poll-option-stats">
+                          <span class="poll-option-percentage">12%</span>
+                          <span class="poll-option-votes">669 votes</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="poll-footer-detailed">
+                    <span><i class="fas fa-users"></i> 5,576 total votes</span>
+                    <span>•</span>
+                    <span><i class="far fa-clock"></i> 5 days left</span>
+                  </div>
+                </div>
+
+                <!-- Post Footer Row -->
+                <div class="post-footer-row">
+                  <div class="post-detail-actions">
+                    <button class="post-action-btn">
+                      <i class="far fa-comment-alt"></i>
+                      <span>142 Comments</span>
+                    </button>
+                    <button class="post-action-btn">
+                      <i class="fas fa-share"></i>
+                      <span>Share</span>
+                    </button>
+                    <button class="post-action-btn">
+                      <i class="far fa-bookmark"></i>
+                      <span>Save</span>
+                    </button>
+                    <button class="post-action-btn">
+                      <i class="fas fa-flag"></i>
+                      <span>Report</span>
+                    </button>
+                  </div>
+
+                  <div class="post-vote-bar" aria-label="Post voting">
+                    <button class="vote-btn up" data-vote="up" aria-label="Upvote">
+                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
+                    </button>
+                    <span class="vote-count" data-count="1800">1.8k</span>
+                    <button class="vote-btn down" data-vote="down" aria-label="Downvote">
+                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 19l-7-8h4V5h6v6h4z"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-section">
+              <div class="comments-header">
+                <h3>Comments (142)</h3>
+                <select class="comment-sort-select">
+                  <option>Best</option>
+                  <option>Top</option>
+                  <option>New</option>
+                  <option>Controversial</option>
+                  <option>Old</option>
+                </select>
+              </div>
+
+              <!-- Add Comment -->
+              <div class="add-comment-box">
+                <img src="https://i.pravatar.cc/150?img=12" alt="User" class="comment-user-avatar" />
+                <div class="comment-input-container">
+                  <textarea class="comment-input" placeholder="What are your thoughts?"></textarea>
+                  <div class="comment-input-actions">
+                    <button class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-link"></i>
+                    </button>
+                    <button class="btn btn-primary btn-sm ms-auto">Comment</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comments List -->
+              <div class="comments-list">
+                <!-- Comment 1 -->
+                <div class="comment-item">
+                  <div class="comment-voting">
+                    <button class="comment-vote-btn upvote" onclick="handleCommentVote(this, 'upvote')">
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <span class="comment-vote-count">234</span>
+                    <button class="comment-vote-btn downvote" onclick="handleCommentVote(this, 'downvote')">
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                  </div>
+                  <div class="comment-content">
+                    <div class="comment-header">
+                      <img src="https://i.pravatar.cc/150?img=33" alt="User" class="comment-avatar" />
+                      <a href="#" class="comment-author">u/batteryexpert</a>
+                      <span class="comment-badge op-badge">OP</span>
+                      <span class="comment-time">3 hours ago</span>
+                    </div>
+                    <div class="comment-body">
+                      <p>This is really impressive! I've been using the 15 Pro Max for two weeks now and can confirm these results. The battery optimization is next level compared to my old 13 Pro.</p>
+                    </div>
+
+                    <!-- Comment Footer -->
+                    <div class="comment-footer">
+                      <div class="comment-actions">
+                        <button class="comment-action-btn" data-action="reply">
+                          <i class="far fa-comment-alt"></i> Reply
+                        </button>
+                        <button class="comment-action-btn">
+                          <i class="fas fa-share"></i> Share
+                        </button>
+                        <button class="comment-action-btn">
+                          <i class="fas fa-flag"></i> Report
+                        </button>
+                        <button class="comment-action-btn">
+                          <i class="fas fa-award"></i> Award
+                        </button>
+                      </div>
+                      <div class="comment-vote-bar" aria-label="Comment voting">
+                        <button class="vote-btn up" data-vote="up" aria-label="Upvote">
+                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
+                        </button>
+                        <span class="vote-count" data-count="234">234</span>
+                        <button class="vote-btn down" data-vote="down" aria-label="Downvote">
+                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 19l-7-8h4V5h6v6h4z"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Reply Form Container -->
+                    <div class="reply-form-container" hidden></div>
+
+                    <!-- Nested Reply -->
+                    <div class="comment-replies">
+                      <div class="comment-item">
+                        <div class="comment-voting">
+                          <button class="comment-vote-btn upvote" onclick="handleCommentVote(this, 'upvote')">
+                            <i class="fas fa-arrow-up"></i>
+                          </button>
+                          <span class="comment-vote-count">89</span>
+                          <button class="comment-vote-btn downvote" onclick="handleCommentVote(this, 'downvote')">
+                            <i class="fas fa-arrow-down"></i>
+                          </button>
+                        </div>
+                        <div class="comment-content">
+                          <div class="comment-header">
+                            <img src="https://i.pravatar.cc/150?img=45" alt="User" class="comment-avatar" />
+                            <a href="#" class="comment-author">u/iphonefan</a>
+                            <span class="comment-time">2 hours ago</span>
+                          </div>
+                          <div class="comment-body">
+                            <p>Same here! Coming from Android, I'm blown away by how long this lasts.</p>
+                          </div>
+
+                          <!-- Comment Footer -->
+                          <div class="comment-footer">
+                            <div class="comment-actions">
+                              <button class="comment-action-btn" data-action="reply">
+                                <i class="far fa-comment-alt"></i> Reply
+                              </button>
+                              <button class="comment-action-btn">
+                                <i class="fas fa-share"></i> Share
+                              </button>
+                            </div>
+                            <div class="comment-vote-bar" aria-label="Comment voting">
+                              <button class="vote-btn up" data-vote="up" aria-label="Upvote">
+                                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
+                              </button>
+                              <span class="vote-count" data-count="89">89</span>
+                              <button class="vote-btn down" data-vote="down" aria-label="Downvote">
+                                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 19l-7-8h4V5h6v6h4z"/></svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          <!-- Reply Form Container -->
+                          <div class="reply-form-container" hidden></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Comment 2 -->
+                <div class="comment-item">
+                  <div class="comment-voting">
+                    <button class="comment-vote-btn upvote" onclick="handleCommentVote(this, 'upvote')">
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <span class="comment-vote-count">156</span>
+                    <button class="comment-vote-btn downvote" onclick="handleCommentVote(this, 'downvote')">
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                  </div>
+                  <div class="comment-content">
+                    <div class="comment-header">
+                      <img src="https://i.pravatar.cc/150?img=22" alt="User" class="comment-avatar" />
+                      <a href="#" class="comment-author">u/techskeptic</a>
+                      <span class="comment-time">4 hours ago</span>
+                    </div>
+                    <div class="comment-body">
+                      <p>Would love to see how this compares to the Samsung S24 Ultra. That phone also has excellent battery life.</p>
+                    </div>
+
+                    <!-- Comment Footer -->
+                    <div class="comment-footer">
+                      <div class="comment-actions">
+                        <button class="comment-action-btn" data-action="reply">
+                          <i class="far fa-comment-alt"></i> Reply
+                        </button>
+                        <button class="comment-action-btn">
+                          <i class="fas fa-share"></i> Share
+                        </button>
+                      </div>
+                      <div class="comment-vote-bar" aria-label="Comment voting">
+                        <button class="vote-btn up" data-vote="up" aria-label="Upvote">
+                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
+                        </button>
+                        <span class="vote-count" data-count="156">156</span>
+                        <button class="vote-btn down" data-vote="down" aria-label="Downvote">
+                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 19l-7-8h4V5h6v6h4z"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Reply Form Container -->
+                    <div class="reply-form-container" hidden></div>
+                  </div>
+                </div>
+
+                <!-- Comment 3 -->
+                <div class="comment-item">
+                  <div class="comment-voting">
+                    <button class="comment-vote-btn upvote" onclick="handleCommentVote(this, 'upvote')">
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <span class="comment-vote-count">92</span>
+                    <button class="comment-vote-btn downvote" onclick="handleCommentVote(this, 'downvote')">
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                  </div>
+                  <div class="comment-content">
+                    <div class="comment-header">
+                      <img src="https://i.pravatar.cc/150?img=67" alt="User" class="comment-avatar" />
+                      <a href="#" class="comment-author">u/poweruser</a>
+                      <span class="comment-badge mod-badge">MOD</span>
+                      <span class="comment-time">5 hours ago</span>
+                    </div>
+                    <div class="comment-body">
+                      <p>Great detailed analysis! This is the kind of quality content we love to see in r/technology.</p>
+                    </div>
+
+                    <!-- Comment Footer -->
+                    <div class="comment-footer">
+                      <div class="comment-actions">
+                        <button class="comment-action-btn" data-action="reply">
+                          <i class="far fa-comment-alt"></i> Reply
+                        </button>
+                        <button class="comment-action-btn">
+                          <i class="fas fa-thumbtack"></i> Pin
+                        </button>
+                      </div>
+                      <div class="comment-vote-bar" aria-label="Comment voting">
+                        <button class="vote-btn up" data-vote="up" aria-label="Upvote">
+                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5l7 8h-4v6H9v-6H5z"/></svg>
+                        </button>
+                        <span class="vote-count" data-count="92">92</span>
+                        <button class="vote-btn down" data-vote="down" aria-label="Downvote">
+                          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 19l-7-8h4V5h6v6h4z"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Reply Form Container -->
+                    <div class="reply-form-container" hidden></div>
+                  </div>
+                </div>
+
+                <!-- Load More Comments -->
+                <button class="load-more-comments-btn">
+                  <i class="fas fa-chevron-down"></i>
+                  Load 139 more comments
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-3">
+          <div class="sidebar">
+            <!-- About Community -->
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                About r/technology
+              </div>
+              <div class="sidebar-content">
+                <p class="community-description">A place to discuss technology, innovation, and the future of tech.</p>
+                <div class="community-stats">
+                  <div class="stat-item">
+                    <div class="stat-number">14.8M</div>
+                    <div class="stat-label">Members</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-number">23.4K</div>
+                    <div class="stat-label">Online</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-number">Top 1%</div>
+                    <div class="stat-label">Rank</div>
+                  </div>
+                </div>
+                <div class="community-created">
+                  <i class="fas fa-cake-candles"></i>
+                  Created Jan 25, 2008
+                </div>
+                <button class="btn btn-primary sidebar-button mt-3">
+                  <i class="fas fa-plus"></i> Join Community
+                </button>
+              </div>
+            </div>
+
+            <!-- Community Rules -->
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                r/technology Rules
+              </div>
+              <div class="sidebar-content">
+                <div class="rules-list">
+                  <div class="rule-item">
+                    <div class="rule-number">1</div>
+                    <div class="rule-text">Be respectful and civil</div>
+                  </div>
+                  <div class="rule-item">
+                    <div class="rule-number">2</div>
+                    <div class="rule-text">No spam or self-promotion</div>
+                  </div>
+                  <div class="rule-item">
+                    <div class="rule-number">3</div>
+                    <div class="rule-text">Stay on topic</div>
+                  </div>
+                  <div class="rule-item">
+                    <div class="rule-number">4</div>
+                    <div class="rule-text">No misleading titles</div>
+                  </div>
+                  <div class="rule-item">
+                    <div class="rule-number">5</div>
+                    <div class="rule-text">Cite your sources</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Related Posts -->
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                Related Posts
+              </div>
+              <div class="sidebar-content">
+                <div class="related-posts-list">
+                  <a href="#" class="related-post-item">
+                    <img src="https://images.unsplash.com/photo-1611532736597-de2d4265fba3?q=80&w=100" alt="Related post" class="related-post-thumbnail" />
+                    <div class="related-post-info">
+                      <div class="related-post-title">Apple announces new MacBook Pro lineup</div>
+                      <div class="related-post-meta">
+                        <span>r/technology</span>
+                        <span>•</span>
+                        <span>2.3k upvotes</span>
+                      </div>
+                    </div>
+                  </a>
+                  <a href="#" class="related-post-item">
+                    <img src="https://images.unsplash.com/photo-1592286927505-b0c2e0a13e20?q=80&w=100" alt="Related post" class="related-post-thumbnail" />
+                    <div class="related-post-info">
+                      <div class="related-post-title">iPhone 15 vs Samsung S24: Camera comparison</div>
+                      <div class="related-post-meta">
+                        <span>r/smartphones</span>
+                        <span>•</span>
+                        <span>1.8k upvotes</span>
+                      </div>
+                    </div>
+                  </a>
+                  <a href="#" class="related-post-item">
+                    <img src="https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?q=80&w=100" alt="Related post" class="related-post-thumbnail" />
+                    <div class="related-post-info">
+                      <div class="related-post-title">Best smartphones of 2025</div>
+                      <div class="related-post-meta">
+                        <span>r/gadgets</span>
+                        <span>•</span>
+                        <span>4.2k upvotes</span>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Moderators -->
+            <div class="sidebar-card">
+              <div class="sidebar-header">
+                Moderators
+              </div>
+              <div class="sidebar-content">
+                <div class="moderators-list">
+                  <a href="#" class="moderator-item">
+                    <img src="https://i.pravatar.cc/150?img=11" alt="Mod" class="moderator-avatar" />
+                    <span>u/techmod1</span>
+                  </a>
+                  <a href="#" class="moderator-item">
+                    <img src="https://i.pravatar.cc/150?img=22" alt="Mod" class="moderator-avatar" />
+                    <span>u/techmod2</span>
+                  </a>
+                  <a href="#" class="moderator-item">
+                    <img src="https://i.pravatar.cc/150?img=33" alt="Mod" class="moderator-avatar" />
+                    <span>u/techmod3</span>
+                  </a>
+                </div>
+                <button class="btn btn-outline-primary sidebar-button mt-2">
+                  View All Moderators
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-3 col-md-6 mb-4">
+          <h5 class="footer-title">About DiscussHub</h5>
+          <p class="footer-text">A community-driven platform where millions connect, share knowledge, and engage in meaningful discussions.</p>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+          <h5 class="footer-title">Quick Links</h5>
+          <ul class="footer-links">
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Press</a></li>
+            <li><a href="#">Blog</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+          <h5 class="footer-title">Support</h5>
+          <ul class="footer-links">
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Community Guidelines</a></li>
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">Report Issue</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+          <h5 class="footer-title">Legal</h5>
+          <ul class="footer-links">
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Cookie Policy</a></li>
+            <li><a href="#">Copyright Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 DiscussHub. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="post-script.js"></script>
+</body>
+</html>

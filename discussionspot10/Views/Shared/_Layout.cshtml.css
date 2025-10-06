@@ -46,3 +46,32 @@ button.accept-policy {
   white-space: nowrap;
   line-height: 60px;
 }
+
+/* ---- Reddit/Quora-like layout helpers ---- */
+.bg-subtle-border {
+  background-color: #f6f7f8;
+  border-top: 1px solid #e9ecef;
+}
+
+.sidebar-card .card-header {
+  background-color: #ffffff;
+}
+
+.feed-main {
+  /* card-like space for the feed content rendered by pages */
+}
+
+.card.shadow-sm {
+  border-radius: .5rem;
+}
+
+.list-group-item a {
+  color: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  body { background-color: #0b0d10; color: #e5e7eb; }
+  .navbar, .card, .list-group-item { background-color: #111827; color: #e5e7eb; }
+  .bg-subtle-border { background-color: #0b0d10; border-top-color: #1f2937; }
+  .border-top { border-top-color: #1f2937; }
+}
