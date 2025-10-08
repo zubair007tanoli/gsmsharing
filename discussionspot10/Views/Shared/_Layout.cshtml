@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -23,11 +23,27 @@
     <style>
         html, body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
     </style>
+    <!-- Google AdSense (replace ca-pub-0000000000000000 with your publisher ID) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script>
+    <!-- Theme bootstrapping (prevents flash of wrong theme) -->
+    <script>
+        (function () {
+            try {
+                var storageKey = 'theme';
+                var stored = localStorage.getItem(storageKey);
+                var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = stored || (systemDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0d10' : '#ffffff');
+            } catch (e) { /* no-op */ }
+        })();
+    </script>
     <!-- Simple search route defaults to Search/Index?query=... -->
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-md navbar-light bg-white border-bottom box-shadow sticky-top">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow sticky-top">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
                     <i class="fas fa-comments text-primary"></i>
@@ -37,20 +53,31 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="topNavbar">
-                    <ul class="navbar-nav me-3 mb-2 mb-md-0">
-                        <li class="nav-item"><a class="nav-link active" asp-controller="Home" asp-action="Index"><i class="fas fa-home me-1"></i>Home</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Community" asp-action="Index"><i class="fas fa-layer-group me-1"></i>Explore</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Category" asp-action="Index"><i class="fas fa-tags me-1"></i>Topics</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Post" asp-action="Index"><i class="fas fa-fire me-1"></i>Trending</a></li>
+                    <!-- Left: primary navigation -->
+                    <ul class="navbar-nav me-3 mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link active" asp-controller="Home" asp-action="Index"><i class="fa-solid fa-house fa-fw me-1"></i>Home</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Community" asp-action="Index"><i class="fa-solid fa-layer-group fa-fw me-1"></i>Explore</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Category" asp-action="Index"><i class="fa-solid fa-tags fa-fw me-1"></i>Topics</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Post" asp-action="Index"><i class="fa-solid fa-fire fa-fw me-1"></i>Trending</a></li>
                     </ul>
-                    <form class="search-form d-none d-md-block me-3" asp-controller="Search" asp-action="Index" method="get" role="search">
-                        <i class="fas fa-search search-icon"></i>
+
+                    <!-- Mobile search inside collapse -->
+                    <form class="search-form d-lg-none w-100 my-2" asp-controller="Search" asp-action="Index" method="get" role="search">
+                        <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
                         <input class="form-control search-input" type="search" placeholder="Search questions, answers, communities..." aria-label="Search" name="query" />
                     </form>
-                    <div class="d-flex align-items-center gap-2">
-                        <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index"><i class="fas fa-circle-question me-1"></i> Ask Question</a>
-                        <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications"><i class="far fa-bell"></i></a>
-                        <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages"><i class="far fa-envelope"></i></a>
+
+                    <!-- Right: actions and user -->
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <!-- Desktop search -->
+                        <form class="search-form d-none d-lg-flex me-2" asp-controller="Search" asp-action="Index" method="get" role="search">
+                            <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                            <input class="form-control search-input" type="search" placeholder="Search questions, answers, communities..." aria-label="Search" name="query" />
+                        </form>
+                        <a class="btn btn-primary btn-ask-question d-none d-md-inline-flex align-items-center" asp-controller="Post" asp-action="Index"><i class="fa-regular fa-circle-question fa-fw me-2"></i><span>Ask Question</span></a>
+                        <button id="themeToggle" class="btn icon-btn" type="button" title="Toggle theme" aria-label="Toggle theme" aria-pressed="false"><i class="fa-regular fa-moon fa-lg"></i></button>
+                        <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications" aria-label="Notifications"><i class="fa-regular fa-bell fa-lg"></i></a>
+                        <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages" aria-label="Messages"><i class="fa-regular fa-envelope fa-lg"></i></a>
                         <ul class="navbar-nav mb-2 mb-md-0 ms-2">
                             @if (User?.Identity?.IsAuthenticated == true)
                             {
@@ -73,8 +100,8 @@
                             }
                             else
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-right-to-bracket me-1"></i>Login</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus me-1"></i>Sign up</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login" aria-label="Login"><i class="fas fa-right-to-bracket me-1" aria-hidden="true"></i>Login</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register" aria-label="Sign up"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Sign up</a></li>
                             }
                         </ul>
                     </div>
@@ -92,7 +119,7 @@
         {
             <div class="container-xxl py-3 bg-body-tertiary">
                 <div class="row g-4">
-                    <aside class="col-12 col-lg-3">
+                    <aside class="d-none d-lg-block col-lg-3">
                         <div class="sticky-top" style="top: 88px;">
                             <div class="card mb-3">
                                 <div class="card-header fw-semibold">Browse</div>
@@ -108,7 +135,7 @@
                     <section class="col-12 col-lg-6">
                         @RenderBody()
                     </section>
-                    <aside class="col-12 col-lg-3">
+                    <aside class="d-none d-lg-block col-lg-3">
                         <div class="sticky-top" style="top: 88px;">
                             <div class="card mb-3">
                                 <div class="card-header fw-semibold">Trending</div>
@@ -118,6 +145,21 @@
                                     <li class="list-group-item"><a class="text-decoration-none" asp-controller="Community" asp-action="Index">Rising communities</a></li>
                                 </ul>
                             </div>
+                            <!-- Sponsored Ad Unit (Google AdSense) -->
+                            <div class="card mb-3">
+                                <div class="card-header fw-semibold">Sponsored</div>
+                                <div class="card-body p-2">
+                                    <ins class="adsbygoogle"
+                                         style="display:block"
+                                         data-ad-client="ca-pub-0000000000000000"
+                                         data-ad-slot="0000000000"
+                                         data-ad-format="auto"
+                                         data-full-width-responsive="true"></ins>
+                                </div>
+                            </div>
+                            <script>
+                                (window.adsbygoogle = window.adsbygoogle || []).push({});
+                            </script>
                             <div class="card">
                                 <div class="card-header fw-semibold">About</div>
                                 <div class="card-body small text-muted">
