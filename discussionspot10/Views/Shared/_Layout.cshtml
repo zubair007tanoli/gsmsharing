@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/modern-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/discussionspot10.styles.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
     <style>
@@ -23,60 +24,190 @@
     <style>
         html, body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
     </style>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script>
+    
+    <!-- Theme detection script -->
+    <script>
+        // Detect and apply theme before page loads to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    
     <!-- Simple search route defaults to Search/Index?query=... -->
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-md navbar-light bg-white border-bottom box-shadow sticky-top">
-            <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow sticky-top" id="mainNavbar">
+            <div class="container-fluid px-3">
+                <!-- Brand -->
                 <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-comments text-primary"></i>
-                    <span>DiscussHub</span>
+                    <div class="brand-icon">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="16" fill="url(#gradient)"/>
+                            <path d="M8 12h16v2H8v-2zm0 4h16v2H8v-2zm0 4h12v2H8v-2z" fill="white"/>
+                            <defs>
+                                <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                                    <stop offset="0%" stop-color="#0079d3"/>
+                                    <stop offset="100%" stop-color="#00a8e8"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <span class="brand-text">DiscussionSpot</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="topNavbar">
-                    <ul class="navbar-nav me-3 mb-2 mb-md-0">
-                        <li class="nav-item"><a class="nav-link active" asp-controller="Home" asp-action="Index"><i class="fas fa-home me-1"></i>Home</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Community" asp-action="Index"><i class="fas fa-layer-group me-1"></i>Explore</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Category" asp-action="Index"><i class="fas fa-tags me-1"></i>Topics</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Post" asp-action="Index"><i class="fas fa-fire me-1"></i>Trending</a></li>
-                    </ul>
-                    <form class="search-form d-none d-md-block me-3" asp-controller="Search" asp-action="Index" method="get" role="search">
+
+                <!-- Mobile menu button -->
+                <div class="d-flex align-items-center gap-2 d-lg-none">
+                    <!-- Mobile search button -->
+                    <button class="btn icon-btn mobile-search-btn" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-expanded="false">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <!-- Dark mode toggle -->
+                    <button class="btn icon-btn theme-toggle" id="themeToggle" title="Toggle dark mode">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+                    <!-- Mobile menu toggle -->
+                    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
+
+                <!-- Mobile search (collapsed by default) -->
+                <div class="collapse w-100 d-lg-none" id="mobileSearch">
+                    <form class="search-form mt-3" asp-controller="Search" asp-action="Index" method="get" role="search">
                         <i class="fas fa-search search-icon"></i>
-                        <input class="form-control search-input" type="search" placeholder="Search questions, answers, communities..." aria-label="Search" name="query" />
+                        <input class="form-control search-input" type="search" placeholder="Search discussions..." aria-label="Search" name="query" />
                     </form>
+                </div>
+
+                <!-- Main navbar content -->
+                <div class="collapse navbar-collapse" id="topNavbar">
+                    <!-- Navigation links -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home me-2"></i>
+                                <span>Home</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Community" asp-action="Index">
+                                <i class="fas fa-compass me-2"></i>
+                                <span>Explore</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Category" asp-action="Index">
+                                <i class="fas fa-hashtag me-2"></i>
+                                <span>Topics</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Post" asp-action="Index">
+                                <i class="fas fa-fire me-2"></i>
+                                <span>Trending</span>
+                            </a>
+                        </li>
+                        <li class="nav-item d-lg-none">
+                            <a class="nav-link" asp-controller="Notifications" asp-action="Index">
+                                <i class="fas fa-bell me-2"></i>
+                                <span>Notifications</span>
+                                <span class="badge bg-danger ms-2">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item d-lg-none">
+                            <a class="nav-link" asp-controller="Messages" asp-action="Index">
+                                <i class="fas fa-envelope me-2"></i>
+                                <span>Messages</span>
+                                <span class="badge bg-primary ms-2">2</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Desktop search -->
+                    <form class="search-form d-none d-lg-block me-3" asp-controller="Search" asp-action="Index" method="get" role="search">
+                        <i class="fas fa-search search-icon"></i>
+                        <input class="form-control search-input" type="search" placeholder="Search discussions, communities..." aria-label="Search" name="query" />
+                    </form>
+
+                    <!-- Right side actions -->
                     <div class="d-flex align-items-center gap-2">
-                        <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index"><i class="fas fa-circle-question me-1"></i> Ask Question</a>
-                        <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications"><i class="far fa-bell"></i></a>
-                        <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages"><i class="far fa-envelope"></i></a>
-                        <ul class="navbar-nav mb-2 mb-md-0 ms-2">
+                        <!-- Ask Question button -->
+                        <a class="btn btn-ask-question d-none d-lg-inline-flex" asp-controller="Post" asp-action="Index">
+                            <i class="fas fa-plus me-2"></i>
+                            <span>Create Post</span>
+                        </a>
+
+                        <!-- Desktop notifications -->
+                        <div class="d-none d-lg-flex align-items-center gap-2">
+                            <button class="btn icon-btn position-relative" title="Notifications">
+                                <i class="fas fa-bell"></i>
+                                <span class="notification-badge">3</span>
+                            </button>
+                            <button class="btn icon-btn position-relative" title="Messages">
+                                <i class="fas fa-envelope"></i>
+                                <span class="notification-badge">2</span>
+                            </button>
+                        </div>
+
+                        <!-- Dark mode toggle (desktop) -->
+                        <button class="btn icon-btn theme-toggle d-none d-lg-inline-flex" id="themeToggleDesktop" title="Toggle dark mode">
+                            <i class="fas fa-moon" id="themeIconDesktop"></i>
+                        </button>
+
+                        <!-- User menu -->
+                        <div class="navbar-nav">
                             @if (User?.Identity?.IsAuthenticated == true)
                             {
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <img src="https://i.pravatar.cc/150?img=12" alt="User" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;" />
-                                        <span class="d-none d-lg-inline">@User.Identity.Name</span>
+                                <div class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <img src="https://i.pravatar.cc/150?img=12" alt="User" class="user-avatar me-2" />
+                                        <span class="d-none d-xl-inline user-name">@User.Identity.Name</span>
+                                        <i class="fas fa-chevron-down ms-2 d-none d-xl-inline"></i>
                                     </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Index"><i class="fas fa-gear me-2"></i>Settings</a></li>
+                                    <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                                        <li class="dropdown-header d-flex align-items-center">
+                                            <img src="https://i.pravatar.cc/150?img=12" alt="User" class="user-avatar me-2" />
+                                            <div>
+                                                <div class="fw-semibold">@User.Identity.Name</div>
+                                                <div class="text-muted small">View Profile</div>
+                                            </div>
+                                        </li>
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index"><i class="fas fa-edit me-2"></i>My Posts</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Community" asp-action="Index"><i class="fas fa-users me-2"></i>My Communities</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Index"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                         <li><hr class="dropdown-divider" /></li>
                                         <li>
                                             <form asp-controller="Account" asp-action="Logout" method="post" class="px-3 py-1">
-                                                <button type="submit" class="btn btn-link p-0 text-decoration-none">Logout</button>
+                                                <button type="submit" class="btn btn-link p-0 text-decoration-none text-start w-100">
+                                                    <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                                                </button>
                                             </form>
                                         </li>
                                     </ul>
-                                </li>
+                                </div>
                             }
                             else
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-right-to-bracket me-1"></i>Login</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus me-1"></i>Sign up</a></li>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a class="btn btn-outline-primary" asp-controller="Account" asp-action="Login">
+                                        <i class="fas fa-sign-in-alt me-2"></i>
+                                        <span>Sign In</span>
+                                    </a>
+                                    <a class="btn btn-primary" asp-controller="Account" asp-action="Register">
+                                        <i class="fas fa-user-plus me-2"></i>
+                                        <span>Sign Up</span>
+                                    </a>
+                                </div>
                             }
-                        </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -90,39 +221,219 @@
         }
         else
         {
-            <div class="container-xxl py-3 bg-body-tertiary">
-                <div class="row g-4">
-                    <aside class="col-12 col-lg-3">
-                        <div class="sticky-top" style="top: 88px;">
-                            <div class="card mb-3">
-                                <div class="card-header fw-semibold">Browse</div>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Community" asp-action="Index">All Communities</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Category" asp-action="Index">Categories</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Post" asp-action="Index">All Posts</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Search" asp-action="Index">Advanced Search</a></li>
-                                </ul>
+            <div class="container-fluid main-container">
+                <div class="row g-3 g-lg-4">
+                    <!-- Left Sidebar -->
+                    <aside class="col-12 col-xl-3 order-2 order-xl-1 left-sidebar">
+                        <div class="sticky-sidebar">
+                            <!-- Navigation Card -->
+                            <div class="sidebar-card mb-3">
+                                <div class="sidebar-header">
+                                    <i class="fas fa-compass me-2"></i>Browse
+                                </div>
+                                <div class="sidebar-content">
+                                    <div class="nav-list">
+                                        <a href="#" class="nav-item" asp-controller="Community" asp-action="Index">
+                                            <i class="fas fa-users"></i>
+                                            <span>All Communities</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </a>
+                                        <a href="#" class="nav-item" asp-controller="Category" asp-action="Index">
+                                            <i class="fas fa-hashtag"></i>
+                                            <span>Categories</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </a>
+                                        <a href="#" class="nav-item" asp-controller="Post" asp-action="Index">
+                                            <i class="fas fa-newspaper"></i>
+                                            <span>All Posts</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </a>
+                                        <a href="#" class="nav-item" asp-controller="Search" asp-action="Index">
+                                            <i class="fas fa-search"></i>
+                                            <span>Advanced Search</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Popular Communities -->
+                            <div class="sidebar-card mb-3">
+                                <div class="sidebar-header">
+                                    <i class="fas fa-fire me-2"></i>Popular Communities
+                                </div>
+                                <div class="sidebar-content">
+                                    <div class="community-list">
+                                        <div class="community-item">
+                                            <div class="community-avatar">T</div>
+                                            <div class="community-info">
+                                                <div class="community-name">r/technology</div>
+                                                <div class="community-members">2.1M members</div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary">Join</button>
+                                        </div>
+                                        <div class="community-item">
+                                            <div class="community-avatar">P</div>
+                                            <div class="community-info">
+                                                <div class="community-name">r/programming</div>
+                                                <div class="community-members">1.8M members</div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary">Join</button>
+                                        </div>
+                                        <div class="community-item">
+                                            <div class="community-avatar">G</div>
+                                            <div class="community-info">
+                                                <div class="community-name">r/gaming</div>
+                                                <div class="community-members">3.2M members</div>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-primary">Join</button>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-link text-primary p-0 mt-2">View all communities</button>
+                                </div>
+                            </div>
+
+                            <!-- Google AdSense - Sidebar -->
+                            <div class="sidebar-card mb-3 ad-container">
+                                <div class="ad-label">Sponsored</div>
+                                <div class="sidebar-content">
+                                    <!-- AdSense code will be inserted here -->
+                                    <ins class="adsbygoogle"
+                                         style="display:block"
+                                         data-ad-client="ca-pub-XXXXXXXXXX"
+                                         data-ad-slot="XXXXXXXXXX"
+                                         data-ad-format="auto"
+                                         data-full-width-responsive="true"></ins>
+                                    <script>
+                                         (adsbygoogle = window.adsbygoogle || []).push({});
+                                    </script>
+                                </div>
                             </div>
                         </div>
                     </aside>
-                    <section class="col-12 col-lg-6">
+
+                    <!-- Main Content -->
+                    <section class="col-12 col-xl-6 order-1 order-xl-2 main-content">
                         @RenderBody()
                     </section>
-                    <aside class="col-12 col-lg-3">
-                        <div class="sticky-top" style="top: 88px;">
-                            <div class="card mb-3">
-                                <div class="card-header fw-semibold">Trending</div>
-                                <ul class="list-group list-group-flush small">
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Post" asp-action="Index">Most upvoted today</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Post" asp-action="Index">New this week</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Community" asp-action="Index">Rising communities</a></li>
-                                </ul>
+
+                    <!-- Right Sidebar -->
+                    <aside class="col-12 col-xl-3 order-3 right-sidebar">
+                        <div class="sticky-sidebar">
+                            <!-- Trending Topics -->
+                            <div class="sidebar-card mb-3">
+                                <div class="sidebar-header">
+                                    <i class="fas fa-trending-up me-2"></i>Trending Now
+                                </div>
+                                <div class="sidebar-content">
+                                    <div class="trending-list">
+                                        <div class="trending-item">
+                                            <div class="trending-number">1</div>
+                                            <div class="trending-info">
+                                                <div class="trending-topic">AI Revolution 2025</div>
+                                                <div class="trending-stats">12.5k discussions</div>
+                                            </div>
+                                        </div>
+                                        <div class="trending-item">
+                                            <div class="trending-number">2</div>
+                                            <div class="trending-info">
+                                                <div class="trending-topic">Web Development</div>
+                                                <div class="trending-stats">8.2k discussions</div>
+                                            </div>
+                                        </div>
+                                        <div class="trending-item">
+                                            <div class="trending-number">3</div>
+                                            <div class="trending-info">
+                                                <div class="trending-topic">Gaming News</div>
+                                                <div class="trending-stats">6.8k discussions</div>
+                                            </div>
+                                        </div>
+                                        <div class="trending-item">
+                                            <div class="trending-number">4</div>
+                                            <div class="trending-info">
+                                                <div class="trending-topic">Science Updates</div>
+                                                <div class="trending-stats">5.1k discussions</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-link text-primary p-0 mt-2">View all trending</button>
+                                </div>
                             </div>
-                            <div class="card">
-                                <div class="card-header fw-semibold">About</div>
-                                <div class="card-body small text-muted">
-                                    <div>&copy; 2025 - discussionspot10</div>
-                                    <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+
+                            <!-- Google AdSense - Right Sidebar -->
+                            <div class="sidebar-card mb-3 ad-container">
+                                <div class="ad-label">Advertisement</div>
+                                <div class="sidebar-content">
+                                    <!-- AdSense code will be inserted here -->
+                                    <ins class="adsbygoogle"
+                                         style="display:block"
+                                         data-ad-client="ca-pub-XXXXXXXXXX"
+                                         data-ad-slot="XXXXXXXXXX"
+                                         data-ad-format="auto"
+                                         data-full-width-responsive="true"></ins>
+                                    <script>
+                                         (adsbygoogle = window.adsbygoogle || []).push({});
+                                    </script>
+                                </div>
+                            </div>
+
+                            <!-- Community Guidelines -->
+                            <div class="sidebar-card mb-3">
+                                <div class="sidebar-header">
+                                    <i class="fas fa-shield-alt me-2"></i>Community Guidelines
+                                </div>
+                                <div class="sidebar-content">
+                                    <div class="guidelines-list">
+                                        <div class="guideline-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <span>Be respectful and civil</span>
+                                        </div>
+                                        <div class="guideline-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <span>No spam or self-promotion</span>
+                                        </div>
+                                        <div class="guideline-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <span>Stay on topic</span>
+                                        </div>
+                                        <div class="guideline-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <span>Use appropriate language</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-link text-primary p-0 mt-2">Read full guidelines</button>
+                                </div>
+                            </div>
+
+                            <!-- About -->
+                            <div class="sidebar-card">
+                                <div class="sidebar-header">
+                                    <i class="fas fa-info-circle me-2"></i>About DiscussionSpot
+                                </div>
+                                <div class="sidebar-content">
+                                    <p class="small text-muted mb-3">
+                                        Join millions of users in meaningful discussions across thousands of communities.
+                                    </p>
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <div class="stat-number">2.5M+</div>
+                                            <div class="stat-label">Active Users</div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-number">150K+</div>
+                                            <div class="stat-label">Communities</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-3 border-top">
+                                        <div class="small text-muted">
+                                            &copy; 2025 DiscussionSpot
+                                        </div>
+                                        <div class="mt-1">
+                                            <a href="#" class="text-decoration-none small me-3" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                                            <a href="#" class="text-decoration-none small me-3">Terms</a>
+                                            <a href="#" class="text-decoration-none small">Help</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -141,6 +452,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/modern-theme.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>
