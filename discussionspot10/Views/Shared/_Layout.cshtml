@@ -1,71 +1,161 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - discussionspot10</title>
+    <title>@ViewData["Title"] - DiscussionSpot</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.294.0/lucide.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/discussionspot10.styles.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
-    <style>
-        /* Minimal tweaks if CSS isolation fails to load in some hosts */
-        body { background-color: #f6f7f8; }
-    </style>
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="~/favicon.ico" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        html, body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+        html, body { 
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+        :root {
+            --primary-color: #ff4500;
+            --primary-hover: #e03d00;
+            --secondary-color: #0079d3;
+            --success-color: #46d160;
+            --warning-color: #ffb000;
+            --danger-color: #ea0027;
+            --light-bg: #f6f7f8;
+            --dark-bg: #1a1a1b;
+            --card-bg: #ffffff;
+            --dark-card-bg: #2d2d30;
+            --text-primary: #1c1c1c;
+            --text-secondary: #878a8c;
+            --text-muted: #b3b3b3;
+            --border-color: #e5e5e5;
+            --dark-border: #343536;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        [data-bs-theme="dark"] {
+            --light-bg: #1a1a1b;
+            --card-bg: #2d2d30;
+            --text-primary: #d7dadc;
+            --text-secondary: #818384;
+            --text-muted: #6b6b6b;
+            --border-color: #343536;
+        }
     </style>
-    <!-- Simple search route defaults to Search/Index?query=... -->
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-md navbar-light bg-white border-bottom box-shadow sticky-top">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-comments text-primary"></i>
-                    <span>DiscussHub</span>
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top modern-navbar">
+            <div class="container-fluid px-3">
+                <!-- Mobile Menu Button -->
+                <button class="navbar-toggler d-lg-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars"></i>
                 </button>
-                <div class="collapse navbar-collapse" id="topNavbar">
-                    <ul class="navbar-nav me-3 mb-2 mb-md-0">
-                        <li class="nav-item"><a class="nav-link active" asp-controller="Home" asp-action="Index"><i class="fas fa-home me-1"></i>Home</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Community" asp-action="Index"><i class="fas fa-layer-group me-1"></i>Explore</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Category" asp-action="Index"><i class="fas fa-tags me-1"></i>Topics</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Post" asp-action="Index"><i class="fas fa-fire me-1"></i>Trending</a></li>
+
+                <!-- Logo -->
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
+                    <div class="logo-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <span class="brand-text d-none d-sm-inline">DiscussionSpot</span>
+                </a>
+
+                <!-- Desktop Navigation -->
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <!-- Main Navigation -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home"></i>
+                                <span class="d-none d-lg-inline">Home</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" asp-controller="Community" asp-action="Index">
+                                <i class="fas fa-layer-group"></i>
+                                <span class="d-none d-lg-inline">Communities</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" asp-controller="Category" asp-action="Index">
+                                <i class="fas fa-tags"></i>
+                                <span class="d-none d-lg-inline">Topics</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" asp-controller="Post" asp-action="Index">
+                                <i class="fas fa-fire"></i>
+                                <span class="d-none d-lg-inline">Trending</span>
+                            </a>
+                        </li>
                     </ul>
-                    <form class="search-form d-none d-md-block me-3" asp-controller="Search" asp-action="Index" method="get" role="search">
-                        <i class="fas fa-search search-icon"></i>
-                        <input class="form-control search-input" type="search" placeholder="Search questions, answers, communities..." aria-label="Search" name="query" />
-                    </form>
+
+                    <!-- Search Bar -->
+                    <div class="search-container d-none d-md-block me-3">
+                        <form class="search-form" asp-controller="Search" asp-action="Index" method="get" role="search">
+                            <div class="search-input-group">
+                                <i class="fas fa-search search-icon"></i>
+                                <input class="form-control search-input" type="search" placeholder="Search discussions..." aria-label="Search" name="query" />
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Right Side Actions -->
                     <div class="d-flex align-items-center gap-2">
-                        <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index"><i class="fas fa-circle-question me-1"></i> Ask Question</a>
-                        <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications"><i class="far fa-bell"></i></a>
-                        <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages"><i class="far fa-envelope"></i></a>
-                        <ul class="navbar-nav mb-2 mb-md-0 ms-2">
+                        <!-- Theme Toggle -->
+                        <button class="btn btn-outline-secondary theme-toggle" id="themeToggle" title="Toggle theme">
+                            <i class="fas fa-sun d-none"></i>
+                            <i class="fas fa-moon"></i>
+                        </button>
+
+                        <!-- Ask Question Button -->
+                        <a class="btn btn-primary ask-question-btn d-none d-md-inline-flex align-items-center gap-2" asp-controller="Post" asp-action="Index">
+                            <i class="fas fa-plus"></i>
+                            <span>Ask Question</span>
+                        </a>
+
+                        <!-- Notifications -->
+                        <a class="btn btn-outline-secondary position-relative" asp-controller="Notifications" asp-action="Index" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                3
+                            </span>
+                        </a>
+
+                        <!-- Messages -->
+                        <a class="btn btn-outline-secondary d-none d-lg-inline-flex" asp-controller="Messages" asp-action="Index" title="Messages">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+
+                        <!-- User Menu -->
+                        <ul class="navbar-nav">
                             @if (User?.Identity?.IsAuthenticated == true)
                             {
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <img src="https://i.pravatar.cc/150?img=12" alt="User" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;" />
+                                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <img src="https://i.pravatar.cc/150?img=12" alt="User" class="user-avatar" />
                                         <span class="d-none d-lg-inline">@User.Identity.Name</span>
                                     </a>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Index"><i class="fas fa-gear me-2"></i>Settings</a></li>
+                                        <li><a class="dropdown-item d-flex align-items-center gap-2" asp-controller="Profile" asp-action="Index"><i class="fas fa-user"></i>Profile</a></li>
+                                        <li><a class="dropdown-item d-flex align-items-center gap-2" asp-controller="Account" asp-action="Index"><i class="fas fa-cog"></i>Settings</a></li>
                                         <li><hr class="dropdown-divider" /></li>
                                         <li>
                                             <form asp-controller="Account" asp-action="Logout" method="post" class="px-3 py-1">
-                                                <button type="submit" class="btn btn-link p-0 text-decoration-none">Logout</button>
+                                                <button type="submit" class="btn btn-link p-0 text-decoration-none w-100 text-start">
+                                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                                </button>
                                             </form>
                                         </li>
                                     </ul>
@@ -73,8 +163,16 @@
                             }
                             else
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-right-to-bracket me-1"></i>Login</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus me-1"></i>Sign up</a></li>
+                                <li class="nav-item">
+                                    <a class="btn btn-outline-primary me-2" asp-controller="Account" asp-action="Login">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="btn btn-primary" asp-controller="Account" asp-action="Register">
+                                        <i class="fas fa-user-plus me-1"></i>Sign Up
+                                    </a>
+                                </li>
                             }
                         </ul>
                     </div>
@@ -83,46 +181,119 @@
         </nav>
     </header>
 
-    <main>
+    <main class="main-content">
         @if ((ViewData["FullWidth"] as bool?) == true)
         {
             @RenderBody()
         }
         else
         {
-            <div class="container-xxl py-3 bg-body-tertiary">
-                <div class="row g-4">
-                    <aside class="col-12 col-lg-3">
-                        <div class="sticky-top" style="top: 88px;">
-                            <div class="card mb-3">
-                                <div class="card-header fw-semibold">Browse</div>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Community" asp-action="Index">All Communities</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Category" asp-action="Index">Categories</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Post" asp-action="Index">All Posts</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Search" asp-action="Index">Advanced Search</a></li>
-                                </ul>
+            <div class="container-fluid px-0">
+                <div class="row g-0">
+                    <!-- Left Sidebar -->
+                    <aside class="col-12 col-xl-2 col-lg-3 d-none d-lg-block">
+                        <div class="sidebar-left sticky-top">
+                            <div class="sidebar-content">
+                                <!-- Browse Section -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0 fw-semibold">Browse</h6>
+                                    </div>
+                                    <div class="list-group list-group-flush">
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Community" asp-action="Index">
+                                            <i class="fas fa-layer-group"></i>
+                                            <span>All Communities</span>
+                                        </a>
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Category" asp-action="Index">
+                                            <i class="fas fa-tags"></i>
+                                            <span>Categories</span>
+                                        </a>
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Post" asp-action="Index">
+                                            <i class="fas fa-list"></i>
+                                            <span>All Posts</span>
+                                        </a>
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Search" asp-action="Index">
+                                            <i class="fas fa-search"></i>
+                                            <span>Advanced Search</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- AdSense Banner Ad -->
+                                <div class="card mb-3">
+                                    <div class="card-body text-center p-2">
+                                        <ins class="adsbygoogle"
+                                             style="display:block"
+                                             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                                             data-ad-slot="1234567890"
+                                             data-ad-format="auto"
+                                             data-full-width-responsive="true"></ins>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </aside>
-                    <section class="col-12 col-lg-6">
-                        @RenderBody()
+
+                    <!-- Main Content -->
+                    <section class="col-12 col-xl-8 col-lg-6">
+                        <div class="main-feed">
+                            @RenderBody()
+                        </div>
                     </section>
-                    <aside class="col-12 col-lg-3">
-                        <div class="sticky-top" style="top: 88px;">
-                            <div class="card mb-3">
-                                <div class="card-header fw-semibold">Trending</div>
-                                <ul class="list-group list-group-flush small">
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Post" asp-action="Index">Most upvoted today</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Post" asp-action="Index">New this week</a></li>
-                                    <li class="list-group-item"><a class="text-decoration-none" asp-controller="Community" asp-action="Index">Rising communities</a></li>
-                                </ul>
-                            </div>
-                            <div class="card">
-                                <div class="card-header fw-semibold">About</div>
-                                <div class="card-body small text-muted">
-                                    <div>&copy; 2025 - discussionspot10</div>
-                                    <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+
+                    <!-- Right Sidebar -->
+                    <aside class="col-12 col-xl-2 col-lg-3 d-none d-lg-block">
+                        <div class="sidebar-right sticky-top">
+                            <div class="sidebar-content">
+                                <!-- Trending Section -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0 fw-semibold">Trending</h6>
+                                    </div>
+                                    <div class="list-group list-group-flush">
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Post" asp-action="Index">
+                                            <i class="fas fa-fire text-danger"></i>
+                                            <span>Most upvoted today</span>
+                                        </a>
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Post" asp-action="Index">
+                                            <i class="fas fa-clock text-primary"></i>
+                                            <span>New this week</span>
+                                        </a>
+                                        <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-controller="Community" asp-action="Index">
+                                            <i class="fas fa-arrow-up text-success"></i>
+                                            <span>Rising communities</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- AdSense Square Ad -->
+                                <div class="card mb-3">
+                                    <div class="card-body text-center p-2">
+                                        <ins class="adsbygoogle"
+                                             style="display:block"
+                                             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                                             data-ad-slot="0987654321"
+                                             data-ad-format="rectangle"></ins>
+                                    </div>
+                                </div>
+
+                                <!-- About Section -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0 fw-semibold">About</h6>
+                                    </div>
+                                    <div class="card-body small">
+                                        <p class="text-muted mb-2">Join the conversation on DiscussionSpot - where ideas meet community.</p>
+                                        <div class="d-flex flex-column gap-1">
+                                            <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none">Privacy Policy</a>
+                                            <a href="#" class="text-decoration-none">Terms of Service</a>
+                                            <a href="#" class="text-decoration-none">Contact Us</a>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="text-muted">
+                                            &copy; 2025 DiscussionSpot
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -132,15 +303,105 @@
         }
     </main>
 
-    <footer class="border-top text-muted">
-        <div class="container-xxl py-3 small d-flex justify-content-between">
-            &copy; 2025 - discussionspot10 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-            <span></span>
+    <footer class="footer-modern border-top">
+        <div class="container-fluid py-4">
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <h6 class="fw-semibold mb-2">DiscussionSpot</h6>
+                    <p class="small text-muted mb-2">Join the conversation where ideas meet community.</p>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <h6 class="fw-semibold mb-2">Community</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="#" class="text-decoration-none text-muted">Guidelines</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Help Center</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Moderators</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Create Community</a></li>
+                    </ul>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <h6 class="fw-semibold mb-2">Company</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="#" class="text-decoration-none text-muted">About Us</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Careers</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Press</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <h6 class="fw-semibold mb-2">Legal</h6>
+                    <ul class="list-unstyled small">
+                        <li><a asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-muted">Privacy Policy</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Terms of Service</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">Cookie Policy</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">DMCA</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-3">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-6">
+                    <p class="small text-muted mb-0">&copy; 2025 DiscussionSpot. All rights reserved.</p>
+                </div>
+                <div class="col-12 col-md-6 text-md-end">
+                    <p class="small text-muted mb-0">Made with <i class="fas fa-heart text-danger"></i> for the community</p>
+                </div>
+            </div>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- Theme Toggle Script -->
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or default to 'light'
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-bs-theme', currentTheme);
+            
+            // Update theme toggle icon
+            updateThemeIcon(currentTheme);
+            
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = html.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                html.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+            });
+            
+            function updateThemeIcon(theme) {
+                const sunIcon = themeToggle.querySelector('.fa-sun');
+                const moonIcon = themeToggle.querySelector('.fa-moon');
+                
+                if (theme === 'dark') {
+                    sunIcon.classList.remove('d-none');
+                    moonIcon.classList.add('d-none');
+                } else {
+                    sunIcon.classList.add('d-none');
+                    moonIcon.classList.remove('d-none');
+                }
+            }
+        });
+    </script>
+    
+    <!-- Google AdSense Script -->
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+    
     @RenderSection("Scripts", required: false)
 </body>
 </html>
