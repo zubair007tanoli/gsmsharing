@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -26,61 +26,97 @@
     <!-- Simple search route defaults to Search/Index?query=... -->
 </head>
 <body>
+    @{
+        var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLowerInvariant();
+        var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant();
+        Func<string, string, string> activeClass = (controller, action) =>
+        {
+            controller = (controller ?? "").ToLowerInvariant();
+            action = (action ?? "").ToLowerInvariant();
+            if (currentController == controller && (action == "*" || currentAction == action)) return "active";
+            return string.Empty;
+        };
+    }
     <header>
         <nav class="navbar navbar-expand-md navbar-light bg-white border-bottom box-shadow sticky-top">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
+            <div class="container-xxl">
+                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index" aria-label="DiscussHub home">
                     <i class="fas fa-comments text-primary"></i>
                     <span>DiscussHub</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Open menu">
+                    <span class="navbar-toggler-icon" aria-hidden="true"></span>
                 </button>
+
+                <form class="search-form d-none d-md-flex mx-3 flex-grow-1" asp-controller="Search" asp-action="Index" method="get" role="search" aria-label="Site search">
+                    <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                    <input class="form-control search-input" type="search" placeholder="Search posts, users, communities" aria-label="Search" name="query" />
+                </form>
+
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <button class="btn icon-btn d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-controls="mobileSearch" aria-expanded="false" aria-label="Toggle search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index" aria-label="Ask a question"><i class="fas fa-circle-question me-1" aria-hidden="true"></i> Ask Question</a>
+                    <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications" aria-label="Notifications"><i class="far fa-bell" aria-hidden="true"></i></a>
+                    <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages" aria-label="Messages"><i class="far fa-envelope" aria-hidden="true"></i></a>
+                    <ul class="navbar-nav mb-0 ms-1">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu" id="accountMenu" aria-haspopup="true">
+                                    <img src="https://i.pravatar.cc/150?img=12" alt="User" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;" />
+                                    <span class="d-none d-lg-inline">@User.Identity.Name</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
+                                    <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Index"><i class="fas fa-gear me-2"></i>Settings</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="px-3 py-1">
+                                            <button type="submit" class="btn btn-link p-0 text-decoration-none">Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item d-none d-md-block"><a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-right-to-bracket me-1" aria-hidden="true"></i>Login</a></li>
+                            <li class="nav-item d-none d-md-block"><a class="nav-link" asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus me-1" aria-hidden="true"></i>Sign up</a></li>
+                        }
+                    </ul>
+                </div>
+
                 <div class="collapse navbar-collapse" id="topNavbar">
                     <ul class="navbar-nav me-3 mb-2 mb-md-0">
-                        <li class="nav-item"><a class="nav-link active" asp-controller="Home" asp-action="Index"><i class="fas fa-home me-1"></i>Home</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Community" asp-action="Index"><i class="fas fa-layer-group me-1"></i>Explore</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Category" asp-action="Index"><i class="fas fa-tags me-1"></i>Topics</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Post" asp-action="Index"><i class="fas fa-fire me-1"></i>Trending</a></li>
+                        <li class="nav-item"><a class="nav-link @activeClass("Home","Index")" asp-controller="Home" asp-action="Index"><i class="fas fa-home me-1" aria-hidden="true"></i>Home</a></li>
+                        <li class="nav-item"><a class="nav-link @activeClass("Community","*")" asp-controller="Community" asp-action="Index"><i class="fas fa-layer-group me-1" aria-hidden="true"></i>Explore</a></li>
+                        <li class="nav-item"><a class="nav-link @activeClass("Category","*")" asp-controller="Category" asp-action="Index"><i class="fas fa-tags me-1" aria-hidden="true"></i>Topics</a></li>
+                        <li class="nav-item"><a class="nav-link @activeClass("Post","*")" asp-controller="Post" asp-action="Index"><i class="fas fa-fire me-1" aria-hidden="true"></i>Trending</a></li>
                     </ul>
-                    <form class="search-form d-none d-md-block me-3" asp-controller="Search" asp-action="Index" method="get" role="search">
-                        <i class="fas fa-search search-icon"></i>
-                        <input class="form-control search-input" type="search" placeholder="Search questions, answers, communities..." aria-label="Search" name="query" />
-                    </form>
-                    <div class="d-flex align-items-center gap-2">
-                        <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index"><i class="fas fa-circle-question me-1"></i> Ask Question</a>
-                        <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications"><i class="far fa-bell"></i></a>
-                        <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages"><i class="far fa-envelope"></i></a>
-                        <ul class="navbar-nav mb-2 mb-md-0 ms-2">
-                            @if (User?.Identity?.IsAuthenticated == true)
-                            {
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <img src="https://i.pravatar.cc/150?img=12" alt="User" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px;" />
-                                        <span class="d-none d-lg-inline">@User.Identity.Name</span>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Index"><i class="fas fa-gear me-2"></i>Settings</a></li>
-                                        <li><hr class="dropdown-divider" /></li>
-                                        <li>
-                                            <form asp-controller="Account" asp-action="Logout" method="post" class="px-3 py-1">
-                                                <button type="submit" class="btn btn-link p-0 text-decoration-none">Logout</button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </li>
-                            }
-                            else
-                            {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-right-to-bracket me-1"></i>Login</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus me-1"></i>Sign up</a></li>
-                            }
+
+                    @if (User?.Identity?.IsAuthenticated != true)
+                    {
+                        <hr class="d-md-none" />
+                        <ul class="navbar-nav d-md-none mb-2">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login"><i class="fas fa-right-to-bracket me-1"></i>Login</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register"><i class="fas fa-user-plus me-1"></i>Sign up</a></li>
                         </ul>
-                    </div>
+                    }
                 </div>
             </div>
         </nav>
+
+        <div class="container-xxl d-md-none">
+            <div class="collapse" id="mobileSearch">
+                <form class="search-form p-2" asp-controller="Search" asp-action="Index" method="get" role="search" aria-label="Mobile site search">
+                    <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                    <input class="form-control search-input" type="search" placeholder="Search posts, users, communities" aria-label="Search" name="query" />
+                </form>
+            </div>
+        </div>
     </header>
 
     <main>
