@@ -1,77 +1,253 @@
-﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-for details on configuring this project to bundle and minify static web assets. */
+/* DiscussionSpot Layout Styles */
 
-a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
-}
-
+/* Enhanced Link Styles */
 a {
-  color: #0077cc;
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Enhanced Button Styles */
 .btn-primary {
   color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
 }
 
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  font-weight: 500;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.btn-outline-secondary {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  background-color: transparent;
+  font-weight: 500;
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--light-bg);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+/* Navigation Enhancements */
 .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
   color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
+/* Border Utilities */
 .border-top {
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--border-color) !important;
 }
+
 .border-bottom {
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
+/* Shadow Utilities */
 .box-shadow {
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+  box-shadow: var(--shadow);
 }
 
-button.accept-policy {
-  font-size: 1rem;
-  line-height: inherit;
-}
-
+/* Footer Positioning */
 .footer {
-  position: absolute;
+  position: relative;
   bottom: 0;
   width: 100%;
   white-space: nowrap;
-  line-height: 60px;
+  line-height: 1.5;
 }
 
-/* ---- Reddit/Quora-like layout helpers ---- */
+/* Layout Helpers */
 .bg-subtle-border {
-  background-color: #f6f7f8;
-  border-top: 1px solid #e9ecef;
+  background-color: var(--light-bg);
+  border-top: 1px solid var(--border-color);
 }
 
 .sidebar-card .card-header {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .feed-main {
-  /* card-like space for the feed content rendered by pages */
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .card.shadow-sm {
-  border-radius: .5rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
 }
 
+/* List Group Enhancements */
 .list-group-item a {
   color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  body { background-color: #0b0d10; color: #e5e7eb; }
-  .navbar, .card, .list-group-item { background-color: #111827; color: #e5e7eb; }
-  .bg-subtle-border { background-color: #0b0d10; border-top-color: #1f2937; }
-  .border-top { border-top-color: #1f2937; }
+.list-group-item a:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+/* Badge Styles */
+.badge {
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.bg-danger {
+  background-color: var(--danger-color) !important;
+}
+
+/* Dropdown Enhancements */
+.dropdown-menu {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  background-color: var(--card-bg);
+}
+
+.dropdown-item {
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: var(--light-bg);
+  color: var(--text-primary);
+}
+
+.dropdown-divider {
+  border-color: var(--border-color);
+}
+
+/* Mobile Navigation Enhancements */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    margin-top: 0.5rem;
+    padding: 1rem;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .navbar-nav .nav-item {
+    margin-bottom: 0.25rem;
+  }
+  
+  .navbar-nav .nav-link {
+    padding: 0.75rem 1rem !important;
+    border-radius: var(--border-radius);
+  }
+}
+
+/* Dark Mode Enhancements */
+[data-bs-theme="dark"] {
+  --light-bg: #1a1a1b;
+  --card-bg: #2d2d30;
+  --text-primary: #d7dadc;
+  --text-secondary: #818384;
+  --text-muted: #6b6b6b;
+  --border-color: #343536;
+}
+
+[data-bs-theme="dark"] .bg-subtle-border {
+  background-color: var(--dark-bg);
+  border-top-color: var(--dark-border);
+}
+
+[data-bs-theme="dark"] .border-top {
+  border-top-color: var(--dark-border) !important;
+}
+
+[data-bs-theme="dark"] .border-bottom {
+  border-bottom-color: var(--dark-border) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+  background-color: var(--dark-card-bg);
+  border-color: var(--dark-border);
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+  color: var(--text-primary);
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+}
+
+/* Animation Enhancements */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading States */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Focus States for Accessibility */
+.btn:focus,
+.nav-link:focus,
+.form-control:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --text-secondary: #000000;
+  }
+  
+  [data-bs-theme="dark"] {
+    --border-color: #ffffff;
+    --text-secondary: #ffffff;
+  }
 }
