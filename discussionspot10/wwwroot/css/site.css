@@ -51,8 +51,128 @@ body {
   color: inherit;
 }
 
+/* --- Professional navbar styling --- */
+.navbar.navbar-light {
+  --ds-surface: #ffffff;
+  --ds-border: #e5e7eb;
+  --ds-text: #0f172a;
+  --ds-muted: #6b7280;
+  background-color: var(--ds-surface) !important;
+}
+
+.navbar .navbar-brand {
+  color: var(--ds-text);
+  letter-spacing: -0.01em;
+}
+
+.navbar .nav-link {
+  color: var(--ds-text);
+  opacity: .85;
+  padding: .5rem .75rem;
+  border-radius: .375rem;
+}
+
+.navbar .nav-link:hover {
+  opacity: 1;
+  background-color: rgba(15, 23, 42, 0.04);
+}
+
+.navbar .nav-link.active {
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Active link underline indicator for clarity */
+.navbar .nav-link.active {
+  position: relative;
+}
+.navbar .nav-link.active::after {
+  content: "";
+  position: absolute;
+  left: .5rem;
+  right: .5rem;
+  bottom: .25rem;
+  height: 2px;
+  background: currentColor;
+  opacity: .6;
+  border-radius: 2px;
+}
+
+.icon-btn {
+  --btn-size: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  border-radius: 999px;
+  color: var(--ds-text);
+  background-color: transparent;
+}
+
+.icon-btn:hover {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+
+.btn-ask-question {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border-radius: .5rem;
+  padding: .5rem .9rem;
+}
+
+.btn-ask-question:hover {
+  filter: brightness(1.05);
+  color: #ffffff;
+}
+
+.search-form {
+  position: relative;
+}
+
+.search-form .search-icon {
+  position: absolute;
+  left: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ds-muted);
+  pointer-events: none;
+}
+
+.search-form .search-input {
+  padding-left: 2.25rem;
+  border-radius: .5rem;
+  border: 1px solid var(--ds-border);
+  background-color: #f8fafc;
+}
+
+.search-form .search-input:focus {
+  background-color: #ffffff;
+}
+
+@media (max-width: 767.98px) {
+  .navbar .navbar-brand span {
+    font-size: 1rem;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   body { background-color: #0b0d10; color: #e5e7eb; }
   .navbar, .card, .list-group-item { background-color: #111827; color: #e5e7eb; }
   .border-top { border-top-color: #1f2937 !important; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .navbar.navbar-light {
+    --ds-surface: #111827;
+    --ds-border: #1f2937;
+    --ds-text: #e5e7eb;
+    --ds-muted: #9ca3af;
+  }
+  .search-form .search-input {
+    background-color: #0b1220;
+    border-color: var(--ds-border);
+    color: var(--ds-text);
+  }
+  .icon-btn:hover { background-color: rgba(255, 255, 255, 0.08); }
 }
