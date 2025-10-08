@@ -1,7 +1,32 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
+
+// Theme toggle with persistence and icon swap
+(function () {
+  var toggle = document.getElementById('themeToggle');
+  if (!toggle) return;
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('theme', theme); } catch (e) { }
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0d10' : '#ffffff');
+    var icon = toggle.querySelector('i');
+    if (icon) {
+      icon.classList.remove('fa-moon', 'fa-sun');
+      icon.classList.add(theme === 'dark' ? 'fa-sun' : 'fa-moon');
+    }
+    toggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+  }
+  var stored = null;
+  try { stored = localStorage.getItem('theme'); } catch (e) { }
+  var current = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(current);
+  toggle.addEventListener('click', function () {
+    setTheme((document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark');
+  });
+})();
 
 // SIG // Begin signature block
 // SIG // MIIpJgYJKoZIhvcNAQcCoIIpFzCCKRMCAQExDzANBglg

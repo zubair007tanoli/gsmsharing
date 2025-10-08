@@ -39,6 +39,48 @@ body {
   backdrop-filter: saturate(180%) blur(6px);
 }
 
+/* Reddit/Quora-like navbar refinements */
+.navbar .nav-link {
+  font-weight: 500;
+  color: #334155;
+}
+.navbar .nav-link:hover, .navbar .nav-link:focus {
+  color: #0f172a;
+}
+.navbar .icon-btn {
+  --btn-size: 40px;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #334155;
+}
+.navbar .icon-btn:hover {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+
+.search-form {
+  position: relative;
+}
+.search-form .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+.search-form .search-input {
+  padding-left: 36px;
+  min-width: 320px;
+}
+
+@media (max-width: 991.98px) {
+  .search-form .search-input { min-width: 0; }
+}
+
 .sticky-top {
   z-index: 1010;
 }
@@ -55,4 +97,18 @@ body {
   body { background-color: #0b0d10; color: #e5e7eb; }
   .navbar, .card, .list-group-item { background-color: #111827; color: #e5e7eb; }
   .border-top { border-top-color: #1f2937 !important; }
+  /* Improve navbar toggler visibility in dark */
+  .navbar-light .navbar-toggler { border-color: rgba(255,255,255,0.25); }
+  .navbar-light .navbar-toggler-icon { filter: invert(1); }
 }
+
+/* Explicit theme support via data-theme to override system when user chooses */
+[data-theme="dark"] body { background-color: #0b0d10; color: #e5e7eb; }
+[data-theme="dark"] .navbar, [data-theme="dark"] .card, [data-theme="dark"] .list-group-item { background-color: #111827; color: #e5e7eb; }
+[data-theme="dark"] .navbar .nav-link { color: #cbd5e1; }
+[data-theme="dark"] .navbar .nav-link:hover, [data-theme="dark"] .navbar .nav-link:focus { color: #ffffff; }
+[data-theme="dark"] .navbar .icon-btn { color: #cbd5e1; }
+[data-theme="dark"] .navbar .icon-btn:hover { background-color: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .search-form .search-icon { color: #9ca3af; }
+[data-theme="dark"] .navbar-light .navbar-toggler { border-color: rgba(255,255,255,0.25); }
+[data-theme="dark"] .navbar-light .navbar-toggler-icon { filter: invert(1); }

@@ -1,4 +1,4 @@
-﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 for details on configuring this project to bundle and minify static web assets. */
 
 a.navbar-brand {
@@ -69,9 +69,22 @@ button.accept-policy {
   color: inherit;
 }
 
+/* Sidebar visibility already controlled via layout markup for mobile */
+
+/* Improve cards and spacing */
+.card-header.fw-semibold {
+  font-weight: 600 !important;
+}
+
+/* Nav brand icon spacing */
+.navbar-brand .fa-comments { font-size: 1.125rem; }
+
 @media (prefers-color-scheme: dark) {
   body { background-color: #0b0d10; color: #e5e7eb; }
   .navbar, .card, .list-group-item { background-color: #111827; color: #e5e7eb; }
   .bg-subtle-border { background-color: #0b0d10; border-top-color: #1f2937; }
   .border-top { border-top-color: #1f2937; }
 }
+
+/* Respect explicit data-theme override */
+[data-theme="dark"] .bg-subtle-border { background-color: #0b0d10; border-top-color: #1f2937; }
