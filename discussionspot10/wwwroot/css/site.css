@@ -1,58 +1,92 @@
-html {
-  font-size: 14px;
+html { font-size: 14px; }
+@media (min-width: 768px) { html { font-size: 16px; } }
+
+html { position: relative; min-height: 100%; }
+body { margin-bottom: 60px; }
+
+/* Theme tokens */
+:root {
+  --ds-body-bg: #f6f7f8;
+  --ds-surface: #ffffff;
+  --ds-elevated: #ffffff;
+  --ds-text: #111827;
+  --ds-muted: #6b7280;
+  --ds-border: #e5e7eb;
+  --ds-accent: #2563eb; /* Reddit-ish blue */
+  --ds-nav-bg: #ffffff;
+  --ds-nav-text: #111827;
+  --ds-input-bg: #f1f5f9;
+  --ds-input-border: #e5e7eb;
+  --ds-hover: #f3f4f6;
+  --ds-card-shadow: 0 1px 2px rgba(0,0,0,.04);
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+[data-theme="dark"] {
+  --ds-body-bg: #0b0d10;
+  --ds-surface: #0f172a;
+  --ds-elevated: #111827;
+  --ds-text: #e5e7eb;
+  --ds-muted: #9ca3af;
+  --ds-border: #1f2937;
+  --ds-accent: #3b82f6;
+  --ds-nav-bg: #0f172a;
+  --ds-nav-text: #e5e7eb;
+  --ds-input-bg: #0b1220;
+  --ds-input-border: #1f2937;
+  --ds-hover: #0b1220;
+  --ds-card-shadow: none;
 }
 
+/* Accessibility focus ring */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem #fff, 0 0 0 0.25rem var(--ds-accent);
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* Page base */
+body { background-color: var(--ds-body-bg); color: var(--ds-text); }
+
+/* Navbar */
+.navbar { background-color: var(--ds-nav-bg) !important; color: var(--ds-nav-text); backdrop-filter: saturate(180%) blur(6px); }
+.navbar .navbar-brand, .navbar .nav-link { color: var(--ds-nav-text); }
+.navbar .nav-link:hover { color: var(--ds-accent); }
+.navbar .navbar-toggler { border-color: var(--ds-border); }
+.navbar .navbar-toggler-icon { background-size: 1.25rem 1.25rem; }
+/* Custom toggler icons for light/dark */
+.navbar .navbar-toggler-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'><path stroke='rgba(17,24,39,0.85)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/></svg>");
+}
+[data-theme="dark"] .navbar .navbar-toggler-icon {
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'><path stroke='rgba(229,231,235,0.85)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/></svg>");
 }
 
-body {
-  margin-bottom: 60px;
-}
+/* Cards and lists */
+.card { border-radius: .5rem; background-color: var(--ds-surface); color: var(--ds-text); border-color: var(--ds-border); box-shadow: var(--ds-card-shadow); }
+.card .card-header { background-color: var(--ds-surface); border-bottom-color: var(--ds-border); }
+.list-group-item { background-color: var(--ds-surface); color: var(--ds-text); border-color: var(--ds-border); }
+.list-group-item a { color: inherit; text-decoration: none; }
+.list-group-item a:hover { color: var(--ds-accent); }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
-}
+.border-top { border-top-color: var(--ds-border) !important; }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+/* Search */
+.search-form { position: relative; flex: 1 1 420px; max-width: 560px; }
+.search-form .search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--ds-muted);
 }
+.search-form .search-input {
+  height: 40px; border-radius: 999px; padding-left: 40px;
+  background-color: var(--ds-input-bg); border-color: var(--ds-input-border); color: var(--ds-text);
+}
+.search-form .search-input::placeholder { color: var(--ds-muted); }
+.search-form .search-input:focus { border-color: var(--ds-accent); background-color: var(--ds-surface); }
 
-/* Layout refinements for a professional 3-column feed */
-body {
-  background-color: #f6f7f8;
-}
+/* Icon buttons and primary CTA */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 999px; color: var(--ds-nav-text); background-color: transparent; border: 1px solid var(--ds-border); }
+.icon-btn:hover { background-color: var(--ds-hover); color: var(--ds-text); }
 
-.navbar {
-  backdrop-filter: saturate(180%) blur(6px);
-}
+.btn-ask-question { border-radius: 999px; padding: .4rem .9rem; background: var(--ds-accent); color: #fff; border: none; }
+.btn-ask-question:hover { filter: brightness(0.95); color: #fff; }
 
-.sticky-top {
-  z-index: 1010;
-}
-
-.card {
-  border-radius: .5rem;
-}
-
-.list-group-item a {
-  color: inherit;
-}
-
-@media (prefers-color-scheme: dark) {
-  body { background-color: #0b0d10; color: #e5e7eb; }
-  .navbar, .card, .list-group-item { background-color: #111827; color: #e5e7eb; }
-  .border-top { border-top-color: #1f2937 !important; }
-}
+/* Utility */
+.sticky-top { z-index: 1010; }
