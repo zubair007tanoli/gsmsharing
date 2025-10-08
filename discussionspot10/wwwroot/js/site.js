@@ -1,7 +1,38 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
+
+// Theme toggle
+(function () {
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('ds10-theme', theme); } catch (e) {}
+    var sun = document.querySelector('.theme-icon-sun');
+    var moon = document.querySelector('.theme-icon-moon');
+    if (sun && moon) {
+      if (theme === 'dark') {
+        sun.classList.add('d-none');
+        moon.classList.remove('d-none');
+      } else {
+        moon.classList.add('d-none');
+        sun.classList.remove('d-none');
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    setTheme(current);
+    var btn = document.getElementById('themeToggleBtn');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        var active = document.documentElement.getAttribute('data-theme') || 'light';
+        setTheme(active === 'light' ? 'dark' : 'light');
+      });
+    }
+  });
+})();
 
 // SIG // Begin signature block
 // SIG // MIIpJgYJKoZIhvcNAQcCoIIpFzCCKRMCAQExDzANBglg
