@@ -11,6 +11,14 @@ a {
   color: #0077cc;
 }
 
+/* Navbar layout tweaks for spacing consistency */
+.navbar .navbar-brand {
+  font-weight: 700;
+}
+.navbar .navbar-nav .nav-link {
+  transition: background-color .15s ease, opacity .15s ease;
+}
+
 .btn-primary {
   color: #fff;
   background-color: #1b6ec2;
