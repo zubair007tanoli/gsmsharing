@@ -415,8 +415,7 @@ namespace discussionspot9.Controllers
         /// </summary>
         [HttpGet]
         [Authorize]
-        
-        public async Task<IActionResult> Create(string communitySlug)
+        public async Task<IActionResult> Create(string communitySlug, string? returnUrl = null)
         {
             if (string.IsNullOrEmpty(communitySlug))
             {
@@ -438,6 +437,7 @@ namespace discussionspot9.Controllers
                     CommunitySlug = communitySlug
                 };
 
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
             catch (Exception ex)
@@ -453,7 +453,7 @@ namespace discussionspot9.Controllers
         [Authorize]
         [Route("create")]
         [Route("r/{communitySlug}/create")]
-        public async Task<IActionResult> CreateTest(string? communitySlug)
+        public async Task<IActionResult> CreateTest(string? communitySlug, string? returnUrl = null)
         {
             var model = new CreatePostViewModel();
             model.CommunitySlug = communitySlug;
@@ -468,6 +468,8 @@ namespace discussionspot9.Controllers
                 // If not logged in, maybe show some general popular communities as suggestions
                 model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(string.Empty); // Pass empty string to fetch general suggestions
             }
+            
+            ViewData["ReturnUrl"] = returnUrl;
             return View(model);
         }
 
@@ -490,9 +492,8 @@ namespace discussionspot9.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Create(CreatePostViewModel model)
+        public async Task<IActionResult> Create(CreatePostViewModel model, string? returnUrl = null)
         {
-        
             if (!ModelState.IsValid)
             {
                 foreach (var state in ModelState)
@@ -504,9 +505,16 @@ namespace discussionspot9.Controllers
                     {
                         System.Diagnostics.Debug.WriteLine($"Validation error on '{key}': {error.ErrorMessage}");
                     }
-                }        
-                return RedirectToAction("CreateTest");
+                }
+                
+                // Preserve return URL on validation error
+                if (!string.IsNullOrEmpty(returnUrl))
+                {
+                    return RedirectToAction("CreateTest", new { communitySlug = model.CommunitySlug, returnUrl });
+                }
+                return RedirectToAction("CreateTest", new { communitySlug = model.CommunitySlug });
             }
+            
             try
             {                
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -517,6 +525,13 @@ namespace discussionspot9.Controllers
                 if (result.Success)
                 {
                     TempData["SuccessMessage"] = "Post created successfully!";
+                    
+                    // Redirect to return URL if provided and valid, otherwise go to post details
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    
                     return RedirectToAction("Details", new
                     {
                         communitySlug = model.CommunitySlug,
@@ -525,12 +540,23 @@ namespace discussionspot9.Controllers
                 }
 
                 ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Failed to create post.");
+                
+                // Reload communities for dropdown
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    model.UserCommunities = await _communityService.GetUserJoinedCommunitiesAsync(userId);
+                    model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(userId);
+                }
+                
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating post");
                 ModelState.AddModelError(string.Empty, "An error occurred while creating the post.");
+                
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
         }

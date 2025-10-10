@@ -197,10 +197,12 @@ namespace discussionspot9.Controllers
         [HttpGet]
         [Route("create-community")]
         [Authorize]
-        public IActionResult Create(string returnUrl)
+        public async Task<IActionResult> Create(string? returnUrl = null)
         {
             var model = new CreateCommunityViewModel();
-            LoadCategories(model).GetAwaiter().GetResult(); // Load categories synchronously for simplicity
+            await LoadCategories(model);
+            
+            ViewData["ReturnUrl"] = returnUrl;
             return View(model);
         }
 
@@ -212,10 +214,12 @@ namespace discussionspot9.Controllers
         [Route("create-community")]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Create(CreateCommunityViewModel model, string returnUrl)
+        public async Task<IActionResult> Create(CreateCommunityViewModel model, string? returnUrl = null)
         {
             if (!ModelState.IsValid)
             {
+                await LoadCategories(model);
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
 
@@ -233,16 +237,27 @@ namespace discussionspot9.Controllers
                 if (result.Success)
                 {
                     TempData["SuccessMessage"] = "Community created successfully!";
+                    
+                    // Redirect to return URL if provided and valid, otherwise go to community details
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    
                     return RedirectToAction("Details", new { slug = result.Slug });
                 }
 
                 ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Failed to create community.");
+                await LoadCategories(model);
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating community");
                 ModelState.AddModelError(string.Empty, "An error occurred while creating the community.");
+                await LoadCategories(model);
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
         }

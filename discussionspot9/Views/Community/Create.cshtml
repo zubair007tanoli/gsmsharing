@@ -76,9 +76,12 @@
             <!-- Form Container -->
             <div class="form-container">
                 <form id="communityForm" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    
                     <!-- Hidden fields -->
                     <input type="hidden" asp-for="Slug" />
                     <input type="hidden" asp-for="CreatorId" />
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
                     <!-- Basic Information -->
                     <div class="form-group">

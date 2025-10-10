@@ -39,6 +39,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Auth";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ReturnUrlParameter = "returnUrl"; // Explicitly set return URL parameter name
     options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
     options.SlidingExpiration = true;
     options.Cookie.IsEssential = true;
