@@ -31,6 +31,9 @@
         // Child comments
         public List<CommentViewModel> ChildComments { get; set; } = new();
 
+        // Link previews
+        public List<LinkPreviewViewModel> LinkPreviews { get; set; } = new();
+
         // Calculated properties
         public int Score => UpvoteCount - DownvoteCount;
         public string TimeAgo => GetTimeAgo(IsEdited ? UpdatedAt : CreatedAt);

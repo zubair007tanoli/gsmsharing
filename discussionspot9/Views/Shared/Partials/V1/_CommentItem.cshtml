@@ -14,6 +14,18 @@
         <div class="comment-text">
             @Html.Raw(Model.Comment.Content)
         </div>
+        
+        @* Display link previews if any exist *@
+        @if (Model.Comment.LinkPreviews != null && Model.Comment.LinkPreviews.Any())
+        {
+            <div class="comment-link-previews">
+                @foreach (var linkPreview in Model.Comment.LinkPreviews)
+                {
+                    @await Html.PartialAsync("Partials/_LinkPreview", linkPreview)
+                }
+            </div>
+        }
+        
         <div class="comment-actions">
             <div class="comment-vote">
                 <button class="comment-vote-btn upvote @(Model.Comment.CurrentUserVote == 1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="1">
@@ -30,17 +42,27 @@
             </button>
         </div>
         <!-- Reply Form -->
-        <!-- FIX: Added 'd-flex' class to ensure the form displays correctly as a flex container when 'd-none' is removed. -->
-        <div class="reply-form d-none d-flex flex-column" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
-            <div class="d-flex gap-2">
+        <div class="reply-form d-none" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
+            <div class="d-flex gap-2 align-items-start">
                 <div class="user-avatar small" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
                     @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
                 </div>
-                <textarea class="form-control" placeholder="Write a reply..." data-comment-id="@Model.Comment.CommentId"></textarea>
+                <div class="flex-grow-1">
+                    <!-- Reply Editor Container -->
+                    <div class="reply-editor-container">
+                        <div id="replyEditor@(Model.Comment.CommentId)"></div>
+                    </div>
+                    <!-- Hidden textarea for content storage -->
+                    <textarea class="reply-content-storage" id="replyContent@(Model.Comment.CommentId)" style="display: none;" data-comment-id="@Model.Comment.CommentId"></textarea>
+                </div>
             </div>
-            <div class="reply-form-actions d-flex justify-content-end mt-2">
-                <button class="reply-cancel-btn" data-comment-id="@Model.Comment.CommentId">Cancel</button>
-                <button class="reply-submit-btn" data-comment-id="@Model.Comment.CommentId">Reply</button>
+            <div class="reply-form-actions d-flex justify-content-end gap-2 mt-2">
+                <button class="btn btn-sm btn-secondary reply-cancel-btn" data-comment-id="@Model.Comment.CommentId">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button class="btn btn-sm btn-primary reply-submit-btn" data-comment-id="@Model.Comment.CommentId">
+                    <i class="fas fa-paper-plane me-1"></i>Reply
+                </button>
             </div>
         </div>
     </div>

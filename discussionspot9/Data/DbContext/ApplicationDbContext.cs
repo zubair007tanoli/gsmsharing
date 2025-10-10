@@ -33,6 +33,7 @@ namespace discussionspot9.Data.DbContext
         public DbSet<PollVote> PollVotes { get; set; }
         public DbSet<PollConfiguration> PollConfigurations { get; set; }
         public DbSet<SavedPost> SavedPosts { get; set; }
+        public DbSet<CommentLinkPreview> CommentLinkPreviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -272,6 +273,29 @@ namespace discussionspot9.Data.DbContext
                     .WithMany(e => e.ChildComments)
                     .HasForeignKey(e => e.ParentCommentId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+            #endregion
+
+            #region CommentLinkPreview Configuration
+            builder.Entity<CommentLinkPreview>(entity =>
+            {
+                entity.HasKey(e => e.CommentLinkPreviewId);
+                entity.Property(e => e.Url).HasMaxLength(2048).IsRequired();
+                entity.Property(e => e.Title).HasMaxLength(500);
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.Domain).HasMaxLength(255);
+                entity.Property(e => e.ThumbnailUrl).HasMaxLength(2048);
+                entity.Property(e => e.FaviconUrl).HasMaxLength(2048);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.FetchSucceeded).HasDefaultValue(true);
+
+                entity.HasIndex(e => e.CommentId);
+                entity.HasIndex(e => e.Url); // For caching lookups
+
+                entity.HasOne(e => e.Comment)
+                    .WithMany(e => e.LinkPreviews)
+                    .HasForeignKey(e => e.CommentId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
             #endregion
 

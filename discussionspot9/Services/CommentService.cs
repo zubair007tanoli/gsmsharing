@@ -12,11 +12,13 @@ namespace discussionspot9.Services
     {
         private readonly IDbContextFactory<ApplicationDbContext> _context;
         private readonly ILogger<CommentService> _logger;
+        private readonly ILinkMetadataService _linkMetadataService;
 
-        public CommentService(IDbContextFactory<ApplicationDbContext> context, ILogger<CommentService> logger)
+        public CommentService(IDbContextFactory<ApplicationDbContext> context, ILogger<CommentService> logger, ILinkMetadataService linkMetadataService)
         {
             _context = context;
             _logger = logger;
+            _linkMetadataService = linkMetadataService;
         }
 
         public async Task<CreateCommentResult> CreateCommentAsync(CreateCommentViewModel model)
@@ -472,6 +474,147 @@ namespace discussionspot9.Services
         Task ICommentService.UpdateCommentAsync(int commentId, string newContent, string? userId)
         {
             throw new NotImplementedException();
+        }
+
+        // Link Preview Methods
+        public List<string> ExtractUrls(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return new List<string>();
+
+            // Regex pattern to match URLs (http, https)
+            const string urlPattern = @"https?://[^\s<>""'\)]+";
+            var matches = System.Text.RegularExpressions.Regex.Matches(content, urlPattern);
+            
+            return matches
+                .Select(m => m.Value.TrimEnd('.', ',', '!', '?', ';', ':')) // Remove trailing punctuation
+                .Distinct()
+                .Take(5) // Limit to 5 URLs per comment for performance
+                .ToList();
+        }
+
+        public async Task<List<LinkPreviewViewModel>> ProcessLinkPreviewsAsync(int commentId, string content)
+        {
+            var urls = ExtractUrls(content);
+            if (!urls.Any())
+                return new List<LinkPreviewViewModel>();
+
+            var linkPreviews = new List<LinkPreviewViewModel>();
+            using var dbContext = _context.CreateDbContext();
+
+            foreach (var url in urls)
+            {
+                try
+                {
+                    // Check if we have a cached preview for this URL (global cache)
+                    var cachedPreview = await dbContext.CommentLinkPreviews
+                        .Where(clp => clp.Url == url && clp.FetchSucceeded)
+                        .OrderByDescending(clp => clp.LastFetchedAt ?? clp.CreatedAt)
+                        .FirstOrDefaultAsync();
+
+                    LinkPreviewViewModel previewModel;
+
+                    if (cachedPreview != null && 
+                        (cachedPreview.LastFetchedAt ?? cachedPreview.CreatedAt) > DateTime.UtcNow.AddDays(-7)) // 7-day cache
+                    {
+                        // Use cached data
+                        previewModel = new LinkPreviewViewModel
+                        {
+                            Url = cachedPreview.Url,
+                            Title = cachedPreview.Title,
+                            Description = cachedPreview.Description,
+                            Domain = cachedPreview.Domain,
+                            ThumbnailUrl = cachedPreview.ThumbnailUrl ?? string.Empty,
+                            FaviconUrl = cachedPreview.FaviconUrl ?? string.Empty
+                        };
+                        _logger.LogInformation($"Using cached link preview for: {url}");
+                    }
+                    else
+                    {
+                        // Fetch fresh metadata
+                        previewModel = await _linkMetadataService.GetMetadataAsync(url);
+                        
+                        // Save to database for future use
+                        var linkPreview = new CommentLinkPreview
+                        {
+                            CommentId = commentId,
+                            Url = url,
+                            Title = previewModel.Title ?? string.Empty,
+                            Description = previewModel.Description ?? string.Empty,
+                            Domain = previewModel.Domain ?? string.Empty,
+                            ThumbnailUrl = previewModel.ThumbnailUrl,
+                            FaviconUrl = previewModel.FaviconUrl,
+                            CreatedAt = DateTime.UtcNow,
+                            LastFetchedAt = DateTime.UtcNow,
+                            FetchSucceeded = !string.IsNullOrEmpty(previewModel.Title)
+                        };
+
+                        dbContext.CommentLinkPreviews.Add(linkPreview);
+                        _logger.LogInformation($"Fetched and cached new link preview for: {url}");
+                    }
+
+                    linkPreviews.Add(previewModel);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error processing link preview for URL: {url}");
+                    
+                    // Add failed preview to database to avoid retrying immediately
+                    var failedPreview = new CommentLinkPreview
+                    {
+                        CommentId = commentId,
+                        Url = url,
+                        Title = "Preview Unavailable",
+                        Description = "Unable to load link preview",
+                        Domain = new Uri(url).Host,
+                        CreatedAt = DateTime.UtcNow,
+                        FetchSucceeded = false
+                    };
+                    dbContext.CommentLinkPreviews.Add(failedPreview);
+                    
+                    // Add basic preview to response
+                    linkPreviews.Add(new LinkPreviewViewModel
+                    {
+                        Url = url,
+                        Title = "Link",
+                        Description = url,
+                        Domain = new Uri(url).Host,
+                        ThumbnailUrl = string.Empty,
+                        FaviconUrl = string.Empty
+                    });
+                }
+            }
+
+            // Save all link previews in one transaction
+            try
+            {
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving link previews to database");
+            }
+
+            return linkPreviews;
+        }
+
+        public async Task<List<LinkPreviewViewModel>> GetCommentLinkPreviewsAsync(int commentId)
+        {
+            using var dbContext = _context.CreateDbContext();
+            
+            var linkPreviews = await dbContext.CommentLinkPreviews
+                .Where(clp => clp.CommentId == commentId && clp.FetchSucceeded)
+                .ToListAsync();
+
+            return linkPreviews.Select(lp => new LinkPreviewViewModel
+            {
+                Url = lp.Url,
+                Title = lp.Title,
+                Description = lp.Description,
+                Domain = lp.Domain,
+                ThumbnailUrl = lp.ThumbnailUrl ?? string.Empty,
+                FaviconUrl = lp.FaviconUrl ?? string.Empty
+            }).ToList();
         }
     }
 }

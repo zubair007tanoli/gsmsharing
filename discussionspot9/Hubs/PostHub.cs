@@ -162,6 +162,46 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
                     return;
                 }
 
+                // Process link previews asynchronously (with timeout protection)
+                try
+                {
+                    var linkPreviewTask = _commentService.ProcessLinkPreviewsAsync(commentId, content);
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(3)); // 3-second timeout for link previews
+                    
+                    var completedTask = await Task.WhenAny(linkPreviewTask, timeoutTask);
+                    
+                    if (completedTask == linkPreviewTask)
+                    {
+                        // Link previews completed within timeout
+                        comment.LinkPreviews = await linkPreviewTask;
+                        _logger.LogInformation($"Link previews processed successfully for comment {commentId}");
+                    }
+                    else
+                    {
+                        // Timeout occurred, continue without link previews (they'll be saved in background)
+                        _logger.LogWarning($"Link preview processing timed out for comment {commentId}, proceeding without previews");
+                        comment.LinkPreviews = new List<LinkPreviewViewModel>();
+                        
+                        // Let the task continue in background (fire and forget)
+                        _ = linkPreviewTask.ContinueWith(t =>
+                        {
+                            if (t.IsCompletedSuccessfully)
+                            {
+                                _logger.LogInformation($"Background link preview processing completed for comment {commentId}");
+                            }
+                            else if (t.IsFaulted)
+                            {
+                                _logger.LogError(t.Exception, $"Background link preview processing failed for comment {commentId}");
+                            }
+                        });
+                    }
+                }
+                catch (Exception linkEx)
+                {
+                    _logger.LogError(linkEx, $"Error processing link previews for comment {commentId}");
+                    comment.LinkPreviews = new List<LinkPreviewViewModel>();
+                }
+
                 int depth = 0;
                 if (parentCommentId.HasValue)
                 {

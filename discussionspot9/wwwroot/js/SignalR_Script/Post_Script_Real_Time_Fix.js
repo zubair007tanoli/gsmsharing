@@ -3,6 +3,7 @@
         this.postConnection = null;
         this.notificationConnection = null;
         this.pagePostId = null;
+        this.isAuthenticated = false; // Track authentication status
 
         // Bind 'this' context for the main event handler
         this.handleDelegatedClick = this.handleDelegatedClick.bind(this);
@@ -137,12 +138,39 @@
         if (submitReplyBtn) {
             event.preventDefault();
             const form = submitReplyBtn.closest('.reply-form');
-            const textarea = form?.querySelector('textarea');
-            const content = textarea?.value.trim();
             const parentId = parseInt(form?.dataset.commentId, 10);
+            
+            // Get content from Quill editor if available
+            let content = '';
+            if (window[`replyQuill${parentId}`]) {
+                content = window[`replyQuill${parentId}`].root.innerHTML.trim();
+                const text = window[`replyQuill${parentId}`].getText().trim();
+                if (!text || text.length === 0) {
+                    this.showNotification('Please enter a reply', 'warning');
+                    return;
+                }
+            } else {
+                // Fallback to textarea
+                const textarea = form?.querySelector('textarea');
+                content = textarea?.value.trim();
+                if (!content) {
+                    this.showNotification('Please enter a reply', 'warning');
+                    return;
+                }
+            }
+            
             if (content && this.pagePostId && !isNaN(parentId)) {
                 await this.sendComment(this.pagePostId, content, parentId);
-                textarea.value = '';
+                
+                // Clear the editor and hide form
+                if (window[`replyQuill${parentId}`]) {
+                    window[`replyQuill${parentId}`].setText('');
+                    delete window[`replyQuill${parentId}`];
+                } else {
+                    const textarea = form?.querySelector('textarea');
+                    if (textarea) textarea.value = '';
+                }
+                
                 form.classList.add('d-none');
             }
             return;
@@ -154,8 +182,19 @@
             event.preventDefault();
             const form = cancelReplyBtn.closest('.reply-form');
             if (form) {
+                const commentId = form.dataset.commentId;
+                
+                // Clear and destroy Quill editor if it exists
+                if (window[`replyQuill${commentId}`]) {
+                    window[`replyQuill${commentId}`].setText('');
+                    delete window[`replyQuill${commentId}`];
+                }
+                
+                // Clear textarea fallback
+                const textarea = form.querySelector('textarea');
+                if (textarea) textarea.value = '';
+                
                 form.classList.add('d-none');
-                form.querySelector('textarea').value = '';
             }
             return;
         }
@@ -181,7 +220,21 @@
     }
 
     async sendComment(postId, content, parentId = null) {
-        const placeholderHtml = `<div id="optimistic-comment-placeholder" style="opacity: 0.6;"><p><strong>You</strong> <small>sending...</small></p><p>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p><hr/></div>`;
+        // Check authentication before sending comment
+        console.log('🔐 Checking authentication before comment:', this.isAuthenticated);
+        
+        if (!this.isAuthenticated) {
+            console.log('❌ User not authenticated, showing login prompt');
+            this.showLoginPrompt();
+            return;
+        }
+
+        // Sanitize HTML content for display in placeholder
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const previewText = tempDiv.textContent || tempDiv.innerText || "";
+        
+        const placeholderHtml = `<div id="optimistic-comment-placeholder" style="opacity: 0.6;"><p><strong>You</strong> <small>sending...</small></p><p>${previewText.substring(0, 100)}${previewText.length > 100 ? '...' : ''}</p><hr/></div>`;
         const targetContainer = parentId ? document.getElementById(`commentReplies-${parentId}`) : document.querySelector('.comment-list');
         targetContainer?.insertAdjacentHTML('beforeend', placeholderHtml);
 
@@ -190,6 +243,7 @@
         } catch (err) {
             console.error("Failed to send comment:", err);
             document.getElementById('optimistic-comment-placeholder')?.remove();
+            this.showNotification('Failed to post comment. Please try again.', 'error');
         }
     }
 
@@ -215,21 +269,92 @@
         catch (err) { console.error("Failed to cast poll vote:", err); }
     }
 
+    // AUTHENTICATION METHODS
+    showLoginPrompt() {
+        // Get current page URL for return navigation
+        const currentUrl = window.location.pathname + window.location.search;
+        const returnUrl = encodeURIComponent(currentUrl);
+        
+        console.log('🔗 Current URL:', currentUrl);
+        console.log('🔗 Encoded ReturnUrl:', returnUrl);
+        
+        // Update modal button URLs with return URL
+        const loginBtn = document.getElementById('loginPromptLoginBtn');
+        const registerBtn = document.getElementById('loginPromptRegisterBtn');
+        
+        // Use the simpler route pattern defined in Program.cs
+        if (loginBtn) {
+            loginBtn.href = `/auth?returnUrl=${returnUrl}`;
+            console.log('🔗 Login button href set to:', loginBtn.href);
+        }
+        if (registerBtn) {
+            registerBtn.href = `/auth?returnUrl=${returnUrl}#register`;
+            console.log('🔗 Register button href set to:', registerBtn.href);
+        }
+        
+        // Show the modal using Bootstrap
+        const modalElement = document.getElementById('loginPromptModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            console.log('✅ Login modal shown');
+        } else {
+            // Fallback: direct redirect if modal not found
+            console.log('⚠️ Modal not found, redirecting directly');
+            this.showNotification('Please login to comment', 'info');
+            setTimeout(() => {
+                window.location.href = `/auth?returnUrl=${returnUrl}`;
+            }, 1500);
+        }
+    }
+
     // UI UPDATE METHODS
     showReplyForm(commentId) {
         const targetForm = document.getElementById(`replyForm${commentId}`);
         if (!targetForm) return;
 
+        // Close all other reply forms and destroy their editors
         document.querySelectorAll('.reply-form').forEach(form => {
-            if (form.id !== targetForm.id) {
+            if (form.id !== targetForm.id && !form.classList.contains('d-none')) {
                 form.classList.add('d-none');
-                form.querySelector('textarea').value = '';
+                const formCommentId = form.dataset.commentId;
+                // Destroy the Quill instance if it exists
+                if (window[`replyQuill${formCommentId}`]) {
+                    delete window[`replyQuill${formCommentId}`];
+                }
             }
         });
 
+        // Toggle visibility of target form
+        const isHidden = targetForm.classList.contains('d-none');
         targetForm.classList.toggle('d-none');
-        if (!targetForm.classList.contains('d-none')) {
-            targetForm.querySelector('textarea').focus();
+        
+        if (isHidden) { // Form is being shown
+            // Initialize Quill editor for this reply form if not already initialized
+            if (!window[`replyQuill${commentId}`]) {
+                const toolbarOptions = [
+                    ['bold', 'italic', 'underline'],
+                    ['link', 'blockquote', 'code-block'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }]
+                ];
+
+                window[`replyQuill${commentId}`] = new Quill(`#replyEditor${commentId}`, {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: toolbarOptions
+                    },
+                    placeholder: 'Write your reply...'
+                });
+
+                // Update hidden textarea when editor content changes
+                window[`replyQuill${commentId}`].on('text-change', function() {
+                    const content = window[`replyQuill${commentId}`].root.innerHTML;
+                    document.getElementById(`replyContent${commentId}`).value = content;
+                });
+            }
+            
+            // Focus the editor
+            window[`replyQuill${commentId}`].focus();
         }
     }
 
@@ -255,7 +380,50 @@
     }
 
     updatePollResultsUI(pollData) { /* Your existing poll UI update logic */ }
-    showNotification(message, type = 'info') { /* Your existing notification logic */ }
+    
+    showNotification(message, type = 'info') {
+        // Create toast notification
+        const toastContainer = document.getElementById('toast-container') || (() => {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+            return container;
+        })();
+
+        const toastId = `toast-${Date.now()}`;
+        const icons = {
+            'success': 'fa-check-circle text-success',
+            'error': 'fa-exclamation-circle text-danger',
+            'warning': 'fa-exclamation-triangle text-warning',
+            'info': 'fa-info-circle text-info'
+        };
+        
+        const icon = icons[type] || icons['info'];
+        
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas ${icon} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+        toast.show();
+        
+        // Remove toast element after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    }
 }
 
 
@@ -264,6 +432,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const signalRManager = new SignalRManager();
         window.signalRManager = signalRManager;
+
+        // Set authentication status from page
+        const isAuthElement = document.getElementById('isAuthenticated');
+        const authValue = isAuthElement ? isAuthElement.value : 'false';
+        signalRManager.isAuthenticated = authValue === 'true' || authValue === 'True';
+        
+        console.log('🔐 Raw Auth Value:', authValue);
+        console.log('🔐 Authentication Status:', signalRManager.isAuthenticated);
+        console.log('🔐 Element exists:', !!isAuthElement);
 
         await signalRManager.initializeConnections();
 
@@ -283,22 +460,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (submitButton) {
             submitButton.addEventListener('click', async (e) => {
                 e.preventDefault();
-                const contentElement = document.getElementById('mainCommentContent');
-                const content = contentElement?.value.trim();
+                
+                // Get content from Quill editor if available, otherwise fall back to textarea
+                let content = '';
+                if (window.mainCommentQuill) {
+                    content = window.mainCommentQuill.root.innerHTML.trim();
+                    // Check if editor is empty (just contains <p><br></p> or similar)
+                    const text = window.mainCommentQuill.getText().trim();
+                    if (!text || text.length === 0) {
+                        signalRManager.showNotification('Please enter a comment', 'warning');
+                        return;
+                    }
+                } else {
+                    // Fallback to textarea
+                    const contentElement = document.getElementById('mainCommentContent');
+                    content = contentElement?.value.trim();
+                    if (!content) {
+                        signalRManager.showNotification('Please enter a comment', 'warning');
+                        return;
+                    }
+                }
+                
                 if (content && signalRManager.pagePostId) {
                     await signalRManager.sendComment(signalRManager.pagePostId, content);
-                    contentElement.value = '';
+                    // Clear the editor after successful submission
+                    if (window.mainCommentQuill) {
+                        window.mainCommentQuill.setText('');
+                    } else {
+                        document.getElementById('mainCommentContent').value = '';
+                    }
                 }
             });
         }
-
-        // Handle 'Enter' key submission for main comment
-        document.getElementById('mainCommentContent')?.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                submitButton?.click();
-            }
-        });
 
     } catch (error) {
         console.error('Fatal error during initialization:', error);

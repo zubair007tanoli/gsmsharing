@@ -12,6 +12,64 @@
 <!-- # Java Scripts -->
 @section HeadScripts {
     <link href="~/css/StyleTest/StyleSheet.css" rel="stylesheet" />
+    <link href="~/css/link-preview.css" rel="stylesheet" />
+    <!-- Quill Editor CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+    <style>
+        /* Custom styles for Quill editor in comment box */
+        .comment-editor-container {
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .ql-toolbar {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            background: var(--bg-color);
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .ql-container {
+            border: none;
+            font-size: 14px;
+            min-height: 120px;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        
+        .ql-editor {
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .ql-editor.ql-blank::before {
+            color: var(--text-light);
+            font-style: normal;
+        }
+        
+        /* Reply editor styling */
+        .reply-editor-container {
+            background: var(--bg-light);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .reply-editor-container .ql-toolbar {
+            background: var(--bg-color);
+        }
+        
+        .reply-editor-container .ql-container {
+            min-height: 80px;
+        }
+        
+        .reply-editor-container .ql-editor {
+            min-height: 80px;
+            max-height: 200px;
+        }
+    </style>
 }
 
 <!-- #endregion -->
@@ -59,6 +117,7 @@
             <div class="col-xl-6 col-lg-6">
               
                 <input type="hidden" id="pagePostId" value="@Model.Post.PostId" />
+                <input type="hidden" id="isAuthenticated" value="@User.Identity.IsAuthenticated.ToString().ToLower()" />
 
                 <!-- Post Container -->
                 <div class="post-container">
@@ -263,19 +322,29 @@
                 <!-- Main Comment Form -->
                 <div class="main-comment-form">
                     <h3>Add a Comment</h3>
-                    <div class="d-flex gap-3 mb-3">
-                        @* Assuming User object is available from ASP.NET Core Identity *@
+                    <div class="d-flex gap-3 mb-3 align-items-start">
+                        @* User avatar *@
                         <div class="user-avatar" style="background-color: @(User.Identity?.IsAuthenticated == true ? (User.Identity.Name ?? "Anonymous").ToAvatarColor() : "gray")">
                             @(User.Identity?.IsAuthenticated == true ? (User.Identity.Name ?? "Anonymous").ToInitials() : "U")
                         </div>
 
-                        <!-- Typing indicators -->
-                        <div id="typing-indicators" class="mb-2"></div>
+                        <div class="flex-grow-1">
+                            <!-- Typing indicators -->
+                            <div id="typing-indicators" class="mb-2"></div>
 
-                        <textarea class="form-control" placeholder="What are your thoughts?" id="mainCommentContent"></textarea>
+                            <!-- Quill Editor Container -->
+                            <div class="comment-editor-container">
+                                <div id="mainCommentEditor"></div>
+                            </div>
+                            <!-- Hidden textarea to store HTML content -->
+                            <textarea id="mainCommentContent" style="display: none;"></textarea>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <button class="btn btn-primary" id="submitMainComment" data-post-id="@Model.Post.PostId">Comment</button>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-secondary" id="clearMainComment">Clear</button>
+                        <button class="btn btn-primary" id="submitMainComment" data-post-id="@Model.Post.PostId">
+                            <i class="fas fa-paper-plane me-1"></i>Comment
+                        </button>
                     </div>
                 </div>
            
@@ -306,10 +375,52 @@
     </div> <!-- Closes container-fluid -->
 </div> <!-- Closes post-detail-page -->
 
+@* Include Login Prompt Modal *@
+<partial name="Partials/_LoginPromptModal" />
+
 @section Scripts {
     <!-- Include SignalR and your script -->
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
-    @* <script src="~/js/SignalR_Script/Post_Script_Real_Time_Fix.js"></script> *@
-    <script src="~/js/SignalR_Script/Working/Post_Script_Real_Time_Fix_Claude.js"></script>
+    <!-- Quill Editor JS -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="~/js/SignalR_Script/Post_Script_Real_Time_Fix.js"></script>
+    
+    <script>
+        // Initialize Quill editor after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configure Quill with toolbar options
+            const toolbarOptions = [
+                ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+                ['blockquote', 'code-block', 'link'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'header': [1, 2, 3, false] }],
+                ['clean']                                         // remove formatting button
+            ];
+
+            // Initialize the main comment editor
+            window.mainCommentQuill = new Quill('#mainCommentEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: toolbarOptions
+                },
+                placeholder: 'What are your thoughts? You can use formatting, add links, and more...'
+            });
+
+            // Clear button functionality
+            const clearBtn = document.getElementById('clearMainComment');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    window.mainCommentQuill.setText('');
+                });
+            }
+
+            // Update hidden textarea when editor content changes
+            window.mainCommentQuill.on('text-change', function() {
+                const content = window.mainCommentQuill.root.innerHTML;
+                document.getElementById('mainCommentContent').value = content;
+            });
+        });
+    </script>
+    @* <script src="~/js/SignalR_Script/Working/Post_Script_Real_Time_Fix_Claude.js"></script> *@
     @* <script src="~/js/SignalR_Script/poll-vote-handler.js"></script> *@
 }

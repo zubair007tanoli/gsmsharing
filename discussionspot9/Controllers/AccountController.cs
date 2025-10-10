@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using discussionspot9.Helpers;
 
 namespace DiscussionSpot9.Controllers
 {
@@ -24,6 +25,7 @@ namespace DiscussionSpot9.Controllers
         }
         #region Registration
         [HttpGet]
+        [RedirectAuthenticated]
         public IActionResult Register(string? returnUrl = null)
         {
             if (User.Identity!.IsAuthenticated)
@@ -39,7 +41,6 @@ namespace DiscussionSpot9.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")] RegisterViewModel registerViewModelRegisterViewModel, string? returnUrl = null)
         {
-            ViewData["ReturnUrl"] = returnUrl;
             // Clear validation errors for LoginModel since we're only processing registration
             var loginModelKeys = ModelState.Keys.Where(k => k.StartsWith("LoginModel.")).ToList();
             foreach (var key in loginModelKeys)
@@ -49,7 +50,13 @@ namespace DiscussionSpot9.Controllers
 
             if (!ModelState.IsValid)
             {
-                return View(registerViewModelRegisterViewModel);
+                // Preserve returnUrl in model for resubmission
+                var authViewModel = new AuthViewModel
+                {
+                    RegisterModel = registerViewModelRegisterViewModel,
+                    ReturnUrl = returnUrl ?? Url.Content("~/")
+                };
+                return View("Auth", authViewModel);
             }
 
             var result = await _userService.RegisterUserAsync(registerViewModelRegisterViewModel);
@@ -58,12 +65,16 @@ namespace DiscussionSpot9.Controllers
             {
                 TempData["ErrorMessageUserName"] = "User Name Already Exist Choose Another Name.";
                 result.Errors.ToList().ForEach(error => ModelState.AddModelError(string.Empty, error.Description));
+                
+                // Preserve returnUrl when redirecting back to Auth page
+                return RedirectToAction("Auth", new { returnUrl = returnUrl });
             }
             
             if (result.Succeeded)
             {
                 TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {registerViewModelRegisterViewModel.DisplayName}! Your account has been created successfully.";
 
+                // Properly handle returnUrl after successful registration
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
@@ -76,12 +87,13 @@ namespace DiscussionSpot9.Controllers
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            return RedirectToAction("Auth");
+            return RedirectToAction("Auth", new { returnUrl = returnUrl });
         }
         #endregion
 
         #region Login
         [HttpGet]
+        [RedirectAuthenticated]
         public IActionResult Login(string? returnUrl = null)
         {
             if (User.Identity!.IsAuthenticated)

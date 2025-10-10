@@ -25,5 +25,6 @@ namespace discussionspot9.Models.Domain
         public virtual ICollection<Comment> ChildComments { get; set; } = new List<Comment>();
         public virtual ICollection<CommentVote> Votes { get; set; } = new List<CommentVote>();
         public virtual ICollection<CommentAward> Awards { get; set; } = new List<CommentAward>();
+        public virtual ICollection<CommentLinkPreview> LinkPreviews { get; set; } = new List<CommentLinkPreview>();
     }
 }

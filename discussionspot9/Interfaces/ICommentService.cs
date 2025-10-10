@@ -13,5 +13,10 @@ namespace discussionspot9.Interfaces
         Task<ServiceResult> DeleteCommentAsync(int commentId, string userId);
         Task<List<CommentTreeViewModel>> GetPostCommentsAsync(int postId, string sort = "best", int page = 1);
         Task UpdateCommentAsync(int commentId, string newContent, string? userId);
+        
+        // Link Preview Methods
+        List<string> ExtractUrls(string content);
+        Task<List<LinkPreviewViewModel>> ProcessLinkPreviewsAsync(int commentId, string content);
+        Task<List<LinkPreviewViewModel>> GetCommentLinkPreviewsAsync(int commentId);
     }
 }
