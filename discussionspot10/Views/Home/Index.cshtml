@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Home";
     ViewData["FullWidth"] = true;
 }
@@ -8,293 +8,415 @@
     <link rel="stylesheet" href="~/DesignFolder/styles.css" />
 }
 
+<!-- Hero Section -->
 <div class="hero-section">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1 class="hero-title">Join the Conversation</h1>
-                <p class="hero-subtitle">Connect with millions of people sharing knowledge, asking questions, and engaging in meaningful discussions across thousands of communities.</p>
+            <div class="col-lg-7">
+                <h1 class="hero-title animate-fade-in">Welcome to DiscussHub</h1>
+                <p class="hero-subtitle animate-fade-in-delay">
+                    Join millions of professionals and enthusiasts sharing insights, solving problems, and building communities around topics that matter.
+                </p>
+                <div class="hero-cta-buttons animate-fade-in-delay-2">
+                    <button class="btn btn-hero-primary" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                        <i class="fas fa-rocket me-2"></i>Get Started Free
+                    </button>
+                    <a href="#features" class="btn btn-hero-secondary">
+                        <i class="fas fa-play-circle me-2"></i>Watch Demo
+                    </a>
+                </div>
                 <div class="hero-stats">
                     <div class="stat-item">
                         <i class="fas fa-users"></i>
                         <div>
-                            <div class="stat-number">2.5M+</div>
+                            <div class="stat-number counter" data-target="2500000">0</div>
                             <div class="stat-label">Active Members</div>
                         </div>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-layer-group"></i>
                         <div>
-                            <div class="stat-number">10K+</div>
+                            <div class="stat-number counter" data-target="10000">0</div>
                             <div class="stat-label">Communities</div>
                         </div>
                     </div>
                     <div class="stat-item">
-                        <i class="fas fa-comments"></i>
-                        <div>
-                            <div class="stat-number">50M+</div>
-                            <div class="stat-label">Discussions</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 d-none d-lg-block">
-                <div class="hero-features">
-                    <div class="feature-item">
-                        <i class="fas fa-search-plus"></i>
-                        <div>
-                            <h4>Discover Communities</h4>
-                            <p>Find your tribe among thousands of active communities</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-lightbulb"></i>
-                        <div>
-                            <h4>Share Knowledge</h4>
-                            <p>Ask questions and get expert answers instantly</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
                         <i class="fas fa-trophy"></i>
                         <div>
-                            <h4>Build Reputation</h4>
-                            <p>Earn badges and recognition for quality contributions</p>
+                            <div class="stat-number">99.9%</div>
+                            <div class="stat-label">Uptime</div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="hero-illustration">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=600&h=600&fit=crop" 
+                         alt="Collaboration" class="hero-image rounded-3 shadow-lg" />
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="trending-banner">
+<!-- Features Section -->
+<section id="features" class="features-section">
     <div class="container">
-        <div class="trending-content">
-            <i class="fas fa-fire-alt"></i>
-            <span class="trending-label">Trending Now:</span>
-            <div class="trending-topics-scroll">
-                <a href="#" class="trending-topic">#AI Revolution</a>
-                <a href="#" class="trending-topic">#Climate Action</a>
-                <a href="#" class="trending-topic">#Web3 Future</a>
-                <a href="#" class="trending-topic">#Space Exploration</a>
-                <a href="#" class="trending-topic">#Quantum Computing</a>
+        <div class="text-center mb-5">
+            <h2 class="section-title">Why Choose DiscussHub?</h2>
+            <p class="section-subtitle">Everything you need to build and engage with your community</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-comments feature-icon"></i>
+                    </div>
+                    <h3 class="feature-title">Rich Discussions</h3>
+                    <p class="feature-description">
+                        Engage in meaningful conversations with threaded discussions, real-time updates, and multimedia support.
+                    </p>
+                    <a href="#" class="feature-link">Learn more <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-shield-alt feature-icon"></i>
+                    </div>
+                    <h3 class="feature-title">Smart Moderation</h3>
+                    <p class="feature-description">
+                        AI-powered moderation tools help maintain healthy communities while preserving authentic dialogue.
+                    </p>
+                    <a href="#" class="feature-link">Learn more <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-chart-line feature-icon"></i>
+                    </div>
+                    <h3 class="feature-title">Analytics & Insights</h3>
+                    <p class="feature-description">
+                        Track engagement, growth, and sentiment with comprehensive analytics dashboards and reports.
+                    </p>
+                    <a href="#" class="feature-link">Learn more <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-mobile-alt feature-icon"></i>
+                    </div>
+                    <h3 class="feature-title">Mobile First</h3>
+                    <p class="feature-description">
+                        Fully responsive design with native mobile apps for iOS and Android. Engage anywhere, anytime.
+                    </p>
+                    <a href="#" class="feature-link">Learn more <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-users-cog feature-icon"></i>
+                    </div>
+                    <h3 class="feature-title">Custom Communities</h3>
+                    <p class="feature-description">
+                        Create private or public communities with custom branding, rules, and member permissions.
+                    </p>
+                    <a href="#" class="feature-link">Learn more <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-puzzle-piece feature-icon"></i>
+                    </div>
+                    <h3 class="feature-title">Integrations</h3>
+                    <p class="feature-description">
+                        Connect with your favorite tools including Slack, Discord, Zapier, and hundreds more.
+                    </p>
+                    <a href="#" class="feature-link">Learn more <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<div class="quick-actions-bar">
+<!-- How It Works Section -->
+<section class="how-it-works-section">
     <div class="container">
-        <div class="quick-actions-grid">
-            <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-type="poll">
-                <i class="fas fa-poll"></i>
-                <span>Create Poll</span>
-            </button>
-            <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#createPostModal">
-                <i class="fas fa-pen"></i>
-                <span>Start Discussion</span>
-            </button>
-            <button class="quick-action-btn">
-                <i class="fas fa-users"></i>
-                <span>Find Communities</span>
-            </button>
-            <button class="quick-action-btn">
-                <i class="fas fa-microphone"></i>
-                <span>Join Live Talk</span>
-            </button>
-            <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-type="image">
-                <i class="fas fa-image"></i>
-                <span>Share Media</span>
-            </button>
-            <button class="quick-action-btn">
-                <i class="fas fa-calendar-alt"></i>
-                <span>View Events</span>
-            </button>
+        <div class="text-center mb-5">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Get started in minutes with our simple onboarding process</p>
+        </div>
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="process-step">
+                    <div class="step-number">01</div>
+                    <h4 class="step-title">Sign Up</h4>
+                    <p class="step-description">Create your free account in seconds with email or social login</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="process-step">
+                    <div class="step-number">02</div>
+                    <h4 class="step-title">Join Communities</h4>
+                    <p class="step-description">Discover and join communities that match your interests</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="process-step">
+                    <div class="step-number">03</div>
+                    <h4 class="step-title">Start Engaging</h4>
+                    <p class="step-description">Ask questions, share insights, and connect with members</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="process-step">
+                    <div class="step-number">04</div>
+                    <h4 class="step-title">Build Reputation</h4>
+                    <p class="step-description">Earn badges and recognition for valuable contributions</p>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-<div class="featured-section">
-    <div class="container">
-        <div class="section-header">
-            <h3><i class="fas fa-star"></i> Featured Communities</h3>
-            <a href="#" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="featured-communities-carousel" id="featured-communities">
-            <!-- Generated by script.js -->
-        </div>
-    </div>
-</div>
-
-<div class="highlights-section">
+<!-- Trending Communities Section -->
+<section class="trending-communities-section">
     <div class="container">
         <div class="section-header">
-            <h3><i class="fas fa-bolt"></i> Today's Highlights</h3>
+            <h2 class="section-title">Trending Communities</h2>
+            <a href="/Community" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
         </div>
-        <div class="highlights-grid" id="highlights-grid">
-            <!-- Generated by script.js -->
+        <div class="communities-grid" id="trending-communities">
+            <div class="community-card">
+                <div class="community-header">
+                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=100&h=100&fit=crop" 
+                         alt="Technology" class="community-image" />
+                    <div class="community-info">
+                        <h4 class="community-name">Technology Trends</h4>
+                        <p class="community-category">Technology</p>
+                    </div>
+                </div>
+                <p class="community-description">Discuss the latest in AI, blockchain, quantum computing, and emerging tech.</p>
+                <div class="community-stats">
+                    <span><i class="fas fa-users"></i> 125K members</span>
+                    <span><i class="fas fa-comments"></i> 2.3K posts/day</span>
+                </div>
+                <button class="btn btn-join-community">Join Community</button>
+            </div>
+            <div class="community-card">
+                <div class="community-header">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&h=100&fit=crop" 
+                         alt="Business" class="community-image" />
+                    <div class="community-info">
+                        <h4 class="community-name">Startup Founders</h4>
+                        <p class="community-category">Business</p>
+                    </div>
+                </div>
+                <p class="community-description">Connect with entrepreneurs, share experiences, and get advice on building startups.</p>
+                <div class="community-stats">
+                    <span><i class="fas fa-users"></i> 89K members</span>
+                    <span><i class="fas fa-comments"></i> 1.5K posts/day</span>
+                </div>
+                <button class="btn btn-join-community">Join Community</button>
+            </div>
+            <div class="community-card">
+                <div class="community-header">
+                    <img src="https://images.unsplash.com/photo-1532619675605-1ede6c2ed2b0?q=80&w=100&h=100&fit=crop" 
+                         alt="Science" class="community-image" />
+                    <div class="community-info">
+                        <h4 class="community-name">Science & Research</h4>
+                        <p class="community-category">Science</p>
+                    </div>
+                </div>
+                <p class="community-description">Share research, discuss scientific discoveries, and collaborate on projects.</p>
+                <div class="community-stats">
+                    <span><i class="fas fa-users"></i> 67K members</span>
+                    <span><i class="fas fa-comments"></i> 890 posts/day</span>
+                </div>
+                <button class="btn btn-join-community">Join Community</button>
+            </div>
+            <div class="community-card">
+                <div class="community-header">
+                    <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=100&h=100&fit=crop" 
+                         alt="Programming" class="community-image" />
+                    <div class="community-info">
+                        <h4 class="community-name">Web Development</h4>
+                        <p class="community-category">Programming</p>
+                    </div>
+                </div>
+                <p class="community-description">Learn, share, and discuss web development, frameworks, and best practices.</p>
+                <div class="community-stats">
+                    <span><i class="fas fa-users"></i> 156K members</span>
+                    <span><i class="fas fa-comments"></i> 3.1K posts/day</span>
+                </div>
+                <button class="btn btn-join-community">Join Community</button>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-<div class="main-container">
+<!-- Testimonials Section -->
+<section class="testimonials-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">What Our Members Say</h2>
+            <p class="section-subtitle">Join thousands of satisfied community members</p>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "DiscussHub has transformed how our team collaborates. The discussion threads keep everyone aligned and informed."
+                    </p>
+                    <div class="testimonial-author">
+                        <img src="https://i.pravatar.cc/60?img=1" alt="Sarah Chen" class="author-image" />
+                        <div>
+                            <h5 class="author-name">Sarah Chen</h5>
+                            <p class="author-title">Product Manager at TechCorp</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "The community here is incredible. I've learned more in 3 months than I did in a year of self-study."
+                    </p>
+                    <div class="testimonial-author">
+                        <img src="https://i.pravatar.cc/60?img=2" alt="Michael Rodriguez" class="author-image" />
+                        <div>
+                            <h5 class="author-name">Michael Rodriguez</h5>
+                            <p class="author-title">Full Stack Developer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "As a community manager, DiscussHub gives me all the tools I need to keep our 50K+ members engaged."
+                    </p>
+                    <div class="testimonial-author">
+                        <img src="https://i.pravatar.cc/60?img=3" alt="Emily Watson" class="author-image" />
+                        <div>
+                            <h5 class="author-name">Emily Watson</h5>
+                            <p class="author-title">Community Manager</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content text-center">
+            <h2 class="cta-title">Ready to Join the Conversation?</h2>
+            <p class="cta-subtitle">Start building your community today with DiscussHub</p>
+            <div class="cta-buttons">
+                <button class="btn btn-cta-primary" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                    Get Started Free
+                </button>
+                <a href="#" class="btn btn-cta-secondary">
+                    Schedule Demo
+                </a>
+            </div>
+            <p class="cta-note">No credit card required • Free forever for up to 100 members</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer Section -->
+<footer class="footer-section">
     <div class="container">
         <div class="row">
-            <div class="col-lg-3 left-sidebar">
-                <div class="sidebar">
-                    <div class="sidebar-card">
-                        <div class="sidebar-content">
-                            <div class="list-group list-group-flush">
-                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <i class="fas fa-fire me-2 text-danger"></i>
-                                    Popular
-                                </a>
-                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <i class="fas fa-arrow-trend-up me-2 text-primary"></i>
-                                    Rising
-                                </a>
-                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <i class="fas fa-certificate me-2 text-warning"></i>
-                                    New
-                                </a>
-                                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                                    <i class="fas fa-comments me-2 text-success"></i>
-                                    Discussions
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">Your Communities</div>
-                        <div class="sidebar-content" id="your-communities"></div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">Browse Categories</div>
-                        <div class="sidebar-content" id="categories-list"></div>
+            <div class="col-lg-4 mb-4">
+                <div class="footer-brand">
+                    <h3><i class="fas fa-comments"></i> DiscussHub</h3>
+                    <p>Building communities that matter. Connect, share, and grow with millions of users worldwide.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
                     </div>
                 </div>
             </div>
-
-            <div class="col-lg-6 col-md-8">
-                <div class="content-container">
-                    <div class="create-post-card">
-                        <img src="https://i.pravatar.cc/150?img=12" alt="User" class="user-avatar">
-                        <div class="create-post-input" data-bs-toggle="modal" data-bs-target="#createPostModal">What's on your mind? Ask a question...</div>
-                        <div class="create-post-actions">
-                            <button class="create-post-action" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-type="image" title="Add Image">
-                                <i class="far fa-image"></i>
-                            </button>
-                            <button class="create-post-action" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-type="link" title="Add Link">
-                                <i class="fas fa-link"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="filter-tabs">
-                        <button class="filter-tab active" data-filter="best">
-                            <i class="fas fa-rocket"></i>
-                            Best
-                        </button>
-                        <button class="filter-tab" data-filter="hot">
-                            <i class="fas fa-fire"></i>
-                            Hot
-                        </button>
-                        <button class="filter-tab" data-filter="new">
-                            <i class="fas fa-certificate"></i>
-                            New
-                        </button>
-                        <button class="filter-tab" data-filter="rising">
-                            <i class="fas fa-arrow-trend-up"></i>
-                            Rising
-                        </button>
-                        <button class="filter-tab" data-filter="top">
-                            <i class="fas fa-chart-line"></i>
-                            Top
-                        </button>
-                    </div>
-
-                    <div id="posts-container"><!-- Generated by script.js --></div>
-                </div>
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5 class="footer-title">Product</h5>
+                <ul class="footer-links">
+                    <li><a href="#">Features</a></li>
+                    <li><a href="#">Pricing</a></li>
+                    <li><a href="#">Enterprise</a></li>
+                    <li><a href="#">API</a></li>
+                    <li><a href="#">Integrations</a></li>
+                </ul>
             </div>
-
-            <div class="col-lg-3 col-md-4 right-sidebar">
-                <div class="sidebar">
-                    <div class="sidebar-card live-talks-card">
-                        <div class="sidebar-header">
-                            <i class="fas fa-microphone live-indicator"></i>
-                            Live Talks
-                        </div>
-                        <div class="sidebar-content" id="live-talks"></div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">
-                            <i class="fas fa-fire"></i>
-                            Active Right Now
-                        </div>
-                        <div class="sidebar-content" id="active-discussions"></div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">Top Growing Communities</div>
-                        <div class="sidebar-content" id="top-communities"></div>
-                    </div>
-
-                    <div class="sidebar-card community-spotlight">
-                        <div class="sidebar-header">
-                            <i class="fas fa-trophy"></i>
-                            Community Spotlight
-                        </div>
-                        <div class="sidebar-content" id="community-spotlight"></div>
-                    </div>
-
-                    <div class="sidebar-card ad-card">
-                        <div class="ad-label">Sponsored</div>
-                        <div class="sidebar-content">
-                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=400" alt="Ad" class="ad-image">
-                            <div class="ad-content">
-                                <h4>Boost Your Business</h4>
-                                <p>Reach millions of engaged users. Start advertising today.</p>
-                                <button class="btn btn-primary sidebar-button">Learn More</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">Community Guidelines</div>
-                        <div class="sidebar-content">
-                            <ul class="guidelines-list">
-                                <li>Be respectful and civil</li>
-                                <li>No spam or self-promotion</li>
-                                <li>Stay on topic</li>
-                                <li>Cite your sources</li>
-                                <li>Report rule violations</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">Trending Today</div>
-                        <div class="sidebar-content" id="trending-topics"></div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <div class="sidebar-header">Daily Digest</div>
-                        <div class="sidebar-content">
-                            <p>Get the top posts from your favorite communities delivered to your inbox.</p>
-                            <form class="newsletter-form">
-                                <input type="email" class="form-control newsletter-input" placeholder="Your email address">
-                                <button type="submit" class="btn btn-primary sidebar-button">Subscribe</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5 class="footer-title">Company</h5>
+                <ul class="footer-links">
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Press</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5 class="footer-title">Resources</h5>
+                <ul class="footer-links">
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Community</a></li>
+                    <li><a href="#">Status</a></li>
+                    <li><a href="#">Security</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5 class="footer-title">Legal</h5>
+                <ul class="footer-links">
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Cookie Policy</a></li>
+                    <li><a href="#">GDPR</a></li>
+                    <li><a href="#">Compliance</a></li>
+                </ul>
             </div>
         </div>
+        <hr class="footer-divider" />
+        <div class="footer-bottom">
+            <p>&copy; 2025 DiscussHub. All rights reserved.</p>
+            <p>Made with <i class="fas fa-heart text-danger"></i> by the DiscussHub team</p>
+        </div>
     </div>
-</div>
+</footer>
 
 <!-- Create Post Modal -->
 <div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
@@ -316,21 +438,21 @@
                 <div class="community-selector">
                     <label for="community-select" class="post-form-label">Choose a community</label>
                     <select id="community-select" class="post-form-input">
-                        <option value="technology">r/technology</option>
-                        <option value="programming">r/programming</option>
-                        <option value="gaming">r/gaming</option>
-                        <option value="movies">r/movies</option>
-                        <option value="science">r/science</option>
+                        <option value="technology">Technology Trends</option>
+                        <option value="programming">Web Development</option>
+                        <option value="business">Startup Founders</option>
+                        <option value="science">Science & Research</option>
+                        <option value="design">UI/UX Design</option>
                     </select>
                 </div>
 
                 <div id="post-form-container">
                     <label for="post-title" class="post-form-label">Title</label>
-                    <input type="text" id="post-title" class="post-form-input" placeholder="Title">
+                    <input type="text" id="post-title" class="post-form-input" placeholder="Enter your post title">
 
                     <div id="text-post-content">
-                        <label for="post-text" class="post-form-label">Text (optional)</label>
-                        <textarea id="post-text" class="post-form-input post-form-textarea" placeholder="Text (optional)"></textarea>
+                        <label for="post-text" class="post-form-label">Content (optional)</label>
+                        <textarea id="post-text" class="post-form-input post-form-textarea" placeholder="Share your thoughts..."></textarea>
                     </div>
 
                     <div id="image-post-content" style="display: none;">
@@ -345,7 +467,7 @@
 
                     <div id="link-post-content" style="display: none;">
                         <label for="post-link" class="post-form-label">URL</label>
-                        <input type="url" id="post-link" class="post-form-input" placeholder="URL">
+                        <input type="url" id="post-link" class="post-form-input" placeholder="https://example.com">
                     </div>
 
                     <div id="video-post-content" style="display: none;">
@@ -389,4 +511,29 @@
 
 @section Scripts {
     <script src="~/DesignFolder/script.js"></script>
+    <script>
+        // Counter animation for stats
+        document.addEventListener('DOMContentLoaded', function() {
+            const counters = document.querySelectorAll('.counter');
+            const speed = 200;
+
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    const count = +counter.innerText.replace(/[^0-9]/g, '');
+
+                    const inc = target / speed;
+
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + inc).toLocaleString() + '+';
+                        setTimeout(updateCount, 1);
+                    } else {
+                        counter.innerText = target.toLocaleString() + '+';
+                    }
+                }
+
+                updateCount();
+            });
+        });
+    </script>
 }
