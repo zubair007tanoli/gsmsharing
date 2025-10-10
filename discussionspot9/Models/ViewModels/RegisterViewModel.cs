@@ -29,5 +29,6 @@ namespace discussionspot9.Models.ViewModels
         [Display(Name = "I agree to the Terms of Service and Privacy Policy")]
         //[Range(typeof(bool), "true", "true", ErrorMessage = "You must agree to the terms and conditions")]
         public bool AgreeToTerms { get; set; }
+        public string? ReturnUrl { get; internal set; }
     }
 }

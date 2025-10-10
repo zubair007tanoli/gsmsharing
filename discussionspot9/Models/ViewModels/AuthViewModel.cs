@@ -15,10 +15,28 @@
         /// </summary>
         public LoginViewModel LoginModel { get; set; } = new LoginViewModel();
 
+        private string? _returnUrl;
+
+
         /// <summary>
         /// Return URL after successful authentication
-        /// </summary>
-        public string? ReturnUrl { get; set; }
+        /// </summary>     
+
+        public string? ReturnUrl
+        {
+            get => _returnUrl;
+            set
+            {
+                _returnUrl = value;
+
+                // Assign ReturnUrl to both child models if they exist
+            
+                    RegisterModel.ReturnUrl = value;
+
+             
+                    LoginModel.ReturnUrl = value;
+            }
+        }
 
         /// <summary>
         /// External login providers available

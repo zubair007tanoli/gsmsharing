@@ -39,7 +39,7 @@ namespace DiscussionSpot9.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")] RegisterViewModel registerViewModelRegisterViewModel, string? returnUrl = null)
+        public async Task<IActionResult> Register([Bind(Prefix = "RegisterModel")] RegisterViewModel registerViewModel, string? returnUrl = null)
         {
             // Clear validation errors for LoginModel since we're only processing registration
             var loginModelKeys = ModelState.Keys.Where(k => k.StartsWith("LoginModel.")).ToList();
@@ -48,33 +48,34 @@ namespace DiscussionSpot9.Controllers
                 ModelState.Remove(key);
             }
 
+            // FIX: Explicitly set ReturnUrl from the parameter
+            registerViewModel.ReturnUrl = returnUrl;
+
             if (!ModelState.IsValid)
             {
-                // Preserve returnUrl in model for resubmission
                 var authViewModel = new AuthViewModel
                 {
-                    RegisterModel = registerViewModelRegisterViewModel,
-                    ReturnUrl = returnUrl ?? Url.Content("~/")
+                    RegisterModel = registerViewModel,
+                    ReturnUrl = returnUrl ?? Url.Content("~/"),
+                    ShowRegister = true  // Important to show register form on error
                 };
                 return View("Auth", authViewModel);
             }
 
-            var result = await _userService.RegisterUserAsync(registerViewModelRegisterViewModel);
+            var result = await _userService.RegisterUserAsync(registerViewModel);
 
             if (!result.Succeeded)
             {
                 TempData["ErrorMessageUserName"] = "User Name Already Exist Choose Another Name.";
                 result.Errors.ToList().ForEach(error => ModelState.AddModelError(string.Empty, error.Description));
-                
-                // Preserve returnUrl when redirecting back to Auth page
+
                 return RedirectToAction("Auth", new { returnUrl = returnUrl });
             }
-            
+
             if (result.Succeeded)
             {
-                TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {registerViewModelRegisterViewModel.DisplayName}! Your account has been created successfully.";
+                TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {registerViewModel.DisplayName}! Your account has been created successfully.";
 
-                // Properly handle returnUrl after successful registration
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
@@ -107,11 +108,20 @@ namespace DiscussionSpot9.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login([Bind(Prefix = "LoginModel")] LoginViewModel loginViewModel)
+        public async Task<IActionResult> Login([Bind(Prefix = "LoginModel")] LoginViewModel loginViewModel, string? returnUrl = null)
         {
+            // FIX: Explicitly set ReturnUrl from the parameter
+            loginViewModel.ReturnUrl = returnUrl;
+
             if (!ModelState.IsValid)
             {
-                return View(loginViewModel);
+                var authViewModel = new AuthViewModel
+                {
+                    LoginModel = loginViewModel,
+                    ReturnUrl = returnUrl ?? Url.Content("~/"),
+                    ShowRegister = false  // Show login form
+                };
+                return View("Auth", authViewModel);
             }
 
             var result = await _userService.LoginUserAsync(loginViewModel);
