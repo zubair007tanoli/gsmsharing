@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -40,9 +40,14 @@
     <header>
         <nav class="navbar navbar-expand-md navbar-light bg-white border-bottom box-shadow sticky-top">
             <div class="container-xxl">
-                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index" aria-label="DiscussHub home">
-                    <i class="fas fa-comments text-primary"></i>
-                    <span>DiscussHub</span>
+                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index" aria-label="DiscussionSpot home">
+                    <div class="brand-logo">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="brand-text">
+                        <span class="brand-name">DiscussionSpot</span>
+                        <span class="brand-tagline">Connect & Discuss</span>
+                    </div>
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Open menu">
@@ -50,15 +55,30 @@
                 </button>
 
                 <form class="search-form d-none d-md-flex mx-3 flex-grow-1" asp-controller="Search" asp-action="Index" method="get" role="search" aria-label="Site search">
-                    <i class="fas fa-search search-icon" aria-hidden="true"></i>
-                    <input class="form-control search-input" type="search" placeholder="Search posts, users, communities" aria-label="Search" name="query" />
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                        <input class="form-control search-input" type="search" placeholder="Search discussions, communities, topics..." aria-label="Search" name="query" />
+                        <div class="search-suggestions d-none">
+                            <div class="suggestion-item">
+                                <i class="fas fa-fire"></i>
+                                <span>Trending: AI Technology</span>
+                            </div>
+                            <div class="suggestion-item">
+                                <i class="fas fa-users"></i>
+                                <span>r/programming</span>
+                            </div>
+                        </div>
+                    </div>
                 </form>
 
                 <div class="d-flex align-items-center gap-2 ms-auto">
                     <button class="btn icon-btn d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-controls="mobileSearch" aria-expanded="false" aria-label="Toggle search">
                         <i class="fas fa-search"></i>
                     </button>
-                    <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index" aria-label="Ask a question"><i class="fas fa-circle-question me-1" aria-hidden="true"></i> Ask Question</a>
+                    <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index" aria-label="Ask a question">
+                        <i class="fas fa-plus me-1" aria-hidden="true"></i> 
+                        <span>Create Post</span>
+                    </a>
                     <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications" aria-label="Notifications"><i class="far fa-bell" aria-hidden="true"></i></a>
                     <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages" aria-label="Messages"><i class="far fa-envelope" aria-hidden="true"></i></a>
                     <ul class="navbar-nav mb-0 ms-1">
@@ -168,10 +188,96 @@
         }
     </main>
 
-    <footer class="border-top text-muted">
-        <div class="container-xxl py-3 small d-flex justify-content-between">
-            &copy; 2025 - discussionspot10 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-            <span></span>
+    <footer class="professional-footer">
+        <div class="footer-main">
+            <div class="container-xxl">
+                <div class="row">
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="footer-brand">
+                            <div class="footer-logo">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div>
+                                <h5 class="footer-brand-name">DiscussionSpot</h5>
+                                <p class="footer-brand-desc">Where knowledge meets community. Connect, discuss, and grow with millions of users worldwide.</p>
+                            </div>
+                        </div>
+                        <div class="social-links">
+                            <a href="#" class="social-link" aria-label="Twitter">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="social-link" aria-label="Facebook">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="social-link" aria-label="LinkedIn">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="#" class="social-link" aria-label="Instagram">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" class="social-link" aria-label="Discord">
+                                <i class="fab fa-discord"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h6 class="footer-heading">Platform</h6>
+                        <ul class="footer-links">
+                            <li><a asp-controller="Community" asp-action="Index">Communities</a></li>
+                            <li><a asp-controller="Category" asp-action="Index">Topics</a></li>
+                            <li><a asp-controller="Post" asp-action="Index">Discussions</a></li>
+                            <li><a href="#">Live Talks</a></li>
+                            <li><a href="#">Events</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h6 class="footer-heading">Resources</h6>
+                        <ul class="footer-links">
+                            <li><a href="#">Help Center</a></li>
+                            <li><a href="#">Community Guidelines</a></li>
+                            <li><a href="#">API Documentation</a></li>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Status</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h6 class="footer-heading">Company</h6>
+                        <ul class="footer-links">
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Careers</a></li>
+                            <li><a href="#">Press</a></li>
+                            <li><a href="#">Contact</a></li>
+                            <li><a href="#">Partnerships</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h6 class="footer-heading">Legal</h6>
+                        <ul class="footer-links">
+                            <li><a asp-controller="Home" asp-action="Privacy">Privacy Policy</a></li>
+                            <li><a href="#">Terms of Service</a></li>
+                            <li><a href="#">Cookie Policy</a></li>
+                            <li><a href="#">DMCA</a></li>
+                            <li><a href="#">Transparency</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container-xxl">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="footer-copyright">&copy; 2025 DiscussionSpot. All rights reserved.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="footer-badges">
+                            <span class="footer-badge">🔒 Secure</span>
+                            <span class="footer-badge">⚡ Fast</span>
+                            <span class="footer-badge">🌍 Global</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
