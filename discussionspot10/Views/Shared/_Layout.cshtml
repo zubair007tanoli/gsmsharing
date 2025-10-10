@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="preload" href="~/css/landing.css" as="style">
     <link rel="stylesheet" href="~/discussionspot10.styles.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
     <style>
@@ -58,7 +59,7 @@
                     <button class="btn icon-btn d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-controls="mobileSearch" aria-expanded="false" aria-label="Toggle search">
                         <i class="fas fa-search"></i>
                     </button>
-                    <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Post" asp-action="Index" aria-label="Ask a question"><i class="fas fa-circle-question me-1" aria-hidden="true"></i> Ask Question</a>
+                    <a class="btn btn-ask-question d-none d-md-inline" asp-controller="Account" asp-action="Register" aria-label="Get started"><i class="fas fa-user-plus me-1" aria-hidden="true"></i> Get started</a>
                     <a class="btn icon-btn" asp-controller="Notifications" asp-action="Index" title="Notifications" aria-label="Notifications"><i class="far fa-bell" aria-hidden="true"></i></a>
                     <a class="btn icon-btn d-none d-md-inline" asp-controller="Messages" asp-action="Index" title="Messages" aria-label="Messages"><i class="far fa-envelope" aria-hidden="true"></i></a>
                     <ul class="navbar-nav mb-0 ms-1">
