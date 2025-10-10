@@ -140,7 +140,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
-                <Border Grid.Row="0" Background="#D94600" Padding="10" Margin="10" CornerRadius="10">
+                <Border Grid.Row="0" Background="#D94600" Padding="10" Margin="5" CornerRadius="10">
                     <TextBlock Text="Exit Control List" HorizontalAlignment="Center" FontSize="24" FontWeight="Bold" Foreground="Black"/>
                 </Border>
 
