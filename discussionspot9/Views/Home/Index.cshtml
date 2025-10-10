@@ -1,4 +1,5 @@
 ﻿@model discussionspot9.Models.ViewModels.HomePage.HomePageViewModel
+@using System.Text.RegularExpressions
 @using discussionspot9.Helpers
 @{
     ViewData["Title"] = "Home - DiscussionSpot";
@@ -183,7 +184,11 @@
                                         <h3 class="post-title h5">
                                             <a href="@post.PostUrl">@post.Title</a>
                                         </h3>
-                                        <p class="post-excerpt text-muted small">@post.Excerpt</p>
+                                        @{
+                                            // Remove ALL HTML tags from content
+                                            var plainText = Regex.Replace(post.Excerpt ?? "", "<.*?>", string.Empty);
+                                        }
+                                        <p class="post-excerpt text-muted small">@plainText</p>
                                         <div class="post-meta d-flex justify-content-between align-items-center">
                                             <div class="post-author d-flex align-items-center">
                                                 <div class="avatar avatar-sm me-2">@post.AuthorInitials</div>

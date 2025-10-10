@@ -1,0 +1,31 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.LinkPreviewViewModel
+
+<a href="@Model.Url" target="_blank" rel="noopener noreferrer" class="link-preview-card">
+    <div class="link-preview-container">
+        @if (!string.IsNullOrEmpty(Model.ThumbnailUrl))
+        {
+            <div class="link-preview-thumbnail">
+                <img src="@Model.ThumbnailUrl" alt="@Model.Title" onerror="this.parentElement.style.display='none'" loading="lazy" />
+            </div>
+        }
+        <div class="link-preview-content">
+            <div class="link-preview-header">
+                @if (!string.IsNullOrEmpty(Model.FaviconUrl))
+                {
+                    <img src="@Model.FaviconUrl" alt="favicon" class="link-preview-favicon" onerror="this.style.display='none'" loading="lazy" />
+                }
+                <span class="link-preview-domain">@Model.Domain</span>
+            </div>
+            <h4 class="link-preview-title">@Model.Title</h4>
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <p class="link-preview-description">@Model.Description</p>
+            }
+            <div class="link-preview-footer">
+                <i class="fas fa-external-link-alt"></i>
+                <span>Visit link</span>
+            </div>
+        </div>
+    </div>
+</a>
+
