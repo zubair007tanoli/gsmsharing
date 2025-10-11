@@ -242,7 +242,37 @@
 
         <div class="col-lg-4">
             <!-- Sidebar -->
-            <div class="sidebar">
+            <div class="sidebar home-sidebar">
+                <!-- Latest News Section -->
+                <div class="card mb-4 modern-news-card">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="h5 mb-0"><i class="fas fa-newspaper me-2"></i>Latest News</h2>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="news-item">
+                            <span class="news-category tech">Tech</span>
+                            <div class="news-title">Revolutionary AI Model Achieves Human-Level Performance</div>
+                            <div class="news-meta">
+                                <i class="fas fa-clock"></i> 2 hours ago
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <span class="news-category gaming">Gaming</span>
+                            <div class="news-title">New Gaming Console Breaks Pre-order Records</div>
+                            <div class="news-meta">
+                                <i class="fas fa-clock"></i> 4 hours ago
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <span class="news-category programming">Programming</span>
+                            <div class="news-title">Open Source Framework Simplifies Development</div>
+                            <div class="news-meta">
+                                <i class="fas fa-clock"></i> 6 hours ago
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 @if (Model?.Sidebar?.HasTrendingTopics == true)
                 {
                     <!-- Trending Topics Section -->

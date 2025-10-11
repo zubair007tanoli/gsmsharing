@@ -114,20 +114,24 @@
 
 @if (Model != null)
 {
-    <div class="poll-container" data-post-id="@Model.PostId">
-        <div class="poll-badge">
-            <i class="fas fa-poll"></i>
-            <span>POLL</span>
+    <div class="poll-container modern-poll" data-post-id="@Model.PostId">
+        <div class="poll-header">
+            <div class="poll-badge">
+                <i class="fas fa-poll"></i>
+                <span>POLL</span>
+            </div>
+            <h5 class="poll-question">@Model.Question</h5>
         </div>
-        <h5 class="poll-question">@Model.Question</h5>
 
         @if (!Model.HasUserVoted)
         {
-            <p class="text-muted text-center small mb-3">Click on an option to cast your vote.</p>
+            <p class="text-muted text-center small mb-3">
+                <i class="fas fa-hand-pointer"></i> Click on an option to cast your vote
+            </p>
         }
         else
         {
-            <p class="text-success text-center small mb-3">
+            <p class="text-success text-center small mb-3 voted-message">
                 <i class="fas fa-check-circle"></i> You have voted in this poll
             </p>
         }
@@ -135,8 +139,9 @@
         <div class="poll-options" id="pollOptions">
             @foreach (var option in Model.Options)
             {
-                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "")"
-                     data-option-id="@option.PollOptionId">
+                <div class="poll-option @(option.HasUserVoted.HasValue && option.HasUserVoted.Value ? "selected voted" : "") @(Model.HasUserVoted ? "results-mode" : "")"
+                     data-option-id="@option.PollOptionId"
+                     data-percentage="@option.VotePercentage.ToString("F1")">
 
                     @if (!Model.HasUserVoted)
                     {
@@ -152,14 +157,16 @@
                                 </div>
                                 <div class="poll-option-content">
                                     <span class="poll-option-text">@option.OptionText</span>
-                                    <span class="poll-percentage">@option.VoteCount.ToString("N0") Votes</span>
+                                    <div class="poll-stats-preview">
+                                        <span class="poll-vote-count">@option.VoteCount.ToString("N0") votes</span>
+                                    </div>
                                 </div>
                             </div>
                         </button>
                     }
                     else
                     {
-                        <!-- Static display when user has voted -->
+                        <!-- Results display when user has voted -->
                         <div class="poll-option-inner">
                             <div class="poll-radio">
                                 @if (option.HasUserVoted.HasValue && option.HasUserVoted.Value)
@@ -175,49 +182,65 @@
                             </div>
                             <div class="poll-option-content">
                                 <span class="poll-option-text">@option.OptionText</span>
-                                <span class="poll-percentage">@option.VoteCount.ToString("N0") Count</span>
+                                <div class="poll-stats-display">
+                                    <span class="poll-percentage-badge">@option.VotePercentage.ToString("F1")%</span>
+                                    <span class="poll-vote-count">@option.VoteCount.ToString("N0") votes</span>
+                                </div>
                             </div>
                         </div>
+                        <!-- Animated Progress bar -->
+                        <div class="poll-progress-bar" 
+                             style="width: 0%; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1) @(Model.Options.IndexOf(option) * 0.1)s;"
+                             data-width="@option.VotePercentage.ToString("F1")">
+                            <div class="poll-progress-glow"></div>
+                        </div>
                     }
-
-                    <!-- Progress bar -->
-                    <div class="poll-progress" style="width: @(Model.HasUserVoted? option.VoteCount.ToString("N0") : "0")%;"></div>
                 </div>
             }
         </div>
 
-        @if (!Model.HasUserVoted)
-        {
-            <div class="d-flex justify-content-center mb-3">
-                <button class="vote-button" id="submitVote" disabled>Cast Your Vote</button>
-            </div>
-        }
-
-        <div class="poll-stats">
-            <div class="poll-votes">
-                <i class="fas fa-chart-bar"></i>
-                <span class="poll-total-votes">@Model.TotalVotes.ToString("N0") votes</span>
-            </div>
-            <div class="poll-time">
-                <i class="fas fa-clock"></i>
-                <span>
-                    @if (Model.EndDate.HasValue)
-                    {
-                        if (Model.EndDate.Value > DateTime.UtcNow)
+        <div class="poll-footer">
+            <div class="poll-stats">
+                <div class="poll-stat-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="poll-total-votes">@Model.TotalVotes.ToString("N0") total votes</span>
+                </div>
+                <div class="poll-stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span>
+                        @if (Model.EndDate.HasValue)
                         {
-                            @:Poll closes in @((Model.EndDate.Value - DateTime.UtcNow).TotalDays.ToString("F0")) days
+                            if (Model.EndDate.Value > DateTime.UtcNow)
+                            {
+                                var daysLeft = (Model.EndDate.Value - DateTime.UtcNow).TotalDays;
+                                @:Closes in @(daysLeft < 1 ? Math.Ceiling((Model.EndDate.Value - DateTime.UtcNow).TotalHours) + " hours" : Math.Ceiling(daysLeft) + " days")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Poll closed</span>
+                            }
                         }
                         else
                         {
-                            @:Poll closed
+                            @:No end date
                         }
-                    }
-                    else
-                    {
-                        @:No end date
-                    }
-                </span>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Animate progress bars after voting
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.querySelectorAll('.poll-progress-bar').forEach(bar => {
+                    const width = bar.getAttribute('data-width');
+                    if (width) {
+                        bar.style.width = width + '%';
+                    }
+                });
+            }, 100);
+        });
+    </script>
 }

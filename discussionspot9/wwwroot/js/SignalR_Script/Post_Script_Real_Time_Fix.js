@@ -133,7 +133,7 @@
             return;
         }
 
-        // --- Submit Reply ---
+        // --- Submit Reply with loading animation ---
         const submitReplyBtn = target.closest('.reply-submit-btn');
         if (submitReplyBtn) {
             event.preventDefault();
@@ -160,18 +160,42 @@
             }
             
             if (content && this.pagePostId && !isNaN(parentId)) {
-                await this.sendComment(this.pagePostId, content, parentId);
+                // Add loading state
+                submitReplyBtn.classList.add('loading');
+                submitReplyBtn.disabled = true;
+                const originalHTML = submitReplyBtn.innerHTML;
+                submitReplyBtn.innerHTML = '<span>Replying...</span>';
                 
-                // Clear the editor and hide form
-                if (window[`replyQuill${parentId}`]) {
-                    window[`replyQuill${parentId}`].setText('');
-                    delete window[`replyQuill${parentId}`];
-                } else {
-                    const textarea = form?.querySelector('textarea');
-                    if (textarea) textarea.value = '';
+                try {
+                    await this.sendComment(this.pagePostId, content, parentId);
+                    
+                    // Show success state
+                    submitReplyBtn.classList.remove('loading');
+                    submitReplyBtn.classList.add('success');
+                    submitReplyBtn.innerHTML = '<span>Posted!</span>';
+                    
+                    // Clear the editor and hide form after brief delay
+                    setTimeout(() => {
+                        if (window[`replyQuill${parentId}`]) {
+                            window[`replyQuill${parentId}`].setText('');
+                            delete window[`replyQuill${parentId}`];
+                        } else {
+                            const textarea = form?.querySelector('textarea');
+                            if (textarea) textarea.value = '';
+                        }
+                        
+                        form.classList.add('d-none');
+                        submitReplyBtn.classList.remove('success');
+                        submitReplyBtn.disabled = false;
+                        submitReplyBtn.innerHTML = originalHTML;
+                    }, 1000);
+                } catch (error) {
+                    // Handle error
+                    submitReplyBtn.classList.remove('loading');
+                    submitReplyBtn.disabled = false;
+                    submitReplyBtn.innerHTML = originalHTML;
+                    this.showNotification('Failed to post reply', 'error');
                 }
-                
-                form.classList.add('d-none');
             }
             return;
         }
@@ -455,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // This is the only event listener we need to set up now.
         signalRManager.initializeDelegatedListener();
 
-        // Main comment form submission
+        // Main comment form submission with loading animation
         const submitButton = document.getElementById('submitMainComment');
         if (submitButton) {
             submitButton.addEventListener('click', async (e) => {
@@ -482,12 +506,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 
                 if (content && signalRManager.pagePostId) {
-                    await signalRManager.sendComment(signalRManager.pagePostId, content);
-                    // Clear the editor after successful submission
-                    if (window.mainCommentQuill) {
-                        window.mainCommentQuill.setText('');
-                    } else {
-                        document.getElementById('mainCommentContent').value = '';
+                    // Add loading state
+                    submitButton.classList.add('loading');
+                    submitButton.disabled = true;
+                    const originalText = submitButton.innerHTML;
+                    submitButton.innerHTML = '<span>Posting...</span>';
+                    
+                    try {
+                        await signalRManager.sendComment(signalRManager.pagePostId, content);
+                        
+                        // Show success state
+                        submitButton.classList.remove('loading');
+                        submitButton.classList.add('success');
+                        submitButton.innerHTML = '<span>Posted!</span>';
+                        
+                        // Clear the editor after successful submission
+                        if (window.mainCommentQuill) {
+                            window.mainCommentQuill.setText('');
+                        } else {
+                            document.getElementById('mainCommentContent').value = '';
+                        }
+                        
+                        // Reset button after animation
+                        setTimeout(() => {
+                            submitButton.classList.remove('success');
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalText;
+                        }, 1500);
+                    } catch (error) {
+                        // Handle error
+                        submitButton.classList.remove('loading');
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                        signalRManager.showNotification('Failed to post comment', 'error');
                     }
                 }
             });

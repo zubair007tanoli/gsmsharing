@@ -5,18 +5,21 @@ namespace discussionspot9.Components
 {
     public class CommunityInfoViewComponent : ViewComponent
     {
-        public IViewComponentResult Invoke(string communitySlug)
+        public IViewComponentResult Invoke(CommunityDetailViewModel community)
         {
-            var community = new CommunityViewModel
+            // Convert CommunityDetailViewModel to CommunityViewModel if needed
+            var communityViewModel = new CommunityViewModel
             {
-                Name = "Technology",
-                Slug = communitySlug,
-                Description = "A community dedicated to the discussion of technology news, developments, and innovations.",
-                MemberCount = 2400000,              
-                CreatedAt = new DateTime(2012, 1, 1)
+                Name = community?.Name ?? "Community",
+                Slug = community?.Slug ?? "",
+                Description = community?.Description ?? community?.ShortDescription ?? "Join the discussion in this community.",
+                MemberCount = community?.MemberCount ?? 0,
+                OnlineCount = 0, // Will be calculated from active sessions in future
+                CreatedAt = community?.CreatedAt ?? DateTime.UtcNow,
+                IsMember = community?.IsCurrentUserMember ?? false
             };
 
-            return View(community);
+            return View(communityViewModel);
         }
     }
 }
