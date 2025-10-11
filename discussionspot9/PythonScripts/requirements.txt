@@ -1,0 +1,22 @@
+# Python SEO Analyzer Requirements
+# 
+# This script uses ONLY Python standard library
+# No additional packages need to be installed via pip
+#
+# Required Python Version: 3.7+
+# 
+# Standard library modules used:
+# - json (built-in)
+# - sys (built-in)
+# - re (built-in)
+# - html (built-in)
+# - dataclasses (built-in since Python 3.7)
+# - typing (built-in)
+#
+# Installation: None required!
+# Simply ensure Python 3.7+ is installed on your system.
+#
+# Verify installation:
+#   python --version
+#   python seo_analyzer.py < test_input.json
+

@@ -18,6 +18,8 @@
 }
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<!-- Quill Editor CSS -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
 
 <style>
     .post-creator {
@@ -207,6 +209,55 @@
     .form-textarea {
         min-height: 120px;
         resize: vertical;
+    }
+
+    /* Quill Editor Styling */
+    .quill-editor-container {
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        transition: border-color 0.2s;
+    }
+
+    .quill-editor-container:focus-within {
+        border-color: #0079d3;
+        box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.2);
+    }
+
+    .quill-editor-container .ql-toolbar {
+        background: #f8f9fa;
+        border: none;
+        border-bottom: 1px solid #e0e0e0;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+
+    .quill-editor-container .ql-container {
+        border: none;
+        font-size: 14px;
+        min-height: 300px;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+    }
+
+    .quill-editor-container .ql-editor {
+        min-height: 300px;
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 16px;
+    }
+
+    .quill-editor-container .ql-editor.ql-blank::before {
+        color: #999;
+        font-style: italic;
+    }
+
+    .editor-info {
+        font-size: 12px;
+    }
+
+    .editor-info i {
+        margin-right: 4px;
     }
 
     .char-count {
@@ -758,9 +809,18 @@
                         <!-- Content Sections -->
                         <div class="content-section active" id="textContent">
                             <div class="form-group">
-                                <label class="form-label" asp-for="Content">Content</label>
-                                <textarea asp-for="Content" class="form-textarea" id="textContent" placeholder="What are your thoughts?" rows="8"></textarea>
+                                <label class="form-label" asp-for="Content">Content (Rich Text Editor)</label>
+                                <div class="quill-editor-container">
+                                    <div id="contentQuillEditor"></div>
+                                </div>
+                                <textarea asp-for="Content" class="form-textarea d-none" id="contentTextarea" placeholder="What are your thoughts?" rows="8"></textarea>
                                 <span asp-validation-for="Content" class="text-danger"></span>
+                                <div class="editor-info mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i>
+                                        Use the rich text editor to format your content. SEO analysis will automatically optimize your post before publishing.
+                                    </small>
+                                </div>
                             </div>
                         </div>
 
@@ -1300,4 +1360,56 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <!-- Quill Editor JS -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    
+    <script>
+        // Initialize Quill Editor for Content
+        let contentQuill = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const toolbarOptions = [
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                ['link', 'image', 'video'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'align': [] }],
+                ['clean']
+            ];
+
+            contentQuill = new Quill('#contentQuillEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: toolbarOptions
+                },
+                placeholder: 'Write your post content here... Use headings, formatting, and add links to make your post more engaging and SEO-friendly!'
+            });
+
+            // Sync Quill content with hidden textarea
+            contentQuill.on('text-change', function() {
+                const htmlContent = contentQuill.root.innerHTML;
+                document.getElementById('contentTextarea').value = htmlContent;
+            });
+            
+            console.log('✅ Quill editor initialized for post content');
+        });
+        
+        // Override the handleFormSubmit function to work with Quill
+        const originalHandleFormSubmit = window.handleFormSubmit;
+        window.handleFormSubmit = function(isDraft) {
+            // Sync Quill content before submit
+            if (contentQuill) {
+                const htmlContent = contentQuill.root.innerHTML;
+                document.getElementById('contentTextarea').value = htmlContent;
+            }
+            
+            // Call original function
+            if (originalHandleFormSubmit) {
+                originalHandleFormSubmit(isDraft);
+            }
+        };
+    </script>
 }

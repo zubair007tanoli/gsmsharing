@@ -1,0 +1,219 @@
+@model List<discussionspot9.Models.ViewModels.CreativeViewModels.InterestingCommunityViewModel>
+
+<div class="sidebar-card modern-communities-card">
+    <div class="sidebar-header">
+        <i class="fas fa-compass me-2"></i> Interesting Communities
+    </div>
+    <div class="sidebar-content">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var community in Model)
+            {
+                <div class="community-item">
+                    <div class="community-icon">
+                        @if (!string.IsNullOrEmpty(community.IconUrl))
+                        {
+                            <img src="@community.IconUrl" alt="@community.Name" />
+                        }
+                        else
+                        {
+                            <div class="community-icon-placeholder">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        }
+                    </div>
+                    <div class="community-info">
+                        <a href="/r/@community.Slug" class="community-name">
+                            r/@community.Name
+                        </a>
+                        @if (!string.IsNullOrEmpty(community.Description))
+                        {
+                            <p class="community-description">
+                                @(community.Description.Length > 60 ? community.Description.Substring(0, 60) + "..." : community.Description)
+                            </p>
+                        }
+                        <div class="community-stats">
+                            <span class="stat-item">
+                                <i class="fas fa-user-friends"></i> @community.FormattedMemberCount
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-file-alt"></i> @community.FormattedPostCount
+                            </span>
+                        </div>
+                    </div>
+                    <div class="community-action">
+                        <button class="btn-join-community btn btn-sm btn-primary" data-community-id="@community.CommunityId">
+                            <i class="fas fa-plus"></i> Join
+                        </button>
+                    </div>
+                </div>
+            }
+            
+            <div class="view-all-communities text-center mt-3">
+                <a href="/communities" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="fas fa-th-large me-2"></i> Explore All Communities
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="no-communities-message">
+                <i class="fas fa-search"></i>
+                <p>No communities available at the moment.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+.modern-communities-card {
+    margin-bottom: 1.5rem;
+}
+
+.community-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.community-item:last-of-type {
+    border-bottom: none;
+}
+
+.community-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.community-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.community-icon-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.community-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.community-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color, #333);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.community-name:hover {
+    color: var(--primary-color, #007bff);
+}
+
+.community-description {
+    font-size: 0.75rem;
+    color: var(--text-light, #666);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+}
+
+.community-stats {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text-lighter, #999);
+}
+
+.stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.community-action {
+    flex-shrink: 0;
+}
+
+.btn-join-community {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+}
+
+.view-all-communities {
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.no-communities-message {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-light, #666);
+}
+
+.no-communities-message i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.no-communities-message p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+</style>
+
+<script>
+// Handle join community button clicks
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-join-community').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const communityId = this.dataset.communityId;
+            
+            try {
+                const response = await fetch(`/api/community/${communityId}/toggle-membership`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.isMember) {
+                        this.innerHTML = '<i class="fas fa-check"></i> Joined';
+                        this.classList.remove('btn-primary');
+                        this.classList.add('btn-success');
+                    } else {
+                        this.innerHTML = '<i class="fas fa-plus"></i> Join';
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-primary');
+                    }
+                } else if (response.status === 401) {
+                    window.location.href = '/auth?returnUrl=' + encodeURIComponent(window.location.pathname);
+                }
+            } catch (error) {
+                console.error('Error toggling membership:', error);
+            }
+        });
+    });
+});
+</script>
+

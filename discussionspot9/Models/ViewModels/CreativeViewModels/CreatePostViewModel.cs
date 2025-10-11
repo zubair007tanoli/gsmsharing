@@ -86,6 +86,9 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public List<CommunityViewModel> UserCommunities { get; set; } = new();
         public List<CommunityViewModel> SuggestedCommunities { get; set; } = new();
         
+        // SEO Analysis Result (not saved to DB, just for processing)
+        public SeoMetadataViewModel? SeoMetadata { get; set; }
+        
         // Validation
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

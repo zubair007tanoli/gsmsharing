@@ -1,1 +1,168 @@
-﻿<h1>Right Side</h1>
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.RightSidebarViewModel
+
+<!-- User Interest Posts -->
+@await Component.InvokeAsync("UserInterestPosts", new { count = 5 })
+
+<!-- Ad Banner -->
+<div class="ad-banner modern-ad">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-content">
+        <i class="fas fa-ad fa-2x mb-2"></i>
+        <div>Google AdSense</div>
+        <small>300x250</small>
+    </div>
+</div>
+
+<!-- Related Posts -->
+@if (Model.RelatedPosts != null && Model.RelatedPosts.Any())
+{
+    <div class="sidebar-card modern-related-posts">
+        <div class="sidebar-header">
+            <i class="fas fa-link me-2"></i> Related Discussions
+        </div>
+        <div class="sidebar-content">
+            @foreach (var post in Model.RelatedPosts)
+            {
+                <div class="related-post-item">
+                    <div class="related-post-thumbnail">
+                        <i class="@post.PostTypeIcon"></i>
+                    </div>
+                    <div class="related-post-content">
+                        <a href="/r/@post.CommunitySlug/posts/@post.Slug" class="related-post-title">
+                            @post.Title
+                        </a>
+                        <div class="related-post-meta">
+                            <span class="community-badge">r/@post.CommunityName</span>
+                            <div class="post-stats-mini">
+                                <span class="upvotes"><i class="fas fa-arrow-up"></i> @post.UpvoteCount</span>
+                                <span class="comments"><i class="fas fa-comment"></i> @post.CommentCount</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Interesting Communities -->
+@await Component.InvokeAsync("InterestingCommunities", new { count = 5 })
+
+<style>
+.ad-banner {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: var(--bg-light, #f8f9fa);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.ad-label {
+    font-size: 0.7rem;
+    color: var(--text-lighter, #999);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.ad-content {
+    color: var(--text-light, #666);
+}
+
+.modern-related-posts {
+    margin-bottom: 1.5rem;
+}
+
+.related-post-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.related-post-item:last-child {
+    border-bottom: none;
+}
+
+.related-post-thumbnail {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.related-post-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.related-post-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color, #333);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.related-post-title:hover {
+    color: var(--primary-color, #007bff);
+}
+
+.related-post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.community-badge {
+    display: inline-block;
+    padding: 0.125rem 0.375rem;
+    background: var(--bg-light, #f8f9fa);
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-color, #333);
+    width: fit-content;
+}
+
+.post-stats-mini {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text-lighter, #999);
+}
+
+.post-stats-mini span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sidebar-card {
+    background: white;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-content {
+    padding: 1rem;
+}
+</style>

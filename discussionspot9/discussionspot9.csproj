@@ -53,4 +53,10 @@
     <Folder Include="wwwroot\css\CustomStyles\v2\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="PythonScripts\*.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

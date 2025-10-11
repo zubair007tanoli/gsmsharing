@@ -1,23 +1,317 @@
-﻿<div class="sidebar-card">
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.LeftSidebarViewModel
+
+<!-- Latest News -->
+<div class="sidebar-card modern-news-card">
     <div class="sidebar-header">
-        <i class="fas fa-newspaper"></i> Latest News
+        <i class="fas fa-newspaper me-2"></i> Latest News
     </div>
     <div class="sidebar-content">
-        <div class="news-item">
-            <div class="news-title">Revolutionary AI Model Achieves Human-Level Performance</div>
-            <div class="news-meta">2 hours ago • Technology</div>
+        @if (Model.LatestNews != null && Model.LatestNews.Any())
+        {
+            @foreach (var news in Model.LatestNews)
+            {
+                <div class="news-item">
+                    <span class="news-category @news.CategoryClass">@news.Category</span>
+                    <a href="/r/@news.CommunitySlug/posts/@news.Slug" class="news-title">
+                        @news.Title
+                    </a>
+                    <div class="news-meta">
+                        <i class="fas fa-clock"></i> @news.TimeAgo
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <!-- Show sponsored content when no news available -->
+            <div class="sponsored-content">
+                <div class="sponsor-item">
+                    <div class="sponsor-badge">
+                        <i class="fas fa-star"></i> Featured
+                    </div>
+                    <h4 class="sponsor-title">Discover Amazing Communities</h4>
+                    <p class="sponsor-text">Join thousands of users discussing topics you love. Create your own community today!</p>
+                    <a href="/communities" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-users me-2"></i>Explore Communities
+                    </a>
+                </div>
+                
+                <div class="sponsor-item mt-3">
+                    <div class="sponsor-badge">
+                        <i class="fas fa-gift"></i> Premium
+                    </div>
+                    <h4 class="sponsor-title">Upgrade Your Experience</h4>
+                    <p class="sponsor-text">Get ad-free browsing, exclusive badges, and support our platform.</p>
+                    <a href="/premium" class="btn btn-sm btn-warning w-100">
+                        <i class="fas fa-crown me-2"></i>Go Premium
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Ad Banner -->
+<div class="ad-banner modern-ad">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-content">
+        <i class="fas fa-ad fa-2x mb-2"></i>
+        <div>Google AdSense</div>
+        <small>300x250</small>
+    </div>
+</div>
+
+<!-- Today's Stats -->
+<div class="sidebar-card modern-stats-card">
+    <div class="sidebar-header">
+        <i class="fas fa-chart-line me-2"></i> Today's Stats
+    </div>
+    <div class="sidebar-content">
+        <div class="stat-row">
+            <div class="stat-icon-small posts-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">New Posts</span>
+                <strong class="stat-number">@Model.TodayStats.FormattedNewPosts</strong>
+            </div>
         </div>
-        <div class="news-item">
-            <div class="news-title">New Gaming Console Breaks Pre-order Records</div>
-            <div class="news-meta">4 hours ago • Gaming</div>
+        <div class="stat-row">
+            <div class="stat-icon-small users-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Active Users</span>
+                <strong class="stat-number">@Model.TodayStats.FormattedActiveUsers</strong>
+            </div>
         </div>
-        <div class="news-item">
-            <div class="news-title">Open Source Framework Simplifies Web Development</div>
-            <div class="news-meta">6 hours ago • Programming</div>
-        </div>
-        <div class="news-item">
-            <div class="news-title">Breakthrough in Climate Research Shows Progress</div>
-            <div class="news-meta">8 hours ago • Science</div>
+        <div class="stat-row">
+            <div class="stat-icon-small comments-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Comments</span>
+                <strong class="stat-number">@Model.TodayStats.FormattedComments</strong>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+.sidebar-card {
+    background: white;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-content {
+    padding: 1rem;
+}
+
+.modern-news-card .news-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.modern-news-card .news-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.news-category {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.news-category.tech {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.news-category.gaming {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.news-category.programming {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.news-category.science {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.news-category.general {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.news-title {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-color, #333);
+    text-decoration: none;
+    line-height: 1.3;
+    margin-bottom: 0.25rem;
+}
+
+.news-title:hover {
+    color: var(--primary-color, #007bff);
+}
+
+.news-meta {
+    font-size: 0.7rem;
+    color: var(--text-lighter, #999);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.ad-banner {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: var(--bg-light, #f8f9fa);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.ad-label {
+    font-size: 0.7rem;
+    color: var(--text-lighter, #999);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.ad-content {
+    color: var(--text-light, #666);
+}
+
+.modern-stats-card .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.stat-icon-small {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: white;
+}
+
+.stat-icon-small.posts-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon-small.users-icon {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-icon-small.comments-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-color, #333);
+}
+
+.stat-number {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-color, #007bff);
+}
+
+.no-news-message {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-light, #666);
+}
+
+.no-news-message i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.no-news-message p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* Sponsored content styling */
+.sponsored-content {
+    padding: 0.5rem 0;
+}
+
+.sponsor-item {
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.sponsor-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.sponsor-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: white;
+}
+
+.sponsor-text {
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.95;
+    line-height: 1.4;
+}
+
+.sponsor-item .btn {
+    font-weight: 600;
+    border: none;
+}
+
+.sponsor-item:nth-child(2) {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+</style>

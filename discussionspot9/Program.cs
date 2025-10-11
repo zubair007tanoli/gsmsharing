@@ -63,10 +63,12 @@ builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddScoped<IPostTest, PostTest>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
+builder.Services.AddScoped<ISeoAnalyzerService, PythonSeoAnalyzerService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();
 

@@ -17,10 +17,6 @@
                 <div class="stat-details">
                     <div class="stat-value">@Model.MemberCount.ToString("N0")</div>
                     <div class="stat-label">Members</div>
-                    <div class="stat-trend">
-                        <i class="fas fa-arrow-up text-success"></i>
-                        <span class="small text-muted">+12.5% this month</span>
-                    </div>
                 </div>
             </div>
 
@@ -31,35 +27,6 @@
                 <div class="stat-details">
                     <div class="stat-value">@Model.OnlineCount.ToString("N0")</div>
                     <div class="stat-label">Online Now</div>
-                    <div class="stat-trend">
-                        <span class="small text-muted">Peak: @(Model.OnlineCount * 2) today</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon posts">
-                    <i class="fas fa-comments"></i>
-                </div>
-                <div class="stat-details">
-                    <div class="stat-value">@((Model.MemberCount / 10).ToString("N0"))</div>
-                    <div class="stat-label">Total Posts</div>
-                    <div class="stat-trend">
-                        <span class="small text-muted">@((Model.MemberCount / 100).ToString("N0")) this week</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon activity">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="stat-details">
-                    <div class="stat-value">@((Model.MemberCount / 5).ToString("N0"))</div>
-                    <div class="stat-label">Comments</div>
-                    <div class="stat-trend">
-                        <span class="small text-muted">Very active</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -69,14 +36,6 @@
             <div class="info-item">
                 <i class="fas fa-cake-candles text-primary"></i>
                 <span>Created @Model.CreatedAt.ToString("MMMM yyyy")</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-shield-alt text-success"></i>
-                <span>Moderated 24/7</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-star text-warning"></i>
-                <span>Top 10% Community</span>
             </div>
         </div>
 
@@ -90,40 +49,32 @@
             </a>
         </div>
 
-        <!-- Top Contributors (New) -->
-        <div class="top-contributors mt-4">
+        <!-- Community Guidelines -->
+        <div class="community-guidelines mt-4">
             <h6 class="section-title">
-                <i class="fas fa-trophy me-2"></i>Top Contributors
+                <i class="fas fa-book me-2"></i>Community Guidelines
             </h6>
-            <div class="contributors-list">
-                <div class="contributor-item">
-                    <div class="contributor-avatar">JD</div>
-                    <div class="contributor-info">
-                        <div class="contributor-name">JohnDoe</div>
-                        <div class="contributor-stats">
-                            <i class="fas fa-fire text-danger"></i> 450 posts
-                        </div>
-                    </div>
+            <div class="guidelines-list">
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Be respectful and courteous</span>
                 </div>
-                <div class="contributor-item">
-                    <div class="contributor-avatar">AS</div>
-                    <div class="contributor-info">
-                        <div class="contributor-name">AliceSmith</div>
-                        <div class="contributor-stats">
-                            <i class="fas fa-fire text-danger"></i> 380 posts
-                        </div>
-                    </div>
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Stay on topic</span>
                 </div>
-                <div class="contributor-item">
-                    <div class="contributor-avatar">BJ</div>
-                    <div class="contributor-info">
-                        <div class="contributor-name">BobJones</div>
-                        <div class="contributor-stats">
-                            <i class="fas fa-fire text-danger"></i> 325 posts
-                        </div>
-                    </div>
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>No spam or self-promotion</span>
+                </div>
+                <div class="guideline-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Follow site-wide rules</span>
                 </div>
             </div>
+            <a href="/r/@Model.Slug/rules" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                <i class="fas fa-info-circle me-2"></i>View Full Rules
+            </a>
         </div>
     </div>
 </div>

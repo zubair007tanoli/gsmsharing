@@ -153,6 +153,16 @@
             min-height: 80px;
             max-height: 200px;
         }
+        
+        /* Ensure reply forms are hidden by default */
+        .reply-form {
+            display: none;
+            margin-top: 1rem;
+        }
+        
+        .reply-form:not(.d-none) {
+            display: block;
+        }
     </style>
 }
 
@@ -163,91 +173,8 @@
         <div class="row">
             <!-- Left Sidebar -->
             <div class="col-xl-3 col-lg-3 left-sidebar">
-                <!-- Trending Topics -->
+                <!-- Trending Topics and Latest News -->
                 @await Component.InvokeAsync("LeftSideBar")
-                
-                <!-- Latest News -->
-                <div class="sidebar-card modern-news-card">
-                    <div class="sidebar-header">
-                        <i class="fas fa-newspaper me-2"></i> Latest News
-                    </div>
-                    <div class="sidebar-content">
-                        <div class="news-item">
-                            <span class="news-category tech">Tech</span>
-                            <div class="news-title">Revolutionary AI Model Achieves Human-Level Performance</div>
-                            <div class="news-meta">
-                                <i class="fas fa-clock"></i> 2 hours ago
-                            </div>
-                        </div>
-                        <div class="news-item">
-                            <span class="news-category gaming">Gaming</span>
-                            <div class="news-title">New Gaming Console Breaks Pre-order Records</div>
-                            <div class="news-meta">
-                                <i class="fas fa-clock"></i> 4 hours ago
-                            </div>
-                        </div>
-                        <div class="news-item">
-                            <span class="news-category programming">Programming</span>
-                            <div class="news-title">Open Source Framework Simplifies Web Development</div>
-                            <div class="news-meta">
-                                <i class="fas fa-clock"></i> 6 hours ago
-                            </div>
-                        </div>
-                        <div class="news-item">
-                            <span class="news-category science">Science</span>
-                            <div class="news-title">Breakthrough in Climate Research Shows Progress</div>
-                            <div class="news-meta">
-                                <i class="fas fa-clock"></i> 8 hours ago
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ad Banner -->
-                <div class="ad-banner modern-ad">
-                    <div class="ad-label">Advertisement</div>
-                    <div class="ad-content">
-                        <i class="fas fa-ad fa-2x mb-2"></i>
-                        <div>Google AdSense</div>
-                        <small>300x250</small>
-                    </div>
-                </div>
-
-                <!-- Today's Stats -->
-                <div class="sidebar-card modern-stats-card">
-                    <div class="sidebar-header">
-                        <i class="fas fa-chart-line me-2"></i> Today's Stats
-                    </div>
-                    <div class="sidebar-content">
-                        <div class="stat-row">
-                            <div class="stat-icon-small posts-icon">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-label">New Posts</span>
-                                <strong class="stat-number">1,247</strong>
-                            </div>
-                        </div>
-                        <div class="stat-row">
-                            <div class="stat-icon-small users-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-label">Active Users</span>
-                                <strong class="stat-number">15.2K</strong>
-                            </div>
-                        </div>
-                        <div class="stat-row">
-                            <div class="stat-icon-small comments-icon">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-label">Comments</span>
-                                <strong class="stat-number">8,934</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Main Content Column -->
@@ -494,77 +421,8 @@
                 @* Render Community Info View Component with actual data *@
                 @await Component.InvokeAsync("CommunityInfo", new { community = Model.Community })
 
-                <!-- Ad Banner -->
-                <div class="ad-banner modern-ad">
-                    <div class="ad-label">Advertisement</div>
-                    <div class="ad-content">
-                        <i class="fas fa-ad fa-2x mb-2"></i>
-                        <div>Google AdSense</div>
-                        <small>300x250</small>
-                    </div>
-                </div>
-
-                <!-- Related Posts from Other Communities -->
-                <div class="sidebar-card modern-related-posts">
-                    <div class="sidebar-header">
-                        <i class="fas fa-link me-2"></i> Related Discussions
-                    </div>
-                    <div class="sidebar-content">
-                        <div class="related-post-item">
-                            <div class="related-post-thumbnail">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                            <div class="related-post-content">
-                                <a href="/r/Technology/posts/ai-transforms-industry" class="related-post-title">How AI is Transforming Technology Industry</a>
-                                <div class="related-post-meta">
-                                    <span class="community-badge tech">r/Technology</span>
-                                    <div class="post-stats-mini">
-                                        <span class="upvotes"><i class="fas fa-arrow-up"></i> 1.2K</span>
-                                        <span class="comments"><i class="fas fa-comment"></i> 345</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="related-post-item">
-                            <div class="related-post-thumbnail">
-                                <i class="fas fa-code"></i>
-                            </div>
-                            <div class="related-post-content">
-                                <a href="/r/Programming/posts/ml-best-practices" class="related-post-title">Machine Learning Best Practices for 2024</a>
-                                <div class="related-post-meta">
-                                    <span class="community-badge programming">r/Programming</span>
-                                    <div class="post-stats-mini">
-                                        <span class="upvotes"><i class="fas fa-arrow-up"></i> 890</span>
-                                        <span class="comments"><i class="fas fa-comment"></i> 167</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="related-post-item">
-                            <div class="related-post-thumbnail">
-                                <i class="fas fa-brain"></i>
-                            </div>
-                            <div class="related-post-content">
-                                <a href="/r/Science/posts/neural-networks-deep-dive" class="related-post-title">Deep Dive into Neural Networks Architecture</a>
-                                <div class="related-post-meta">
-                                    <span class="community-badge science">r/Science</span>
-                                    <div class="post-stats-mini">
-                                        <span class="upvotes"><i class="fas fa-arrow-up"></i> 654</span>
-                                        <span class="comments"><i class="fas fa-comment"></i> 89</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="view-all-related text-center mt-3">
-                            <a href="/r/@Model.Post.CommunitySlug" class="btn btn-sm btn-outline-primary w-100">
-                                <i class="fas fa-th-large me-2"></i> View All in r/@Model.Post.CommunitySlug
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                @* Render Right Sidebar with dynamic data *@
+                @await Component.InvokeAsync("RightSidebar", new { currentPostId = Model.Post.PostId, communitySlug = Model.Post.CommunitySlug })
             </div> <!-- Closes right-sidebar -->
         </div> <!-- Closes row -->
     </div> <!-- Closes container-fluid -->

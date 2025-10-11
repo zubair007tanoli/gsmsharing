@@ -334,8 +334,13 @@
 
     // UI UPDATE METHODS
     showReplyForm(commentId) {
+        console.log('🔵 showReplyForm called for comment:', commentId);
+        
         const targetForm = document.getElementById(`replyForm${commentId}`);
-        if (!targetForm) return;
+        if (!targetForm) {
+            console.error('❌ Reply form not found for comment:', commentId);
+            return;
+        }
 
         // Close all other reply forms and destroy their editors
         document.querySelectorAll('.reply-form').forEach(form => {
@@ -353,32 +358,65 @@
         const isHidden = targetForm.classList.contains('d-none');
         targetForm.classList.toggle('d-none');
         
+        console.log('✅ Reply form toggled. Now visible:', isHidden);
+        
         if (isHidden) { // Form is being shown
+            // Check if Quill is available
+            if (typeof Quill === 'undefined') {
+                console.error('❌ Quill is not loaded!');
+                this.showNotification('Editor not loaded. Please refresh the page.', 'error');
+                return;
+            }
+            
             // Initialize Quill editor for this reply form if not already initialized
             if (!window[`replyQuill${commentId}`]) {
-                const toolbarOptions = [
-                    ['bold', 'italic', 'underline'],
-                    ['link', 'blockquote', 'code-block'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }]
-                ];
+                try {
+                    const editorElement = document.getElementById(`replyEditor${commentId}`);
+                    if (!editorElement) {
+                        console.error('❌ Reply editor element not found:', `replyEditor${commentId}`);
+                        return;
+                    }
+                    
+                    const toolbarOptions = [
+                        ['bold', 'italic', 'underline'],
+                        ['link', 'blockquote', 'code-block'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }]
+                    ];
 
-                window[`replyQuill${commentId}`] = new Quill(`#replyEditor${commentId}`, {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: toolbarOptions
-                    },
-                    placeholder: 'Write your reply...'
-                });
+                    window[`replyQuill${commentId}`] = new Quill(`#replyEditor${commentId}`, {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: toolbarOptions
+                        },
+                        placeholder: 'Write your reply...'
+                    });
 
-                // Update hidden textarea when editor content changes
-                window[`replyQuill${commentId}`].on('text-change', function() {
-                    const content = window[`replyQuill${commentId}`].root.innerHTML;
-                    document.getElementById(`replyContent${commentId}`).value = content;
-                });
+                    console.log('✅ Quill editor initialized for comment:', commentId);
+
+                    // Update hidden textarea when editor content changes
+                    window[`replyQuill${commentId}`].on('text-change', function() {
+                        const content = window[`replyQuill${commentId}`].root.innerHTML;
+                        const contentElement = document.getElementById(`replyContent${commentId}`);
+                        if (contentElement) {
+                            contentElement.value = content;
+                        }
+                    });
+                } catch (error) {
+                    console.error('❌ Error initializing Quill:', error);
+                    this.showNotification('Error initializing editor: ' + error.message, 'error');
+                    return;
+                }
             }
             
             // Focus the editor
-            window[`replyQuill${commentId}`].focus();
+            try {
+                if (window[`replyQuill${commentId}`]) {
+                    window[`replyQuill${commentId}`].focus();
+                    console.log('✅ Editor focused');
+                }
+            } catch (error) {
+                console.error('❌ Error focusing editor:', error);
+            }
         }
     }
 

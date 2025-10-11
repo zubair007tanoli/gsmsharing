@@ -15,15 +15,16 @@ namespace discussionspot9.Controllers
 {
     public class PostController : Controller
     {
-        private readonly IPostTest _postTest; // Assuming you have a test service for posts
+        private readonly IPostTest _postTest;
         private readonly IPostService _postService;
         private readonly ICommunityService _communityService;
         private readonly ICommentService _commentService;
         private readonly ILogger<PostController> _logger;
         private readonly INotificationService _notificationService;
         private readonly ILinkMetadataService _metadataService;
-        private readonly ICategoryService _categoryService;
-        private readonly ApplicationDbContext _context; // Assuming you have a DbContext for database access
+        private readonly ISeoAnalyzerService _seoAnalyzerService;
+        private readonly ApplicationDbContext _context;
+        
         public PostController(
             IPostService postService,
             ICommunityService communityService,
@@ -32,7 +33,8 @@ namespace discussionspot9.Controllers
             INotificationService notificationService,
             ILinkMetadataService metadataService,
             ApplicationDbContext context,
-            IPostTest postTest)
+            IPostTest postTest,
+            ISeoAnalyzerService seoAnalyzerService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -42,6 +44,7 @@ namespace discussionspot9.Controllers
             _metadataService = metadataService;
             _context = context;
             _postTest = postTest;
+            _seoAnalyzerService = seoAnalyzerService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -519,6 +522,46 @@ namespace discussionspot9.Controllers
             {                
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.UserId = userId;
+                
+                // Apply SEO optimization before creating post
+                _logger.LogInformation("🔍 Running SEO analysis on post: {Title}", model.Title);
+                try
+                {
+                    model = await _seoAnalyzerService.OptimizePostAsync(model);
+                    
+                    if (model.SeoMetadata != null)
+                    {
+                        _logger.LogInformation(
+                            "✅ SEO Analysis complete. Score: {Score}, Title changed: {TitleChanged}, Content changed: {ContentChanged}",
+                            model.SeoMetadata.SeoScore,
+                            model.SeoMetadata.ImprovementsMade.Any(i => i.Contains("title")),
+                            model.SeoMetadata.ImprovementsMade.Any(i => i.Contains("content"))
+                        );
+                        
+                        // Update SEO fields if they're empty
+                        if (string.IsNullOrEmpty(model.MetaDescription))
+                        {
+                            model.MetaDescription = model.SeoMetadata.MetaDescription;
+                        }
+                        
+                        if (string.IsNullOrEmpty(model.Keywords))
+                        {
+                            model.Keywords = model.SeoMetadata.Keywords;
+                        }
+                        
+                        // Show SEO improvements to user via TempData
+                        if (model.SeoMetadata.ImprovementsMade.Any())
+                        {
+                            TempData["SeoImprovements"] = string.Join("; ", model.SeoMetadata.ImprovementsMade);
+                        }
+                    }
+                }
+                catch (Exception seoEx)
+                {
+                    _logger.LogWarning(seoEx, "⚠️ SEO analysis failed, continuing with original content");
+                    // Continue with post creation even if SEO fails
+                }
+                
                 var result = await _postTest.CreatePostUpdatedAsync(model);
                 //var result = await _postService.CreatePostUpdatedAsync(model);
 
