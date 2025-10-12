@@ -1,0 +1,89 @@
+@model List<discussionspot9.Services.DecliningPage>
+@{
+    ViewData["Title"] = "Declining Pages";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">📉 Declining Pages</h1>
+            <p class="text-muted">Posts that need immediate attention</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h4>No Declining Pages!</h4>
+                <p class="text-muted">
+                    All your content is performing well or stable.<br/>
+                    This page will show posts with 20%+ decline in traffic.
+                </p>
+                <a href="@Url.Action("Dashboard")" class="btn btn-primary">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> 
+            <strong>@Model.Count pages</strong> have declining traffic. Consider optimizing these posts.
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Page URL</th>
+                                <th>Current Clicks</th>
+                                <th>Previous Clicks</th>
+                                <th>Decline</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Count; i++)
+                            {
+                                var page = Model[i];
+                                var declineClass = page.DeclinePercentage >= 50 ? "danger" : page.DeclinePercentage >= 30 ? "warning" : "info";
+
+                                var currentPage = page;
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>
+                                        <small>@currentPage.Url</small>
+                                    </td>
+                                    <td>@currentPage.CurrentClicks</td>
+                                    <td>@currentPage.PreviousClicks</td>
+                                    <td>
+                                        <span class="badge bg-@declineClass">
+                                            -@(currentPage.DeclinePercentage.ToString("F1"))%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="@currentPage.Url" class="btn btn-sm btn-outline-primary" target="_blank">
+                                            <i class="fas fa-external-link-alt"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+

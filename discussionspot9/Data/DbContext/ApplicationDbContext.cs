@@ -34,6 +34,14 @@ namespace discussionspot9.Data.DbContext
         public DbSet<PollConfiguration> PollConfigurations { get; set; }
         public DbSet<SavedPost> SavedPosts { get; set; }
         public DbSet<CommentLinkPreview> CommentLinkPreviews { get; set; }
+        
+        // SEO & Analytics tables
+        public DbSet<PostPerformanceMetric> PostPerformanceMetrics { get; set; }
+        public DbSet<SeoOptimizationLog> SeoOptimizationLogs { get; set; }
+        public DbSet<PostSeoQueue> PostSeoQueues { get; set; }
+        public DbSet<AdSenseRevenue> AdSenseRevenues { get; set; }
+        public DbSet<UserActivity> UserActivities { get; set; }
+        public DbSet<ContentRecommendation> ContentRecommendations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -556,6 +564,156 @@ namespace discussionspot9.Data.DbContext
                 // Check constraints
                 entity.ToTable(t => { t.HasCheckConstraint("CK_PollConfiguration_MinOptions", "MinOptions >= 2"); });
                 entity.ToTable(t => { t.HasCheckConstraint("CK_PollConfiguration_MaxOptions", "MaxOptions >= MinOptions"); });
+            });
+            #endregion
+            
+            #region SavedPost Configuration
+            builder.Entity<SavedPost>(entity =>
+            {
+                entity.HasKey(e => new { e.UserId, e.PostId });
+                entity.Property(e => e.UserId).HasMaxLength(450);
+                entity.Property(e => e.SavedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+            #endregion
+
+            #region SEO & Analytics Configuration
+            
+            // PostPerformanceMetric
+            builder.Entity<PostPerformanceMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.PostId, e.Date }).IsUnique();
+                entity.HasIndex(e => e.Date);
+                entity.Property(e => e.BounceRate).HasPrecision(5, 2);
+                entity.Property(e => e.SearchCTR).HasPrecision(5, 2);
+                entity.Property(e => e.AvgSearchPosition).HasPrecision(5, 2);
+                entity.Property(e => e.AdRevenue).HasPrecision(10, 2);
+                entity.Property(e => e.AdCTR).HasPrecision(5, 2);
+                entity.Property(e => e.CPC).HasPrecision(10, 2);
+                entity.Property(e => e.RPM).HasPrecision(10, 2);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // SeoOptimizationLog
+            builder.Entity<SeoOptimizationLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.PostId, e.OptimizedAt });
+                entity.HasIndex(e => e.Status);
+                entity.Property(e => e.OptimizedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.OldValue).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.NewValue).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.PerformanceBefore).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.PerformanceAfter).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.RevenueImpact).HasPrecision(10, 2);
+                entity.Property(e => e.TrafficImpact).HasPrecision(10, 2);
+                entity.Property(e => e.ApprovedBy).HasMaxLength(450);
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // PostSeoQueue
+            builder.Entity<PostSeoQueue>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.Status, e.Priority });
+                entity.HasIndex(e => e.PostId);
+                entity.Property(e => e.AddedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.SuggestedChanges).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.ErrorMessage).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.EstimatedRevenueImpact).HasPrecision(10, 2);
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // AdSenseRevenue
+            builder.Entity<AdSenseRevenue>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.Date, e.PostId });
+                entity.HasIndex(e => e.PostId);
+                entity.Property(e => e.Earnings).HasPrecision(10, 2);
+                entity.Property(e => e.EstimatedEarnings).HasPrecision(10, 2);
+                entity.Property(e => e.CTR).HasPrecision(5, 2);
+                entity.Property(e => e.CPC).HasPrecision(10, 2);
+                entity.Property(e => e.RPM).HasPrecision(10, 2);
+                entity.Property(e => e.ActiveViewViewableImpressions).HasPrecision(10, 2);
+                entity.Property(e => e.Coverage).HasPrecision(5, 2);
+                entity.Property(e => e.SyncedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // UserActivity
+            builder.Entity<UserActivity>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.PostId, e.ActivityAt });
+                entity.HasIndex(e => new { e.UserId, e.ActivityAt });
+                entity.HasIndex(e => e.SessionId);
+                entity.Property(e => e.UserId).HasMaxLength(450);
+                entity.Property(e => e.SessionId).HasMaxLength(100);
+                entity.Property(e => e.ActivityAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.Metadata).HasColumnType("NVARCHAR(MAX)");
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Community)
+                    .WithMany()
+                    .HasForeignKey(e => e.CommunityId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // ContentRecommendation
+            builder.Entity<ContentRecommendation>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.Status, e.Priority });
+                entity.HasIndex(e => e.RelatedPostId);
+                entity.Property(e => e.Description).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.AnalysisData).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.EstimatedRevenueImpact).HasPrecision(10, 2);
+                entity.Property(e => e.EstimatedTrafficImpact).HasPrecision(10, 2);
+                entity.Property(e => e.ConfidenceScore).HasPrecision(5, 2);
+                entity.Property(e => e.ImplementedBy).HasMaxLength(450);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.RelatedPost)
+                    .WithMany()
+                    .HasForeignKey(e => e.RelatedPostId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.Community)
+                    .WithMany()
+                    .HasForeignKey(e => e.CommunityId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
             #endregion
 

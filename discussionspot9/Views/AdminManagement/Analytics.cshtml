@@ -1,0 +1,142 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Analytics Overview";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">📊 Analytics Overview</h1>
+            <p class="text-muted">Comprehensive site analytics and user behavior</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard", "SeoAdmin")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                    <h3>@Model.TotalUsers</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-check fa-3x text-success mb-2"></i>
+                    <h3>@Model.ActiveUsers</h3>
+                    <p class="text-muted mb-0">Active (7 days)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-alt fa-3x text-info mb-2"></i>
+                    <h3>@Model.TotalPosts</h3>
+                    <p class="text-muted mb-0">Total Posts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-comments fa-3x text-warning mb-2"></i>
+                    <h3>@Model.TotalComments</h3>
+                    <p class="text-muted mb-0">Total Comments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Breakdown -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 User Activity (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentActivities != null && Model.RecentActivities.Count > 0)
+                    {
+                        <canvas id="activityChart" height="200"></canvas>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No activity data yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🏆 Top Communities</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.TopCommunities != null && Model.TopCommunities.Count > 0)
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var community in Model.TopCommunities)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>r/@community.Name</strong><br/>
+                                        <small class="text-muted">@community.MemberCount members</small>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">@community.PostCount posts</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No community data.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        @if (Model.RecentActivities != null && Model.RecentActivities.Count > 0)
+        {
+            <text>
+            const activityData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RecentActivities));
+            
+            const ctx = document.getElementById('activityChart');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: activityData.map(d => d.Type),
+                    datasets: [{
+                        data: activityData.map(d => d.Count),
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}
+

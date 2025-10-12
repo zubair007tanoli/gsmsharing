@@ -89,6 +89,59 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         // SEO Analysis Result (not saved to DB, just for processing)
         public SeoMetadataViewModel? SeoMetadata { get; set; }
         
+        // Sanitize data based on post type to prevent saving irrelevant fields
+        public void SanitizeDataByPostType()
+        {
+            switch (PostType?.ToLower())
+            {
+                case "text":
+                    // Clear non-text fields
+                    Url = null;
+                    PollQuestion = null;
+                    PollDescription = null;
+                    PollOptions.Clear();
+                    PollEndDate = null;
+                    break;
+                    
+                case "link":
+                    // Clear non-link fields
+                    Content = null;
+                    PollQuestion = null;
+                    PollDescription = null;
+                    PollOptions.Clear();
+                    PollEndDate = null;
+                    break;
+                    
+                case "image":
+                    // Clear non-image fields
+                    Url = null;
+                    PollQuestion = null;
+                    PollDescription = null;
+                    PollOptions.Clear();
+                    PollEndDate = null;
+                    break;
+                    
+                case "poll":
+                    // Clear non-poll fields
+                    Url = null;
+                    Content = null;
+                    // Filter out empty poll options
+                    PollOptions = PollOptions
+                        .Where(o => !string.IsNullOrWhiteSpace(o))
+                        .Select(o => o.Trim())
+                        .ToList();
+                    break;
+            }
+            
+            // Always trim strings and convert empty to null
+            Title = Title?.Trim();
+            Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim();
+            Url = string.IsNullOrWhiteSpace(Url) ? null : Url.Trim();
+            TagsInput = string.IsNullOrWhiteSpace(TagsInput) ? null : TagsInput.Trim();
+            PollQuestion = string.IsNullOrWhiteSpace(PollQuestion) ? null : PollQuestion.Trim();
+            PollDescription = string.IsNullOrWhiteSpace(PollDescription) ? null : PollDescription.Trim();
+        }
+        
         // Validation
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
@@ -102,28 +155,39 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
                 yield return new ValidationResult("Please select a community", new[] { nameof(CommunityId) });
             }
 
-            // Poll-specific validation
-            if (PostType == "poll")
+            // Type-specific validation
+            switch (PostType?.ToLower())
             {
-                if (string.IsNullOrEmpty(PollQuestion))
-                {
-                    yield return new ValidationResult("Poll question is required for poll posts", new[] { nameof(PollQuestion) });
-                }
+                case "link":
+                    if (string.IsNullOrWhiteSpace(Url))
+                    {
+                        yield return new ValidationResult("URL is required for link posts", new[] { nameof(Url) });
+                    }
+                    break;
+                    
+                case "poll":
+                    if (string.IsNullOrEmpty(PollQuestion))
+                    {
+                        yield return new ValidationResult("Poll question is required for poll posts", new[] { nameof(PollQuestion) });
+                    }
 
-                if (PollOptions.Count < MinOptions)
-                {
-                    yield return new ValidationResult($"At least {MinOptions} poll options are required", new[] { nameof(PollOptions) });
-                }
+                    var validOptions = PollOptions.Where(o => !string.IsNullOrWhiteSpace(o)).Count();
+                    
+                    if (validOptions < MinOptions)
+                    {
+                        yield return new ValidationResult($"At least {MinOptions} poll options are required", new[] { nameof(PollOptions) });
+                    }
 
-                if (PollOptions.Count > MaxOptions)
-                {
-                    yield return new ValidationResult($"Maximum {MaxOptions} poll options are allowed", new[] { nameof(PollOptions) });
-                }
+                    if (validOptions > MaxOptions)
+                    {
+                        yield return new ValidationResult($"Maximum {MaxOptions} poll options are allowed", new[] { nameof(PollOptions) });
+                    }
 
-                if (PollEndDate.HasValue && PollEndDate.Value <= DateTime.UtcNow)
-                {
-                    yield return new ValidationResult("Poll end date must be in the future", new[] { nameof(PollEndDate) });
-                }
+                    if (PollEndDate.HasValue && PollEndDate.Value <= DateTime.UtcNow)
+                    {
+                        yield return new ValidationResult("Poll end date must be in the future", new[] { nameof(PollEndDate) });
+                    }
+                    break;
             }
         }
     }

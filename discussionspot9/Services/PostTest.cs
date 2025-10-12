@@ -19,6 +19,9 @@ namespace discussionspot9.Services
 
         public async Task<CreatePostResult> CreatePostUpdatedAsync(CreatePostViewModel model)
         {
+            // Sanitize data based on post type (removes irrelevant fields)
+            model.SanitizeDataByPostType();
+            
             // Generate slug from title
             var slug = model.Title.ToSlug();
 
@@ -29,14 +32,20 @@ namespace discussionspot9.Services
 
             slug = existingCount > 0 ? $"{slug}-{existingCount + 1}" : slug;
 
-            // Create the post entity
+            // Filter out empty poll options
+            var validPollOptions = model.PollOptions?
+                .Where(o => !string.IsNullOrWhiteSpace(o))
+                .Select(o => o.Trim())
+                .ToList() ?? new List<string>();
+
+            // Create the post entity (only save non-null values)
             var post = new Post
             {
-                Title = model.Title,
+                Title = model.Title.Trim(),
                 Slug = slug,
-                Content = model.Content,
+                Content = string.IsNullOrWhiteSpace(model.Content) ? null : model.Content.Trim(),
                 PostType = model.PostType,
-                Url = model.Url,
+                Url = string.IsNullOrWhiteSpace(model.Url) ? null : model.Url.Trim(),
                 UserId = model.UserId,
                 CommunityId = model.CommunityId,
                 IsNSFW = model.IsNSFW,
@@ -46,22 +55,31 @@ namespace discussionspot9.Services
                 Status = !string.IsNullOrEmpty(model.Status) ? model.Status : "published",
                 IsPinned = model.IsPinned,
                 IsLocked = model.IsLocked,
-                HasPoll = model.PostType == "poll" && model.PollOptions?.Count > 0,
+                HasPoll = model.PostType == "poll" && validPollOptions.Count > 0,
                 PollExpiresAt = model.PollEndDate,
-                PollOptionCount = model.PollOptions?.Count ?? 0,
+                PollOptionCount = validPollOptions.Count,
                 PollVoteCount = 0
             };
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync(); // Initial save to get PostId
 
-            // Process all content types in parallel
-
+            // Process content types based on post type
             await ProcessTagsAsync(post.PostId, model);
-            await ProcessMediaFilesAsync(post.PostId, model);
-            await ProcessMediaUrlsAsync(post.PostId, model);
-            await ProcessPollAsync(post.PostId, model);
-               
+            
+            if (model.PostType == "poll")
+            {
+                await ProcessPollAsync(post.PostId, model, validPollOptions);
+            }
+            
+            if (model.MediaFiles?.Count > 0 || model.MediaUrls?.Count > 0)
+            {
+                await ProcessMediaFilesAsync(post.PostId, model);
+                await ProcessMediaUrlsAsync(post.PostId, model);
+            }
+            
+            // Generate and save SEO metadata
+            await GenerateAndSaveSeoMetadataAsync(post.PostId, model, post);
 
             // Update community post count
             var community = await _context.Communities.FindAsync(model.CommunityId);
@@ -167,9 +185,9 @@ namespace discussionspot9.Services
             await _context.SaveChangesAsync();
         }
 
-        private async Task ProcessPollAsync(int postId, CreatePostViewModel model)
+        private async Task ProcessPollAsync(int postId, CreatePostViewModel model, List<string> validPollOptions)
         {
-            if (model.PostType != "poll" || model.PollOptions == null || model.PollOptions.Count < 2)
+            if (model.PostType != "poll" || validPollOptions == null || validPollOptions.Count < 2)
                 return;
 
             // Create poll configuration
@@ -192,19 +210,92 @@ namespace discussionspot9.Services
             };
             _context.PollConfigurations.Add(pollConfig);
 
-            // Add poll options
-            for (int i = 0; i < model.PollOptions.Count; i++)
+            // Add poll options (only valid ones)
+            for (int i = 0; i < validPollOptions.Count; i++)
             {
                 _context.PollOptions.Add(new PollOption
                 {
                     PostId = postId,
-                    OptionText = model.PollOptions[i],
+                    OptionText = validPollOptions[i],
                     DisplayOrder = i,
                     VoteCount = 0,
                     CreatedAt = DateTime.UtcNow
                 });
             }
             await _context.SaveChangesAsync();
+        }
+        
+        private async Task GenerateAndSaveSeoMetadataAsync(int postId, CreatePostViewModel model, Post post)
+        {
+            try
+            {
+                // Generate meta description if not provided
+                string metaDescription = model.MetaDescription;
+                if (string.IsNullOrWhiteSpace(metaDescription))
+                {
+                    // Auto-generate from content or title
+                    if (!string.IsNullOrWhiteSpace(post.Content))
+                    {
+                        metaDescription = post.Content.Length > 160
+                            ? post.Content.Substring(0, 157) + "..."
+                            : post.Content;
+                    }
+                    else
+                    {
+                        metaDescription = $"{post.Title} - Discussion on community";
+                    }
+                }
+                
+                // Generate keywords if not provided
+                string keywords = model.Keywords;
+                if (string.IsNullOrWhiteSpace(keywords))
+                {
+                    // Auto-generate from title and tags
+                    var keywordList = new List<string>();
+                    
+                    // Extract important words from title
+                    var titleWords = post.Title
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                        .Where(w => w.Length > 3)
+                        .Take(5);
+                    keywordList.AddRange(titleWords);
+                    
+                    // Add tags if available
+                    if (!string.IsNullOrWhiteSpace(model.TagsInput))
+                    {
+                        var tags = model.TagsInput
+                            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(t => t.Trim());
+                        keywordList.AddRange(tags);
+                    }
+                    
+                    keywords = string.Join(", ", keywordList.Distinct());
+                }
+                
+                // Create SEO metadata entry
+                var seoMetadata = new SeoMetadata
+                {
+                    EntityType = "Post",
+                    EntityId = postId,
+                    MetaTitle = model.MetaTitle ?? post.Title,
+                    MetaDescription = metaDescription,
+                    CanonicalUrl = model.CanonicalUrl,
+                    OgTitle = model.MetaTitle ?? post.Title,
+                    OgDescription = metaDescription,
+                    OgImageUrl = null, // Set when image is processed
+                    Keywords = keywords,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                
+                _context.SeoMetadata.Add(seoMetadata);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail post creation
+                System.Diagnostics.Debug.WriteLine($"Failed to generate SEO metadata: {ex.Message}");
+            }
         }
     }
 }

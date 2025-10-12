@@ -1,0 +1,160 @@
+@model List<discussionspot9.Models.Domain.Post>
+@{
+    ViewData["Title"] = "Post Management";
+    var metrics = ViewBag.PostMetrics as Dictionary<int, (int Views, decimal Revenue)>;
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">📝 Post Management</h1>
+            <p class="text-muted">Manage all posts - Total: @ViewBag.TotalPosts</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard", "SeoAdmin")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-7">
+                    <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search posts by title or content..." />
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="all" selected="@(ViewBag.Status == "all")">All Status</option>
+                        <option value="published" selected="@(ViewBag.Status == "published")">Published</option>
+                        <option value="archived" selected="@(ViewBag.Status == "archived")">Archived</option>
+                        <option value="deleted" selected="@(ViewBag.Status == "deleted")">Deleted</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Posts Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Post</th>
+                            <th>Community</th>
+                            <th>Author</th>
+                            <th>Type</th>
+                            <th>Stats</th>
+                            <th>Revenue (30d)</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var post in Model)
+                        {
+                            var postMetric = metrics?.GetValueOrDefault(post.PostId, (0, 0m)) ?? (0, 0m);
+                            var statusClass = post.Status == "published" ? "success" : post.Status == "deleted" ? "danger" : "secondary";
+
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>@post.Title</strong>
+                                        @if (post.IsPinned)
+                                        {
+                                            <span class="badge bg-warning ms-1">📌 Pinned</span>
+                                        }
+                                        @if (post.IsLocked)
+                                        {
+                                            <span class="badge bg-danger ms-1">🔒 Locked</span>
+                                        }
+                                        @if (post.IsNSFW)
+                                        {
+                                            <span class="badge bg-danger ms-1">NSFW</span>
+                                        }
+                                        <br/>
+                                        <small class="text-muted">ID: @post.PostId | Slug: @post.Slug</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>r/@(post.Community?.Name ?? "Unknown")</small>
+                                </td>
+                                <td>
+                                    <small>u/@(post.UserProfile?.DisplayName ?? "Deleted")</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">@post.PostType</span>
+                                </td>
+                                <td>
+                                    <small>
+                                        👁️ @postMetric.Item1.ToString("N0")<br/>
+                                        💬 @post.CommentCount<br/>
+                                        ⬆️ @post.Score
+                                    </small>
+                                </td>
+                                <td>
+                                    @if (postMetric.Item2 > 0)
+                                    {
+                                        <strong class="text-success">$@(postMetric.Item2.ToString("F2"))</strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">$0.00</span>
+                                    }
+                                </td>
+                                <td>
+                                    <small>@post.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm">
+                                        <a href="/r/@post.Community.Slug/posts/@post.Slug" class="btn btn-outline-primary btn-sm" target="_blank">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <form asp-controller="AdminManagement" asp-action="TogglePin" asp-route-id="@post.PostId" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                                                <i class="fas fa-thumbtack"></i> @(post.IsPinned ? "Unpin" : "Pin")
+                                            </button>
+                                        </form>
+                                        <form asp-controller="AdminManagement" asp-action="ToggleLock" asp-route-id="@post.PostId" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-info btn-sm w-100">
+                                                <i class="fas fa-lock"></i> @(post.IsLocked ? "Unlock" : "Lock")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (ViewBag.TotalPages > 1)
+            {
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-center flex-wrap">
+                        @for (int i = 1; i <= Math.Min(ViewBag.TotalPages, 10); i++)
+                        {
+                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="?page=@i&search=@ViewBag.Search&status=@ViewBag.Status">@i</a>
+                            </li>
+                        }
+                        @if (ViewBag.TotalPages > 10)
+                        {
+                            <li class="page-item"><span class="page-link">...</span></li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+

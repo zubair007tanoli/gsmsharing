@@ -1,0 +1,298 @@
+@model discussionspot9.Models.ViewModels.AdminViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "SEO & Revenue Dashboard";
+}
+
+<style>
+    .card { margin-bottom: 1.5rem; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .metric-card { border-left: 4px solid; }
+    .metric-card.revenue { border-left-color: #28a745; }
+    .metric-card.today { border-left-color: #007bff; }
+    .metric-card.pending { border-left-color: #ffc107; }
+    .metric-card.completed { border-left-color: #17a2b8; }
+    @@media (max-width: 768px) {
+        .btn-group { flex-direction: column; width: 100%; }
+        .btn-group .btn { margin-bottom: 0.5rem; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">🚀 SEO & Revenue Dashboard</h1>
+            <p class="text-muted">Automated revenue optimization system - Running in background</p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Revenue Cards - Responsive -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card metric-card revenue">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">💰 Total Revenue</h6>
+                            <h2 class="mb-0">$@Model.TotalRevenue.ToString("F2")</h2>
+                            <small class="text-muted">Last 30 days</small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card metric-card today">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">📊 Today</h6>
+                            <h2 class="mb-0">$@Model.TodayRevenue.ToString("F2")</h2>
+                            <small class="text-muted">Updated daily</small>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-calendar-day fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card metric-card pending">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">⏳ Pending</h6>
+                            <h2 class="mb-0">@Model.PendingOptimizations</h2>
+                            <small class="text-muted">Awaiting optimization</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-clock fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card metric-card completed">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">✅ Completed</h6>
+                            <h2 class="mb-0">@Model.CompletedOptimizations</h2>
+                            <small class="text-muted">Last 30 days</small>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="row mb-4">
+        <div class="col">
+            <ul class="nav nav-pills nav-fill flex-column flex-sm-row">
+                <li class="nav-item">
+                    <a class="nav-link active" href="@Url.Action("Dashboard")">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Users", "AdminManagement")">
+                        <i class="fas fa-users"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Posts", "AdminManagement")">
+                        <i class="fas fa-file-alt"></i> Posts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Analytics", "AdminManagement")">
+                        <i class="fas fa-chart-bar"></i> Analytics
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔧 SEO Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <a href="@Url.Action("OptimizationQueue")" class="btn btn-primary w-100">
+                                <i class="fas fa-list"></i><br/>Queue
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="@Url.Action("Revenue")" class="btn btn-success w-100">
+                                <i class="fas fa-dollar-sign"></i><br/>Revenue
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="@Url.Action("OptimizationHistory")" class="btn btn-info w-100">
+                                <i class="fas fa-history"></i><br/>History
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="@Url.Action("TrendingQueries")" class="btn btn-warning w-100">
+                                <i class="fas fa-chart-line"></i><br/>Trending
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔄 Sync Data</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="SyncAdSense" method="post" class="mb-2">
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-sync"></i> Sync AdSense
+                        </button>
+                    </form>
+                    <form asp-action="SyncSearchConsole" method="post" class="mb-2">
+                        <button type="submit" class="btn btn-outline-info w-100">
+                            <i class="fas fa-search"></i> Sync Search Console
+                        </button>
+                    </form>
+                    <form asp-action="SendTestEmail" method="post">
+                        <button type="submit" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-envelope"></i> Test Email
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Earning Posts -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🏆 Top Earning Posts (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.TopEarningPosts != null && Model.TopEarningPosts.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Post Title</th>
+                                        <th>Community</th>
+                                        <th>Views</th>
+                                        <th>Revenue</th>
+                                        <th>RPM</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.TopEarningPosts.Count; i++)
+                                    {
+                                        var post = Model.TopEarningPosts[i];
+                                        var badgeClass = i < 3 ? "success" : "primary";
+                                        
+                                        <tr>
+                                            <td><span class="badge bg-@badgeClass">@(i + 1)</span></td>
+                                            <td><strong>@post.Title</strong></td>
+                                            <td><small>r/@post.CommunitySlug</small></td>
+                                            <td>@post.Views.ToString("N0")</td>
+                                            <td><strong class="text-success">$@post.Earnings.ToString("F2")</strong></td>
+                                            <td><span class="badge bg-info">$@post.RPM.ToString("F2")</span></td>
+                                            <td>
+                                                <a href="/r/@post.CommunitySlug/posts/@post.Slug" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-external-link-alt"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No revenue data available yet. Click "Sync AdSense" button above to fetch data.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">⚙️ System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Background Services:</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-success">●</span> Weekly Optimization (Sundays 2 AM)</li>
+                                <li><span class="badge bg-success">●</span> Daily Data Sync (Daily 3 AM)</li>
+                                <li><span class="badge bg-info">●</span> Revenue Tracking (Active)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Integrations:</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-primary">✓</span> Google AdSense API</li>
+                                <li><span class="badge bg-primary">✓</span> Google Search Console API</li>
+                                <li><span class="badge bg-primary">✓</span> Python SEO Analyzer</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh every 5 minutes
+        setTimeout(function() {
+            location.reload();
+        }, 300000);
+    </script>
+}
+

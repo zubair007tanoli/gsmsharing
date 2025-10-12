@@ -1,0 +1,157 @@
+@model List<discussionspot9.Models.Domain.SeoOptimizationLog>
+@{
+    ViewData["Title"] = "Optimization History";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">📜 Optimization History</h1>
+            <p class="text-muted">Track all SEO changes and their impact</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No optimization history yet. Changes will appear here once the weekly optimization runs.
+        </div>
+    }
+    else
+    {
+        <!-- Summary Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Total Optimizations</h6>
+                        <h3 class="mb-0">@Model.Count</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Meta Descriptions</h6>
+                        <h3 class="mb-0">@Model.Count(m => m.ChangeType == "MetaDescription")</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Keywords</h6>
+                        <h3 class="mb-0">@Model.Count(m => m.ChangeType == "Keywords")</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Titles</h6>
+                        <h3 class="mb-0">@Model.Count(m => m.ChangeType == "Title")</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Post</th>
+                                <th>Change Type</th>
+                                <th>Trigger</th>
+                                <th>Impact</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model)
+                            {
+                                var statusClass = log.Status == "Applied" ? "success" : log.Status == "Reverted" ? "danger" : "warning";
+                                
+                                <tr>
+                                    <td>
+                                        <small>@log.OptimizedAt.ToString("MMM dd, yyyy")<br/>@log.OptimizedAt.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <strong>@log.Post.Title</strong><br/>
+                                        <small class="text-muted">ID: @log.PostId</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">@log.ChangeType</span>
+                                    </td>
+                                    <td>
+                                        <small>@log.Trigger</small>
+                                    </td>
+                                    <td>
+                                        @if (log.RevenueImpact.HasValue)
+                                        {
+                                            var impactClass = log.RevenueImpact > 0 ? "text-success" : "text-danger";
+                                            <span class="@impactClass">
+                                                @(log.RevenueImpact > 0 ? "+" : "")$@(log.RevenueImpact.Value.ToString("F2"))
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Pending</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@statusClass">@log.Status</span>
+                                        @if (!log.IsApproved && log.Status == "Applied")
+                                        {
+                                            <br/><small class="text-warning">Pending Review</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#detailModal@(log.Id)">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Details Modal -->
+                                <div class="modal fade" id="detailModal@(log.Id)" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Change Details</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <h6>Old Value:</h6>
+                                                <div class="alert alert-secondary">
+                                                    @(log.OldValue ?? "N/A")
+                                                </div>
+                                                
+                                                <h6>New Value:</h6>
+                                                <div class="alert alert-success">
+                                                    @(log.NewValue ?? "N/A")
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+

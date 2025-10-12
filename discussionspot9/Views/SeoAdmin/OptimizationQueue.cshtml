@@ -1,0 +1,125 @@
+@model List<discussionspot9.Models.Domain.PostSeoQueue>
+@{
+    ViewData["Title"] = "Optimization Queue";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">📋 Optimization Queue</h1>
+            <p class="text-muted">Posts waiting for SEO optimization</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No posts in queue. The system is running smoothly!
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Priority</th>
+                                <th>Post</th>
+                                <th>Reason</th>
+                                <th>Est. Impact</th>
+                                <th>Added</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var priorityClass = item.Priority == 1 ? "danger" : item.Priority == 2 ? "warning" : "info";
+                                var statusClass = item.Status == "Processing" ? "warning" : "secondary";
+                                
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-@priorityClass">
+                                            @item.Priority
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>@item.Post.Title</strong><br />
+                                        <small class="text-muted">ID: @item.PostId</small>
+                                    </td>
+                                    <td>@item.Reason</td>
+                                    <td>
+                                        @if (item.EstimatedRevenueImpact.HasValue)
+                                        {
+                                            <span class="badge bg-success">$@(item.EstimatedRevenueImpact.Value.ToString("F2"))</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@item.AddedAt.ToString("MMM dd, HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@statusClass">@item.Status</span>
+                                        @if (item.RequiresApproval)
+                                        {
+                                            <br /><span class="badge bg-warning mt-1">Needs Approval</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.RequiresApproval && item.Status == "Pending")
+                                        {
+                                            <form asp-action="ApproveOptimization" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="RejectOptimization" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Reject">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Auto-processing</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6>Priority Levels:</h6>
+                <span class="badge bg-danger">1</span> Critical - High traffic, low monetization<br />
+                <span class="badge bg-warning">2</span> High - Revenue declining<br />
+                <span class="badge bg-info">3-4</span> Medium/Low - Improvement opportunities
+            </div>
+        </div>
+    }
+</div>
+

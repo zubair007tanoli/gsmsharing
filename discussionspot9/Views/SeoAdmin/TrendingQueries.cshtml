@@ -1,0 +1,140 @@
+@model List<discussionspot9.Services.TrendingQuery>
+@{
+    ViewData["Title"] = "Trending Search Queries";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">🔥 Trending Search Queries</h1>
+            <p class="text-muted">What people are searching to find your content</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h4>No Search Data Yet</h4>
+                <p class="text-muted">
+                    Search Console data will appear here once synced.<br/>
+                    Click "Sync Search Console" on the dashboard to fetch data.
+                </p>
+                <a href="@Url.Action("Dashboard")" class="btn btn-primary">
+                    Go to Dashboard
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📊 Top Search Queries (Last 7 Days)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Search Query</th>
+                                <th>Impressions</th>
+                                <th>Clicks</th>
+                                <th>CTR</th>
+                                <th>Avg Position</th>
+                                <th>Opportunity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Count; i++)
+                            {
+                                var query = Model[i];
+                                var ctrClass = query.CTR >= 5 ? "success" : query.CTR >= 2 ? "warning" : "danger";
+                                var positionClass = query.Position <= 3 ? "success" : query.Position <= 10 ? "warning" : "danger";
+
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>
+                                        <strong>@query.Query</strong>
+                                    </td>
+                                    <td>@query.Impressions.ToString("N0")</td>
+                                    <td>@query.Clicks</td>
+                                    <td>
+                                        <span class="badge bg-@ctrClass">
+                                            @(query.CTR.ToString("F2"))%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@positionClass">
+                                            #@(query.Position.ToString("F1"))
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (query.Impressions > 1000 && query.CTR < 2)
+                                        {
+                                            <span class="badge bg-warning">Low CTR</span>
+                                        }
+                                        else if (query.Position > 10)
+                                        {
+                                            <span class="badge bg-info">Rank Higher</span>
+                                        }
+                                        else if (query.Position <= 5 && query.CTR > 5)
+                                        {
+                                            <span class="badge bg-success">Performing Well</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">💡 Quick Insights</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>High Impressions, Low CTR:</h6>
+                        <p class="text-muted">
+                            @{
+                                var lowCTR = Model.Where(q => q.Impressions > 500 && q.CTR < 2).Count();
+                            }
+                            @lowCTR queries need better meta descriptions
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Ranking Opportunities:</h6>
+                        <p class="text-muted">
+                            @{
+                                var badRank = Model.Where(q => q.Position > 10 && q.Position <= 20).Count();
+                            }
+                            @badRank queries close to page 1 (positions 11-20)
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Top Performers:</h6>
+                        <p class="text-muted">
+                            @{
+                                var topPerform = Model.Where(q => q.Position <= 5 && q.CTR >= 5).Count();
+                            }
+                            @topPerform queries performing excellently
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+

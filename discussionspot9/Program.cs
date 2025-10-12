@@ -69,6 +69,18 @@ builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddScoped<IPostTest, PostTest>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<ISeoAnalyzerService, PythonSeoAnalyzerService>();
+builder.Services.AddSingleton<IBackgroundSeoService, BackgroundSeoService>(); // Singleton for background tasks
+
+// SEO & Revenue Optimization Services
+builder.Services.AddScoped<GoogleAdSenseService>();
+builder.Services.AddScoped<GoogleSearchConsoleService>();
+builder.Services.AddScoped<SmartPostSelectorService>();
+builder.Services.AddScoped<EmailNotificationService>();
+
+// Background services
+builder.Services.AddHostedService<WeeklySeoOptimizationService>();
+builder.Services.AddHostedService<DailyDataSyncService>();
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();
 
@@ -222,6 +234,17 @@ app.MapControllerRoute(
     name: "home_all",
     pattern: "all",
     defaults: new { controller = "Home", action = "All" });
+
+// Admin Routes
+app.MapControllerRoute(
+    name: "admin_seo",
+    pattern: "admin/seo/{action=Dashboard}/{id?}",
+    defaults: new { controller = "SeoAdmin" });
+
+app.MapControllerRoute(
+    name: "admin_management",
+    pattern: "admin/manage/{action=Users}/{id?}",
+    defaults: new { controller = "AdminManagement" });
 
 // API Routes
 app.MapControllerRoute(

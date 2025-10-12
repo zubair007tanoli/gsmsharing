@@ -1,0 +1,225 @@
+@model discussionspot9.Models.ViewModels.AdminViewModels.RevenueViewModel
+@{
+    ViewData["Title"] = "Revenue Analytics";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">💰 Revenue Analytics</h1>
+            <p class="text-muted">Track your earnings and identify top performers</p>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Revenue Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2">Total Revenue (30 days)</h6>
+                    <h2 class="card-title mb-0">$@(Model.TotalRevenue.ToString("F2"))</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2">Average Daily</h6>
+                    <h2 class="card-title mb-0">$@(Model.AvgDailyRevenue.ToString("F2"))</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2">Top Post Revenue</h6>
+                    <h2 class="card-title mb-0">$@((Model.TopEarningPosts != null && Model.TopEarningPosts.Count > 0) ? Model.TopEarningPosts[0].Earnings.ToString("F2") : "0.00")</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2">Revenue Posts</h6>
+                    <h2 class="card-title mb-0">@((Model.TopEarningPosts?.Count ?? 0))</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Revenue Chart -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Daily Revenue Trend (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.RevenueData != null && Model.RevenueData.Count > 0)
+                    {
+                        var totalClicks = Model.RevenueData.Sum(r => r.AdClicks);
+                        var totalImpressions = Model.RevenueData.Sum(r => r.AdImpressions);
+                        var avgCTR = totalImpressions > 0 ? (totalClicks / (decimal)totalImpressions * 100) : 0;
+                        var avgCPC = totalClicks > 0 ? (Model.TotalRevenue / totalClicks) : 0;
+
+                        <div class="mb-3">
+                            <small class="text-muted">Total Ad Clicks</small>
+                            <h4>@totalClicks.ToString("N0")</h4>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Total Impressions</small>
+                            <h4>@totalImpressions.ToString("N0")</h4>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Average CTR</small>
+                            <h4>@avgCTR.ToString("F2")%</h4>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Average CPC</small>
+                            <h4>$@avgCPC.ToString("F2")</h4>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No revenue data yet. Click "Sync AdSense" to fetch data.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Earning Posts -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🏆 Top Earning Posts</h5>
+                    <span class="badge bg-primary">Last 30 Days</span>
+                </div>
+                <div class="card-body">
+                    @if (Model.TopEarningPosts != null && Model.TopEarningPosts.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Post Title</th>
+                                        <th>Community</th>
+                                        <th>Views</th>
+                                        <th>Revenue</th>
+                                        <th>RPM</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.TopEarningPosts.Count; i++)
+                                    {
+                                        var post = Model.TopEarningPosts[i];
+                                        var badgeClass = i < 3 ? "success" : i < 10 ? "primary" : "secondary";
+
+                                        <tr>
+                                            <td><span class="badge bg-@badgeClass">@(i + 1)</span></td>
+                                            <td><strong>@post.Title</strong></td>
+                                            <td><small>r/@post.CommunitySlug</small></td>
+                                            <td>@post.Views.ToString("N0")</td>
+                                            <td><strong class="text-success">$@post.Earnings.ToString("F2")</strong></td>
+                                            <td>
+                                                <span class="badge bg-info">$@post.RPM.ToString("F2")</span>
+                                            </td>
+                                            <td>
+                                                <a href="/r/@post.CommunitySlug/posts/@post.Slug" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-external-link-alt"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No revenue data available. Click "Sync AdSense" on dashboard to fetch data.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Revenue Chart
+        const revenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            Model.RevenueData.OrderBy(r => r.Date).Select(r => new { 
+                date = r.Date.ToString("MMM dd"), 
+                earnings = r.Earnings 
+            }).ToList()
+        ));
+
+        const ctx = document.getElementById('revenueChart');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: revenueData.map(d => d.date),
+                datasets: [{
+                    label: 'Daily Revenue ($)',
+                    data: revenueData.map(d => d.earnings),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
+

@@ -23,6 +23,7 @@ namespace discussionspot9.Controllers
         private readonly INotificationService _notificationService;
         private readonly ILinkMetadataService _metadataService;
         private readonly ISeoAnalyzerService _seoAnalyzerService;
+        private readonly IBackgroundSeoService _backgroundSeoService;
         private readonly ApplicationDbContext _context;
         
         public PostController(
@@ -34,7 +35,8 @@ namespace discussionspot9.Controllers
             ILinkMetadataService metadataService,
             ApplicationDbContext context,
             IPostTest postTest,
-            ISeoAnalyzerService seoAnalyzerService)
+            ISeoAnalyzerService seoAnalyzerService,
+            IBackgroundSeoService backgroundSeoService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -45,6 +47,7 @@ namespace discussionspot9.Controllers
             _context = context;
             _postTest = postTest;
             _seoAnalyzerService = seoAnalyzerService;
+            _backgroundSeoService = backgroundSeoService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -523,51 +526,23 @@ namespace discussionspot9.Controllers
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.UserId = userId;
                 
-                // Apply SEO optimization before creating post
-                _logger.LogInformation("🔍 Running SEO analysis on post: {Title}", model.Title);
-                try
-                {
-                    model = await _seoAnalyzerService.OptimizePostAsync(model);
-                    
-                    if (model.SeoMetadata != null)
-                    {
-                        _logger.LogInformation(
-                            "✅ SEO Analysis complete. Score: {Score}, Title changed: {TitleChanged}, Content changed: {ContentChanged}",
-                            model.SeoMetadata.SeoScore,
-                            model.SeoMetadata.ImprovementsMade.Any(i => i.Contains("title")),
-                            model.SeoMetadata.ImprovementsMade.Any(i => i.Contains("content"))
-                        );
-                        
-                        // Update SEO fields if they're empty
-                        if (string.IsNullOrEmpty(model.MetaDescription))
-                        {
-                            model.MetaDescription = model.SeoMetadata.MetaDescription;
-                        }
-                        
-                        if (string.IsNullOrEmpty(model.Keywords))
-                        {
-                            model.Keywords = model.SeoMetadata.Keywords;
-                        }
-                        
-                        // Show SEO improvements to user via TempData
-                        if (model.SeoMetadata.ImprovementsMade.Any())
-                        {
-                            TempData["SeoImprovements"] = string.Join("; ", model.SeoMetadata.ImprovementsMade);
-                        }
-                    }
-                }
-                catch (Exception seoEx)
-                {
-                    _logger.LogWarning(seoEx, "⚠️ SEO analysis failed, continuing with original content");
-                    // Continue with post creation even if SEO fails
-                }
-                
+                // Create post immediately without waiting for SEO
                 var result = await _postTest.CreatePostUpdatedAsync(model);
                 //var result = await _postService.CreatePostUpdatedAsync(model);
 
                 if (result.Success)
                 {
                     TempData["SuccessMessage"] = "Post created successfully!";
+                    
+                    // Get the post ID for background SEO processing
+                    var post = await _context.Posts
+                        .FirstOrDefaultAsync(p => p.Slug == result.PostSlug && p.CommunityId == model.CommunityId);
+                    
+                    if (post != null)
+                    {
+                        // Run SEO optimization in background using dedicated service
+                        _backgroundSeoService.ProcessPostSeoAsync(post.PostId, model, model.CommunityId);
+                    }
                     
                     // Redirect to return URL if provided and valid, otherwise go to post details
                     if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
