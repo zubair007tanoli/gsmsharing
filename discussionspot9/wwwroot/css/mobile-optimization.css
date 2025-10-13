@@ -1,0 +1,222 @@
+/* Mobile Optimization */
+
+/* Mobile Navigation */
+@media (max-width: 991.98px) {
+    .navbar-nav {
+        padding: 1rem 0;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+
+    .navbar-right {
+        flex-direction: column;
+        width: 100%;
+        padding: 1rem 0;
+        gap: 1rem;
+    }
+
+    .search-container {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-actions {
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    /* Hide text on mobile, show icons only */
+    .nav-link span {
+        display: inline;
+    }
+
+    /* Responsive post cards */
+    .post-card {
+        margin-bottom: 0.75rem;
+    }
+
+    .post-card .vote-section {
+        flex-direction: row;
+        width: 100%;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    /* Simplify sidebar on mobile */
+    .sidebar {
+        margin-top: 2rem;
+    }
+
+    .sidebar .card {
+        margin-bottom: 1rem;
+    }
+
+    /* Touch-friendly button sizes */
+    .btn {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Improve tap targets */
+    .action-icon,
+    .btn-social,
+    .vote-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Stack columns on mobile */
+    .auth-container {
+        flex-direction: column !important;
+    }
+
+    .auth-image {
+        min-height: 200px;
+    }
+
+    /* Responsive tables */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Mobile-friendly modals */
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .modal-content {
+        border-radius: 0.5rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 575.98px) {
+    .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    /* Simplify hero section */
+    .hero-section {
+        padding: 2rem 1rem;
+    }
+
+    .hero-section h1 {
+        font-size: 1.5rem;
+    }
+
+    /* Stack cards vertically */
+    .trending-posts .col-md-6 {
+        margin-bottom: 1rem;
+    }
+
+    /* Reduce padding */
+    .card-body {
+        padding: 1rem;
+    }
+
+    /* Mobile comments */
+    .comment {
+        padding-left: 0.5rem;
+        border-left-width: 2px;
+    }
+
+    .comment-nested {
+        margin-left: 1rem;
+    }
+
+    /* Simplify navigation tabs */
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 767.98px) and (orientation: landscape) {
+    .auth-image {
+        display: none;
+    }
+
+    .auth-form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+/* Tablet optimization */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .container {
+        max-width: 720px;
+    }
+
+    .sidebar {
+        margin-top: 2rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    a, button, .clickable {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Remove hover effects on touch devices */
+    .card:hover,
+    .btn:hover {
+        transform: none;
+    }
+
+    /* Better tap highlights */
+    * {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .sidebar,
+    .footer,
+    .btn,
+    .social-share,
+    .vote-section {
+        display: none !important;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    a[href]:after {
+        content: " (" attr(href) ")";
+    }
+}
+

@@ -30,6 +30,7 @@
   <ItemGroup>
     <PackageReference Include="bootstrap" Version="5.3.6" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
@@ -50,6 +51,7 @@
     <Folder Include="Areas\Identity\Pages\" />
     <Folder Include="Data\SqlScripts\" />
     <Folder Include="Data\Repositories\" />
+    <Folder Include="NewFolder\" />
     <Folder Include="wwwroot\css\CustomStyles\v2\" />
   </ItemGroup>
 

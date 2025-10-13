@@ -4,6 +4,7 @@ namespace discussionspot9.Models.ViewModels.AdminViewModels
     {
         public decimal TotalRevenue { get; set; }
         public decimal TodayRevenue { get; set; }
+        public Dictionary<string, decimal> RevenueBySite { get; set; } = new();
         public int PendingOptimizations { get; set; }
         public int CompletedOptimizations { get; set; }
         public int TotalPosts { get; set; }
@@ -16,6 +17,7 @@ namespace discussionspot9.Models.ViewModels.AdminViewModels
         public string Title { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
+        public string SiteDomain { get; set; } = string.Empty;
         public decimal Earnings { get; set; }
         public int Views { get; set; }
         public decimal RPM { get; set; }

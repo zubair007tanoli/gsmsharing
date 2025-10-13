@@ -29,6 +29,38 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Add Google Authentication
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        var googleAuthPath = Path.Combine(builder.Environment.WebRootPath, "GoogleApiAccess", "AuthKeys.json");
+        if (File.Exists(googleAuthPath))
+        {
+            var jsonString = File.ReadAllText(googleAuthPath);
+            var googleAuth = System.Text.Json.JsonSerializer.Deserialize<discussionspot9.Models.GoogleAuthConfig>(
+                jsonString,
+                new System.Text.Json.JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true,
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower
+                });
+            
+            if (googleAuth?.Web != null)
+            {
+                options.ClientId = googleAuth.Web.ClientId ?? "";
+                options.ClientSecret = googleAuth.Web.ClientSecret ?? "";
+            }
+        }
+        else
+        {
+            // Fallback: try to get from configuration
+            options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "";
+            options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "";
+        }
+        options.CallbackPath = "/signin-google";
+        options.SaveTokens = true;
+    });
 // ADD THIS SECTION:
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -76,6 +108,16 @@ builder.Services.AddScoped<GoogleAdSenseService>();
 builder.Services.AddScoped<GoogleSearchConsoleService>();
 builder.Services.AddScoped<SmartPostSelectorService>();
 builder.Services.AddScoped<EmailNotificationService>();
+builder.Services.AddScoped<EnhancedHomeService>();
+
+// Enhanced SEO & Multi-Site Revenue Services
+builder.Services.Configure<discussionspot9.Models.Configuration.AdSenseConfiguration>(
+    builder.Configuration.GetSection("GoogleAdSense"));
+builder.Services.Configure<discussionspot9.Models.Configuration.GoogleAdsConfiguration>(
+    builder.Configuration.GetSection("GoogleAds"));
+builder.Services.AddScoped<MultiSiteAdSenseService>();
+builder.Services.AddScoped<GoogleKeywordPlannerService>();
+builder.Services.AddScoped<EnhancedSeoService>();
 
 // Background services
 builder.Services.AddHostedService<WeeklySeoOptimizationService>();

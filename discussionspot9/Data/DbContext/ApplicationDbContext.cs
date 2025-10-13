@@ -42,6 +42,11 @@ namespace discussionspot9.Data.DbContext
         public DbSet<AdSenseRevenue> AdSenseRevenues { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<ContentRecommendation> ContentRecommendations { get; set; }
+        
+        // Enhanced SEO & Multi-Site Revenue tables
+        public DbSet<PostKeyword> PostKeywords { get; set; }
+        public DbSet<EnhancedSeoMetadata> EnhancedSeoMetadata { get; set; }
+        public DbSet<MultiSiteRevenue> MultiSiteRevenues { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

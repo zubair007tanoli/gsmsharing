@@ -1,0 +1,489 @@
+@model discussionspot9.Models.ViewModels.HomePage.EnhancedHomePageViewModel
+@{
+    ViewData["Title"] = "DiscussionSpot - Where Knowledge Meets Community";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/EnhancedHomepage.css" />
+}
+
+<!-- Modern Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center py-5">
+            <div class="col-lg-7">
+                <h1 class="hero-title display-4 fw-bold mb-3">
+                    @Model.HeroMessage
+                </h1>
+                <p class="hero-subtitle lead text-muted mb-4">
+                    @Model.HeroSubtext
+                </p>
+                
+                <!-- Live Stats Ticker -->
+                <div class="stats-ticker d-flex flex-wrap gap-4 mb-4">
+                    <div class="stat-item">
+                        <span class="stat-number">@Model.SiteStats.FormattedMembers</span>
+                        <span class="stat-label">Members</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">@Model.SiteStats.FormattedPosts</span>
+                        <span class="stat-label">Discussions</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">@Model.SiteStats.OnlineNow</span>
+                        <span class="stat-label">Online Now</span>
+                    </div>
+                </div>
+
+                <!-- CTAs -->
+                <div class="hero-ctas d-flex flex-wrap gap-3">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="/communities" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-compass me-2"></i> Explore Communities
+                        </a>
+                        <a href="/create" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="fas fa-plus me-2"></i> Start Discussion
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/account/auth?returnUrl=@Uri.EscapeDataString(Context.Request.Path)" 
+                           class="btn btn-success btn-lg px-5 shadow-sm">
+                            <i class="fas fa-user-plus me-2"></i> Join Free - Start Earning
+                        </a>
+                        <a href="/account/auth?returnUrl=@Uri.EscapeDataString(Context.Request.Path)" 
+                           class="btn btn-outline-light btn-lg px-4">
+                            <i class="fas fa-sign-in-alt me-2"></i> Login
+                        </a>
+                    }
+                </div>
+                
+                @if (!User.Identity?.IsAuthenticated == true)
+                {
+                    <!-- Social Proof for Non-Authenticated Users -->
+                    <div class="mt-4 text-start">
+                        <p class="text-white-50 mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i> 
+                            Join <strong class="text-white">@Model.SiteStats.FormattedMembers</strong> members already earning from discussions
+                        </p>
+                        <p class="text-white-50 mb-0">
+                            <i class="fas fa-bolt text-warning me-2"></i> 
+                            No credit card required • Free forever • Start earning in minutes
+                        </p>
+                    </div>
+                }
+            </div>
+            <div class="col-lg-5">
+                <!-- Animated Stats Card -->
+                <div class="hero-stats-card">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-3">📊 Live Activity</h5>
+                            <div class="activity-stats">
+                                <div class="activity-stat-row">
+                                    <span class="pulse-dot"></span>
+                                    <span><strong>@Model.SiteStats.OnlineNow</strong> users online now</span>
+                                </div>
+                                <div class="activity-stat-row">
+                                    <i class="fas fa-fire text-danger"></i>
+                                    <span><strong>@Model.SiteStats.PostsToday</strong> posts today</span>
+                                </div>
+                                <div class="activity-stat-row">
+                                    <i class="fas fa-comments text-primary"></i>
+                                    <span><strong>@Model.ActivityFeed.TotalActivitiesLast24h</strong> actions in 24h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container-fluid px-lg-5 py-4">
+    <div class="row g-4">
+        <!-- Main Content Area -->
+        <div class="col-lg-8">
+            
+            <!-- Trending Discussions -->
+            @if (Model.TrendingPosts.Any())
+            {
+                <section class="trending-section mb-4">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-fire text-danger me-2"></i>
+                            Trending Right Now
+                        </h2>
+                        <span class="badge bg-danger">Live</span>
+                    </div>
+
+                    <div class="trending-grid">
+                        @foreach (var post in Model.TrendingPosts.Take(3))
+                        {
+                            <div class="trending-card card border-0 shadow-sm mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <span class="badge bg-primary-subtle text-primary">r/@post.CommunityName</span>
+                                                <span class="trending-badge">@post.TrendingBadge</span>
+                                            </div>
+                                            <h3 class="h5 mb-2">
+                                                <a href="/r/@post.CommunitySlug/posts/@post.Slug" class="text-decoration-none text-dark">
+                                                    @post.Title
+                                                </a>
+                                            </h3>
+                                            <div class="post-meta-info d-flex gap-3 text-muted small">
+                                                <span><i class="fas fa-arrow-up text-success"></i> @post.Score</span>
+                                                <span><i class="fas fa-comments"></i> @post.CommentCount replies</span>
+                                                <span><i class="fas fa-eye"></i> @post.ViewCount views</span>
+                                                <span><i class="fas fa-clock"></i> @post.TimeAgo</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            <!-- Strategic Ad Placement #1 - After Value Delivered -->
+            <section class="ad-section-strategic mb-4">
+                <div class="ad-container-premium">
+                    <p class="ad-label small text-muted mb-2">Advertisement</p>
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                            crossorigin="anonymous"></script>
+                    <ins class="adsbygoogle"
+                         style="display:block; min-height: 120px;"
+                         data-ad-client="ca-pub-5934633595595089"
+                         data-ad-slot="3578533723"
+                         data-ad-format="horizontal"
+                         data-full-width-responsive="true"></ins>
+                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                </div>
+            </section>
+
+            <!-- Featured Communities Grid -->
+            @if (Model.FeaturedCommunities.Any())
+            {
+                <section class="featured-communities-section mb-4">
+                    <div class="section-header mb-3">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-star text-warning me-2"></i>
+                            Popular Communities
+                        </h2>
+                    </div>
+
+                    <div class="row g-3">
+                        @foreach (var community in Model.FeaturedCommunities.Take(6))
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <a href="/r/@community.Slug" class="community-card card border-0 shadow-sm h-100 text-decoration-none">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-2">
+                                            @if (!string.IsNullOrEmpty(community.IconUrl))
+                                            {
+                                                <img src="@community.IconUrl" alt="@community.Name" class="community-icon me-2" />
+                                            }
+                                            else
+                                            {
+                                                <div class="community-icon-placeholder me-2">
+                                                    <i class="fas fa-users"></i>
+                                                </div>
+                                            }
+                                            <div class="flex-grow-1">
+                                                <h3 class="h6 mb-1">r/@community.Name</h3>
+                                                <p class="small text-muted mb-0">@community.FormattedMembers members</p>
+                                            </div>
+                                            @if (community.IsGrowing)
+                                            {
+                                                <span class="badge bg-success-subtle text-success">
+                                                    <i class="fas fa-arrow-up"></i>
+                                                </span>
+                                            }
+                                        </div>
+                                        <p class="small text-muted mb-0" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                            @community.Description
+                                        </p>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            <!-- Recent Discussions -->
+            @if (Model.RecentPosts.Any())
+            {
+                <section class="recent-posts-section mb-4">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-clock me-2"></i>
+                            Recent Discussions
+                        </h2>
+                        <a href="/all" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+
+                    <div class="posts-list-modern">
+                        @foreach (var post in Model.RecentPosts.Take(5))
+                        {
+                            <div class="post-card-modern card border-0 shadow-sm mb-3">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <div class="post-votes text-center">
+                                                <i class="fas fa-arrow-up text-success"></i>
+                                                <div class="fw-bold">@post.VoteCount</div>
+                                                <small class="text-muted">votes</small>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <span class="badge bg-light text-dark">r/@post.CommunitySlug</span>
+                                                <span class="text-muted small">• by u/@post.AuthorDisplayName</span>
+                                                <span class="text-muted small">• @post.TimeAgo</span>
+                                                @if (post.IsPinned)
+                                                {
+                                                    <span class="badge bg-warning">📌 Pinned</span>
+                                                }
+                                            </div>
+                                            <h3 class="h5 mb-2">
+                                                <a href="@post.PostUrl" class="text-dark text-decoration-none">
+                                                    @post.Title
+                                                </a>
+                                            </h3>
+                                            @if (!string.IsNullOrEmpty(post.Excerpt))
+                                            {
+                                                <p class="text-muted small mb-2">@post.Excerpt</p>
+                                            }
+                                            <div class="post-stats-row d-flex gap-3 small text-muted">
+                                                <span><i class="fas fa-comments"></i> @post.CommentCount comments</span>
+                                                <span><i class="fas fa-eye"></i> @post.ViewCount views</span>
+                                                @if (post.HasTags)
+                                                {
+                                                    <span class="tags-preview">
+                                                        @foreach (var tag in post.DisplayTags)
+                                                        {
+                                                            <span class="badge bg-secondary-subtle">@tag</span>
+                                                        }
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            <!-- Strategic Ad #2 - Natural Break -->
+            <section class="ad-section-break mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-4">
+                        <p class="ad-label small text-muted mb-2">Sponsored Content</p>
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                                crossorigin="anonymous"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block; min-height:100px;"
+                             data-ad-client="ca-pub-5934633595595089"
+                             data-ad-slot="3578533723"
+                             data-ad-format="fluid"
+                             data-full-width-responsive="true"></ins>
+                        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Enhanced Sidebar -->
+        <div class="col-lg-4">
+            <div class="sidebar-sticky">
+                
+                <!-- Earnings Widget (Admin Only) -->
+                @if (User.IsInRole("Admin") || User.Identity?.Name == "admin")
+                {
+                    <div class="card border-0 shadow-sm mb-4 earnings-widget">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="mb-0">💰 Today's Earnings</h5>
+                                <a href="/admin/seo/dashboard" class="btn btn-sm btn-outline-primary">Dashboard</a>
+                            </div>
+                            <h2 class="display-6 text-success mb-0">$@Model.TodayEarnings.ToString("F2")</h2>
+                            <small class="text-muted">Real-time revenue tracking</small>
+                        </div>
+                    </div>
+                }
+
+                <!-- Quick Actions Card -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">🚀 Quick Actions</h5>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <div class="d-grid gap-2">
+                                <a href="/create" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i> Create Post
+                                </a>
+                                <a href="/communities" class="btn btn-outline-primary">
+                                    <i class="fas fa-compass me-2"></i> Browse Communities
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-grid gap-2">
+                                <a href="/register" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-2"></i> Join Now
+                                </a>
+                                <a href="/login" class="btn btn-outline-primary">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Sign In
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Live Activity Feed -->
+                @if (Model.ActivityFeed.RecentActivities.Any())
+                {
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0">
+                                <span class="pulse-dot"></span>
+                                Live Activity
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="activity-feed">
+                                @foreach (var activity in Model.ActivityFeed.RecentActivities.Take(8))
+                                {
+                                    <div class="activity-item">
+                                        <span class="activity-icon">@activity.Icon</span>
+                                        <div class="activity-content">
+                                            <strong>@@@activity.UserName</strong>
+                                            <span class="text-muted">@activity.ActionType</span>
+                                            @if (!string.IsNullOrEmpty(activity.TargetTitle))
+                                            {
+                                                <span class="activity-target">"@(activity.TargetTitle.Length > 30 ? activity.TargetTitle.Substring(0, 30) + "..." : activity.TargetTitle)"</span>
+                                            }
+                                            <small class="text-muted d-block">@activity.TimeAgo</small>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Top Contributors -->
+                @if (Model.TopContributors.Any())
+                {
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-trophy text-warning me-2"></i>
+                                Top Contributors
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var contributor in Model.TopContributors)
+                            {
+                                <div class="contributor-item d-flex align-items-center mb-3">
+                                    <div class="avatar-circle bg-primary text-white me-2">
+                                        @contributor.Initials
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <strong>@@@contributor.DisplayName</strong>
+                                            @if (contributor.IsVerified)
+                                            {
+                                                <i class="fas fa-check-circle text-primary"></i>
+                                            }
+                                        </div>
+                                        <small class="text-muted">@contributor.KarmaPoints pts • @contributor.PostsCount posts</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Strategic Ad #3 - Sidebar Sticky -->
+                <div class="card border-0 shadow-sm sidebar-ad-sticky">
+                    <div class="card-body text-center p-3">
+                        <p class="ad-label small text-muted mb-2">Sponsored</p>
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                                crossorigin="anonymous"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block; min-height:250px;"
+                             data-ad-client="ca-pub-5934633595595089"
+                             data-ad-slot="7326207040"
+                             data-ad-format="vertical"
+                             data-full-width-responsive="true"></ins>
+                        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    </div>
+                </div>
+
+                <!-- Join CTA Card -->
+                @if (User.Identity?.IsAuthenticated != true)
+                {
+                    <div class="card border-primary shadow-sm">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Join Our Community!</h5>
+                            <p class="card-text small">Get access to exclusive discussions and features</p>
+                            <a href="/register" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus me-2"></i> Sign Up Free
+                            </a>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Conversion Tracking -->
+<script>
+    // Track page view
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'page_view', {
+            page_title: 'Homepage',
+            page_location: window.location.href
+        });
+    }
+    
+    // Track CTA clicks
+    document.querySelectorAll('.hero-ctas a, .quick-actions a').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const actionName = this.textContent.trim();
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'cta_click', {
+                    button_name: actionName,
+                    button_location: 'homepage'
+                });
+            }
+        });
+    });
+
+    // Track time on page
+    let timeOnPage = 0;
+    setInterval(() => {
+        timeOnPage += 5;
+        if (timeOnPage % 30 === 0) { // Every 30 seconds
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'engagement', {
+                    engagement_time_msec: timeOnPage * 1000
+                });
+            }
+        }
+    }, 5000);
+</script>
+

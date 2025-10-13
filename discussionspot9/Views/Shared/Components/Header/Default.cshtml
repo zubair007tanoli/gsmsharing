@@ -14,38 +14,55 @@
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="categories.html">
-                            <i class="fas fa-th-large"></i> <span>Categories</span>
+                        <a class="nav-link" asp-action="Index" asp-controller="Home">
+                            <i class="fas fa-home"></i> <span>Home</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="forums.html">
-                            <i class="fas fa-comments"></i> <span>Forums</span>
+                        <a class="nav-link" asp-action="Index" asp-controller="Community">
+                            <i class="fas fa-users"></i> <span>Communities</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="popular.html">
+                        <a class="nav-link" asp-action="Popular" asp-controller="Home">
                             <i class="fas fa-fire"></i> <span>Popular</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="recent.html">
-                            <i class="fas fa-clock"></i> <span>Recent</span>
+                        <a class="nav-link" asp-action="All" asp-controller="Post">
+                            <i class="fas fa-newspaper"></i> <span>All Posts</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="members.html">
-                            <i class="fas fa-users"></i> <span>Members</span>
+                        <a class="nav-link" href="/categories">
+                            <i class="fas fa-th-large"></i> <span>Categories</span>
                         </a>
                     </li>
+                    @if (User.IsInRole("Admin") || Model.Email == "zubair007tanoli@gmail.com")
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-crown"></i> <span>Admin</span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/admin/seo/dashboard"><i class="fas fa-dollar-sign me-2"></i>Revenue Dashboard</a></li>
+                                <li><a class="dropdown-item" href="/admin/seo/queue"><i class="fas fa-tasks me-2"></i>SEO Queue</a></li>
+                                <li><a class="dropdown-item" href="/admin/manage/users"><i class="fas fa-users me-2"></i>Users</a></li>
+                                <li><a class="dropdown-item" href="/admin/manage/posts"><i class="fas fa-file-alt me-2"></i>Posts</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/admin/manage/analytics"><i class="fas fa-chart-bar me-2"></i>Analytics</a></li>
+                            </ul>
+                        </li>
+                    }
                 </ul>
 
                 <!-- Combined right-side elements into one container -->
                 <div class="navbar-right">
-                    <div class="search-container">
-                        <input type="text" class="form-control form-control-sm" placeholder="Search forums...">
-                        <button class="search-btn"><i class="fas fa-search"></i></button>
-                    </div>
+                    <form asp-action="Index" asp-controller="Search" method="get" class="search-container">
+                        <input type="text" name="q" id="headerSearchInput" class="form-control form-control-sm" placeholder="Search..." autocomplete="off">
+                        <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+                        <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
+                    </form>
 
                     <div class="nav-actions">
                         <div class="action-icon dark-mode-toggle" title="Toggle Dark Mode">
@@ -165,4 +182,5 @@
             </div>
         </nav>
     </div>
+</header>
 </header>

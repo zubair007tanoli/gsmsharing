@@ -48,7 +48,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-1">💰 Total Revenue</h6>
+                            <h6 class="text-muted mb-1">💰 Total Revenue (Both Sites)</h6>
                             <h2 class="mb-0">$@Model.TotalRevenue.ToString("F2")</h2>
                             <small class="text-muted">Last 30 days</small>
                         </div>
@@ -64,9 +64,9 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-1">📊 Today</h6>
+                            <h6 class="text-muted mb-1">📊 Today's Revenue</h6>
                             <h2 class="mb-0">$@Model.TodayRevenue.ToString("F2")</h2>
-                            <small class="text-muted">Updated daily</small>
+                            <small class="text-muted">Updated daily at 2 AM UTC</small>
                         </div>
                         <div class="text-primary">
                             <i class="fas fa-calendar-day fa-2x opacity-50"></i>
@@ -108,6 +108,45 @@
             </div>
         </div>
     </div>
+
+    <!-- Revenue by Site Breakdown -->
+    @if (Model.RevenueBySite.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-globe me-2"></i>Revenue by Site (Last 30 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var site in Model.RevenueBySite.OrderByDescending(s => s.Value))
+                            {
+                                var percentage = Model.TotalRevenue > 0 ? (site.Value / Model.TotalRevenue * 100) : 0;
+                                <div class="col-md-6 mb-3">
+                                    <div class="p-3 border rounded">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-external-link-alt me-2 text-primary"></i>
+                                                @site.Key
+                                            </h6>
+                                            <span class="badge bg-success">@percentage.ToString("F1")%</span>
+                                        </div>
+                                        <h3 class="text-success mb-0">$@site.Value.ToString("F2")</h3>
+                                        <div class="progress mt-2" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: @percentage.ToString("F1")%" 
+                                                 aria-valuenow="@percentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Navigation Tabs -->
     <div class="row mb-4">
@@ -213,6 +252,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Post Title</th>
+                                        <th>Site</th>
                                         <th>Community</th>
                                         <th>Views</th>
                                         <th>Revenue</th>
@@ -225,10 +265,12 @@
                                     {
                                         var post = Model.TopEarningPosts[i];
                                         var badgeClass = i < 3 ? "success" : "primary";
+                                        var siteBadgeClass = post.SiteDomain.Contains("gsmsharing") ? "warning" : "info";
                                         
                                         <tr>
                                             <td><span class="badge bg-@badgeClass">@(i + 1)</span></td>
                                             <td><strong>@post.Title</strong></td>
+                                            <td><span class="badge bg-@siteBadgeClass">@post.SiteDomain</span></td>
                                             <td><small>r/@post.CommunitySlug</small></td>
                                             <td>@post.Views.ToString("N0")</td>
                                             <td><strong class="text-success">$@post.Earnings.ToString("F2")</strong></td>

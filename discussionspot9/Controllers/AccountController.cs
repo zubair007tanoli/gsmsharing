@@ -8,10 +8,11 @@ using discussionspot9.Helpers;
 
 namespace DiscussionSpot9.Controllers
 {
-    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager) : Controller
+    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager) : Controller
     {
         private readonly IUserService _userService = userService;
         private readonly UserManager<IdentityUser> _userManager = userManager;
+        private readonly SignInManager<IdentityUser> _signInManager = signInManager;
 
         [HttpGet]
         [AllowAnonymous]
@@ -326,6 +327,87 @@ namespace DiscussionSpot9.Controllers
         {
             return View();
         }
+        #endregion
+
+        #region External Login (Google OAuth)
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        {
+            var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return new ChallengeResult(provider, properties);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null, string? remoteError = null)
+        {
+            returnUrl = returnUrl ?? Url.Content("~/");
+
+            if (remoteError != null)
+            {
+                TempData["ErrorMessage"] = $"Error from external provider: {remoteError}";
+                return RedirectToAction("Auth");
+            }
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                TempData["ErrorMessage"] = "Error loading external login information.";
+                return RedirectToAction("Auth");
+            }
+
+            // Sign in the user with this external login provider if the user already has a login
+            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+            
+            if (result.Succeeded)
+            {
+                return LocalRedirect(returnUrl);
+            }
+            
+            if (result.IsLockedOut)
+            {
+                return View("Lockout");
+            }
+            else
+            {
+                // If the user does not have an account, create one
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                var name = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email?.Split('@')[0] ?? "User";
+
+                if (string.IsNullOrEmpty(email))
+                {
+                    TempData["ErrorMessage"] = "Email not received from provider.";
+                    return RedirectToAction("Auth");
+                }
+
+                var user = new IdentityUser { UserName = email, Email = email };
+                var createResult = await _userManager.CreateAsync(user);
+
+                if (createResult.Succeeded)
+                {
+                    // Add external login
+                    createResult = await _userManager.AddLoginAsync(user, info);
+                    
+                    if (createResult.Succeeded)
+                    {
+                        await _signInManager.SignInAsync(user, isPersistent: false);
+                        return LocalRedirect(returnUrl);
+                    }
+                }
+
+                foreach (var error in createResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                TempData["ErrorMessage"] = "Unable to create account. Please try again.";
+                return RedirectToAction("Auth");
+            }
+        }
+
         #endregion
     }
 }

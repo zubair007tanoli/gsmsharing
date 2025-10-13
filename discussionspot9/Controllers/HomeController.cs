@@ -10,17 +10,30 @@ namespace discussionspot9.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IHomeService _homeService;
+        private readonly EnhancedHomeService _enhancedHomeService;
 
-        public HomeController(ILogger<HomeController> logger, IHomeService homeService)
+        public HomeController(
+            ILogger<HomeController> logger, 
+            IHomeService homeService,
+            EnhancedHomeService enhancedHomeService)
         {
             _logger = logger;
             _homeService = homeService;
+            _enhancedHomeService = enhancedHomeService;
         }
 
         public async Task<IActionResult> Index()
         {
+            // Use new enhanced homepage
+            var model = await _enhancedHomeService.GetEnhancedHomePageDataAsync();
+            return View("IndexNew", model); // Using new view
+        }
+        
+        // Keep old version accessible
+        public async Task<IActionResult> IndexOld()
+        {
             var model = await _homeService.GetHomePageDataAsync();
-            return View(model);
+            return View("Index", model);
         }
 
         public async Task<IActionResult> Popular(string? timeframe = null)

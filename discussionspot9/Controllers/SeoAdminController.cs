@@ -13,7 +13,7 @@ namespace discussionspot9.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly SmartPostSelectorService _selectorService;
-        private readonly GoogleAdSenseService _adsenseService;
+        private readonly MultiSiteAdSenseService _multiSiteAdsenseService;
         private readonly GoogleSearchConsoleService _searchConsoleService;
         private readonly EmailNotificationService _emailService;
         private readonly ILogger<SeoAdminController> _logger;
@@ -21,14 +21,14 @@ namespace discussionspot9.Controllers
         public SeoAdminController(
             ApplicationDbContext context,
             SmartPostSelectorService selectorService,
-            GoogleAdSenseService adsenseService,
+            MultiSiteAdSenseService multiSiteAdsenseService,
             GoogleSearchConsoleService searchConsoleService,
             EmailNotificationService emailService,
             ILogger<SeoAdminController> logger)
         {
             _context = context;
             _selectorService = selectorService;
-            _adsenseService = adsenseService;
+            _multiSiteAdsenseService = multiSiteAdsenseService;
             _searchConsoleService = searchConsoleService;
             _emailService = emailService;
             _logger = logger;
@@ -40,14 +40,20 @@ namespace discussionspot9.Controllers
             var endDate = DateTime.UtcNow.Date;
             var startDate = endDate.AddDays(-30);
 
-            var topEarningPostIds = await _adsenseService.GetTopEarningPostsAsync(10, 30);
+            // Get revenue from both sites
+            var totalRevenue = await _multiSiteAdsenseService.GetTotalRevenueAsync(startDate, endDate);
+            var todayRevenue = await _multiSiteAdsenseService.GetTotalRevenueAsync(endDate, endDate);
+            var revenueBySite = await _multiSiteAdsenseService.GetRevenueBySiteAsync(startDate, endDate);
+
+            // Get top earning posts across all sites
+            var topEarningData = await _multiSiteAdsenseService.GetTopEarningPostsAsync(10, 30);
             var topEarningPosts = new List<TopEarningPost>();
 
-            foreach (var (postId, earnings) in topEarningPostIds)
+            foreach (var postData in topEarningData)
             {
                 var post = await _context.Posts
                     .Include(p => p.Community)
-                    .FirstOrDefaultAsync(p => p.PostId == postId);
+                    .FirstOrDefaultAsync(p => p.PostId == postData.PostId);
 
                 if (post != null)
                 {
@@ -57,17 +63,19 @@ namespace discussionspot9.Controllers
                         Title = post.Title,
                         Slug = post.Slug,
                         CommunitySlug = post.Community?.Slug ?? "",
-                        Earnings = earnings,
-                        Views = post.ViewCount,
-                        RPM = post.ViewCount > 0 ? (earnings / post.ViewCount * 1000) : 0
+                        Earnings = postData.TotalEarnings,
+                        Views = postData.TotalPageViews,
+                        RPM = postData.AverageRPM,
+                        SiteDomain = postData.SiteDomain
                     });
                 }
             }
 
             var model = new DashboardViewModel
             {
-                TotalRevenue = await _adsenseService.GetEarningsAsync(startDate, endDate),
-                TodayRevenue = await _adsenseService.GetEarningsAsync(endDate, endDate),
+                TotalRevenue = totalRevenue,
+                TodayRevenue = todayRevenue,
+                RevenueBySite = revenueBySite,
                 PendingOptimizations = await _context.PostSeoQueues.CountAsync(q => q.Status == "Pending"),
                 CompletedOptimizations = await _context.SeoOptimizationLogs.CountAsync(l => l.OptimizedAt >= startDate),
                 TotalPosts = await _context.Posts.CountAsync(p => p.Status == "published"),
@@ -113,26 +121,27 @@ namespace discussionspot9.Controllers
                 .OrderByDescending(a => a.Date)
                 .ToListAsync();
 
-            var topEarningPostIds = await _adsenseService.GetTopEarningPostsAsync(20, 30);
-            var topEarningPosts = new List<TopEarningPost>();
+            var topEarningPostIds = await _multiSiteAdsenseService.GetTopEarningPostsAsync(20, 30);
+            var topEarningPosts = new List<discussionspot9.Models.ViewModels.AdminViewModels.TopEarningPost>();
 
-            foreach (var (postId, earnings) in topEarningPostIds)
+            foreach (var postData in topEarningPostIds)
             {
                 var post = await _context.Posts
                     .Include(p => p.Community)
-                    .FirstOrDefaultAsync(p => p.PostId == postId);
+                    .FirstOrDefaultAsync(p => p.PostId == postData.PostId);
 
                 if (post != null)
                 {
-                    topEarningPosts.Add(new TopEarningPost
+                    topEarningPosts.Add(new discussionspot9.Models.ViewModels.AdminViewModels.TopEarningPost
                     {
                         PostId = post.PostId,
                         Title = post.Title,
                         Slug = post.Slug,
                         CommunitySlug = post.Community?.Slug ?? "",
-                        Earnings = earnings,
-                        Views = post.ViewCount,
-                        RPM = post.ViewCount > 0 ? (earnings / post.ViewCount * 1000) : 0
+                        SiteDomain = postData.SiteDomain,
+                        Earnings = postData.TotalEarnings,
+                        Views = postData.TotalPageViews,
+                        RPM = postData.AverageRPM
                     });
                 }
             }
@@ -187,7 +196,7 @@ namespace discussionspot9.Controllers
         {
             try
             {
-                await _adsenseService.SyncDailyRevenueAsync();
+                await _multiSiteAdsenseService.SyncAllSitesRevenueAsync();
                 TempData["SuccessMessage"] = "AdSense data synced successfully";
             }
             catch (Exception ex)

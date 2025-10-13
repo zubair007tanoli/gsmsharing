@@ -1,0 +1,220 @@
+@model discussionspot9.Models.ViewModels.SearchViewModels.SearchResultsViewModel
+@{
+    ViewData["Title"] = $"Search: {Model.Query}";
+}
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            
+            <!-- Search Header -->
+            <div class="search-header mb-4">
+                <h1 class="h3 mb-3">Search Results for "@Model.Query"</h1>
+                
+                <!-- Search Box -->
+                <form asp-action="Index" method="get" class="mb-3">
+                    <div class="input-group input-group-lg">
+                        <input type="text" name="q" value="@Model.Query" class="form-control" placeholder="Search posts, communities, users..." autofocus>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+
+                @if (Model.HasResults)
+                {
+                    <p class="text-muted">Found <strong>@Model.TotalResults</strong> results</p>
+                }
+            </div>
+
+            @if (!Model.HasResults && !string.IsNullOrEmpty(Model.Query))
+            {
+                <!-- No Results -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>No Results Found</h4>
+                        <p class="text-muted">
+                            Try different keywords or check spelling.<br/>
+                            You can also <a href="/communities">browse communities</a> or <a href="/all">view all posts</a>.
+                        </p>
+                    </div>
+                </div>
+            }
+            else if (Model.HasResults)
+            {
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.CurrentType == "all" ? "active" : "")" href="?q=@Model.Query&type=all">
+                            All (@Model.TotalResults)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.CurrentType == "posts" ? "active" : "")" href="?q=@Model.Query&type=posts">
+                            Posts (@Model.TotalPosts)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.CurrentType == "communities" ? "active" : "")" href="?q=@Model.Query&type=communities">
+                            Communities (@Model.TotalCommunities)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.CurrentType == "users" ? "active" : "")" href="?q=@Model.Query&type=users">
+                            Users (@Model.TotalUsers)
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Posts Results -->
+                @if (Model.Posts.Any())
+                {
+                    <section class="search-results-section mb-4">
+                        <h2 class="h5 mb-3">📝 Posts</h2>
+                        @foreach (var post in Model.Posts)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <div class="text-center me-3" style="min-width: 50px;">
+                                            <div class="fw-bold">@post.Score</div>
+                                            <small class="text-muted">votes</small>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="mb-2">
+                                                <span class="badge bg-light text-dark">r/@post.CommunityName</span>
+                                                <span class="text-muted small">• by u/@post.AuthorName • @post.TimeAgo</span>
+                                            </div>
+                                            <h3 class="h5 mb-2">
+                                                <a href="@post.Url" class="text-decoration-none">@post.Title</a>
+                                            </h3>
+                                            <p class="text-muted small mb-2">@post.Excerpt</p>
+                                            <div class="small text-muted">
+                                                <i class="fas fa-comments"></i> @post.CommentCount comments
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.CurrentType == "all" && Model.TotalPosts > 5)
+                        {
+                            <div class="text-center">
+                                <a href="?q=@Model.Query&type=posts" class="btn btn-outline-primary">
+                                    View all @Model.TotalPosts posts
+                                </a>
+                            </div>
+                        }
+                    </section>
+                }
+
+                <!-- Communities Results -->
+                @if (Model.Communities.Any())
+                {
+                    <section class="search-results-section mb-4">
+                        <h2 class="h5 mb-3">👥 Communities</h2>
+                        <div class="row">
+                            @foreach (var community in Model.Communities)
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h3 class="h6">
+                                                <a href="@community.Url" class="text-decoration-none">r/@community.Name</a>
+                                            </h3>
+                                            <p class="small text-muted mb-2">@community.Description</p>
+                                            <div class="d-flex gap-3 small text-muted">
+                                                <span><i class="fas fa-users"></i> @community.MemberCount members</span>
+                                                <span><i class="fas fa-file-alt"></i> @community.PostCount posts</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        @if (Model.CurrentType == "all" && Model.TotalCommunities > 3)
+                        {
+                            <div class="text-center">
+                                <a href="?q=@Model.Query&type=communities" class="btn btn-outline-primary">
+                                    View all @Model.TotalCommunities communities
+                                </a>
+                            </div>
+                        }
+                    </section>
+                }
+
+                <!-- Users Results -->
+                @if (Model.Users.Any())
+                {
+                    <section class="search-results-section mb-4">
+                        <h2 class="h5 mb-3">👤 Users</h2>
+                        @foreach (var user in Model.Users)
+                        {
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-primary text-white me-3">
+                                            @user.DisplayName.Substring(0, Math.Min(2, user.DisplayName.Length)).ToUpper()
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div>
+                                                <a href="@user.Url" class="fw-bold text-decoration-none">@@@user.DisplayName</a>
+                                                @if (user.IsVerified)
+                                                {
+                                                    <i class="fas fa-check-circle text-primary"></i>
+                                                }
+                                                <span class="badge bg-warning ms-2">@user.KarmaPoints karma</span>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(user.Bio))
+                                            {
+                                                <small class="text-muted">@user.Bio</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.CurrentType == "all" && Model.TotalUsers > 3)
+                        {
+                            <div class="text-center">
+                                <a href="?q=@Model.Query&type=users" class="btn btn-outline-primary">
+                                    View all @Model.TotalUsers users
+                                </a>
+                            </div>
+                        }
+                    </section>
+                }
+
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1 && Model.CurrentType != "all")
+                {
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            @for (int i = 1; i <= Math.Min(Model.TotalPages, 10); i++)
+                            {
+                                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="?q=@Model.Query&type=@Model.CurrentType&page=@i">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+</style>
+
