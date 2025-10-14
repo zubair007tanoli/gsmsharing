@@ -10,16 +10,16 @@ namespace discussionspot9.Services
 {
     public class HomeService : IHomeService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
         private readonly ILogger<HomeService> _logger;
 
         public HomeService(
-            ApplicationDbContext context,
+            IDbContextFactory<ApplicationDbContext> contextFactory,
             IMemoryCache cache,
             ILogger<HomeService> logger)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _cache = cache;
             _logger = logger;
         }
@@ -61,7 +61,8 @@ namespace discussionspot9.Services
 
             try
             {
-                var randomPosts = await _context.Posts
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                var randomPosts = await context.Posts
                     .Where(p => p.Status == "published")
                     .Include(p => p.Community)
                     .ThenInclude(c => c!.Category)
@@ -108,7 +109,8 @@ namespace discussionspot9.Services
 
             try
             {
-                var categories = await _context.Categories
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                var categories = await context.Categories
                     .Where(c => c.IsActive && c.ParentCategoryId == null)
                     .AsNoTracking()
                     .Select(c => new CategoryViewModel
@@ -154,7 +156,8 @@ namespace discussionspot9.Services
 
             try
             {
-                var recentPosts = await _context.Posts
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                var recentPosts = await context.Posts
                     .Where(p => p.Status == "published")
                     .Include(p => p.Community)
                     .ThenInclude(c => c!.Category)
@@ -227,7 +230,8 @@ namespace discussionspot9.Services
             if (_cache.TryGetValue(cacheKey, out List<TrendingTopicViewModel>? cached))
                 return cached!;
 
-            var trending = await _context.Posts
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var trending = await context.Posts
                 .Where(p => p.Status == "published") // Remove date filter for now
                 .Include(p => p.Community)
                 .ThenInclude(c => c!.Category)
@@ -254,10 +258,11 @@ namespace discussionspot9.Services
 
         private async Task<OnlineUsersViewModel> GetOnlineUsersDataAsync()
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
             var fifteenMinutesAgo = DateTime.UtcNow.AddMinutes(-15);
 
             // Get actual online users
-            var onlineUsers = await _context.UserProfiles
+            var onlineUsers = await context.UserProfiles
                 .Where(u => u.LastActive > fifteenMinutesAgo)
                 .AsNoTracking()
                 .OrderByDescending(u => u.LastActive)
@@ -274,7 +279,7 @@ namespace discussionspot9.Services
                 .ToListAsync();
 
             // Get category activity
-            var categoryActivity = await _context.Posts
+            var categoryActivity = await context.Posts
                 .Where(p => p.CreatedAt > DateTime.UtcNow.AddHours(-24))
                 .AsNoTracking()
                 .GroupBy(p => p.Community.Category.Name)
@@ -298,12 +303,13 @@ namespace discussionspot9.Services
             if (_cache.TryGetValue(cacheKey, out ForumStatsViewModel? cached))
                 return cached!;
 
+            await using var context = await _contextFactory.CreateDbContextAsync();
             var stats = new ForumStatsViewModel
             {
-                TotalMembers = await _context.UserProfiles.AsNoTracking().CountAsync(),
-                TotalPosts = await _context.Posts.AsNoTracking().CountAsync(p => p.Status == "published"),
-                TotalCategories = await _context.Categories.AsNoTracking().CountAsync(c => c.IsActive),
-                LastPostTime = await _context.Posts
+                TotalMembers = await context.UserProfiles.AsNoTracking().CountAsync(),
+                TotalPosts = await context.Posts.AsNoTracking().CountAsync(p => p.Status == "published"),
+                TotalCategories = await context.Categories.AsNoTracking().CountAsync(c => c.IsActive),
+                LastPostTime = await context.Posts
                     .AsNoTracking()
                     .Where(p => p.Status == "published")
                     .MaxAsync(p => (DateTime?)p.CreatedAt) ?? DateTime.UtcNow
@@ -317,7 +323,8 @@ namespace discussionspot9.Services
 
         private async Task<List<NewMemberViewModel>> GetNewMembersAsync()
         {
-            var newMembers = await _context.UserProfiles
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var newMembers = await context.UserProfiles
                 .OrderByDescending(u => u.JoinDate)
                 .Take(3)
                 .Select(u => new NewMemberViewModel
