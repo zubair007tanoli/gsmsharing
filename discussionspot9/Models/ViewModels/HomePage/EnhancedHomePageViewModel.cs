@@ -33,6 +33,7 @@ namespace discussionspot9.Models.ViewModels.HomePage
         public int Score { get; set; }
         public int CommentCount { get; set; }
         public int ViewCount { get; set; }
+        public DateTime CreatedAt { get; set; }
         public string TimeAgo { get; set; } = string.Empty;
         public bool IsHot { get; set; }
         public string CategoryName { get; set; } = string.Empty;

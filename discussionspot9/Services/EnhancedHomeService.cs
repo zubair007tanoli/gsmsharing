@@ -64,6 +64,7 @@ namespace discussionspot9.Services
                     Score = p.Score,
                     CommentCount = p.CommentCount,
                     ViewCount = p.ViewCount,
+                    CreatedAt = p.CreatedAt,
                     CategoryName = p.Community.Category.Name,
                     AuthorDisplayName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
                     IsHot = p.CommentCount > 20 || p.Score > 50
@@ -72,7 +73,7 @@ namespace discussionspot9.Services
 
             foreach (var post in trending)
             {
-                var timeDiff = DateTime.UtcNow - _context.Posts.First(p => p.PostId == post.PostId).CreatedAt;
+                var timeDiff = DateTime.UtcNow - post.CreatedAt;
                 post.TimeAgo = FormatTimeAgo(timeDiff);
             }
 
@@ -160,18 +161,35 @@ namespace discussionspot9.Services
                 .Where(a => a.ActivityAt >= DateTime.UtcNow.AddMinutes(-30))
                 .OrderByDescending(a => a.ActivityAt)
                 .Take(10)
-                .Select(a => new ActivityItemViewModel
-                {
-                    UserName = _context.UserProfiles.Where(u => u.UserId == a.UserId).Select(u => u.DisplayName).FirstOrDefault() ?? "Anonymous",
-                    ActionType = a.ActivityType,
-                    TargetTitle = a.PostId != null ? _context.Posts.Where(p => p.PostId == a.PostId).Select(p => p.Title).FirstOrDefault() ?? "" : "",
-                    TimeAgo = FormatTimeAgo(DateTime.UtcNow - a.ActivityAt)
-                })
                 .ToListAsync();
+            
+            // Bulk load related data to avoid N+1 queries
+            var userIds = recentActivities.Where(a => !string.IsNullOrEmpty(a.UserId)).Select(a => a.UserId).Distinct().ToList();
+            var postIds = recentActivities.Where(a => a.PostId.HasValue).Select(a => a.PostId!.Value).Distinct().ToList();
+            
+            var users = await _context.UserProfiles
+                .Where(u => userIds.Contains(u.UserId))
+                .ToDictionaryAsync(u => u.UserId, u => u.DisplayName);
+            
+            var posts = await _context.Posts
+                .Where(p => postIds.Contains(p.PostId))
+                .ToDictionaryAsync(p => p.PostId, p => p.Title);
+            
+            var activityViewModels = recentActivities.Select(a => new ActivityItemViewModel
+            {
+                UserName = !string.IsNullOrEmpty(a.UserId) && users.ContainsKey(a.UserId) 
+                    ? users[a.UserId] 
+                    : "Anonymous",
+                ActionType = a.ActivityType,
+                TargetTitle = a.PostId.HasValue && posts.ContainsKey(a.PostId.Value) 
+                    ? posts[a.PostId.Value] 
+                    : "",
+                TimeAgo = FormatTimeAgo(DateTime.UtcNow - a.ActivityAt)
+            }).ToList();
 
             return new LiveActivityFeed
             {
-                RecentActivities = recentActivities,
+                RecentActivities = activityViewModels,
                 TotalActivitiesLast24h = await _context.UserActivities
                     .Where(a => a.ActivityAt >= DateTime.UtcNow.AddHours(-24))
                     .CountAsync()
