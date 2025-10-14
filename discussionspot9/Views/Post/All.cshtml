@@ -17,6 +17,11 @@
         <div class="row">
             <!-- Left Sidebar -->
             <div class="col-lg-3">
+                <!-- Left Sidebar Ad -->
+                <div class="mb-3">
+                    <partial name="_AdUnit_Side" />
+                </div>
+                
                 <!-- Trending Communities -->
                 <partial name="Partials/PostsPartial/_TrendingCommunities" model="Model.TrendingCommunities" />
 
@@ -88,24 +93,19 @@
                 <div class="posts-list">
                     @if (Model.Posts?.Any() == true)
                     {
+                        var postIndex = 0;
                         @foreach (var post in Model.Posts)
                         {
+                            postIndex++;
                             <partial name="Partials/PostsPartial/_PostCardEnhanced" model="post" />
-                        }
-
-                        <!-- Ad Banner in Feed -->
-                        @if (Model.Posts.Count > 3)
-                        {
-                            <div class="ad-banner">
-                                <div class="mb-2"><small>Sponsored Content</small></div>
-                                <div style="height: 120px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">
-                                    <div class="text-center">
-                                        <i class="fas fa-ad fa-lg mb-2"></i>
-                                        <div>Advertisement</div>
-                                        <div><small>728x90</small></div>
-                                    </div>
+                            
+                            @* In-Feed Ad after every 3rd post *@
+                            @if (postIndex % 3 == 0 && postIndex < Model.Posts.Count)
+                            {
+                                <div class="ad-in-feed my-3">
+                                    <partial name="_AdUnit_InArticle" />
                                 </div>
-                            </div>
+                            }
                         }
                     }
                     else
@@ -158,6 +158,11 @@
 
             <!-- Right Sidebar -->
             <div class="col-lg-3">
+                <!-- Right Sidebar Ad: Sticky -->
+                <div class="position-sticky mb-3" style="top: 80px;">
+                    <partial name="_AdUnit_Side" />
+                </div>
+                
                 <!-- Trending Topics -->
                 <partial name="Partials/PostsPartial/_TrendingTopics" model="Model.TrendingTopics" />
 

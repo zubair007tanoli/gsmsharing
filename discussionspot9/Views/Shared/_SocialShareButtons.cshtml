@@ -1,0 +1,178 @@
+@* 
+    Social Share Buttons Component
+    Usage: <partial name="_SocialShareButtons" model='new { Title = "Post Title", Url = "https://..." }' />
+*@
+
+@{
+    var title = ViewData["Title"]?.ToString() ?? "Check this out on DiscussionSpot";
+    var url = ViewData["Url"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
+    var encodedUrl = Uri.EscapeDataString(url);
+    var encodedTitle = Uri.EscapeDataString(title);
+}
+
+<div class="social-share-buttons">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="text-muted small me-2">
+            <i class="fas fa-share-alt me-1"></i> Share:
+        </span>
+        
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-primary share-btn"
+           aria-label="Share on Facebook"
+           title="Share on Facebook">
+            <i class="fab fa-facebook-f"></i>
+            <span class="d-none d-md-inline ms-1">Facebook</span>
+        </a>
+        
+        <!-- Twitter/X -->
+        <a href="https://twitter.com/intent/tweet?url=@encodedUrl&text=@encodedTitle" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-info share-btn"
+           aria-label="Share on Twitter"
+           title="Share on Twitter">
+            <i class="fab fa-twitter"></i>
+            <span class="d-none d-md-inline ms-1">Twitter</span>
+        </a>
+        
+        <!-- LinkedIn -->
+        <a href="https://www.linkedin.com/shareArticle?mini=true&url=@encodedUrl&title=@encodedTitle" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-primary share-btn"
+           aria-label="Share on LinkedIn"
+           title="Share on LinkedIn">
+            <i class="fab fa-linkedin-in"></i>
+            <span class="d-none d-md-inline ms-1">LinkedIn</span>
+        </a>
+        
+        <!-- Reddit -->
+        <a href="https://www.reddit.com/submit?url=@encodedUrl&title=@encodedTitle" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-danger share-btn"
+           aria-label="Share on Reddit"
+           title="Share on Reddit">
+            <i class="fab fa-reddit-alien"></i>
+            <span class="d-none d-md-inline ms-1">Reddit</span>
+        </a>
+        
+        <!-- WhatsApp (Mobile-friendly) -->
+        <a href="https://api.whatsapp.com/send?text=@encodedTitle%20@encodedUrl" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-success share-btn d-md-none"
+           aria-label="Share on WhatsApp"
+           title="Share on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+        
+        <!-- Email -->
+        <a href="mailto:?subject=@encodedTitle&body=Check%20this%20out:%20@encodedUrl" 
+           class="btn btn-sm btn-outline-secondary share-btn"
+           aria-label="Share via Email"
+           title="Share via Email">
+            <i class="fas fa-envelope"></i>
+            <span class="d-none d-md-inline ms-1">Email</span>
+        </a>
+        
+        <!-- Copy Link -->
+        <button type="button" 
+                class="btn btn-sm btn-outline-dark share-btn copy-link-btn" 
+                data-url="@url"
+                aria-label="Copy link"
+                title="Copy link">
+            <i class="fas fa-link"></i>
+            <span class="d-none d-md-inline ms-1">Copy Link</span>
+        </button>
+    </div>
+</div>
+
+<style>
+    .social-share-buttons {
+        padding: 1rem 0;
+    }
+    
+    .share-btn {
+        transition: all 0.2s ease;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .share-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .share-btn i {
+        font-size: 1rem;
+    }
+    
+    /* Mobile optimization */
+    @@media (max-width: 767px) {
+        .social-share-buttons .d-flex {
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Copy link functionality
+        const copyBtns = document.querySelectorAll('.copy-link-btn');
+        copyBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('data-url');
+                
+                // Copy to clipboard
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url).then(() => {
+                        showCopySuccess(this);
+                    }).catch(err => {
+                        console.error('Failed to copy:', err);
+                        fallbackCopyTextToClipboard(url, this);
+                    });
+                } else {
+                    fallbackCopyTextToClipboard(url, this);
+                }
+            });
+        });
+        
+        function showCopySuccess(btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> <span class="d-none d-md-inline ms-1">Copied!</span>';
+            btn.classList.remove('btn-outline-dark');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-dark');
+            }, 2000);
+        }
+        
+        function fallbackCopyTextToClipboard(text, btn) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess(btn);
+            } catch (err) {
+                console.error('Fallback: Failed to copy', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    });
+</script>
+

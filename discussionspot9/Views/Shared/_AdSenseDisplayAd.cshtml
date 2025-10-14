@@ -1,0 +1,26 @@
+@* 
+    Google AdSense Display Ad
+    Parameters: 
+    - adSlot: Your ad unit slot ID
+    - adFormat: "auto", "rectangle", "vertical", "horizontal"
+    - adStyle: Optional inline styles
+*@
+
+@{
+    var adSlot = ViewData["AdSlot"]?.ToString() ?? "auto";
+    var adFormat = ViewData["AdFormat"]?.ToString() ?? "auto";
+    var fullWidthResponsive = ViewData["FullWidthResponsive"]?.ToString() ?? "true";
+}
+
+<div class="adsense-container my-3" style="@(ViewData["AdStyle"]?.ToString() ?? "text-align: center;")">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-5934633595595089"
+         data-ad-slot="@adSlot"
+         data-ad-format="@adFormat"
+         data-full-width-responsive="@fullWidthResponsive"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+

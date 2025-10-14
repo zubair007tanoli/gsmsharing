@@ -1,0 +1,46 @@
+# robots.txt for DiscussionSpot & GSMSharing
+# Allow search engines to crawl and index content
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /account/settings
+Disallow: /account/profile
+Disallow: */create
+Disallow: */edit
+Disallow: */delete
+Disallow: /signin-google
+Disallow: /auth
+
+# Allow important pages
+Allow: /r/
+Allow: /u/
+Allow: /categories
+Allow: /communities
+Allow: /popular
+Allow: /search
+
+# Googlebot specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Google AdSense bot
+User-agent: Mediapartners-Google
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Yandex
+User-agent: Yandex
+Allow: /
+Crawl-delay: 2
+
+# Sitemaps
+Sitemap: https://gsmsharing.com/sitemap.xml
+Sitemap: https://discussionspot.com/sitemap.xml
+

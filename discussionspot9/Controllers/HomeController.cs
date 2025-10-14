@@ -22,6 +22,7 @@ namespace discussionspot9.Controllers
             _enhancedHomeService = enhancedHomeService;
         }
 
+        [ResponseCache(Duration = 300, VaryByHeader = "User-Agent", Location = ResponseCacheLocation.Any)] // 5 minutes cache
         public async Task<IActionResult> Index()
         {
             // Use new enhanced homepage
@@ -50,8 +51,51 @@ namespace discussionspot9.Controllers
             return View("Index", model);
         }
 
+        [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)] // 24 hours cache
         public IActionResult Privacy()
         {
+            ViewData["Title"] = "Privacy Policy - DiscussionSpot";
+            ViewData["Description"] = "Read our Privacy Policy to understand how we collect, use, and protect your personal information on DiscussionSpot.";
+            return View();
+        }
+
+        [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)] // 24 hours cache
+        public IActionResult Terms()
+        {
+            ViewData["Title"] = "Terms of Service - DiscussionSpot";
+            ViewData["Description"] = "Review our Terms of Service to understand the rules and regulations for using DiscussionSpot.";
+            return View();
+        }
+
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)] // 1 hour cache
+        public IActionResult About()
+        {
+            ViewData["Title"] = "About Us - DiscussionSpot";
+            ViewData["Description"] = "Learn about DiscussionSpot, our mission, values, and the team behind this thriving community platform.";
+            return View();
+        }
+
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)] // 1 hour cache
+        public IActionResult Contact()
+        {
+            ViewData["Title"] = "Contact Us - DiscussionSpot";
+            ViewData["Description"] = "Get in touch with the DiscussionSpot team. We'd love to hear from you!";
+            return View();
+        }
+
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)] // 1 hour cache
+        public IActionResult FAQ()
+        {
+            ViewData["Title"] = "Frequently Asked Questions - DiscussionSpot";
+            ViewData["Description"] = "Find answers to commonly asked questions about DiscussionSpot features, policies, and usage.";
+            return View();
+        }
+
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)] // 1 hour cache
+        public IActionResult Advertise()
+        {
+            ViewData["Title"] = "Advertise With Us - DiscussionSpot";
+            ViewData["Description"] = "Reach millions of engaged users on DiscussionSpot. Learn about our advertising opportunities.";
             return View();
         }
 

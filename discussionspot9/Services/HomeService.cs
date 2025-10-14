@@ -28,17 +28,20 @@ namespace discussionspot9.Services
         {
             try
             {
-                var randomPosts = await GetRandomPostsAsync();
-                var categories = await GetCategoriesAsync();
-                var recentPosts = await GetRecentPostsAsync();
-                var sidebar = await GetSidebarDataAsync();
+                // Parallel execution - load all data simultaneously
+                var randomPostsTask = GetRandomPostsAsync();
+                var categoriesTask = GetCategoriesAsync();
+                var recentPostsTask = GetRecentPostsAsync();
+                var sidebarTask = GetSidebarDataAsync();
+
+                await Task.WhenAll(randomPostsTask, categoriesTask, recentPostsTask, sidebarTask);
 
                 return new HomePageViewModel
                 {
-                    RandomPosts = randomPosts,
-                    Categories = categories,
-                    RecentPosts = recentPosts,
-                    Sidebar = sidebar
+                    RandomPosts = randomPostsTask.Result,
+                    Categories = categoriesTask.Result,
+                    RecentPosts = recentPostsTask.Result,
+                    Sidebar = sidebarTask.Result
                 };
 
             }
@@ -58,33 +61,12 @@ namespace discussionspot9.Services
 
             try
             {
-            var randomPosts = await _context.Posts
-                .Where(p => p.Status == "published")
-                .Include(p => p.Community)
-                .ThenInclude(c => c!.Category)
-                .OrderBy(r => Guid.NewGuid())
-                .Take(count)
-                .Select(p => new RandomPostViewModel
-                {
-                    PostId = p.PostId,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    CommunityName = p.Community!.Name,
-                    CommunitySlug = p.Community.Slug,
-                    CategoryName = p.Community.Category!.Name,
-                    CategorySlug = p.Community.Category.Slug,
-                    AuthorDisplayName = _context.UserProfiles
-                        .Where(up => up.UserId == p.UserId)
-                        .Select(up => up.DisplayName)
-                        .FirstOrDefault() ?? "Unknown",
-                    CommentCount = p.CommentCount,
-                    CreatedAt = p.CreatedAt
-                })
-                .ToListAsync();
-                var OldQuery = await _context.Posts
+                var randomPosts = await _context.Posts
                     .Where(p => p.Status == "published")
                     .Include(p => p.Community)
                     .ThenInclude(c => c!.Category)
+                    .Include(p => p.UserProfile)
+                    .AsNoTracking()
                     .OrderBy(r => Guid.NewGuid())
                     .Take(count)
                     .Select(p => new RandomPostViewModel
@@ -92,12 +74,11 @@ namespace discussionspot9.Services
                         PostId = p.PostId,
                         Title = p.Title,
                         Slug = p.Slug,
-                        CategoryName = p.Community!.Category!.Name,
+                        CommunityName = p.Community!.Name,
+                        CommunitySlug = p.Community.Slug,
+                        CategoryName = p.Community.Category!.Name,
                         CategorySlug = p.Community.Category.Slug,
-                        AuthorDisplayName = _context.UserProfiles
-                            .Where(up => up.UserId == p.UserId)
-                            .Select(up => up.DisplayName)
-                            .FirstOrDefault() ?? "Unknown",
+                        AuthorDisplayName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
                         CommentCount = p.CommentCount,
                         CreatedAt = p.CreatedAt
                     })
@@ -129,6 +110,7 @@ namespace discussionspot9.Services
             {
                 var categories = await _context.Categories
                     .Where(c => c.IsActive && c.ParentCategoryId == null)
+                    .AsNoTracking()
                     .Select(c => new CategoryViewModel
                     {
                         CategoryId = c.CategoryId,
@@ -178,6 +160,8 @@ namespace discussionspot9.Services
                     .ThenInclude(c => c!.Category)
                     .Include(p => p.PostTags)
                     .ThenInclude(pt => pt.Tag)
+                    .Include(p => p.UserProfile)
+                    .AsNoTracking()
                     .OrderByDescending(p => p.CreatedAt)
                     .Take(count)
                     .Select(p => new RecentPostViewModel
@@ -189,10 +173,7 @@ namespace discussionspot9.Services
                         CategoryName = p.Community!.Category!.Name,
                         CategorySlug = p.Community.Category.Slug,
                         CommunitySlug = p.Community.Slug,
-                        AuthorDisplayName = _context.UserProfiles
-                            .Where(up => up.UserId == p.UserId)
-                            .Select(up => up.DisplayName)
-                            .FirstOrDefault() ?? "Unknown",
+                        AuthorDisplayName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
                         VoteCount = p.UpvoteCount - p.DownvoteCount,
                         CommentCount = p.CommentCount,
                         ViewCount = p.ViewCount,
@@ -250,6 +231,7 @@ namespace discussionspot9.Services
                 .Where(p => p.Status == "published") // Remove date filter for now
                 .Include(p => p.Community)
                 .ThenInclude(c => c!.Category)
+                .AsNoTracking()
                 .OrderByDescending(p => (p.Score * 2) + (p.CommentCount * 3) + p.ViewCount) // Better trending algorithm
                 .Take(5) // Show 5 instead of 4
                 .Select(p => new TrendingTopicViewModel
@@ -277,6 +259,7 @@ namespace discussionspot9.Services
             // Get actual online users
             var onlineUsers = await _context.UserProfiles
                 .Where(u => u.LastActive > fifteenMinutesAgo)
+                .AsNoTracking()
                 .OrderByDescending(u => u.LastActive)
                 .Take(10)
                 .Select(u => new OnlineUserViewModel
@@ -293,6 +276,7 @@ namespace discussionspot9.Services
             // Get category activity
             var categoryActivity = await _context.Posts
                 .Where(p => p.CreatedAt > DateTime.UtcNow.AddHours(-24))
+                .AsNoTracking()
                 .GroupBy(p => p.Community.Category.Name)
                 .Select(g => new { Category = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.Category, x => x.Count);
@@ -316,10 +300,11 @@ namespace discussionspot9.Services
 
             var stats = new ForumStatsViewModel
             {
-                TotalMembers = await _context.UserProfiles.CountAsync(),
-                TotalPosts = await _context.Posts.CountAsync(p => p.Status == "published"),
-                TotalCategories = await _context.Categories.CountAsync(c => c.IsActive),
+                TotalMembers = await _context.UserProfiles.AsNoTracking().CountAsync(),
+                TotalPosts = await _context.Posts.AsNoTracking().CountAsync(p => p.Status == "published"),
+                TotalCategories = await _context.Categories.AsNoTracking().CountAsync(c => c.IsActive),
                 LastPostTime = await _context.Posts
+                    .AsNoTracking()
                     .Where(p => p.Status == "published")
                     .MaxAsync(p => (DateTime?)p.CreatedAt) ?? DateTime.UtcNow
             };

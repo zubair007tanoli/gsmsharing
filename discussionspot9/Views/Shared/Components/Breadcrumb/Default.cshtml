@@ -1,0 +1,78 @@
+@model List<discussionspot9.Components.BreadcrumbItem>
+
+@if (Model != null && Model.Any())
+{
+    <nav aria-label="breadcrumb" class="breadcrumb-container my-3">
+        <ol class="breadcrumb mb-0">
+            @foreach (var item in Model)
+            {
+                var isLast = item == Model.Last();
+                
+                <li class="breadcrumb-item @(isLast ? "active" : "")" @(isLast ? "aria-current='page'" : "")>
+                    @if (!string.IsNullOrEmpty(item.Url) && !isLast)
+                    {
+                        <a href="@item.Url">
+                            @if (!string.IsNullOrEmpty(item.Icon))
+                            {
+                                <i class="@item.Icon me-1"></i>
+                            }
+                            @item.Text
+                        </a>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrEmpty(item.Icon))
+                        {
+                            <i class="@item.Icon me-1"></i>
+                        }
+                        @item.Text
+                    }
+                </li>
+            }
+        </ol>
+    </nav>
+}
+
+<style>
+    .breadcrumb-container {
+        background-color: transparent;
+        padding: 0;
+    }
+    
+    .breadcrumb {
+        background-color: #f8f9fa;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: #6c757d;
+    }
+    
+    .breadcrumb-item a {
+        color: #0d6efd;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    
+    .breadcrumb-item a:hover {
+        color: #0a58ca;
+        text-decoration: underline;
+    }
+    
+    .breadcrumb-item.active {
+        color: #6c757d;
+    }
+    
+    /* Dark mode support */
+    [data-theme="dark"] .breadcrumb {
+        background-color: #212529;
+    }
+    
+    [data-theme="dark"] .breadcrumb-item.active {
+        color: #adb5bd;
+    }
+</style>
+

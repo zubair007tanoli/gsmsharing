@@ -3,9 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags -->
+    <title>@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")</title>
+    <meta name="title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
+    <meta name="description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more. Share knowledge, connect with like-minded people, and earn from your contributions.")">
+    <meta name="keywords" content="@(ViewData["Keywords"] ?? "discussion forum, community, technology, gaming, knowledge sharing, online discussions")">
+    <meta name="author" content="DiscussionSpot">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    
+    <!-- Canonical URL -->
+    @if (ViewData["CanonicalUrl"] != null)
+    {
+        <link rel="canonical" href="@ViewData["CanonicalUrl"]">
+    }
+    else
+    {
+        <link rel="canonical" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+    }
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="@(ViewData["OgType"] ?? "website")">
+    <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+    <meta property="og:title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
+    <meta property="og:description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more.")">
+    <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-default.png")">
+    <meta property="og:site_name" content="DiscussionSpot">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+    <meta name="twitter:title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
+    <meta name="twitter:description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more.")">
+    <meta name="twitter:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-default.png")">
+    
+    <!-- Google AdSense -->
     <meta name="google-adsense-account" content="ca-pub-5934633595595089">
-    <title>DiscussionSpot - Home</title>
-
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    
+    <!-- DNS Prefetch for performance -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//pagead2.googlesyndication.com">
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
     <!-- Dynamic SEO Meta Tags (from pages) -->
     @await RenderSectionAsync("MetaTags", required: false)
 
@@ -22,6 +72,7 @@
     <link rel="stylesheet" href="~/css/dark-mode.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/keyboard-shortcuts.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/mobile-optimization.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/adsense-optimization.css" asp-append-version="true" />
     <!-- Add these CSS files in order -->
 @* <link rel="stylesheet" href="~/css/DiscussionMain.css" />
 <link rel="stylesheet" href="~/css/modern-style.css" />
@@ -30,9 +81,12 @@
 <link rel="stylesheet" href="~/css/All_Posts.css" />
 <link rel="stylesheet" href="~/css/Improve.css" />
 <link rel="stylesheet" href="~/css/dark-mode.css" /> *@
-@await RenderSectionAsync("Styles", required: false)
+    @await RenderSectionAsync("Styles", required: false)
     @await RenderSectionAsync("customFiles", required: false)
     @await RenderSectionAsync("HeadScripts",required:false)
+    
+    <!-- Google AdSense Auto Ads -->
+    <partial name="_AdSenseAutoAd" />
 </head>
 <body>
     
@@ -117,6 +171,15 @@
         </div>
     </div>
     <footer class="main-footer mt-4 py-4 border-top">
+        <!-- Footer Ad Unit -->
+        <div class="container mb-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <partial name="_AdSenseDisplayAd" model='new { AdFormat = "horizontal", AdStyle = "min-height: 90px;" }' />
+                </div>
+            </div>
+        </div>
+        
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 mb-4 mb-lg-0">
@@ -126,45 +189,83 @@
                 <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
                     <h3 class="h5 mb-3">Quick Links</h3>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="about.html" class="text-decoration-none">About Us</a></li>
-                        <li class="mb-2"><a href="contact.html" class="text-decoration-none">Contact</a></li>
-                        <li class="mb-2"><a href="privacy.html" class="text-decoration-none">Privacy Policy</a></li>
-                        <li class="mb-2"><a href="terms.html" class="text-decoration-none">Terms of Service</a></li>
-                        <li><a href="faq.html" class="text-decoration-none">FAQ</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="About" class="text-decoration-none">About Us</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Contact" class="text-decoration-none">Contact</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Privacy" class="text-decoration-none">Privacy Policy</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Terms" class="text-decoration-none">Terms of Service</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="FAQ" class="text-decoration-none">FAQ</a></li>
+                        <li><a asp-controller="Home" asp-action="Advertise" class="text-decoration-none">Advertise</a></li>
                     </ul>
                 </div>
                 <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
                     <h3 class="h5 mb-3">Connect With Us</h3>
-                    <div class="social-icons d-flex gap-2">
-                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-discord"></i></a>
-                        <a href="#" class="btn btn-outline-secondary btn-sm rounded-circle"><i class="fab fa-reddit"></i></a>
+                    <div class="social-icons d-flex gap-2 mb-3">
+                        <a href="https://facebook.com/discussionspot" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm rounded-circle" aria-label="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://twitter.com/discussionspot" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm rounded-circle" aria-label="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="https://instagram.com/discussionspot" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm rounded-circle" aria-label="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://discord.gg/discussionspot" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm rounded-circle" aria-label="Discord">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="https://reddit.com/r/discussionspot" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm rounded-circle" aria-label="Reddit">
+                            <i class="fab fa-reddit"></i>
+                        </a>
+                    </div>
+                    <div class="mt-3">
+                        <a href="/sitemap.xml" class="text-muted text-decoration-none small">
+                            <i class="fas fa-sitemap me-1"></i> Sitemap
+                        </a>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-4">
                     <h3 class="h5 mb-3">Newsletter</h3>
                     <p class="text-muted small mb-2">Subscribe to our newsletter for updates</p>
-                    <form>
+                    <form action="#" method="post">
                         <div class="input-group">
-                            <input type="email" class="form-control" placeholder="Your email address">
+                            <input type="email" name="email" class="form-control" placeholder="Your email address" required>
                             <button class="btn btn-primary" type="submit">Subscribe</button>
                         </div>
                     </form>
                 </div>
             </div>
             <div class="border-top mt-4 pt-3 text-center text-muted">
-                <p class="small mb-0">&copy; 2023 ForumHub. All rights reserved.</p>
+                <p class="small mb-0">&copy; @DateTime.Now.Year DiscussionSpot. All rights reserved. | <a asp-controller="Home" asp-action="Privacy" class="text-muted">Privacy</a> | <a asp-controller="Home" asp-action="Terms" class="text-muted">Terms</a></p>
             </div>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/CustomJs/Dark-mode.js"></script>
-    <script src="~/js/search-autocomplete.js" asp-append-version="true"></script>
-    <script src="~/js/dark-mode.js" asp-append-version="true"></script>
-    <script src="~/js/keyboard-shortcuts.js" asp-append-version="true"></script>
+    <script src="~/js/CustomJs/Dark-mode.js" defer></script>
+    <script src="~/js/search-autocomplete.js" asp-append-version="true" defer></script>
+    <script src="~/js/dark-mode.js" asp-append-version="true" defer></script>
+    <script src="~/js/keyboard-shortcuts.js" asp-append-version="true" defer></script>
+    
+    <!-- Lazy Load Images Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if ('loading' in HTMLImageElement.prototype) {
+                const images = document.querySelectorAll('img[loading="lazy"]');
+                images.forEach(img => {
+                    img.src = img.dataset.src || img.src;
+                });
+            } else {
+                // Fallback for older browsers
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js';
+                script.onload = function() {
+                    const observer = lozad();
+                    observer.observe();
+                };
+                document.body.appendChild(script);
+            }
+        });
+    </script>
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
