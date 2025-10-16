@@ -1,0 +1,419 @@
+@{
+    ViewData["Title"] = "Enhanced SEO Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Enhanced SEO Dashboard</h1>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#keywordResearchModal">
+                        <i class="fas fa-search"></i> Keyword Research
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEO Analysis Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary"></i> SEO Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="seoAnalysisForm">
+                        <div class="mb-3">
+                            <label for="postId" class="form-label">Post ID</label>
+                            <input type="number" class="form-control" id="postId" placeholder="Enter Post ID">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="generateEnhancedSeo()">
+                            <i class="fas fa-magic"></i> Generate Enhanced SEO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trophy text-warning"></i> SEO Score
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="seoScoreDisplay">
+                        <div class="display-4 text-muted">--</div>
+                        <p class="text-muted">Run analysis to see score</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row" id="resultsSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-list text-success"></i> Analysis Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Optimized Title</h6>
+                            <p id="optimizedTitle" class="text-primary"></p>
+                            
+                            <h6>Meta Description</h6>
+                            <p id="metaDescription" class="text-secondary"></p>
+                            
+                            <h6>Suggested Keywords</h6>
+                            <div id="suggestedKeywords" class="mb-3"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Semrush Enhanced Keywords</h6>
+                            <div id="semrushKeywords" class="mb-3"></div>
+                            
+                            <h6>Issues Found</h6>
+                            <div id="issuesFound" class="mb-3"></div>
+                            
+                            <h6>Improvements Made</h6>
+                            <div id="improvementsMade" class="mb-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyword Opportunities Section -->
+    <div class="row mt-4" id="keywordOpportunitiesSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb text-info"></i> Keyword Opportunities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Keyword</th>
+                                    <th>Search Volume</th>
+                                    <th>Difficulty</th>
+                                    <th>CPC</th>
+                                    <th>Opportunity Score</th>
+                                    <th>Recommendation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keywordOpportunitiesTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Competitive Insights Section -->
+    <div class="row mt-4" id="competitiveInsightsSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-danger"></i> Competitive Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>High Volume Keywords</h6>
+                            <div id="highVolumeKeywords"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Low Competition Keywords</h6>
+                            <div id="lowCompetitionKeywords"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Statistics</h6>
+                            <div id="competitiveStats"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Keyword Research Modal -->
+<div class="modal fade" id="keywordResearchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Keyword Research</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="researchKeyword" class="form-label">Keyword</label>
+                    <input type="text" class="form-control" id="researchKeyword" placeholder="Enter keyword to research">
+                </div>
+                <div class="mb-3">
+                    <label for="researchDatabase" class="form-label">Database</label>
+                    <select class="form-select" id="researchDatabase">
+                        <option value="us">United States</option>
+                        <option value="uk">United Kingdom</option>
+                        <option value="ca">Canada</option>
+                        <option value="au">Australia</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="researchKeyword()">
+                    <i class="fas fa-search"></i> Research Keyword
+                </button>
+                
+                <div id="keywordResearchResults" class="mt-4" style="display: none;">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function generateEnhancedSeo() {
+            const postId = document.getElementById('postId').value;
+            if (!postId) {
+                alert('Please enter a Post ID');
+                return;
+            }
+
+            showLoading();
+
+            fetch('/EnhancedSeo/GenerateEnhancedSeo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ postId: parseInt(postId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    displayResults(data.data);
+                } else {
+                    showError(data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showError('An error occurred while generating SEO analysis');
+                console.error('Error:', error);
+            });
+        }
+
+        function displayResults(data) {
+            // Update SEO Score
+            document.getElementById('seoScoreDisplay').innerHTML = `
+                <div class="display-4 ${getScoreColor(data.seoScore)}">${data.seoScore}</div>
+                <p class="text-muted">SEO Score</p>
+            `;
+
+            // Update basic results
+            document.getElementById('optimizedTitle').textContent = data.optimizedTitle || 'N/A';
+            document.getElementById('metaDescription').textContent = data.metaDescription || 'N/A';
+            
+            // Update keywords
+            document.getElementById('suggestedKeywords').innerHTML = 
+                (data.keywords || []).map(k => `<span class="badge bg-secondary me-1">${k}</span>`).join('');
+            
+            document.getElementById('semrushKeywords').innerHTML = 
+                (data.semrushKeywords || []).map(k => `<span class="badge bg-primary me-1">${k}</span>`).join('');
+
+            // Update issues and improvements
+            document.getElementById('issuesFound').innerHTML = 
+                (data.issues || []).map(issue => `<div class="alert alert-warning">${issue}</div>`).join('');
+            
+            document.getElementById('improvementsMade').innerHTML = 
+                (data.improvements || []).map(improvement => `<div class="alert alert-success">${improvement}</div>`).join('');
+
+            // Show results section
+            document.getElementById('resultsSection').style.display = 'block';
+
+            // Display keyword opportunities if available
+            if (data.keywordOpportunities && data.keywordOpportunities.length > 0) {
+                displayKeywordOpportunities(data.keywordOpportunities);
+                document.getElementById('keywordOpportunitiesSection').style.display = 'block';
+            }
+
+            // Display competitive insights if available
+            if (data.competitiveInsights) {
+                displayCompetitiveInsights(data.competitiveInsights);
+                document.getElementById('competitiveInsightsSection').style.display = 'block';
+            }
+        }
+
+        function displayKeywordOpportunities(opportunities) {
+            const tbody = document.getElementById('keywordOpportunitiesTable');
+            tbody.innerHTML = opportunities.map(opp => `
+                <tr>
+                    <td><strong>${opp.keyword}</strong></td>
+                    <td>${opp.searchVolume.toLocaleString()}</td>
+                    <td><span class="badge ${getDifficultyColor(opp.difficulty)}">${opp.difficulty}%</span></td>
+                    <td>$${opp.cpc}</td>
+                    <td><span class="badge ${getScoreColor(opp.opportunityScore)}">${opp.opportunityScore.toFixed(1)}</span></td>
+                    <td><small>${opp.recommendation}</small></td>
+                </tr>
+            `).join('');
+        }
+
+        function displayCompetitiveInsights(insights) {
+            // High volume keywords
+            document.getElementById('highVolumeKeywords').innerHTML = 
+                (insights.high_volume_keywords || []).map(k => `
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>${k.keyword}</span>
+                        <span class="badge bg-info">${k.volume.toLocaleString()}</span>
+                    </div>
+                `).join('');
+
+            // Low competition keywords
+            document.getElementById('lowCompetitionKeywords').innerHTML = 
+                (insights.low_competition_keywords || []).map(k => `
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>${k.keyword}</span>
+                        <span class="badge bg-success">${k.difficulty}%</span>
+                    </div>
+                `).join('');
+
+            // Statistics
+            document.getElementById('competitiveStats').innerHTML = `
+                <div class="mb-2">
+                    <strong>Total Search Volume:</strong> ${(insights.total_search_volume || 0).toLocaleString()}
+                </div>
+                <div class="mb-2">
+                    <strong>Average Difficulty:</strong> ${(insights.average_difficulty || 0).toFixed(1)}%
+                </div>
+            `;
+        }
+
+        function researchKeyword() {
+            const keyword = document.getElementById('researchKeyword').value;
+            const database = document.getElementById('researchDatabase').value;
+            
+            if (!keyword) {
+                alert('Please enter a keyword');
+                return;
+            }
+
+            showLoading();
+
+            fetch(`/EnhancedSeo/GetKeywordOverview?keyword=${encodeURIComponent(keyword)}&database=${database}`)
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    displayKeywordResearch(data.data);
+                } else {
+                    showError(data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showError('An error occurred while researching keyword');
+                console.error('Error:', error);
+            });
+        }
+
+        function displayKeywordResearch(data) {
+            const resultsDiv = document.getElementById('keywordResearchResults');
+            resultsDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Keyword: <strong>${data.keyword}</strong></h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-primary">${data.searchVolume.toLocaleString()}</div>
+                                    <small class="text-muted">Search Volume</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-warning">${data.difficulty}%</div>
+                                    <small class="text-muted">Difficulty</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-success">$${data.cpc}</div>
+                                    <small class="text-muted">CPC</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-info">${data.numberOfResults.toLocaleString()}</div>
+                                    <small class="text-muted">Results</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>Related Keywords:</h6>
+                            <div>
+                                ${(data.relatedKeywords || []).map(k => `<span class="badge bg-secondary me-1">${k}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+        }
+
+        function getScoreColor(score) {
+            if (score >= 80) return 'text-success';
+            if (score >= 60) return 'text-warning';
+            return 'text-danger';
+        }
+
+        function getDifficultyColor(difficulty) {
+            if (difficulty < 30) return 'bg-success';
+            if (difficulty < 60) return 'bg-warning';
+            return 'bg-danger';
+        }
+
+        function showLoading() {
+            // Add loading spinner
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        }
+
+        function hideLoading() {
+            // Remove loading spinner
+            const button = event.target;
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-magic"></i> Generate Enhanced SEO';
+        }
+
+        function showError(message) {
+            alert('Error: ' + message);
+        }
+
+        function refreshData() {
+            location.reload();
+        }
+    </script>
+}
