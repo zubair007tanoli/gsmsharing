@@ -95,7 +95,11 @@ namespace discussionspot9.Services
                 post.TimeAgo = FormatTimeAgo(timeDiff);
             }
 
-            _cache.Set(cacheKey, trending, TimeSpan.FromMinutes(5));
+            _cache.Set(cacheKey, trending, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+                Priority = CacheItemPriority.Normal
+            });
             return trending;
         }
 

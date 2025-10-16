@@ -50,7 +50,7 @@ namespace discussionspot9.Controllers
             {
                 const int pageSize = 12;
                 var userId = User.Identity.IsAuthenticated ?
-                    (await _userManager.GetUserAsync(User))?.Id : null;
+                    (await _userManager.GetUserAsync(User))?.Id : string.Empty;
 
                 // Build query
                 var query = _context.Communities

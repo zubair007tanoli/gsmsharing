@@ -90,7 +90,11 @@ namespace discussionspot9.Services
                     post.AuthorInitials = GetInitials(post.AuthorDisplayName);
                 }
 
-                _cache.Set(cacheKey, randomPosts, TimeSpan.FromMinutes(10));
+                _cache.Set(cacheKey, randomPosts, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+                    Priority = CacheItemPriority.Normal
+                });
                 return randomPosts;
             }
             catch (Exception ex)
@@ -137,7 +141,11 @@ namespace discussionspot9.Services
                                          category.LastActivity.Value > oneHourAgo;
                 }
 
-                _cache.Set(cacheKey, categories, TimeSpan.FromHours(1));
+                _cache.Set(cacheKey, categories, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
+                    Priority = CacheItemPriority.Normal
+                });
                 return categories;
             }
             catch (Exception ex)
@@ -191,7 +199,11 @@ namespace discussionspot9.Services
                     post.AuthorInitials = GetInitials(post.AuthorDisplayName);
                 }
 
-                _cache.Set(cacheKey, recentPosts, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, recentPosts, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+                    Priority = CacheItemPriority.Normal
+                });
                 return recentPosts;
             }
             catch (Exception ex)
@@ -252,7 +264,11 @@ namespace discussionspot9.Services
                 })
                 .ToListAsync();
 
-            _cache.Set(cacheKey, trending, TimeSpan.FromMinutes(10)); // Shorter cache
+            _cache.Set(cacheKey, trending, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+                Priority = CacheItemPriority.Normal
+            });
             return trending;
         }
 
@@ -317,7 +333,11 @@ namespace discussionspot9.Services
 
             stats.LastPostTimeAgo = GetTimeAgo(stats.LastPostTime);
 
-            _cache.Set(cacheKey, stats, TimeSpan.FromMinutes(15));
+            _cache.Set(cacheKey, stats, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15),
+                Priority = CacheItemPriority.Normal
+            });
             return stats;
         }
 

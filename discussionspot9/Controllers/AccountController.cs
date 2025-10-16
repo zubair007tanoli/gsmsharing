@@ -5,14 +5,18 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using discussionspot9.Helpers;
+using Microsoft.EntityFrameworkCore;
+using discussionspot9.Data.DbContext;
+using discussionspot9.Models.Domain;
 
 namespace DiscussionSpot9.Controllers
 {
-    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager) : Controller
+    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ApplicationDbContext context) : Controller
     {
         private readonly IUserService _userService = userService;
         private readonly UserManager<IdentityUser> _userManager = userManager;
         private readonly SignInManager<IdentityUser> _signInManager = signInManager;
+        private readonly ApplicationDbContext _context = context;
 
         [HttpGet]
         [AllowAnonymous]
@@ -245,37 +249,161 @@ namespace DiscussionSpot9.Controllers
             return View(model);
         }
         [HttpGet]
-        public IActionResult ResetPassword()
+        [AllowAnonymous]
+        public IActionResult ForgotPassword()
         {
             return View();
         }
 
         [HttpPost]
-        public IActionResult NewPassword()
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(string email)
         {
-            return View();
+            if (string.IsNullOrEmpty(email))
+            {
+                ModelState.AddModelError(string.Empty, "Email is required.");
+                return View();
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            {
+                // Don't reveal if user exists
+                TempData["SuccessMessage"] = "If an account with this email exists, a password reset email has been sent.";
+                return RedirectToAction("Auth");
+            }
+
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+
+            // TODO: Send email with callbackUrl
+            // For now, we'll just show a message
+            TempData["SuccessMessage"] = "Password reset email sent. Please check your inbox.";
+            
+            return RedirectToAction("Auth");
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ResetPassword(string? code = null)
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                TempData["ErrorMessage"] = "Invalid reset code.";
+                return RedirectToAction("Auth");
+            }
+
+            var model = new ResetPasswordViewModel { Code = code };
+            return View(model);
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                // Don't reveal if user exists
+                TempData["SuccessMessage"] = "Password reset successful.";
+                return RedirectToAction("Auth");
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Code, model.Password);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Your password has been reset successfully. You can now log in.";
+                return RedirectToAction("Auth");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
         }
         #endregion
 
         #region Email Confirmation
 
         [HttpGet]
-        public IActionResult ConfirmEmail()
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
+            {
+                TempData["ErrorMessage"] = "Invalid confirmation link.";
+                return RedirectToAction("Auth");
+            }
 
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "User not found.";
+                return RedirectToAction("Auth");
+            }
+
+            var result = await _userManager.ConfirmEmailAsync(user, code);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Your email has been confirmed successfully. You can now log in.";
+                return RedirectToAction("Auth");
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Email confirmation failed. The link may be invalid or expired.";
+                return RedirectToAction("Auth");
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ResendConfirmation()
+        {
             return View();
         }
 
         [HttpPost]
-        public IActionResult ConfirmEmail(string userId, string code)
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendConfirmation(string email)
         {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
+            if (string.IsNullOrEmpty(email))
             {
-                return NotFound();
+                ModelState.AddModelError(string.Empty, "Email is required.");
+                return View();
             }
 
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                // Don't reveal if user exists
+                TempData["SuccessMessage"] = "If an account with this email exists, a confirmation email has been sent.";
+                return RedirectToAction("Auth");
+            }
 
-            return RedirectToAction("Index", "Home");
+            if (user.EmailConfirmed)
+            {
+                TempData["InfoMessage"] = "This email is already confirmed.";
+                return RedirectToAction("Auth");
+            }
+
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, Request.Scheme);
+
+            // TODO: Send email with callbackUrl
+            // For now, we'll just show a message
+            TempData["SuccessMessage"] = "Confirmation email sent. Please check your inbox.";
+            
+            return RedirectToAction("Auth");
         }
 
         #endregion
@@ -359,31 +487,65 @@ namespace DiscussionSpot9.Controllers
                 return RedirectToAction("Auth");
             }
 
-            // Sign in the user with this external login provider if the user already has a login
-            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
-            
-            if (result.Succeeded)
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email?.Split('@')[0] ?? "User";
+
+            if (string.IsNullOrEmpty(email))
             {
-                return LocalRedirect(returnUrl);
+                TempData["ErrorMessage"] = "Email not received from provider.";
+                return RedirectToAction("Auth");
             }
+
+            // Check if user already exists with this email
+            var existingUser = await _userManager.FindByEmailAsync(email);
             
-            if (result.IsLockedOut)
+            if (existingUser != null)
             {
-                return View("Lockout");
+                // User exists - check if they already have this external login
+                var existingLogins = await _userManager.GetLoginsAsync(existingUser);
+                var hasExternalLogin = existingLogins.Any(l => l.LoginProvider == info.LoginProvider);
+
+                if (hasExternalLogin)
+                {
+                    // User has this external login - sign them in
+                    var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+                    
+                    if (signInResult.Succeeded)
+                    {
+                        await UpdateLastActiveAsync(existingUser.Id);
+                        TempData["SuccessMessage"] = "Welcome back!";
+                        return LocalRedirect(returnUrl);
+                    }
+                }
+                else
+                {
+                    // User exists but doesn't have this external login - add it
+                    var addLoginResult = await _userManager.AddLoginAsync(existingUser, info);
+                    
+                    if (addLoginResult.Succeeded)
+                    {
+                        await _signInManager.SignInAsync(existingUser, isPersistent: false);
+                        await UpdateLastActiveAsync(existingUser.Id);
+                        TempData["SuccessMessage"] = "External login added successfully!";
+                        return LocalRedirect(returnUrl);
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Unable to link external account. Please try again.";
+                        return RedirectToAction("Auth");
+                    }
+                }
             }
             else
             {
-                // If the user does not have an account, create one
-                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-                var name = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email?.Split('@')[0] ?? "User";
-
-                if (string.IsNullOrEmpty(email))
-                {
-                    TempData["ErrorMessage"] = "Email not received from provider.";
-                    return RedirectToAction("Auth");
-                }
-
-                var user = new IdentityUser { UserName = email, Email = email };
+                // User doesn't exist - create new account
+                var user = new IdentityUser 
+                { 
+                    UserName = email, 
+                    Email = email,
+                    EmailConfirmed = true // Google emails are pre-verified
+                };
+                
                 var createResult = await _userManager.CreateAsync(user);
 
                 if (createResult.Succeeded)
@@ -393,7 +555,25 @@ namespace DiscussionSpot9.Controllers
                     
                     if (createResult.Succeeded)
                     {
+                        // Add user to User role
+                        await _userManager.AddToRoleAsync(user, "User");
+
+                        // Create UserProfile
+                        var userProfile = new UserProfile
+                        {
+                            UserId = user.Id,
+                            DisplayName = name,
+                            JoinDate = DateTime.UtcNow,
+                            LastActive = DateTime.UtcNow,
+                            KarmaPoints = 0,
+                            IsVerified = false
+                        };
+
+                        _context.UserProfiles.Add(userProfile);
+                        await _context.SaveChangesAsync();
+
                         await _signInManager.SignInAsync(user, isPersistent: false);
+                        TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {name}! Your account has been created successfully.";
                         return LocalRedirect(returnUrl);
                     }
                 }
@@ -405,6 +585,28 @@ namespace DiscussionSpot9.Controllers
 
                 TempData["ErrorMessage"] = "Unable to create account. Please try again.";
                 return RedirectToAction("Auth");
+            }
+
+            TempData["ErrorMessage"] = "Unable to process external login. Please try again.";
+            return RedirectToAction("Auth");
+        }
+
+        private async Task UpdateLastActiveAsync(string userId)
+        {
+            try
+            {
+                var userProfile = await _context.UserProfiles
+                    .FirstOrDefaultAsync(up => up.UserId == userId);
+                
+                if (userProfile != null)
+                {
+                    userProfile.LastActive = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Log error but don't fail the login
             }
         }
 

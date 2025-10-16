@@ -24,6 +24,9 @@ class SeoAnalysisResult:
     improvements_made: List[str]
     title_changed: bool
     content_changed: bool
+    semrush_enhanced_keywords: List[str]
+    keyword_opportunities: List[Dict[str, Any]]
+    competitive_insights: Dict[str, Any]
 
 
 class SeoAnalyzer:
@@ -42,6 +45,7 @@ class SeoAnalyzer:
         content = data.get('content', '').strip()
         community_slug = data.get('communitySlug', '')
         post_type = data.get('postType', 'text')
+        semrush_data = data.get('semrushData', {})
         
         issues = []
         improvements = []
@@ -64,9 +68,14 @@ class SeoAnalyzer:
         # Extract keywords
         keywords = self._extract_keywords(optimized_title, optimized_content)
         
-        # Calculate SEO score
-        seo_score = self._calculate_seo_score(
-            optimized_title, optimized_content, len(issues)
+        # Process Semrush data for enhanced keyword analysis
+        semrush_enhanced_keywords, keyword_opportunities, competitive_insights = self._process_semrush_data(
+            keywords, semrush_data, optimized_title, optimized_content
+        )
+        
+        # Calculate SEO score with Semrush enhancement
+        seo_score = self._calculate_enhanced_seo_score(
+            optimized_title, optimized_content, len(issues), semrush_data
         )
         
         return SeoAnalysisResult(
@@ -80,7 +89,10 @@ class SeoAnalyzer:
             issues_found=issues,
             improvements_made=improvements,
             title_changed=(title != optimized_title),
-            content_changed=(content != optimized_content)
+            content_changed=(content != optimized_content),
+            semrush_enhanced_keywords=semrush_enhanced_keywords,
+            keyword_opportunities=keyword_opportunities,
+            competitive_insights=competitive_insights
         )
     
     def _optimize_title(self, title: str, community: str) -> tuple:
@@ -255,6 +267,132 @@ class SeoAnalyzer:
         
         return max(0.0, min(100.0, score))
 
+    def _process_semrush_data(self, keywords: List[str], semrush_data: Dict[str, Any], 
+                             title: str, content: str) -> tuple:
+        """Process Semrush data to enhance keyword analysis"""
+        semrush_enhanced_keywords = []
+        keyword_opportunities = []
+        competitive_insights = {
+            'high_volume_keywords': [],
+            'low_competition_keywords': [],
+            'trending_keywords': [],
+            'average_difficulty': 0.0,
+            'total_search_volume': 0
+        }
+        
+        if not semrush_data:
+            return semrush_enhanced_keywords, keyword_opportunities, competitive_insights
+        
+        # Process each keyword with Semrush data
+        for keyword, data in semrush_data.items():
+            if isinstance(data, dict):
+                search_volume = data.get('search_volume', 0)
+                difficulty = data.get('keyword_difficulty', 0)
+                cpc = data.get('cpc', 0)
+                
+                # Categorize keywords
+                if search_volume > 1000:
+                    competitive_insights['high_volume_keywords'].append({
+                        'keyword': keyword,
+                        'volume': search_volume,
+                        'difficulty': difficulty
+                    })
+                
+                if difficulty < 50 and search_volume > 100:
+                    competitive_insights['low_competition_keywords'].append({
+                        'keyword': keyword,
+                        'volume': search_volume,
+                        'difficulty': difficulty
+                    })
+                
+                # Add to enhanced keywords if it meets criteria
+                if search_volume > 100 and difficulty < 70:
+                    semrush_enhanced_keywords.append(keyword)
+                
+                # Create keyword opportunities
+                if search_volume > 500 and difficulty < 60:
+                    keyword_opportunities.append({
+                        'keyword': keyword,
+                        'search_volume': search_volume,
+                        'difficulty': difficulty,
+                        'cpc': cpc,
+                        'opportunity_score': self._calculate_opportunity_score(search_volume, difficulty),
+                        'recommendation': self._get_keyword_recommendation(search_volume, difficulty)
+                    })
+                
+                competitive_insights['total_search_volume'] += search_volume
+        
+        # Calculate average difficulty
+        if semrush_data:
+            difficulties = [data.get('keyword_difficulty', 0) for data in semrush_data.values() 
+                          if isinstance(data, dict)]
+            if difficulties:
+                competitive_insights['average_difficulty'] = sum(difficulties) / len(difficulties)
+        
+        # Sort by opportunity score
+        keyword_opportunities.sort(key=lambda x: x['opportunity_score'], reverse=True)
+        
+        return semrush_enhanced_keywords, keyword_opportunities, competitive_insights
+    
+    def _calculate_opportunity_score(self, search_volume: int, difficulty: float) -> float:
+        """Calculate opportunity score for a keyword"""
+        if search_volume == 0 or difficulty == 0:
+            return 0.0
+        
+        # Higher volume and lower difficulty = better opportunity
+        volume_score = min(search_volume / 10000, 1.0)  # Normalize to 0-1
+        difficulty_score = 1.0 - (difficulty / 100)  # Invert difficulty (lower is better)
+        
+        return (volume_score * 0.6 + difficulty_score * 0.4) * 100
+    
+    def _get_keyword_recommendation(self, search_volume: int, difficulty: float) -> str:
+        """Get recommendation for a keyword based on volume and difficulty"""
+        if search_volume > 5000 and difficulty < 40:
+            return "High Priority - High volume, low competition"
+        elif search_volume > 1000 and difficulty < 60:
+            return "Medium Priority - Good volume, moderate competition"
+        elif search_volume > 500 and difficulty < 50:
+            return "Consider - Moderate volume, low competition"
+        elif search_volume > 2000 and difficulty > 70:
+            return "Challenging - High volume but very competitive"
+        else:
+            return "Low Priority - Low volume or high competition"
+    
+    def _calculate_enhanced_seo_score(self, title: str, content: str, issues_count: int, 
+                                    semrush_data: Dict[str, Any]) -> float:
+        """Calculate enhanced SEO score with Semrush data"""
+        base_score = self._calculate_seo_score(title, content, issues_count)
+        
+        if not semrush_data:
+            return base_score
+        
+        # Bonus for having Semrush data
+        semrush_bonus = 5.0
+        
+        # Bonus for high-value keywords
+        high_value_keywords = 0
+        total_volume = 0
+        
+        for keyword, data in semrush_data.items():
+            if isinstance(data, dict):
+                search_volume = data.get('search_volume', 0)
+                difficulty = data.get('keyword_difficulty', 0)
+                
+                if search_volume > 1000 and difficulty < 60:
+                    high_value_keywords += 1
+                
+                total_volume += search_volume
+        
+        # Volume bonus (capped at 10 points)
+        volume_bonus = min(total_volume / 10000, 10.0)
+        
+        # High-value keyword bonus
+        keyword_bonus = min(high_value_keywords * 2, 10.0)
+        
+        enhanced_score = base_score + semrush_bonus + volume_bonus + keyword_bonus
+        
+        return max(0.0, min(100.0, enhanced_score))
+
 
 def main():
     """Main entry point"""
@@ -294,7 +432,10 @@ def main():
             'issues_found': [f'Python script error: {str(e)}'],
             'improvements_made': [],
             'title_changed': False,
-            'content_changed': False
+            'content_changed': False,
+            'semrush_enhanced_keywords': [],
+            'keyword_opportunities': [],
+            'competitive_insights': {}
         }
         print(json.dumps(error_result, indent=2))
         return 1

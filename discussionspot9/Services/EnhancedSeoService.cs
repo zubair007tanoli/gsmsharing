@@ -1,436 +1,382 @@
-using discussionspot9.Data.DbContext;
+using discussionspot9.Interfaces;
+using discussionspot9.Models.Semrush;
 using discussionspot9.Models.Domain;
-using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace discussionspot9.Services
 {
     /// <summary>
-    /// Enhanced SEO service with click-worthy meta descriptions and 3-tier keywords
+    /// Enhanced SEO service that integrates Semrush data with existing SEO workflow
     /// </summary>
     public class EnhancedSeoService
     {
+        private readonly ISemrushService _semrushService;
+        private readonly ISeoAnalyzerService _seoAnalyzerService;
         private readonly ApplicationDbContext _context;
         private readonly ILogger<EnhancedSeoService> _logger;
-        private readonly GoogleKeywordPlannerService _keywordService;
-
-        // Power words for click-worthy descriptions
-        private static readonly string[] PowerWords = new[]
-        {
-            "Ultimate", "Essential", "Proven", "Amazing", "Complete", "Comprehensive",
-            "Expert", "Advanced", "Beginner-Friendly", "Step-by-Step", "Actionable",
-            "Powerful", "Effective", "Revolutionary", "Game-Changing", "Must-Know",
-            "Secret", "Hidden", "Insider", "Professional", "Master", "Discover",
-            "Unlock", "Transform", "Boost", "Skyrocket"
-        };
-
-        // Emotional triggers
-        private static readonly string[] EmotionalTriggers = new[]
-        {
-            "You Need", "Don't Miss", "Before It's Too Late", "Shocking Truth",
-            "What Nobody Tells You", "Finally Revealed", "The Real Story",
-            "Everything You Need to Know", "Why You Should Care", "Stop Making This Mistake"
-        };
 
         public EnhancedSeoService(
+            ISemrushService semrushService,
+            ISeoAnalyzerService seoAnalyzerService,
             ApplicationDbContext context,
-            ILogger<EnhancedSeoService> logger,
-            GoogleKeywordPlannerService keywordService)
+            ILogger<EnhancedSeoService> logger)
         {
+            _semrushService = semrushService;
+            _seoAnalyzerService = seoAnalyzerService;
             _context = context;
             _logger = logger;
-            _keywordService = keywordService;
         }
 
         /// <summary>
-        /// Generate enhanced SEO metadata for a post
+        /// Generate comprehensive SEO analysis with Semrush data for a post
         /// </summary>
-        public async Task<EnhancedSeoResult> GenerateEnhancedSeoAsync(CreatePostViewModel model)
+        public async Task<EnhancedSeoResult> GenerateEnhancedSeoAsync(int postId)
         {
             try
             {
-                _logger.LogInformation("🎯 Generating enhanced SEO for: {Title}", model.Title);
+                // Get the post
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == postId);
 
-                // 1. Get keyword research data
-                var keywords = await _keywordService.GetKeywordIdeasAsync(model.Title);
-                var classification = _keywordService.ClassifyKeywords(keywords, model.Title);
-
-                // 2. Generate click-worthy meta description
-                var metaDescription = GenerateClickWorthyMetaDescription(
-                    model.Title,
-                    model.Content ?? string.Empty,
-                    classification.Primary.FirstOrDefault()?.Keyword ?? model.Title
-                );
-
-                // 3. Calculate SEO metrics
-                var readabilityScore = CalculateReadabilityScore(model.Content ?? string.Empty);
-                var keywordDensity = CalculateKeywordDensity(
-                    model.Content ?? string.Empty,
-                    classification.Primary.Select(k => k.Keyword).ToList()
-                );
-
-                // 4. Generate SERP preview
-                var serpPreview = GenerateSerpPreview(model.Title, metaDescription);
-
-                // 5. Calculate overall SEO score
-                var seoScore = CalculateSeoScore(
-                    model.Title,
-                    model.Content ?? string.Empty,
-                    metaDescription,
-                    classification,
-                    readabilityScore,
-                    keywordDensity
-                );
-
-                var result = new EnhancedSeoResult
+                if (post == null)
                 {
-                    OptimizedMetaDescription = metaDescription,
-                    PrimaryKeywords = classification.Primary,
-                    SecondaryKeywords = classification.Secondary,
-                    LsiKeywords = classification.LSI,
-                    TotalSearchVolume = classification.TotalSearchVolume,
-                    ReadabilityScore = readabilityScore,
-                    KeywordDensity = keywordDensity,
-                    SeoScore = seoScore,
-                    SerpPreview = serpPreview,
-                    PowerWordsUsed = ExtractPowerWords(metaDescription),
-                    EmotionalTriggersUsed = ExtractEmotionalTriggers(metaDescription),
-                    PredictedCtrImprovement = CalculatePredictedCtrImprovement(metaDescription, seoScore)
+                    throw new ArgumentException($"Post with ID {postId} not found");
+                }
+
+                // Extract initial keywords from post content
+                var initialKeywords = ExtractKeywordsFromPost(post);
+
+                // Get Semrush data for top keywords
+                var semrushData = await GetSemrushDataForKeywords(initialKeywords.Take(5).ToList());
+
+                // Run enhanced Python SEO analysis with Semrush data
+                var seoAnalysis = await _seoAnalyzerService.AnalyzePostAsync(new discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+                {
+                    Title = post.Title,
+                    Content = post.Content ?? "",
+                    CommunitySlug = post.Community?.Slug ?? "",
+                    PostType = post.PostType
+                });
+
+                // Generate enhanced SEO metadata
+                var enhancedSeo = await GenerateEnhancedSeoMetadata(post, seoAnalysis, semrushData);
+
+                // Save to database
+                await SaveEnhancedSeoMetadata(postId, enhancedSeo);
+
+                return new EnhancedSeoResult
+                {
+                    PostId = postId,
+                    SeoAnalysis = seoAnalysis,
+                    SemrushData = semrushData,
+                    EnhancedMetadata = enhancedSeo,
+                    Success = true
                 };
-
-                _logger.LogInformation("✅ Enhanced SEO generated. Score: {Score}, Keywords: {Count}, Search Volume: {Volume}",
-                    seoScore, classification.Primary.Count + classification.Secondary.Count + classification.LSI.Count,
-                    classification.TotalSearchVolume);
-
-                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Failed to generate enhanced SEO");
-                return new EnhancedSeoResult { SeoScore = 0 };
-            }
-        }
-
-        /// <summary>
-        /// Generate click-worthy meta description with power words
-        /// </summary>
-        private string GenerateClickWorthyMetaDescription(string title, string content, string primaryKeyword)
-        {
-            var random = new Random();
-            var powerWord = PowerWords[random.Next(PowerWords.Length)];
-            
-            // Extract first meaningful sentence from content
-            var sentences = content.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-            var firstSentence = sentences.FirstOrDefault()?.Trim() ?? title;
-            if (firstSentence.Length > 80) firstSentence = firstSentence.Substring(0, 80).Trim();
-
-            // Template variations for click-worthy descriptions
-            var templates = new[]
-            {
-                $"{powerWord} guide to {primaryKeyword}: {firstSentence}. Everything you need to know in 2025.",
-                $"Discover the {powerWord.ToLower()} secrets of {primaryKeyword}. {firstSentence} | Expert insights & proven strategies.",
-                $"{firstSentence} - Learn the {powerWord.ToLower()} techniques for {primaryKeyword} that experts don't want you to know.",
-                $"{powerWord} {primaryKeyword} guide: {firstSentence}. Master it faster with our step-by-step approach.",
-                $"Want to master {primaryKeyword}? {firstSentence} Discover {powerWord.ToLower()} tips & actionable advice here."
-            };
-
-            var description = templates[random.Next(templates.Length)];
-
-            // Ensure it's within 155-160 characters (optimal for SERP)
-            if (description.Length > 160)
-            {
-                description = description.Substring(0, 157) + "...";
-            }
-
-            return description;
-        }
-
-        /// <summary>
-        /// Calculate readability score (Flesch-Kincaid)
-        /// </summary>
-        private decimal CalculateReadabilityScore(string content)
-        {
-            if (string.IsNullOrWhiteSpace(content)) return 0;
-
-            var words = content.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            var sentences = content.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-            var syllables = words.Sum(w => CountSyllables(w));
-
-            if (sentences.Length == 0 || words.Length == 0) return 0;
-
-            // Flesch Reading Ease: 206.835 - 1.015 * (words/sentences) - 84.6 * (syllables/words)
-            var avgWordsPerSentence = (decimal)words.Length / sentences.Length;
-            var avgSyllablesPerWord = (decimal)syllables / words.Length;
-
-            var score = 206.835m - (1.015m * avgWordsPerSentence) - (84.6m * avgSyllablesPerWord);
-
-            // Normalize to 0-100 scale
-            return Math.Max(0, Math.Min(100, score));
-        }
-
-        private int CountSyllables(string word)
-        {
-            word = word.ToLower().Trim();
-            if (word.Length <= 3) return 1;
-
-            var vowels = "aeiouy";
-            var syllableCount = 0;
-            var previousWasVowel = false;
-
-            foreach (var c in word)
-            {
-                var isVowel = vowels.Contains(c);
-                if (isVowel && !previousWasVowel)
+                _logger.LogError(ex, "Error generating enhanced SEO for post {PostId}", postId);
+                return new EnhancedSeoResult
                 {
-                    syllableCount++;
-                }
-                previousWasVowel = isVowel;
+                    PostId = postId,
+                    Success = false,
+                    ErrorMessage = ex.Message
+                };
             }
-
-            // Adjust for silent 'e'
-            if (word.EndsWith("e")) syllableCount--;
-
-            return Math.Max(1, syllableCount);
         }
 
         /// <summary>
-        /// Calculate keyword density
+        /// Get keyword suggestions for a post based on Semrush data
         /// </summary>
-        private decimal CalculateKeywordDensity(string content, List<string> keywords)
-        {
-            if (string.IsNullOrWhiteSpace(content) || keywords.Count == 0) return 0;
-
-            var contentLower = content.ToLower();
-            var totalWords = content.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
-
-            if (totalWords == 0) return 0;
-
-            var keywordOccurrences = keywords.Sum(keyword =>
-            {
-                var count = 0;
-                var index = 0;
-                while ((index = contentLower.IndexOf(keyword.ToLower(), index)) != -1)
-                {
-                    count++;
-                    index += keyword.Length;
-                }
-                return count;
-            });
-
-            return ((decimal)keywordOccurrences / totalWords) * 100;
-        }
-
-        /// <summary>
-        /// Calculate overall SEO score (0-100)
-        /// </summary>
-        private int CalculateSeoScore(
-            string title,
-            string content,
-            string metaDescription,
-            KeywordClassification keywords,
-            decimal readabilityScore,
-            decimal keywordDensity)
-        {
-            var score = 0;
-
-            // Title optimization (20 points)
-            if (title.Length >= 30 && title.Length <= 60) score += 10;
-            if (keywords.Primary.Any(k => title.ToLower().Contains(k.Keyword.ToLower()))) score += 10;
-
-            // Content quality (25 points)
-            if (content.Length >= 300) score += 10;
-            if (readabilityScore >= 60) score += 10;
-            if (keywordDensity >= 1 && keywordDensity <= 3) score += 5;
-
-            // Meta description (15 points)
-            if (metaDescription.Length >= 120 && metaDescription.Length <= 160) score += 10;
-            if (PowerWords.Any(pw => metaDescription.Contains(pw, StringComparison.OrdinalIgnoreCase))) score += 5;
-
-            // Keyword research (30 points)
-            if (keywords.Primary.Count >= 1) score += 10;
-            if (keywords.Secondary.Count >= 3) score += 10;
-            if (keywords.LSI.Count >= 5) score += 10;
-
-            // Search volume (10 points)
-            if (keywords.TotalSearchVolume > 10000) score += 10;
-            else if (keywords.TotalSearchVolume > 5000) score += 5;
-
-            return Math.Min(100, score);
-        }
-
-        /// <summary>
-        /// Generate SERP (Search Engine Result Page) preview
-        /// </summary>
-        private string GenerateSerpPreview(string title, string metaDescription)
-        {
-            return $"<div class='serp-preview'><h3>{title}</h3><p>{metaDescription}</p></div>";
-        }
-
-        private List<string> ExtractPowerWords(string text)
-        {
-            return PowerWords.Where(pw => text.Contains(pw, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        private List<string> ExtractEmotionalTriggers(string text)
-        {
-            return EmotionalTriggers.Where(et => text.Contains(et, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        private decimal CalculatePredictedCtrImprovement(string metaDescription, int seoScore)
-        {
-            var baseImprovement = (decimal)seoScore / 10; // Base on SEO score
-
-            // Bonus for power words
-            var powerWordCount = ExtractPowerWords(metaDescription).Count;
-            var powerWordBonus = powerWordCount * 5;
-
-            // Bonus for emotional triggers
-            var emotionalTriggerCount = ExtractEmotionalTriggers(metaDescription).Count;
-            var emotionalBonus = emotionalTriggerCount * 10;
-
-            return Math.Min(100, baseImprovement + powerWordBonus + emotionalBonus);
-        }
-
-        /// <summary>
-        /// Save enhanced SEO metadata to database
-        /// </summary>
-        public async Task SaveEnhancedSeoAsync(int postId, EnhancedSeoResult seoResult)
+        public async Task<List<KeywordSuggestion>> GetKeywordSuggestionsAsync(int postId, int limit = 10)
         {
             try
             {
-                var existing = await _context.EnhancedSeoMetadata
-                    .FirstOrDefaultAsync(e => e.PostId == postId);
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == postId);
 
-                if (existing != null)
+                if (post == null)
+                {
+                    return new List<KeywordSuggestion>();
+                }
+
+                // Extract seed keywords from post
+                var seedKeywords = ExtractKeywordsFromPost(post);
+                var suggestions = new List<KeywordSuggestion>();
+
+                // Get suggestions for top seed keywords
+                foreach (var seedKeyword in seedKeywords.Take(3))
+                {
+                    var keywordSuggestions = await _semrushService.GetKeywordSuggestionsAsync(seedKeyword, limit: limit / 3);
+                    suggestions.AddRange(keywordSuggestions);
+                }
+
+                // Remove duplicates and sort by relevance
+                return suggestions
+                    .GroupBy(s => s.Keyword)
+                    .Select(g => g.First())
+                    .OrderByDescending(s => s.SearchVolume)
+                    .Take(limit)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting keyword suggestions for post {PostId}", postId);
+                return new List<KeywordSuggestion>();
+            }
+        }
+
+        /// <summary>
+        /// Analyze competitor keywords for a domain
+        /// </summary>
+        public async Task<List<CompetitorKeyword>> AnalyzeCompetitorKeywordsAsync(string domain, int limit = 20)
+        {
+            try
+            {
+                return await _semrushService.GetCompetitorKeywordsAsync(domain, limit: limit);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error analyzing competitor keywords for domain {Domain}", domain);
+                return new List<CompetitorKeyword>();
+            }
+        }
+
+        private List<string> ExtractKeywordsFromPost(Post post)
+        {
+            var text = $"{post.Title} {post.Content}";
+            var words = text.ToLower()
+                .Split(new[] { ' ', '\n', '\r', '\t', '.', ',', '!', '?', ';', ':', '-', '(', ')', '[', ']', '{', '}' }, 
+                       StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length >= 4)
+                .ToList();
+
+            // Remove common stop words
+            var stopWords = new HashSet<string>
+            {
+                "this", "that", "these", "those", "what", "which", "who", "when",
+                "where", "why", "how", "with", "from", "have", "has", "had",
+                "will", "would", "could", "should", "can", "may", "might",
+                "the", "and", "or", "but", "in", "on", "at", "to", "for",
+                "of", "as", "by", "an", "be", "is", "are", "was", "were",
+                "been", "being", "do", "does", "did", "just", "about",
+                "into", "through", "during", "before", "after", "above",
+                "below", "between", "under", "again", "further", "then",
+                "once", "here", "there", "all", "both", "each", "few",
+                "more", "most", "other", "some", "such", "only", "own",
+                "same", "than", "too", "very", "now", "also", "back",
+                "well", "even", "much", "still", "way", "many", "any",
+                "new", "old", "first", "last", "long", "great", "little",
+                "own", "other", "right", "big", "high", "different",
+                "small", "large", "next", "early", "young", "important",
+                "few", "public", "bad", "same", "able"
+            };
+
+            var filteredWords = words.Where(w => !stopWords.Contains(w)).ToList();
+
+            // Count word frequency
+            var wordFreq = filteredWords
+                .GroupBy(w => w)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .Take(10)
+                .ToList();
+
+            return wordFreq;
+        }
+
+        private async Task<Dictionary<string, KeywordOverviewResult>> GetSemrushDataForKeywords(List<string> keywords)
+        {
+            var semrushData = new Dictionary<string, KeywordOverviewResult>();
+
+            foreach (var keyword in keywords)
+            {
+                try
+                {
+                    var result = await _semrushService.GetKeywordOverviewAsync(keyword);
+                    if (result != null)
+                    {
+                        semrushData[keyword] = result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get Semrush data for keyword: {Keyword}", keyword);
+                }
+            }
+
+            return semrushData;
+        }
+
+        private async Task<EnhancedSeoMetadata> GenerateEnhancedSeoMetadata(
+            Post post, 
+            SeoAnalysisResult seoAnalysis, 
+            Dictionary<string, KeywordOverviewResult> semrushData)
+        {
+            // Get best performing keywords from Semrush data
+            var bestKeywords = semrushData
+                .Where(kv => kv.Value.SearchVolume > 100 && kv.Value.KeywordDifficulty < 70)
+                .OrderByDescending(kv => kv.Value.SearchVolume)
+                .Take(5)
+                .Select(kv => kv.Key)
+                .ToList();
+
+            // Combine with Python analyzer suggestions
+            var allKeywords = bestKeywords
+                .Concat(seoAnalysis.SuggestedKeywords)
+                .Distinct()
+                .Take(10)
+                .ToList();
+
+            // Generate enhanced meta description with high-value keywords
+            var enhancedDescription = GenerateEnhancedMetaDescription(
+                seoAnalysis.SuggestedMetaDescription, 
+                bestKeywords);
+
+            return new EnhancedSeoMetadata
+            {
+                MetaTitle = seoAnalysis.OptimizedTitle,
+                MetaDescription = enhancedDescription,
+                Keywords = string.Join(", ", allKeywords),
+                StructuredData = JsonSerializer.Serialize(new
+                {
+                    semrush_analysis = semrushData,
+                    python_analysis = new
+                    {
+                        seo_score = seoAnalysis.SeoScore,
+                        issues_found = seoAnalysis.IssuesFound,
+                        improvements_made = seoAnalysis.ImprovementsMade
+                    },
+                    top_keywords = bestKeywords,
+                    generated_at = DateTime.UtcNow
+                }),
+                OgTitle = seoAnalysis.OptimizedTitle,
+                OgDescription = enhancedDescription,
+                TwitterTitle = seoAnalysis.OptimizedTitle,
+                TwitterDescription = enhancedDescription
+            };
+        }
+
+        private string GenerateEnhancedMetaDescription(string baseDescription, List<string> highValueKeywords)
+        {
+            if (string.IsNullOrEmpty(baseDescription))
+            {
+                return string.Join(", ", highValueKeywords.Take(3));
+            }
+
+            // Try to naturally incorporate high-value keywords
+            var description = baseDescription;
+            var maxLength = 160;
+
+            foreach (var keyword in highValueKeywords.Take(2))
+            {
+                if (!description.ToLower().Contains(keyword.ToLower()) && 
+                    description.Length + keyword.Length + 2 <= maxLength)
+                {
+                    description += $", {keyword}";
+                }
+            }
+
+            return description.Length > maxLength 
+                ? description.Substring(0, maxLength - 3) + "..." 
+                : description;
+        }
+
+        private async Task SaveEnhancedSeoMetadata(int postId, EnhancedSeoMetadata metadata)
+        {
+            try
+            {
+                var existingSeo = await _context.SeoMetadata
+                    .FirstOrDefaultAsync(s => s.EntityType == "post" && s.EntityId == postId);
+
+                if (existingSeo != null)
                 {
                     // Update existing
-                    existing.OptimizedMetaDescription = seoResult.OptimizedMetaDescription;
-                    existing.PrimaryKeywords = string.Join(", ", seoResult.PrimaryKeywords.Select(k => k.Keyword));
-                    existing.SecondaryKeywords = string.Join(", ", seoResult.SecondaryKeywords.Select(k => k.Keyword));
-                    existing.LsiKeywords = string.Join(", ", seoResult.LsiKeywords.Select(k => k.Keyword));
-                    existing.TotalSearchVolume = seoResult.TotalSearchVolume;
-                    existing.ReadabilityScore = seoResult.ReadabilityScore;
-                    existing.SeoScore = seoResult.SeoScore;
-                    existing.KeywordDensity = seoResult.KeywordDensity;
-                    existing.PowerWords = string.Join(", ", seoResult.PowerWordsUsed);
-                    existing.EmotionalTriggers = string.Join(", ", seoResult.EmotionalTriggersUsed);
-                    existing.PredictedCtrImprovement = seoResult.PredictedCtrImprovement;
-                    existing.SerpPreview = seoResult.SerpPreview;
-                    existing.UpdatedAt = DateTime.UtcNow;
+                    existingSeo.MetaTitle = metadata.MetaTitle;
+                    existingSeo.MetaDescription = metadata.MetaDescription;
+                    existingSeo.Keywords = metadata.Keywords;
+                    existingSeo.StructuredData = metadata.StructuredData;
+                    existingSeo.OgTitle = metadata.OgTitle;
+                    existingSeo.OgDescription = metadata.OgDescription;
+                    existingSeo.TwitterTitle = metadata.TwitterTitle;
+                    existingSeo.TwitterDescription = metadata.TwitterDescription;
+                    existingSeo.UpdatedAt = DateTime.UtcNow;
                 }
                 else
                 {
                     // Create new
-                    var metadata = new EnhancedSeoMetadata
+                    var newSeo = new SeoMetadata
                     {
-                        PostId = postId,
-                        OptimizedMetaDescription = seoResult.OptimizedMetaDescription,
-                        PrimaryKeywords = string.Join(", ", seoResult.PrimaryKeywords.Select(k => k.Keyword)),
-                        SecondaryKeywords = string.Join(", ", seoResult.SecondaryKeywords.Select(k => k.Keyword)),
-                        LsiKeywords = string.Join(", ", seoResult.LsiKeywords.Select(k => k.Keyword)),
-                        TotalSearchVolume = seoResult.TotalSearchVolume,
-                        ReadabilityScore = seoResult.ReadabilityScore,
-                        SeoScore = seoResult.SeoScore,
-                        KeywordDensity = seoResult.KeywordDensity,
-                        PowerWords = string.Join(", ", seoResult.PowerWordsUsed),
-                        EmotionalTriggers = string.Join(", ", seoResult.EmotionalTriggersUsed),
-                        PredictedCtrImprovement = seoResult.PredictedCtrImprovement,
-                        SerpPreview = seoResult.SerpPreview,
-                        CreatedAt = DateTime.UtcNow
+                        EntityType = "post",
+                        EntityId = postId,
+                        MetaTitle = metadata.MetaTitle,
+                        MetaDescription = metadata.MetaDescription,
+                        Keywords = metadata.Keywords,
+                        StructuredData = metadata.StructuredData,
+                        OgTitle = metadata.OgTitle,
+                        OgDescription = metadata.OgDescription,
+                        TwitterTitle = metadata.TwitterTitle,
+                        TwitterDescription = metadata.TwitterDescription,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
 
-                    _context.EnhancedSeoMetadata.Add(metadata);
+                    _context.SeoMetadata.Add(newSeo);
                 }
 
-                // Save keywords separately
-                await SaveKeywordsAsync(postId, seoResult);
-
                 await _context.SaveChangesAsync();
-
-                _logger.LogInformation("✅ Enhanced SEO saved for post {PostId}", postId);
+                _logger.LogInformation("Saved enhanced SEO metadata for post {PostId}", postId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Failed to save enhanced SEO for post {PostId}", postId);
-            }
-        }
-
-        private async Task SaveKeywordsAsync(int postId, EnhancedSeoResult seoResult)
-        {
-            // Remove existing keywords
-            var existing = await _context.PostKeywords.Where(k => k.PostId == postId).ToListAsync();
-            _context.PostKeywords.RemoveRange(existing);
-
-            var priority = 1;
-
-            // Add primary keywords
-            foreach (var keyword in seoResult.PrimaryKeywords)
-            {
-                _context.PostKeywords.Add(new PostKeyword
-                {
-                    PostId = postId,
-                    Keyword = keyword.Keyword,
-                    KeywordType = "Primary",
-                    SearchVolume = keyword.SearchVolume,
-                    Competition = keyword.Competition,
-                    SuggestedBidLow = keyword.LowBid,
-                    SuggestedBidHigh = keyword.HighBid,
-                    DifficultyScore = keyword.CompetitionIndex,
-                    Priority = priority++
-                });
-            }
-
-            // Add secondary keywords
-            foreach (var keyword in seoResult.SecondaryKeywords)
-            {
-                _context.PostKeywords.Add(new PostKeyword
-                {
-                    PostId = postId,
-                    Keyword = keyword.Keyword,
-                    KeywordType = "Secondary",
-                    SearchVolume = keyword.SearchVolume,
-                    Competition = keyword.Competition,
-                    SuggestedBidLow = keyword.LowBid,
-                    SuggestedBidHigh = keyword.HighBid,
-                    DifficultyScore = keyword.CompetitionIndex,
-                    Priority = priority++
-                });
-            }
-
-            // Add LSI keywords
-            foreach (var keyword in seoResult.LsiKeywords)
-            {
-                _context.PostKeywords.Add(new PostKeyword
-                {
-                    PostId = postId,
-                    Keyword = keyword.Keyword,
-                    KeywordType = "LSI",
-                    SearchVolume = keyword.SearchVolume,
-                    Competition = keyword.Competition,
-                    SuggestedBidLow = keyword.LowBid,
-                    SuggestedBidHigh = keyword.HighBid,
-                    DifficultyScore = keyword.CompetitionIndex,
-                    Priority = priority++
-                });
+                _logger.LogError(ex, "Error saving enhanced SEO metadata for post {PostId}", postId);
+                throw;
             }
         }
     }
 
-    // Result class
+    /// <summary>
+    /// Enhanced SEO analysis request
+    /// </summary>
+    public class SeoAnalysisRequest
+    {
+        public int PostId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public string CommunitySlug { get; set; } = string.Empty;
+        public string PostType { get; set; } = string.Empty;
+        public Dictionary<string, KeywordOverviewResult>? SemrushData { get; set; }
+    }
+
+    /// <summary>
+    /// Enhanced SEO result
+    /// </summary>
     public class EnhancedSeoResult
     {
-        public string OptimizedMetaDescription { get; set; } = string.Empty;
-        public List<KeywordData> PrimaryKeywords { get; set; } = new();
-        public List<KeywordData> SecondaryKeywords { get; set; } = new();
-        public List<KeywordData> LsiKeywords { get; set; } = new();
-        public long TotalSearchVolume { get; set; }
-        public decimal ReadabilityScore { get; set; }
-        public decimal KeywordDensity { get; set; }
-        public int SeoScore { get; set; }
-        public string SerpPreview { get; set; } = string.Empty;
-        public List<string> PowerWordsUsed { get; set; } = new();
-        public List<string> EmotionalTriggersUsed { get; set; } = new();
-        public decimal PredictedCtrImprovement { get; set; }
+        public int PostId { get; set; }
+        public SeoAnalysisResult? SeoAnalysis { get; set; }
+        public Dictionary<string, KeywordOverviewResult>? SemrushData { get; set; }
+        public EnhancedSeoMetadata? EnhancedMetadata { get; set; }
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
+    /// <summary>
+    /// Enhanced SEO metadata
+    /// </summary>
+    public class EnhancedSeoMetadata
+    {
+        public string MetaTitle { get; set; } = string.Empty;
+        public string MetaDescription { get; set; } = string.Empty;
+        public string Keywords { get; set; } = string.Empty;
+        public string StructuredData { get; set; } = string.Empty;
+        public string OgTitle { get; set; } = string.Empty;
+        public string OgDescription { get; set; } = string.Empty;
+        public string TwitterTitle { get; set; } = string.Empty;
+        public string TwitterDescription { get; set; } = string.Empty;
     }
 }
-

@@ -4,6 +4,7 @@ using discussionspot9.Models.ViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace DiscussionSpot9.Services
 {
@@ -40,7 +41,7 @@ namespace DiscussionSpot9.Services
             {
                 UserName = model.Email,
                 Email = model.Email,
-                EmailConfirmed = true // You might want to implement email confirmation
+                EmailConfirmed = false // Require email confirmation
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -64,7 +65,12 @@ namespace DiscussionSpot9.Services
                 _context.UserProfiles.Add(userProfile);
                 await _context.SaveChangesAsync();
 
-                // Sign in the user
+                // Generate email confirmation token
+                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                // TODO: Implement email sending service
+
+                // TODO: Send confirmation email
+                // For now, we'll sign in the user but they should confirm email later
                 await _signInManager.SignInAsync(user, isPersistent: false);
             }
 

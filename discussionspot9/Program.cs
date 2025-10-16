@@ -13,12 +13,44 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// =============================================
+// PERFORMANCE OPTIMIZATIONS
+// =============================================
+
+// Add output caching for static content (disabled for now to fix CSS/JS loading)
+// builder.Services.AddOutputCache(options =>
+// {
+//     options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromHours(1)));
+//     options.AddPolicy("Posts", builder => builder.Expire(TimeSpan.FromMinutes(5)));
+//     options.AddPolicy("Communities", builder => builder.Expire(TimeSpan.FromMinutes(15)));
+//     options.AddPolicy("Categories", builder => builder.Expire(TimeSpan.FromHours(1)));
+// });
+
 // Add services to the container
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    
+    // Add performance optimizations
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.CommandTimeout(30); // Reduce command timeout
+        sqlOptions.EnableRetryOnFailure(3); // Retry failed commands
+    });
+    
+    // Disable change tracking for read-only operations
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    
+    // Configure warnings
     options.ConfigureWarnings(warnings =>
         warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+    
+    // Enable sensitive data logging only in development
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
 });
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
@@ -102,7 +134,12 @@ builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompress
 });
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddMemoryCache();
+
+// Add memory cache for performance
+builder.Services.AddMemoryCache(options =>
+{
+    options.CompactionPercentage = 0.25; // Compact when 25% full
+});
 
 // Add Response Caching
 builder.Services.AddResponseCaching();
@@ -124,6 +161,16 @@ builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddScoped<IPostTest, PostTest>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<ISeoAnalyzerService, PythonSeoAnalyzerService>();
+
+// Add Performance Services (simplified)
+// builder.Services.AddScoped<PerformanceOptimizationService>(); // Commented out for now
+
+// Add Semrush services
+builder.Services.Configure<discussionspot9.Models.Semrush.SemrushConfig>(
+    builder.Configuration.GetSection("Semrush"));
+builder.Services.AddHttpClient<discussionspot9.Services.SemrushService>();
+builder.Services.AddScoped<discussionspot9.Interfaces.ISemrushService, discussionspot9.Services.SemrushService>();
+builder.Services.AddScoped<discussionspot9.Services.EnhancedSeoService>();
 builder.Services.AddSingleton<IBackgroundSeoService, BackgroundSeoService>(); // Singleton for background tasks
 
 // SEO & Revenue Optimization Services
@@ -161,29 +208,47 @@ if (!app.Environment.IsDevelopment())
 
 app.UseForwardedHeaders();
 
-// Enable Response Compression (must be before static files)
-app.UseResponseCompression();
+// Performance monitoring middleware (temporarily disabled to test static files)
+// app.Use(async (context, next) =>
+// {
+//     var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+//     
+//     await next();
+//     
+//     stopwatch.Stop();
+//     
+//     // Log slow requests
+//     if (stopwatch.ElapsedMilliseconds > 1000)
+//     {
+//         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+//         logger.LogWarning("Slow request: {Method} {Path} took {ElapsedMs}ms", 
+//             context.Request.Method, 
+//             context.Request.Path, 
+//             stopwatch.ElapsedMilliseconds);
+//     }
+//     
+//     // Add performance headers
+//     context.Response.Headers.Add("X-Response-Time", $"{stopwatch.ElapsedMilliseconds}ms");
+// });
 
-// Enable Response Caching
-app.UseResponseCaching();
+// Enable Response Compression (temporarily disabled to test static files)
+// app.UseResponseCompression();
 
-app.MapHub<PostHub>("/posthub");
-app.MapHub<NotificationHub>("/notificationHub");
+// Enable Response Caching (temporarily disabled to test static files)
+// app.UseResponseCaching();
+
 app.UseHttpsRedirection();
 
-// Static files with caching
-app.UseStaticFiles(new StaticFileOptions
-{
-    OnPrepareResponse = ctx =>
-    {
-        // Cache static files for 7 days
-        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=604800");
-    }
-});
+// Static files (simplified configuration)
+app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map SignalR hubs AFTER routing and authentication
+app.MapHub<PostHub>("/posthub");
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.MapRazorPages();
 // Authentication Routes
