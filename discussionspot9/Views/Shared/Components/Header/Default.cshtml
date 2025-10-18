@@ -38,6 +38,14 @@
                             <i class="fas fa-th-large"></i> <span>Categories</span>
                         </a>
                     </li>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/create" style="color: #ff4500; font-weight: 600;">
+                                <i class="fas fa-plus-circle"></i> <span>Create Post</span>
+                            </a>
+                        </li>
+                    }
                     @if (User.IsInRole("Admin") || Model.Email == "zubair007tanoli@gmail.com")
                     {
                         <li class="nav-item dropdown">

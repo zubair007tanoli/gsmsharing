@@ -7,9 +7,25 @@
         <div class="comment-count">@(Model.Sum(c => c.ChildCount) + Model.Count) Comments</div>
         <div class="comment-sort">
             <span>Sort by:</span>
-            <button class="sort-dropdown">
-                Best <i class="fas fa-chevron-down"></i>
-            </button>
+            <div class="sort-dropdown-container">
+                <button class="sort-dropdown" id="commentSortBtn">
+                    <span id="currentSort">Best</span> <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="sort-dropdown-menu" id="sortDropdownMenu">
+                    <a href="#" class="sort-option" data-sort="best">
+                        <i class="fas fa-star"></i> Best
+                    </a>
+                    <a href="#" class="sort-option" data-sort="top">
+                        <i class="fas fa-arrow-up"></i> Top
+                    </a>
+                    <a href="#" class="sort-option" data-sort="new">
+                        <i class="fas fa-clock"></i> New
+                    </a>
+                    <a href="#" class="sort-option" data-sort="old">
+                        <i class="fas fa-history"></i> Old
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 

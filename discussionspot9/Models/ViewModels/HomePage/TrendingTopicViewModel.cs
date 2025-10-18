@@ -40,6 +40,12 @@ namespace discussionspot9.Models.ViewModels.HomePage
         public string CategorySlug { get; set; } = string.Empty;
 
         /// <summary>
+        /// Community slug for post URL
+        /// </summary>
+        [Required]
+        public string CommunitySlug { get; set; } = string.Empty;
+
+        /// <summary>
         /// Number of replies/comments on this post
         /// </summary>
         [Range(0, int.MaxValue)]
@@ -56,6 +62,16 @@ namespace discussionspot9.Models.ViewModels.HomePage
         public int TrendingScore { get; set; }
 
         /// <summary>
+        /// Upvote count for display
+        /// </summary>
+        public int UpvoteCount { get; set; }
+
+        /// <summary>
+        /// Downvote count for display
+        /// </summary>
+        public int DownvoteCount { get; set; }
+
+        /// <summary>
         /// When the post was created
         /// </summary>
         public DateTime CreatedAt { get; set; }
@@ -68,7 +84,7 @@ namespace discussionspot9.Models.ViewModels.HomePage
         /// <summary>
         /// Full URL to the post
         /// </summary>
-        public string PostUrl => $"/r/{CategorySlug}/posts/{Slug}";
+        public string PostUrl => $"/r/{CommunitySlug}/posts/{Slug}";
 
         /// <summary>
         /// CSS class for category styling

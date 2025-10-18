@@ -45,12 +45,14 @@
     }
 
     document.addEventListener('keydown', function(e) {
-        // Ignore if typing in an input field
-        if (e.target.matches('input, textarea, select')) {
+        // Ignore if typing in an input field, textarea, select, OR Quill editor
+        if (e.target.matches('input, textarea, select') || 
+            e.target.closest('.ql-editor') || 
+            e.target.isContentEditable) {
             if (e.key === 'Escape') {
                 e.target.blur();
             }
-            return;
+            return; // Don't trigger shortcuts when typing
         }
 
         // Handle single key shortcuts

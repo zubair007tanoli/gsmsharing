@@ -9,11 +9,8 @@
         @foreach (var comment in comments)
         {
             <div class="activity-item">
-                <div class="activity-header">
-                    <div class="activity-icon comment">
-                        <i class="fas fa-comment-alt"></i>
-                    </div>
-                    <div class="activity-info">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="activity-info flex-grow-1">
                         <div class="activity-title">
                             Comment on: <a href="/r/@comment.Post?.Community?.Slug/posts/@comment.Post?.Slug#comment-@comment.CommentId" class="text-decoration-none">
                                 @comment.Post?.Title
@@ -23,24 +20,20 @@
                             In r/@comment.Post?.Community?.Name • @GetTimeAgo(comment.CreatedAt)
                         </div>
                     </div>
-                </div>
-                <div class="activity-content">
-                    <p>@(comment.Content.Length > 300 ? comment.Content.Substring(0, 300) + "..." : comment.Content)</p>
-                </div>
-                <div class="activity-actions">
-                    <div class="activity-action">
-                        <i class="far fa-thumbs-up"></i>
-                        <span>@comment.UpvoteCount</span>
-                    </div>
-                    <div class="activity-action">
-                        <i class="far fa-thumbs-down"></i>
-                        <span>@comment.DownvoteCount</span>
-                    </div>
-                    <div class="activity-action">
-                        <a href="/r/@comment.Post?.Community?.Slug/posts/@comment.Post?.Slug#comment-@comment.CommentId" class="text-decoration-none">
-                            <i class="fas fa-external-link-alt"></i>
-                            <span>View Comment</span>
-                        </a>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="activity-action">
+                            <i class="fas fa-arrow-up text-primary"></i>
+                            <span>@comment.UpvoteCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <i class="fas fa-arrow-down text-danger"></i>
+                            <span>@comment.DownvoteCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <a href="/r/@comment.Post?.Community?.Slug/posts/@comment.Post?.Slug#comment-@comment.CommentId" class="text-decoration-none text-muted">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

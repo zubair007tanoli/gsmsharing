@@ -28,11 +28,21 @@
         
         <div class="comment-actions">
             <div class="comment-vote">
-                <button class="comment-vote-btn upvote @(Model.Comment.CurrentUserVote == 1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="1">
+                <button class="comment-vote-btn upvote @(Model.Comment.CurrentUserVote == 1 ? "active" : "")" 
+                        data-comment-id="@Model.Comment.CommentId" 
+                        data-vote-type="1"
+                        title="Upvote">
                     <i class="fas fa-arrow-up"></i>
                 </button>
-                <span class="comment-vote-count" id="commentVote@(Model.Comment.CommentId)">@(Model.Comment.UpvoteCount - Model.Comment.DownvoteCount)</span>
-                <button class="comment-vote-btn downvote @(Model.Comment.CurrentUserVote == -1 ? "active" : "")" data-comment-id="@Model.Comment.CommentId" data-vote-type="-1">
+                <div class="comment-vote-counts">
+                    <span class="comment-upvote-number" id="commentUpvote@(Model.Comment.CommentId)">@Model.Comment.UpvoteCount</span>
+                    <span class="comment-vote-separator">•</span>
+                    <span class="comment-downvote-number" id="commentDownvote@(Model.Comment.CommentId)">@Model.Comment.DownvoteCount</span>
+                </div>
+                <button class="comment-vote-btn downvote @(Model.Comment.CurrentUserVote == -1 ? "active" : "")" 
+                        data-comment-id="@Model.Comment.CommentId" 
+                        data-vote-type="-1"
+                        title="Downvote">
                     <i class="fas fa-arrow-down"></i>
                 </button>
             </div>

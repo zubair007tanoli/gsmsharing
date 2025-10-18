@@ -9,11 +9,8 @@
         @foreach (var post in posts)
         {
             <div class="activity-item">
-                <div class="activity-header">
-                    <div class="activity-icon post">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="activity-info">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="activity-info flex-grow-1">
                         <div class="activity-title">
                             <a href="/r/@post.Community?.Slug/posts/@post.Slug" class="text-decoration-none">
                                 @post.Title
@@ -23,29 +20,23 @@
                             Posted in r/@post.Community?.Name • @GetTimeAgo(post.CreatedAt)
                         </div>
                     </div>
-                </div>
-                @if (!string.IsNullOrEmpty(post.Content))
-                {
-                    <div class="activity-content">
-                        <p>@(post.Content.Length > 300 ? post.Content.Substring(0, 300) + "..." : post.Content)</p>
-                    </div>
-                }
-                <div class="activity-actions">
-                    <div class="activity-action">
-                        <i class="far fa-thumbs-up"></i>
-                        <span>@post.UpvoteCount</span>
-                    </div>
-                    <div class="activity-action">
-                        <i class="far fa-thumbs-down"></i>
-                        <span>@post.DownvoteCount</span>
-                    </div>
-                    <div class="activity-action">
-                        <i class="far fa-comment-alt"></i>
-                        <span>@post.CommentCount Comments</span>
-                    </div>
-                    <div class="activity-action">
-                        <i class="fas fa-eye"></i>
-                        <span>@post.ViewCount Views</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="activity-action">
+                            <i class="fas fa-arrow-up text-primary"></i>
+                            <span>@post.UpvoteCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <i class="fas fa-arrow-down text-danger"></i>
+                            <span>@post.DownvoteCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <i class="far fa-comment-alt"></i>
+                            <span>@post.CommentCount</span>
+                        </div>
+                        <div class="activity-action">
+                            <i class="fas fa-eye"></i>
+                            <span>@post.ViewCount</span>
+                        </div>
                     </div>
                 </div>
             </div>

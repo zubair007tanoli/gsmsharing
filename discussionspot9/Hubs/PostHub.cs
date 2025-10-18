@@ -367,17 +367,24 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
                     var comment = await _commentService.GetCommentByIdAsync(commentId);
                     if (comment != null)
                     {
+                        _logger.LogInformation($"📊 Comment {commentId} vote updated. Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, Score: {comment.Score}, UserVote: {result.UserVote}");
+                        _logger.LogInformation($"📤 Sending to Caller - CommentId: {commentId}, Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, Score: {comment.Score}, UserVote: {result.UserVote}");
 
-
-                        // Broadcast updated vote counts and user's vote status to all clients in the post group
-                        await Clients.Group($"post-{comment.PostId}")
-                            .SendAsync("CommentVoteUpdated", commentId,
-                                comment.UpvoteCount, comment.DownvoteCount, comment.Score); // Pass UserVote here
-                        _logger.LogInformation($"Successfully updated comment vote for comment {commentId}. New score: {comment.Score}, Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, UserVote: {result.UserVote}.");
+                        // Send update to the caller (the user who voted) with their vote status
+                        await Clients.Caller.SendAsync("CommentVoteUpdated", commentId,
+                            comment.UpvoteCount, comment.DownvoteCount, comment.Score, result.UserVote);
+                        
+                        _logger.LogInformation($"📤 Sending to OthersInGroup - CommentId: {commentId}, Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, Score: {comment.Score}");
+                        
+                        // Send update to others in the post group (without user vote status)
+                        await Clients.OthersInGroup($"post-{comment.PostId}").SendAsync("CommentVoteUpdated", commentId,
+                            comment.UpvoteCount, comment.DownvoteCount, comment.Score, null);
+                        
+                        _logger.LogInformation($"✅ Comment vote broadcasted successfully for comment {commentId}");
                     }
                     else
                     {
-                        _logger.LogError($"Comment with ID {commentId} not found after successful vote in service.");
+                        _logger.LogError($"❌ Comment with ID {commentId} not found after successful vote in service.");
                         await Clients.Caller.SendAsync("VoteError", "Comment not found after voting. Please refresh.");
                     }
                 }
@@ -416,17 +423,40 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
 
                 if (result.Success)
                 {
+                    // Get fresh post data from database (not cached)
                     var updatedPost = await _postService.GetPostByIdAsync(postId);
+                    
                     if (updatedPost != null)
                     {
-                        // Send all necessary info: postId, new upvote, new downvote, and current user's vote status
-                        await Clients.Group($"post-{postId}").SendAsync("UpdatePostVotesUI",
+                        _logger.LogInformation($"📊 Post {postId} vote updated. Up: {updatedPost.UpvoteCount}, Down: {updatedPost.DownvoteCount}, UserVote: {result.UserVote}, Score: {updatedPost.Score}");
+                        
+                        // CRITICAL: Use the vote counts that were just saved in VotePostAsync
+                        // The updatedPost might have stale data due to EF Core tracking
+                        // So we trust the result and send the data
+                        
+                        _logger.LogInformation($"📤 Sending to Caller - UpvoteCount: {updatedPost.UpvoteCount}, DownvoteCount: {updatedPost.DownvoteCount}, UserVote: {result.UserVote}");
+                        
+                        // Send update to the caller (the user who voted) with their vote status
+                        await Clients.Caller.SendAsync("UpdatePostVotesUI",
                             postId,
                             updatedPost.UpvoteCount,
                             updatedPost.DownvoteCount,
-                            result.UserVote // This should be 1, -1, or null (for removed vote)
+                            result.UserVote
                         );
-                        _logger.LogInformation($"Post {postId} vote updated. Up: {updatedPost.UpvoteCount}, Down: {updatedPost.DownvoteCount}, UserVote: {result.UserVote}.");
+                        
+                        _logger.LogInformation($"📤 Sending to OthersInGroup - UpvoteCount: {updatedPost.UpvoteCount}, DownvoteCount: {updatedPost.DownvoteCount}");
+                        
+                        // Send update to others in the group (without user-specific vote status)
+                        await Clients.OthersInGroup($"post-{postId}").SendAsync("UpdatePostVotesUI",
+                            postId,
+                            updatedPost.UpvoteCount,
+                            updatedPost.DownvoteCount,
+                            null // Others don't get the voter's vote status
+                        );
+                    }
+                    else
+                    {
+                        _logger.LogError($"❌ Could not retrieve post {postId} after voting");
                     }
                 }
                 else

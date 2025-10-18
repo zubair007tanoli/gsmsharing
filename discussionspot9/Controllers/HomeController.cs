@@ -25,9 +25,9 @@ namespace discussionspot9.Controllers
         [ResponseCache(Duration = 300, VaryByHeader = "User-Agent", Location = ResponseCacheLocation.Any)] // 5 minutes cache
         public async Task<IActionResult> Index()
         {
-            // Use new enhanced homepage
-            var model = await _enhancedHomeService.GetEnhancedHomePageDataAsync();
-            return View("IndexNew", model); // Using new view
+            // Use modern homepage
+            var model = await _homeService.GetHomePageDataAsync();
+            return View("IndexModern", model);
         }
         
         // Keep old version accessible
@@ -35,6 +35,13 @@ namespace discussionspot9.Controllers
         {
             var model = await _homeService.GetHomePageDataAsync();
             return View("Index", model);
+        }
+
+        // Enhanced version if needed
+        public async Task<IActionResult> IndexNew()
+        {
+            var model = await _enhancedHomeService.GetEnhancedHomePageDataAsync();
+            return View("IndexNew", model);
         }
 
         public async Task<IActionResult> Popular(string? timeframe = null)

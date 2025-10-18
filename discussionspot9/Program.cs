@@ -4,6 +4,7 @@ using discussionspot9.Helpers;
 using discussionspot9.Hubs;
 using discussionspot9.Interfaces;
 using discussionspot9.Services;
+using discussionspot9.Repositories;
 using DiscussionSpot9.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -165,12 +166,16 @@ builder.Services.AddScoped<ISeoAnalyzerService, PythonSeoAnalyzerService>();
 // Add Performance Services (simplified)
 // builder.Services.AddScoped<PerformanceOptimizationService>(); // Commented out for now
 
-// Add Semrush services
-builder.Services.Configure<discussionspot9.Models.Semrush.SemrushConfig>(
-    builder.Configuration.GetSection("Semrush"));
-builder.Services.AddHttpClient<discussionspot9.Services.SemrushService>();
-builder.Services.AddScoped<discussionspot9.Interfaces.ISemrushService, discussionspot9.Services.SemrushService>();
-builder.Services.AddScoped<discussionspot9.Services.EnhancedSeoService>();
+// Google Search API Services (Primary SEO Engine)
+builder.Services.Configure<discussionspot9.Models.GoogleSearch.GoogleSearchConfig>(
+    builder.Configuration.GetSection("GoogleSearch"));
+builder.Services.AddHttpClient<discussionspot9.Services.GoogleSearchService>();
+builder.Services.AddScoped<discussionspot9.Services.GoogleSearchSeoService>();
+
+// Image SEO Services
+builder.Services.AddScoped<discussionspot9.Services.ImageSeoOptimizer>();
+builder.Services.AddScoped<discussionspot9.Services.ImageStructuredDataService>();
+
 builder.Services.AddSingleton<IBackgroundSeoService, BackgroundSeoService>(); // Singleton for background tasks
 
 // SEO & Revenue Optimization Services
@@ -187,7 +192,6 @@ builder.Services.Configure<discussionspot9.Models.Configuration.GoogleAdsConfigu
     builder.Configuration.GetSection("GoogleAds"));
 builder.Services.AddScoped<MultiSiteAdSenseService>();
 builder.Services.AddScoped<GoogleKeywordPlannerService>();
-builder.Services.AddScoped<EnhancedSeoService>();
 
 // Background services
 builder.Services.AddHostedService<WeeklySeoOptimizationService>();
@@ -195,6 +199,14 @@ builder.Services.AddHostedService<DailyDataSyncService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();
+
+// =============================================
+// CHAT SYSTEM SERVICES
+// =============================================
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IPresenceService, PresenceService>();
+builder.Services.AddScoped<IChatAdService, ChatAdService>();
 
 var app = builder.Build();
 
@@ -249,6 +261,8 @@ app.UseAuthorization();
 // Map SignalR hubs AFTER routing and authentication
 app.MapHub<PostHub>("/posthub");
 app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<ChatHub>("/chatHub");
+app.MapHub<PresenceHub>("/presenceHub");
 
 app.MapRazorPages();
 // Authentication Routes

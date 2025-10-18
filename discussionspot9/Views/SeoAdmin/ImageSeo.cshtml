@@ -1,0 +1,392 @@
+@model discussionspot9.Services.ImageSeoStatus
+@{
+    ViewData["Title"] = "Image SEO Optimization";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2"><i class="fas fa-images me-2"></i>Image SEO Optimization</h1>
+            <p class="text-muted">Optimize images with Semrush keywords for better search visibility</p>
+        </div>
+        <div class="col-auto">
+            <a href="/admin/seo/dashboard" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Image SEO Status Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-images fa-3x text-primary mb-3"></i>
+                    <h2 class="mb-0">@Model.TotalImages</h2>
+                    <p class="text-muted mb-0">Total Images</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h2 class="mb-0">@Model.ImagesWithAltText</h2>
+                    <p class="text-muted mb-0">With Alt Text</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h2 class="mb-0">@Model.ImagesWithoutAltText</h2>
+                    <p class="text-muted mb-0">Without Alt Text</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-percentage fa-3x text-info mb-3"></i>
+                    <h2 class="mb-0">@Model.OptimizationPercentage.ToString("F1")%</h2>
+                    <p class="text-muted mb-0">Optimization Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-3">Overall Optimization Progress</h6>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: @Model.OptimizationPercentage%;" 
+                             aria-valuenow="@Model.OptimizationPercentage" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            @Model.OptimizationPercentage.ToString("F1")% Optimized
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Optimization Tools -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-magic me-2"></i>Optimize Post Images</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Optimize all images in a specific post with Semrush keywords</p>
+                    <div class="mb-3">
+                        <label for="imagePostId" class="form-label">Post ID</label>
+                        <input type="number" class="form-control" id="imagePostId" placeholder="Enter Post ID">
+                    </div>
+                    <button class="btn btn-primary" onclick="optimizePostImages()">
+                        <i class="fas fa-magic me-2"></i>Optimize Images
+                    </button>
+                    
+                    <div id="postImageResults" class="mt-3" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i>Batch Optimize</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Automatically optimize all images without alt text</p>
+                    <div class="mb-3">
+                        <label for="batchLimit" class="form-label">Limit (max 100)</label>
+                        <input type="number" class="form-control" id="batchLimit" value="50" min="1" max="100">
+                    </div>
+                    <button class="btn btn-success" onclick="batchOptimizeImages()">
+                        <i class="fas fa-rocket me-2"></i>Batch Optimize
+                    </button>
+                    
+                    <div id="batchImageResults" class="mt-3" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Schema Tools -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-code me-2"></i>Generate Image Schema</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Generate structured data (Schema.org) for images</p>
+                    <div class="mb-3">
+                        <label for="schemaPostId" class="form-label">Post ID</label>
+                        <input type="number" class="form-control" id="schemaPostId" placeholder="Enter Post ID">
+                    </div>
+                    <button class="btn btn-info" onclick="generateImageSchema()">
+                        <i class="fas fa-code me-2"></i>Generate Schema
+                    </button>
+                    
+                    <div id="schemaResults" class="mt-3" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-code me-2"></i>View Article Schema</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">View complete article schema with images</p>
+                    <div class="mb-3">
+                        <label for="articleSchemaPostId" class="form-label">Post ID</label>
+                        <input type="number" class="form-control" id="articleSchemaPostId" placeholder="Enter Post ID">
+                    </div>
+                    <button class="btn btn-secondary" onclick="viewArticleSchema()">
+                        <i class="fas fa-eye me-2"></i>View Schema
+                    </button>
+                    
+                    <div id="articleSchemaResults" class="mt-3" style="display:none;">
+                        <pre id="schemaCode" class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEO Best Practices -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Image SEO Best Practices</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Alt Text</h6>
+                            <ul class="small">
+                                <li>Use primary keyword naturally</li>
+                                <li>Keep between 10-125 characters</li>
+                                <li>Describe image content clearly</li>
+                                <li>Don't stuff keywords</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Captions</h6>
+                            <ul class="small">
+                                <li>Include 2-3 relevant keywords</li>
+                                <li>Make it readable and natural</li>
+                                <li>Add context to the image</li>
+                                <li>Keep under 200 characters</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>File Names</h6>
+                            <ul class="small">
+                                <li>Use hyphens, not underscores</li>
+                                <li>Include primary keyword</li>
+                                <li>Keep under 60 characters</li>
+                                <li>Use lowercase</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Optimize Post Images
+        function optimizePostImages() {
+            const postId = document.getElementById('imagePostId').value;
+            
+            if (!postId) {
+                alert('Please enter a Post ID');
+                return;
+            }
+
+            showLoading('Optimizing images...');
+
+            fetch(`/admin/seo/api/optimize-post-images`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: parseInt(postId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    displayPostImageResults(data);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                alert('Error optimizing images');
+                console.error(error);
+            });
+        }
+
+        function displayPostImageResults(data) {
+            const resultsDiv = document.getElementById('postImageResults');
+            resultsDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>${data.message}</h6>
+                    <p class="mb-1"><strong>Keywords used:</strong> ${data.data.keywords.join(', ')}</p>
+                    <p class="mb-0"><strong>Images optimized:</strong> ${data.data.imagesOptimized} of ${data.data.totalImages}</p>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+            
+            // Refresh status
+            location.reload();
+        }
+
+        // Batch Optimize Images
+        function batchOptimizeImages() {
+            const limit = document.getElementById('batchLimit').value;
+            
+            if (confirm(`This will optimize up to ${limit} images without alt text. Continue?`)) {
+                showLoading('Batch optimizing images...');
+
+                fetch(`/admin/seo/api/batch-optimize-images`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ limit: parseInt(limit) })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        displayBatchImageResults(data);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error in batch optimization');
+                    console.error(error);
+                });
+            }
+        }
+
+        function displayBatchImageResults(data) {
+            const resultsDiv = document.getElementById('batchImageResults');
+            resultsDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>${data.message}</h6>
+                    <p class="mb-1"><strong>Processed:</strong> ${data.data.totalProcessed} images</p>
+                    <p class="mb-1"><strong>Success:</strong> ${data.data.successCount}</p>
+                    <p class="mb-0"><strong>Failed:</strong> ${data.data.failureCount}</p>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+            
+            // Refresh page after 3 seconds
+            setTimeout(() => location.reload(), 3000);
+        }
+
+        // Generate Image Schema
+        function generateImageSchema() {
+            const postId = document.getElementById('schemaPostId').value;
+            
+            if (!postId) {
+                alert('Please enter a Post ID');
+                return;
+            }
+
+            showLoading('Generating image schema...');
+
+            fetch(`/admin/seo/api/generate-image-schema`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: parseInt(postId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    document.getElementById('schemaResults').innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>${data.message}
+                        </div>
+                    `;
+                    document.getElementById('schemaResults').style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                alert('Error generating schema');
+                console.error(error);
+            });
+        }
+
+        // View Article Schema
+        function viewArticleSchema() {
+            const postId = document.getElementById('articleSchemaPostId').value;
+            
+            if (!postId) {
+                alert('Please enter a Post ID');
+                return;
+            }
+
+            showLoading('Loading schema...');
+
+            fetch(`/admin/seo/api/article-schema?postId=${postId}`)
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                document.getElementById('schemaCode').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('articleSchemaResults').style.display = 'block';
+            })
+            .catch(error => {
+                hideLoading();
+                alert('Error loading schema');
+                console.error(error);
+            });
+        }
+
+        function showLoading(message) {
+            console.log(message);
+        }
+
+        function hideLoading() {
+            // Hide loading indicator
+        }
+    </script>
+}
+
+<style>
+    .card {
+        transition: all 0.3s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .progress {
+        background: #e9ecef;
+        border-radius: 10px;
+    }
+    .progress-bar {
+        border-radius: 10px;
+        transition: width 0.6s ease;
+    }
+</style>

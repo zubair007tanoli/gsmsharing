@@ -25,6 +25,7 @@ namespace discussionspot9.Controllers
         private readonly ISeoAnalyzerService _seoAnalyzerService;
         private readonly IBackgroundSeoService _backgroundSeoService;
         private readonly ApplicationDbContext _context;
+        private readonly discussionspot9.Services.GoogleSearchSeoService _googleSeoService;
         
         public PostController(
             IPostService postService,
@@ -36,7 +37,8 @@ namespace discussionspot9.Controllers
             ApplicationDbContext context,
             IPostTest postTest,
             ISeoAnalyzerService seoAnalyzerService,
-            IBackgroundSeoService backgroundSeoService)
+            IBackgroundSeoService backgroundSeoService,
+            discussionspot9.Services.GoogleSearchSeoService googleSeoService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -48,6 +50,7 @@ namespace discussionspot9.Controllers
             _postTest = postTest;
             _seoAnalyzerService = seoAnalyzerService;
             _backgroundSeoService = backgroundSeoService;
+            _googleSeoService = googleSeoService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -94,6 +97,70 @@ namespace discussionspot9.Controllers
                     Domain = metadata.Domain
                 };
 
+            }
+
+            if (postDetails.PostType == "poll" && postDetails.HasPoll)
+            {
+                var pollDetails = await _postService.GetPollDetailsAsync(postDetails.PostId, userId);
+                postDetails.Poll = new PollViewModel
+                {
+                    Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                    {
+                        OptionText = option.OptionText,
+                        VoteCount = option.VoteCount
+                    }).ToList()
+                };
+            }
+
+            await _postService.IncrementViewCountAsync(postDetails.PostId);
+
+            return View(model);
+        }
+
+        // NEW: Reddit-Style Detail Page (Better than Reddit)
+        [HttpGet]
+        [Route("r/{communitySlug}/posts/{postSlug}/reddit")]
+        public async Task<IActionResult> DetailRedditStyle(string communitySlug, string postSlug)
+        {
+            var postDetails = await _postService.GetPostDetailsUpdateAsync(communitySlug, postSlug);
+            if (postDetails == null)
+                return NotFound();
+
+            string? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                postDetails.CurrentUserVote = await _postService.GetUserVoteAsync(postDetails.PostId, userId);
+                postDetails.IsCurrentUserAuthor = postDetails.UserId == userId;
+                postDetails.IsSavedByUser = await _postService.IsPostSavedByUserAsync(postDetails.PostId, userId);
+            }
+
+            var communityDetailsTask = _communityService.GetCommunityDetailsAsync(communitySlug);
+            var commentsTask = _commentService.GetPostCommentsAsync(postDetails.PostId);
+
+            await Task.WhenAll(communityDetailsTask, commentsTask);
+
+            var model = new PostDetailPageViewModelCopy
+            {
+                Post = postDetails,
+                CommunitySlug = communitySlug,
+                PostSlug = postSlug,
+                Community = communityDetailsTask.Result,
+                Comments = commentsTask.Result,
+            };
+
+            ViewBag.PostId = model.Post.PostId;
+
+            if (model.Post.PostType == "link")
+            {
+                var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
+                model.Post.LinkModel = new LinkPreviewViewModel
+                {
+                    Title = metadata.Title,
+                    Description = metadata.Description,
+                    ThumbnailUrl = metadata.ThumbnailUrl,
+                    Domain = metadata.Domain
+                };
             }
 
             if (postDetails.PostType == "poll" && postDetails.HasPoll)
@@ -500,6 +567,20 @@ namespace discussionspot9.Controllers
         [Authorize]
         public async Task<IActionResult> Create(CreatePostViewModel model, string? returnUrl = null)
         {
+            // CRITICAL: Log received data to verify content is being sent
+            _logger.LogInformation("🚀 === POST CREATION DEBUG ===");
+            _logger.LogInformation("Title: {Title}", model.Title);
+            _logger.LogInformation("PostType: {PostType}", model.PostType);
+            _logger.LogInformation("Content length: {Length}", model.Content?.Length ?? 0);
+            _logger.LogInformation("Content preview: {Preview}", model.Content?.Substring(0, Math.Min(200, model.Content?.Length ?? 0)) ?? "NULL");
+            _logger.LogInformation("Has Content: {HasContent}", !string.IsNullOrWhiteSpace(model.Content));
+            _logger.LogInformation("MediaFiles: {Count}", model.MediaFiles?.Count ?? 0);
+            _logger.LogInformation("MediaUrls: {Count}", model.MediaUrls?.Count ?? 0);
+            _logger.LogInformation("PollOptions: {Count}", model.PollOptions?.Count ?? 0);
+            _logger.LogInformation("Tags: {Tags}", model.TagsInput);
+            _logger.LogInformation("Meta Keywords: {Keywords}", model.Keywords);
+            _logger.LogInformation("================================");
+            
             if (!ModelState.IsValid)
             {
                 foreach (var state in ModelState)
@@ -540,7 +621,28 @@ namespace discussionspot9.Controllers
                     
                     if (post != null)
                     {
-                        // Run SEO optimization in background using dedicated service
+                        // AUTO-OPTIMIZATION: Run Google Search + AI SEO in background
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                // Optimize with Google Search API + Python AI
+                                var seoResult = await _googleSeoService.OptimizePostAsync(post.PostId);
+                                
+                                if (seoResult.Success)
+                                {
+                                    _logger.LogInformation(
+                                        "Auto-optimized post {PostId}: SEO Score {Score}/100, Keywords: {Keywords}",
+                                        post.PostId, seoResult.SeoScore, string.Join(", ", seoResult.OptimizedKeywords));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Background SEO optimization failed for post {PostId}", post.PostId);
+                            }
+                        });
+                        
+                        // Also run legacy background SEO service
                         _backgroundSeoService.ProcessPostSeoAsync(post.PostId, model, model.CommunityId);
                     }
                     

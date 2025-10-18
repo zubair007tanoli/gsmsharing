@@ -1,0 +1,48 @@
+@* SEO Assistant Debug Panel - Shows initialization status *@
+
+<div class="card border-warning mb-3" id="seoDebugPanel" style="display: none;">
+    <div class="card-header bg-warning">
+        <strong>🐛 SEO Assistant Debug Info</strong>
+    </div>
+    <div class="card-body small">
+        <div><strong>Status:</strong> <span id="debugStatus">Initializing...</span></div>
+        <div><strong>Title Input:</strong> <span id="debugTitle">Not found</span></div>
+        <div><strong>Content Input:</strong> <span id="debugContent">Not found</span></div>
+        <div><strong>Quill Editor:</strong> <span id="debugQuill">Not found</span></div>
+        <div><strong>SEO Assistant:</strong> <span id="debugSeoAssistant">Not initialized</span></div>
+        <button class="btn btn-sm btn-primary mt-2" onclick="testSeoApi()">Test API</button>
+    </div>
+</div>
+
+<script>
+    // Show debug panel in development
+    setTimeout(() => {
+        const debugPanel = document.getElementById('seoDebugPanel');
+        if (debugPanel) debugPanel.style.display = 'block';
+        
+        // Update debug info
+        document.getElementById('debugTitle').textContent = 
+            (document.getElementById('Title') || document.getElementById('title')) ? '✅ Found' : '❌ Not found';
+        
+        document.getElementById('debugContent').textContent = 
+            (document.getElementById('Content') || document.getElementById('contentTextarea')) ? '✅ Found' : '❌ Not found';
+        
+        document.getElementById('debugQuill').textContent = 
+            (typeof contentQuill !== 'undefined' && contentQuill) ? '✅ Found' : '❌ Not found';
+        
+        document.getElementById('debugSeoAssistant').textContent = 
+            (typeof window.seoAssistant !== 'undefined' && window.seoAssistant) ? '✅ Initialized' : '❌ Not initialized';
+    }, 2000);
+    
+    async function testSeoApi() {
+        const title = (document.getElementById('Title') || document.getElementById('title'))?.value || 'test title';
+        try {
+            const response = await fetch(`/admin/seo/api/suggest-keywords-realtime?title=${encodeURIComponent(title)}&content=test`);
+            const data = await response.json();
+            alert('API Response: ' + JSON.stringify(data, null, 2));
+        } catch (error) {
+            alert('API Error: ' + error.message);
+        }
+    }
+</script>
+

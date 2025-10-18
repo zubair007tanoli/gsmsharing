@@ -47,6 +47,13 @@ namespace discussionspot9.Data.DbContext
         public DbSet<PostKeyword> PostKeywords { get; set; }
         public DbSet<EnhancedSeoMetadata> EnhancedSeoMetadata { get; set; }
         public DbSet<MultiSiteRevenue> MultiSiteRevenues { get; set; }
+        
+        // Chat System tables
+        public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<ChatRoom> ChatRooms { get; set; }
+        public DbSet<ChatRoomMember> ChatRoomMembers { get; set; }
+        public DbSet<UserPresence> UserPresences { get; set; }
+        public DbSet<ChatAd> ChatAds { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -751,6 +758,120 @@ namespace discussionspot9.Data.DbContext
                     ConcurrencyStamp = "user-stamp-789"
                 }
             );
+
+            #region Chat System Configuration
+            builder.Entity<ChatMessage>(entity =>
+            {
+                entity.HasKey(e => e.MessageId);
+                entity.Property(e => e.Content).HasMaxLength(4000).IsRequired();
+                entity.Property(e => e.SenderId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.ReceiverId).HasMaxLength(450);
+                entity.Property(e => e.AttachmentUrl).HasMaxLength(2048);
+                entity.Property(e => e.AttachmentType).HasMaxLength(50);
+                entity.Property(e => e.SentAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.Sender)
+                    .WithMany()
+                    .HasForeignKey(e => e.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Receiver)
+                    .WithMany()
+                    .HasForeignKey(e => e.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.ChatRoom)
+                    .WithMany(r => r.Messages)
+                    .HasForeignKey(e => e.ChatRoomId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.SenderId);
+                entity.HasIndex(e => e.ReceiverId);
+                entity.HasIndex(e => e.SentAt);
+            });
+
+            builder.Entity<ChatRoom>(entity =>
+            {
+                entity.HasKey(e => e.ChatRoomId);
+                entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.CreatorId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.IconUrl).HasMaxLength(2048);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.IsPublic).HasDefaultValue(true);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.MemberCount).HasDefaultValue(0);
+
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Community)
+                    .WithMany()
+                    .HasForeignKey(e => e.CommunityId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            builder.Entity<ChatRoomMember>(entity =>
+            {
+                entity.HasKey(e => e.ChatRoomMemberId);
+                entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.Role).HasMaxLength(50).HasDefaultValue("member");
+                entity.Property(e => e.JoinedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.IsMuted).HasDefaultValue(false);
+
+                entity.HasOne(e => e.ChatRoom)
+                    .WithMany(r => r.Members)
+                    .HasForeignKey(e => e.ChatRoomId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.ChatRoomId, e.UserId }).IsUnique();
+            });
+
+            builder.Entity<UserPresence>(entity =>
+            {
+                entity.HasKey(e => e.PresenceId);
+                entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.ConnectionId).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("online");
+                entity.Property(e => e.CurrentPage).HasMaxLength(500);
+                entity.Property(e => e.DeviceInfo).HasMaxLength(200);
+                entity.Property(e => e.LastSeen).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.IsTyping).HasDefaultValue(false);
+                entity.Property(e => e.TypingInChatWith).HasMaxLength(450);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.ConnectionId);
+            });
+
+            builder.Entity<ChatAd>(entity =>
+            {
+                entity.HasKey(e => e.ChatAdId);
+                entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Content).HasMaxLength(1000).IsRequired();
+                entity.Property(e => e.ImageUrl).HasMaxLength(2048);
+                entity.Property(e => e.TargetUrl).HasMaxLength(2048);
+                entity.Property(e => e.AdType).HasMaxLength(50).HasDefaultValue("banner");
+                entity.Property(e => e.Placement).HasMaxLength(50).HasDefaultValue("chat-list");
+                entity.Property(e => e.DisplayFrequency).HasDefaultValue(10);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.ImpressionCount).HasDefaultValue(0);
+                entity.Property(e => e.ClickCount).HasDefaultValue(0);
+                entity.Property(e => e.TargetAudience).HasMaxLength(2000);
+                entity.Property(e => e.MinMessages).HasDefaultValue(0);
+            });
+            #endregion
 
             // Seed Test User
             var testUserId = "4d5e6f7g-8h9i-0j1k-2l3m-n4o5p6q7r8s9";

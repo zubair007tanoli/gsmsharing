@@ -611,5 +611,78 @@ namespace DiscussionSpot9.Controllers
         }
 
         #endregion
+
+        #region User Search API (for @ mentions)
+        
+        /// <summary>
+        /// Search users for @ mention autocomplete
+        /// </summary>
+        /// <param name="q">Search query (username or display name)</param>
+        /// <param name="limit">Maximum number of results (default 10)</param>
+        /// <returns>JSON array of matching users</returns>
+        [HttpGet]
+        [Route("api/users/search")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string q, [FromQuery] int limit = 10)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            {
+                return Json(new { users = Array.Empty<object>() });
+            }
+
+            try
+            {
+                var searchTerm = q.ToLower().Trim();
+                
+                // Search in AspNetUsers and UserProfiles
+                var users = await (from user in _context.Users
+                                  join profile in _context.UserProfiles on user.Id equals profile.UserId into profileGroup
+                                  from profile in profileGroup.DefaultIfEmpty()
+                                  where user.UserName != null && 
+                                        (user.UserName.ToLower().Contains(searchTerm) || 
+                                         user.Email.ToLower().Contains(searchTerm) ||
+                                         (profile != null && profile.DisplayName != null && profile.DisplayName.ToLower().Contains(searchTerm)))
+                                  select new
+                                  {
+                                      id = user.Id,
+                                      value = user.UserName, // This is what gets inserted as @username
+                                      displayName = profile != null && !string.IsNullOrEmpty(profile.DisplayName) 
+                                                    ? profile.DisplayName 
+                                                    : user.UserName,
+                                      email = user.Email,
+                                      avatarUrl = profile != null && !string.IsNullOrEmpty(profile.AvatarUrl)
+                                                 ? profile.AvatarUrl
+                                                 : "/images/default-avatar.png",
+                                      initials = GetUserInitials(profile != null && !string.IsNullOrEmpty(profile.DisplayName) 
+                                                                 ? profile.DisplayName 
+                                                                 : user.UserName ?? "U")
+                                  })
+                                  .Take(limit)
+                                  .ToListAsync();
+
+                return Json(users);
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                Console.WriteLine($"Error searching users: {ex.Message}");
+                return Json(new { users = Array.Empty<object>() });
+            }
+        }
+
+        private static string GetUserInitials(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+                return "U";
+
+            var names = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return names.Length switch
+            {
+                0 => "U",
+                1 => names[0][0].ToString().ToUpper(),
+                _ => $"{names[0][0]}{names[^1][0]}".ToUpper()
+            };
+        }
+
+        #endregion
     }
 }

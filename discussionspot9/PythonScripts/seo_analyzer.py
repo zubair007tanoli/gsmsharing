@@ -45,7 +45,10 @@ class SeoAnalyzer:
         content = data.get('content', '').strip()
         community_slug = data.get('communitySlug', '')
         post_type = data.get('postType', 'text')
+        
+        # Support both Semrush (legacy) and Google Search data
         semrush_data = data.get('semrushData', {})
+        google_search_data = data.get('googleSearchData', {})
         
         issues = []
         improvements = []
@@ -68,14 +71,15 @@ class SeoAnalyzer:
         # Extract keywords
         keywords = self._extract_keywords(optimized_title, optimized_content)
         
-        # Process Semrush data for enhanced keyword analysis
-        semrush_enhanced_keywords, keyword_opportunities, competitive_insights = self._process_semrush_data(
-            keywords, semrush_data, optimized_title, optimized_content
+        # Process keyword data (Semrush or Google Search)
+        keyword_data = google_search_data if google_search_data else semrush_data
+        semrush_enhanced_keywords, keyword_opportunities, competitive_insights = self._process_keyword_data(
+            keywords, keyword_data, optimized_title, optimized_content
         )
         
-        # Calculate SEO score with Semrush enhancement
+        # Calculate SEO score with enhancement
         seo_score = self._calculate_enhanced_seo_score(
-            optimized_title, optimized_content, len(issues), semrush_data
+            optimized_title, optimized_content, len(issues), keyword_data
         )
         
         return SeoAnalysisResult(
@@ -267,9 +271,9 @@ class SeoAnalyzer:
         
         return max(0.0, min(100.0, score))
 
-    def _process_semrush_data(self, keywords: List[str], semrush_data: Dict[str, Any], 
+    def _process_keyword_data(self, keywords: List[str], keyword_data: Dict[str, Any], 
                              title: str, content: str) -> tuple:
-        """Process Semrush data to enhance keyword analysis"""
+        """Process keyword data (Google Search or Semrush) to enhance keyword analysis"""
         semrush_enhanced_keywords = []
         keyword_opportunities = []
         competitive_insights = {
@@ -280,11 +284,17 @@ class SeoAnalyzer:
             'total_search_volume': 0
         }
         
-        if not semrush_data:
+        if not keyword_data:
             return semrush_enhanced_keywords, keyword_opportunities, competitive_insights
         
-        # Process each keyword with Semrush data
-        for keyword, data in semrush_data.items():
+        # Check if this is Google Search data or Semrush data
+        is_google_search = 'related_keywords' in keyword_data or 'search_results' in keyword_data
+        
+        if is_google_search:
+            return self._process_google_search_data(keywords, keyword_data, title, content)
+        
+        # Process each keyword with Semrush data (legacy)
+        for keyword, data in keyword_data.items():
             if isinstance(data, dict):
                 search_volume = data.get('search_volume', 0)
                 difficulty = data.get('keyword_difficulty', 0)
@@ -358,22 +368,96 @@ class SeoAnalyzer:
         else:
             return "Low Priority - Low volume or high competition"
     
+    def _process_google_search_data(self, keywords: List[str], google_data: Dict[str, Any],
+                                    title: str, content: str) -> tuple:
+        """Process Google Search API data for SEO enhancement"""
+        enhanced_keywords = []
+        keyword_opportunities = []
+        competitive_insights = {
+            'related_keywords': [],
+            'top_competitors': [],
+            'common_patterns': [],
+            'avg_title_length': 0,
+            'avg_description_length': 0
+        }
+        
+        # Extract related keywords from Google Search
+        if 'related_keywords' in google_data and isinstance(google_data['related_keywords'], list):
+            related = google_data['related_keywords']
+            competitive_insights['related_keywords'] = related[:10]
+            enhanced_keywords.extend(related[:5])
+        
+        # Extract competitor data from search results
+        if 'search_results' in google_data and isinstance(google_data['search_results'], list):
+            results = google_data['search_results']
+            
+            # Analyze top competitors
+            top_domains = []
+            title_lengths = []
+            desc_lengths = []
+            
+            for result in results[:5]:
+                if isinstance(result, dict):
+                    url = result.get('url', '')
+                    if url:
+                        domain = self._extract_domain(url)
+                        top_domains.append(domain)
+                    
+                    title_len = len(result.get('title', ''))
+                    desc_len = len(result.get('description', ''))
+                    title_lengths.append(title_len)
+                    desc_lengths.append(desc_len)
+            
+            competitive_insights['top_competitors'] = list(set(top_domains))
+            competitive_insights['avg_title_length'] = sum(title_lengths) / len(title_lengths) if title_lengths else 0
+            competitive_insights['avg_description_length'] = sum(desc_lengths) / len(desc_lengths) if desc_lengths else 0
+        
+        # Create keyword opportunities based on Google data
+        for keyword in enhanced_keywords:
+            keyword_opportunities.append({
+                'keyword': keyword,
+                'source': 'google_search',
+                'recommendation': 'Related keyword from Google Search',
+                'opportunity_score': 75  # Google related keywords are high value
+            })
+        
+        return enhanced_keywords, keyword_opportunities, competitive_insights
+    
+    def _extract_domain(self, url: str) -> str:
+        """Extract domain from URL"""
+        try:
+            if '//' in url:
+                domain = url.split('//')[1].split('/')[0]
+                return domain.replace('www.', '')
+            return url
+        except:
+            return url
+    
     def _calculate_enhanced_seo_score(self, title: str, content: str, issues_count: int, 
-                                    semrush_data: Dict[str, Any]) -> float:
+                                    keyword_data: Dict[str, Any]) -> float:
         """Calculate enhanced SEO score with Semrush data"""
         base_score = self._calculate_seo_score(title, content, issues_count)
         
-        if not semrush_data:
+        if not keyword_data:
             return base_score
         
-        # Bonus for having Semrush data
-        semrush_bonus = 5.0
+        # Bonus for having keyword research data
+        data_bonus = 5.0
         
-        # Bonus for high-value keywords
+        # Check if this is Google Search data
+        is_google_search = 'related_keywords' in keyword_data or 'search_results' in keyword_data
+        
+        if is_google_search:
+            # Google Search bonus based on related keywords count
+            related_count = len(keyword_data.get('related_keywords', []))
+            keyword_bonus = min(related_count * 2, 15.0)
+            return base_score + data_bonus + keyword_bonus
+        
+        # Semrush data processing (legacy)
         high_value_keywords = 0
         total_volume = 0
         
-        for keyword, data in semrush_data.items():
+        for keyword, data in keyword_data.items():
             if isinstance(data, dict):
                 search_volume = data.get('search_volume', 0)
                 difficulty = data.get('keyword_difficulty', 0)

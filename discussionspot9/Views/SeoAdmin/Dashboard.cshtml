@@ -41,6 +41,52 @@
         </div>
     }
 
+    <!-- Google Search API Integration Section - NEW! -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fab fa-google me-2"></i>Google Search Intelligence - HYBRID (C# + AI)
+                        <span class="badge bg-light text-success ms-2">⚡ NEW</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success mb-3">
+                        <i class="fas fa-bolt"></i> <strong>Real-time Google Search API</strong> + <strong>AI-powered Python analysis</strong> for maximum SEO performance!
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-md-6">
+                            <a href="/admin/seo/google-keyword-research" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-search me-2"></i>Keyword Research
+                            </a>
+                            <small class="text-muted d-block mt-2">Real Google Search results + related keywords</small>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-success btn-lg w-100" onclick="showTopicInsights()">
+                                <i class="fas fa-lightbulb me-2"></i>Topic Insights
+                            </button>
+                            <small class="text-muted d-block mt-2">Get insights from Google Search data</small>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-success btn-lg w-100" onclick="showGoogleCompetitors()">
+                                <i class="fas fa-chart-line me-2"></i>Competitor Analysis
+                            </button>
+                            <small class="text-muted d-block mt-2">Analyze top-ranking competitors</small>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-success btn-lg w-100" onclick="optimizeWithGoogle()">
+                                <i class="fas fa-magic me-2"></i>Auto-Optimize
+                            </button>
+                            <small class="text-muted d-block mt-2">AI-powered optimization with Google data</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Revenue Cards - Responsive -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
@@ -320,7 +366,89 @@
                                 <li><span class="badge bg-primary">✓</span> Google AdSense API</li>
                                 <li><span class="badge bg-primary">✓</span> Google Search Console API</li>
                                 <li><span class="badge bg-primary">✓</span> Python SEO Analyzer</li>
+                                <li><span class="badge bg-success">🆕</span> Semrush API (Active)</li>
                             </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Competitor Analysis Modal -->
+<div class="modal fade" id="competitorModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-chart-line me-2"></i>Competitor Analysis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="competitorDomain" class="form-label">Competitor Domain</label>
+                    <input type="text" class="form-control" id="competitorDomain" placeholder="example.com">
+                </div>
+                <button class="btn btn-primary" onclick="analyzeCompetitor()">
+                    <i class="fas fa-search me-2"></i>Analyze Competitor
+                </button>
+                <div id="competitorResults" class="mt-4" style="display:none;">
+                    <h6>Top Competitor Keywords:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Keyword</th>
+                                    <th>Volume</th>
+                                    <th>Difficulty</th>
+                                    <th>Position</th>
+                                    <th>CPC</th>
+                                </tr>
+                            </thead>
+                            <tbody id="competitorKeywordsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- URL Traffic Analysis Modal -->
+<div class="modal fade" id="urlTrafficModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-globe me-2"></i>URL Traffic Analysis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="trafficUrl" class="form-label">URL to Analyze</label>
+                    <input type="url" class="form-control" id="trafficUrl" placeholder="https://example.com/page">
+                </div>
+                <button class="btn btn-primary" onclick="analyzeUrlTraffic()">
+                    <i class="fas fa-search me-2"></i>Analyze URL
+                </button>
+                <div id="urlTrafficResults" class="mt-4" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Organic Traffic</h6>
+                                    <h3 id="organicTraffic">--</h3>
+                                    <p class="text-muted">Keywords: <span id="organicKeywords">--</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Paid Traffic</h6>
+                                    <h3 id="paidTraffic">--</h3>
+                                    <p class="text-muted">Keywords: <span id="paidKeywords">--</span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -335,6 +463,303 @@
         setTimeout(function() {
             location.reload();
         }, 300000);
+
+        // Semrush Integration Functions
+        function showCompetitorModal() {
+            var modal = new bootstrap.Modal(document.getElementById('competitorModal'));
+            modal.show();
+        }
+
+        function showUrlTrafficModal() {
+            var modal = new bootstrap.Modal(document.getElementById('urlTrafficModal'));
+            modal.show();
+        }
+
+        function analyzeCompetitor() {
+            const domain = document.getElementById('competitorDomain').value;
+            if (!domain) {
+                alert('Please enter a competitor domain');
+                return;
+            }
+
+            showLoading('Analyzing competitor...');
+            
+            fetch(`/admin/seo/api/competitor-analysis?domain=${encodeURIComponent(domain)}&limit=50`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        displayCompetitorResults(data.data);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error analyzing competitor');
+                    console.error(error);
+                });
+        }
+
+        function displayCompetitorResults(keywords) {
+            const tbody = document.getElementById('competitorKeywordsTable');
+            tbody.innerHTML = keywords.map(k => `
+                <tr>
+                    <td><strong>${k.keyword}</strong></td>
+                    <td>${k.searchVolume.toLocaleString()}</td>
+                    <td><span class="badge ${getDifficultyBadge(k.difficulty)}">${k.difficulty}%</span></td>
+                    <td>${k.position}</td>
+                    <td>$${k.cpc}</td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('competitorResults').style.display = 'block';
+        }
+
+        function analyzeUrlTraffic() {
+            const url = document.getElementById('trafficUrl').value;
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            showLoading('Analyzing URL traffic...');
+            
+            fetch(`/admin/seo/api/url-traffic?url=${encodeURIComponent(url)}`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        displayUrlTrafficResults(data.data);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error analyzing URL');
+                    console.error(error);
+                });
+        }
+
+        function displayUrlTrafficResults(traffic) {
+            document.getElementById('organicTraffic').textContent = traffic.organicTraffic.toLocaleString();
+            document.getElementById('organicKeywords').textContent = traffic.organicKeywords.toLocaleString();
+            document.getElementById('paidTraffic').textContent = traffic.paidTraffic.toLocaleString();
+            document.getElementById('paidKeywords').textContent = traffic.paidKeywords.toLocaleString();
+            
+            document.getElementById('urlTrafficResults').style.display = 'block';
+        }
+
+        function getDifficultyBadge(difficulty) {
+            if (difficulty < 30) return 'bg-success';
+            if (difficulty < 60) return 'bg-warning';
+            return 'bg-danger';
+        }
+
+        function showLoading(message) {
+            // You can implement a better loading indicator
+            console.log(message);
+        }
+
+        function hideLoading() {
+            // Hide loading indicator
+        }
+
+        // ============================================
+        // Google Search API Functions - NEW
+        // ============================================
+
+        function showGoogleKeywordResearch() {
+            const query = prompt('Enter a keyword or topic to research:');
+            if (!query) return;
+
+            showLoading('Searching Google...');
+
+            fetch(`/admin/seo/api/google-search?query=${encodeURIComponent(query)}&limit=10`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        displayGoogleSearchResults(data.data);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error calling Google Search API');
+                    console.error(error);
+                });
+        }
+
+        function displayGoogleSearchResults(data) {
+            let html = `
+                <div class="modal fade" id="googleResultsModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title"><i class="fab fa-google me-2"></i>Google Search Results: "${data.searchTerm}"</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-3">Top Search Results (${data.totalResults})</h6>
+                                        <div class="list-group">
+                                            ${data.results.map(r => `
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between">
+                                                        <h6 class="mb-1">${r.position}. ${r.title}</h6>
+                                                        <small class="text-muted">${new URL(r.url).hostname}</small>
+                                                    </div>
+                                                    <p class="mb-1 text-muted small">${r.description}</p>
+                                                    <small><a href="${r.url}" target="_blank">${r.url}</a></small>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="mb-3">Related Keywords (${data.relatedKeywords.length})</h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            ${data.relatedKeywords.map(k => `
+                                                <span class="badge bg-success">${k}</span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const existingModal = document.getElementById('googleResultsModal');
+            if (existingModal) existingModal.remove();
+
+            document.body.insertAdjacentHTML('beforeend', html);
+            new bootstrap.Modal(document.getElementById('googleResultsModal')).show();
+        }
+
+        function showTopicInsights() {
+            const topic = prompt('Enter a topic to analyze:');
+            if (!topic) return;
+
+            showLoading('Getting topic insights from Google...');
+
+            fetch(`/admin/seo/api/topic-insights?topic=${encodeURIComponent(topic)}`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        displayTopicInsights(data.data);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error getting insights');
+                    console.error(error);
+                });
+        }
+
+        function displayTopicInsights(insights) {
+            alert(`Topic: ${insights.topic}\n\n` +
+                  `Related Keywords: ${insights.relatedKeywords.length}\n` +
+                  `Top Domains: ${insights.topRankingDomains.join(', ')}\n` +
+                  `Avg Title Length: ${insights.avgTitleLength}\n` +
+                  `Avg Description: ${insights.avgDescriptionLength}\n\n` +
+                  `Suggested Keywords:\n${insights.suggestedKeywords.join('\n')}`);
+        }
+
+        function showGoogleCompetitors() {
+            const query = prompt('Enter a keyword to analyze competitors:');
+            if (!query) return;
+
+            showLoading('Analyzing competitors on Google...');
+
+            fetch(`/admin/seo/api/google-competitors?query=${encodeURIComponent(query)}&limit=10`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        displayGoogleCompetitors(data.data);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error analyzing competitors');
+                    console.error(error);
+                });
+        }
+
+        function displayGoogleCompetitors(competitors) {
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Domain</th>
+                                <th>Title</th>
+                                <th>Title Length</th>
+                                <th>Desc Length</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${competitors.map(c => `
+                                <tr>
+                                    <td><span class="badge bg-primary">#${c.position}</span></td>
+                                    <td>${c.domain}</td>
+                                    <td>${c.title.substring(0, 50)}...</td>
+                                    <td>${c.titleLength}</td>
+                                    <td>${c.descriptionLength}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            alert('Competitor analysis complete! Check console for details.');
+            console.table(competitors);
+        }
+
+        function optimizeWithGoogle() {
+            const postId = prompt('Enter Post ID to optimize with Google Search + AI:');
+            if (!postId) return;
+
+            showLoading('Optimizing with Google Search + AI...');
+
+            fetch(`/admin/seo/api/google-optimize-post?postId=${postId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        alert(`✅ POST OPTIMIZED!\n\n` +
+                              `Original Title: ${data.data.originalTitle}\n` +
+                              `Optimized Title: ${data.data.optimizedTitle}\n\n` +
+                              `SEO Score: ${data.data.seoScore}/100\n\n` +
+                              `Google Keywords: ${data.data.googleRelatedKeywords.join(', ')}\n\n` +
+                              `Top Competitors: ${data.data.topCompetitors.join(', ')}\n\n` +
+                              `Improvements:\n${data.data.improvementsMade.join('\n')}`);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    alert('Error optimizing post');
+                    console.error(error);
+                });
+        }
     </script>
 }
 

@@ -4,19 +4,59 @@
         this.notificationConnection = null;
         this.pagePostId = null;
         this.isAuthenticated = false; // Track authentication status
+        
+        // Debouncing maps to prevent spam
+        this.voteDebounceMap = new Map(); // Track ongoing votes
+        this.lastVoteTime = new Map(); // Track last vote timestamp
 
         // Bind 'this' context for the main event handler
         this.handleDelegatedClick = this.handleDelegatedClick.bind(this);
     }
+    
+    // Utility: Debounce to prevent spam clicks
+    debounce(key, func, wait = 300) {
+        const now = Date.now();
+        const lastTime = this.lastVoteTime.get(key) || 0;
+        
+        if (now - lastTime < wait) {
+            console.log('⏱️ Debounced:', key, 'Wait', wait - (now - lastTime), 'ms');
+            return false; // Too soon
+        }
+        
+        this.lastVoteTime.set(key, now);
+        return true; // Allow
+    }
 
     async initializeConnections() {
+        console.log('🔌 Initializing SignalR connections...');
+        
+        // Build connections with proper authentication
         this.postConnection = new signalR.HubConnectionBuilder()
-            .withUrl("/postHub")
-            .withAutomaticReconnect()
+            .withUrl("/postHub", {
+                accessTokenFactory: () => {
+                    // Get authentication token if available
+                    const token = document.querySelector('meta[name="auth-token"]')?.content;
+                    return token || '';
+                }
+            })
+            .withAutomaticReconnect({
+                nextRetryDelayInMilliseconds: retryContext => {
+                    if (retryContext.previousRetryCount < 3) {
+                        return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 10000);
+                    } else {
+                        return null;
+                    }
+                }
+            })
             .build();
 
         this.notificationConnection = new signalR.HubConnectionBuilder()
-            .withUrl("/notificationHub")
+            .withUrl("/notificationHub", {
+                accessTokenFactory: () => {
+                    const token = document.querySelector('meta[name="auth-token"]')?.content;
+                    return token || '';
+                }
+            })
             .withAutomaticReconnect()
             .build();
 
@@ -26,15 +66,30 @@
         try {
             await this.postConnection.start();
             console.log("✅ PostHub connection started successfully.");
+            console.log("✅ Connection state:", this.postConnection.state);
+            console.log("✅ Connection ID:", this.postConnection.connectionId);
+            
             await this.notificationConnection.start();
             console.log("✅ NotificationHub connection started successfully.");
         } catch (err) {
             console.error("❌ SignalR connection start failed: ", err);
+            console.error("❌ Error details:", err.message);
+            console.error("❌ Error stack:", err.stack);
             this.showNotification("Failed to connect to real-time features.", 'error');
         }
     }
 
     setupPostEventHandlers() {
+        // Vote update handler - THIS IS THE KEY ONE FOR VOTING
+        this.postConnection.on("UpdatePostVotesUI", (postId, upvoteCount, downvoteCount, currentUserVote) => {
+            const timestamp = new Date().toISOString();
+            console.log(`🎯 [${timestamp}] === SIGNALR EVENT RECEIVED: UpdatePostVotesUI ===`);
+            console.log('📥 Raw parameters received:', { postId, upvoteCount, downvoteCount, currentUserVote });
+            console.log('📊 Current DOM score before update:', document.getElementById(`voteScore-${postId}`)?.textContent);
+            this.updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote);
+            console.log('📊 Current DOM score after update:', document.getElementById(`voteScore-${postId}`)?.textContent);
+        });
+        
         // This handler for receiving comments remains the same and is working correctly.
         this.postConnection.on("ReceiveComment", (htmlContent, commentId, parentCommentId) => {
             const optimisticComment = document.getElementById('optimistic-comment-placeholder');
@@ -66,8 +121,11 @@
 
         // Other SignalR event handlers...
         this.postConnection.on("CommentDeleted", (commentId) => this.deleteCommentUI(commentId));
-        this.postConnection.on("CommentVoteUpdated", (commentId, up, down, score) => this.updateCommentVotes(commentId, up, down, score));
-        this.postConnection.on("UpdatePostVotesUI", (postId, up, down, vote) => this.updatePostVotesUI(postId, up, down, vote));
+        this.postConnection.on("CommentVoteUpdated", (commentId, up, down, score, userVote) => {
+            console.log('💬 CommentVoteUpdated received:', { commentId, up, down, score, userVote });
+            this.updateCommentVotes(commentId, up, down, score, userVote);
+        });
+        // NOTE: UpdatePostVotesUI is already registered above with better logging
         this.postConnection.on("ReceivePollUpdate", (pollData) => this.updatePollResultsUI(pollData));
         this.postConnection.on("ReceivePollVoteError", (msg) => this.showNotification(msg, 'error'));
         this.postConnection.on("ReceivePollVoteSuccess", (msg) => this.showNotification(msg, 'success'));
@@ -96,11 +154,15 @@
         // --- Poll Vote ---
         const pollOption = target.closest('.poll-option');
         if (pollOption) {
+            console.log('🎯 Poll option clicked');
             const pollContainer = pollOption.closest('.poll-container');
             const postId = parseInt(pollContainer?.dataset.postId, 10);
             const optionId = parseInt(pollOption.dataset.optionId, 10);
+            console.log('📊 Poll vote data - PostID:', postId, 'OptionID:', optionId);
             if (!isNaN(postId) && !isNaN(optionId)) {
                 await this.castPollVote(postId, optionId);
+            } else {
+                console.error('❌ Invalid poll vote data');
             }
             return;
         }
@@ -109,9 +171,15 @@
         const postVoteBtn = target.closest('.post-container .vote-btn');
         if (postVoteBtn) {
             event.preventDefault();
+            console.log('🎯 Post vote button clicked');
             const postId = parseInt(postVoteBtn.dataset.postId, 10);
             const voteType = parseInt(postVoteBtn.dataset.voteType, 10);
-            if (!isNaN(postId) && !isNaN(voteType)) this.votePost(postId, voteType);
+            console.log('🗳️ Post vote data - PostID:', postId, 'VoteType:', voteType);
+            if (!isNaN(postId) && !isNaN(voteType)) {
+                await this.votePost(postId, voteType);
+            } else {
+                console.error('❌ Invalid post vote data. PostID:', postId, 'VoteType:', voteType);
+            }
             return;
         }
 
@@ -119,9 +187,15 @@
         const commentVoteBtn = target.closest('.comment-vote-btn');
         if (commentVoteBtn) {
             event.preventDefault();
+            console.log('🎯 Comment vote button clicked');
             const commentId = parseInt(commentVoteBtn.dataset.commentId, 10);
             const voteType = parseInt(commentVoteBtn.dataset.voteType, 10);
-            if (!isNaN(commentId) && !isNaN(voteType)) this.voteComment(commentId, voteType);
+            console.log('💬 Comment vote data - CommentID:', commentId, 'VoteType:', voteType);
+            if (!isNaN(commentId) && !isNaN(voteType)) {
+                await this.voteComment(commentId, voteType);
+            } else {
+                console.error('❌ Invalid comment vote data');
+            }
             return;
         }
 
@@ -279,18 +353,331 @@
     }
 
     async voteComment(commentId, voteType) {
-        try { await this.postConnection.invoke("VoteComment", commentId, voteType); }
-        catch (err) { console.error("Failed to vote on comment:", err); }
+        console.log('💬 Voting on comment:', commentId, 'Type:', voteType);
+        
+        // Check authentication
+        if (!this.isAuthenticated) {
+            console.log('❌ User not authenticated, showing login prompt');
+            this.showLoginPrompt();
+            return;
+        }
+        
+        // Debounce comment votes
+        const debounceKey = `comment-${commentId}`;
+        if (!this.debounce(debounceKey, null, 300)) {
+            console.log('⏱️ Comment vote ignored (debounced)');
+            return;
+        }
+        
+        // Find comment vote elements (separate upvote/downvote counts)
+        const upvoteCountEl = document.getElementById(`commentUpvote${commentId}`);
+        const downvoteCountEl = document.getElementById(`commentDownvote${commentId}`);
+        const upvoteBtn = document.querySelector(`[data-comment-id="${commentId}"][data-vote-type="1"]`);
+        const downvoteBtn = document.querySelector(`[data-comment-id="${commentId}"][data-vote-type="-1"]`);
+        
+        console.log('🔍 Comment vote elements:', {
+            upvoteCountEl: !!upvoteCountEl,
+            downvoteCountEl: !!downvoteCountEl,
+            upvoteBtn: !!upvoteBtn,
+            downvoteBtn: !!downvoteBtn
+        });
+        
+        // Store original state
+        const originalState = {
+            upvoteCount: upvoteCountEl?.textContent || '0',
+            downvoteCount: downvoteCountEl?.textContent || '0',
+            upvoteActive: upvoteBtn?.classList.contains('active') || false,
+            downvoteActive: downvoteBtn?.classList.contains('active') || false
+        };
+        
+        console.log('📊 Original comment state:', originalState);
+        
+        // Calculate optimistic count changes
+        let currentUpvotes = parseInt(upvoteCountEl?.textContent || '0');
+        let currentDownvotes = parseInt(downvoteCountEl?.textContent || '0');
+        let newUpvotes = currentUpvotes;
+        let newDownvotes = currentDownvotes;
+        
+        const wasUpvoted = upvoteBtn?.classList.contains('active');
+        const wasDownvoted = downvoteBtn?.classList.contains('active');
+        
+        console.log('🔘 Comment button states - wasUpvoted:', wasUpvoted, 'wasDownvoted:', wasDownvoted);
+        
+        if (voteType === 1) {
+            // Upvote clicked
+            if (wasUpvoted) {
+                console.log('➖ Removing comment upvote');
+                newUpvotes = Math.max(0, newUpvotes - 1);
+                upvoteBtn?.classList.remove('active');
+            } else if (wasDownvoted) {
+                console.log('🔄 Changing comment downvote to upvote');
+                newUpvotes++;
+                newDownvotes = Math.max(0, newDownvotes - 1);
+                downvoteBtn?.classList.remove('active');
+                upvoteBtn?.classList.add('active');
+            } else {
+                console.log('➕ Adding new comment upvote');
+                newUpvotes++;
+                upvoteBtn?.classList.add('active');
+            }
+        } else if (voteType === -1) {
+            // Downvote clicked
+            if (wasDownvoted) {
+                console.log('➖ Removing comment downvote');
+                newDownvotes = Math.max(0, newDownvotes - 1);
+                downvoteBtn?.classList.remove('active');
+            } else if (wasUpvoted) {
+                console.log('🔄 Changing comment upvote to downvote');
+                newUpvotes = Math.max(0, newUpvotes - 1);
+                newDownvotes++;
+                upvoteBtn?.classList.remove('active');
+                downvoteBtn?.classList.add('active');
+            } else {
+                console.log('➕ Adding new comment downvote');
+                newDownvotes++;
+                downvoteBtn?.classList.add('active');
+            }
+        }
+        
+        console.log('🎯 Calculated new comment counts - Up:', newUpvotes, 'Down:', newDownvotes);
+        
+        // Update UI immediately (optimistic)
+        if (upvoteCountEl) {
+            upvoteCountEl.textContent = newUpvotes.toString();
+            console.log('🔄 Optimistic comment upvote count set to:', newUpvotes);
+        }
+        
+        if (downvoteCountEl) {
+            downvoteCountEl.textContent = newDownvotes.toString();
+            console.log('🔄 Optimistic comment downvote count set to:', newDownvotes);
+        }
+        
+        console.log('✅ Comment UI updated optimistically');
+        
+        try { 
+            await this.postConnection.invoke("VoteComment", commentId, voteType);
+            console.log('✅ Comment vote sent to hub');
+        }
+        catch (err) { 
+            console.error("❌ Failed to vote on comment:", err);
+            
+            // Revert UI on error
+            if (upvoteCountEl) upvoteCountEl.textContent = originalState.upvoteCount;
+            if (downvoteCountEl) downvoteCountEl.textContent = originalState.downvoteCount;
+            if (upvoteBtn) {
+                originalState.upvoteActive ? upvoteBtn.classList.add('active') : upvoteBtn.classList.remove('active');
+            }
+            if (downvoteBtn) {
+                originalState.downvoteActive ? downvoteBtn.classList.add('active') : downvoteBtn.classList.remove('active');
+            }
+            
+            this.showNotification('Failed to vote on comment', 'error');
+            console.log('🔄 Comment UI reverted to original state');
+        }
     }
 
     async votePost(postId, voteType) {
-        try { await this.postConnection.invoke("VotePost", postId, voteType); }
-        catch (err) { console.error("Failed to vote on post:", err); }
+        const timestamp = new Date().toISOString();
+        console.log(`🗳️ [${timestamp}] Voting on post:`, postId, 'Type:', voteType);
+        
+        // Check authentication
+        if (!this.isAuthenticated) {
+            console.log('❌ User not authenticated, showing login prompt');
+            this.showLoginPrompt();
+            return;
+        }
+        
+        // ============================================
+        // DEBOUNCE TO PREVENT SPAM
+        // ============================================
+        const debounceKey = `post-${postId}`;
+        if (!this.debounce(debounceKey, null, 300)) {
+            console.log('⏱️ Vote ignored (debounced)');
+            return; // Prevent spam clicking
+        }
+        
+        // ============================================
+        // OPTIMISTIC UI UPDATE (INSTANT FEEDBACK)
+        // ============================================
+        const upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
+        const downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
+        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
+        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
+        
+        if (!upvoteBtn || !downvoteBtn) {
+            console.error('❌ Vote UI elements not found for post:', postId);
+            console.log('Looking for:', `upvoteBtn-${postId}`, `downvoteBtn-${postId}`);
+            return;
+        }
+        
+        // Store original state for revert on error
+        const originalState = {
+            upvoteCount: upvoteCountEl?.textContent || '0',
+            downvoteCount: downvoteCountEl?.textContent || '0',
+            upvoteActive: upvoteBtn?.classList.contains('active') || false,
+            downvoteActive: downvoteBtn?.classList.contains('active') || false
+        };
+        
+        console.log('📊 Original state:', originalState);
+        
+        // Calculate optimistic count changes
+        let currentUpvotes = parseInt(upvoteCountEl?.textContent || '0');
+        let currentDownvotes = parseInt(downvoteCountEl?.textContent || '0');
+        let newUpvotes = currentUpvotes;
+        let newDownvotes = currentDownvotes;
+        
+        console.log('🔢 Current counts - Up:', currentUpvotes, 'Down:', currentDownvotes);
+        
+        const wasUpvoted = upvoteBtn?.classList.contains('active');
+        const wasDownvoted = downvoteBtn?.classList.contains('active');
+        
+        console.log('🔘 Button states - wasUpvoted:', wasUpvoted, 'wasDownvoted:', wasDownvoted);
+        
+        if (voteType === 1) {
+            // Upvote clicked
+            if (wasUpvoted) {
+                console.log('➖ Removing upvote');
+                newUpvotes = Math.max(0, newUpvotes - 1);
+                upvoteBtn.classList.remove('active');
+            } else if (wasDownvoted) {
+                console.log('🔄 Changing downvote to upvote');
+                newUpvotes++;
+                newDownvotes = Math.max(0, newDownvotes - 1);
+                downvoteBtn.classList.remove('active');
+                upvoteBtn.classList.add('active');
+            } else {
+                console.log('➕ Adding new upvote');
+                newUpvotes++;
+                upvoteBtn.classList.add('active');
+            }
+        } else if (voteType === -1) {
+            // Downvote clicked
+            if (wasDownvoted) {
+                console.log('➖ Removing downvote');
+                newDownvotes = Math.max(0, newDownvotes - 1);
+                downvoteBtn.classList.remove('active');
+            } else if (wasUpvoted) {
+                console.log('🔄 Changing upvote to downvote');
+                newUpvotes = Math.max(0, newUpvotes - 1);
+                newDownvotes++;
+                upvoteBtn.classList.remove('active');
+                downvoteBtn.classList.add('active');
+            } else {
+                console.log('➕ Adding new downvote');
+                newDownvotes++;
+                downvoteBtn.classList.add('active');
+            }
+        }
+        
+        console.log('🎯 Calculated new counts - Up:', newUpvotes, 'Down:', newDownvotes);
+        
+        // Update UI IMMEDIATELY (optimistic)
+        if (upvoteCountEl) {
+            upvoteCountEl.textContent = newUpvotes.toString();
+            console.log('🔄 Optimistic upvote count set to:', newUpvotes);
+        }
+        
+        if (downvoteCountEl) {
+            downvoteCountEl.textContent = newDownvotes.toString();
+            console.log('🔄 Optimistic downvote count set to:', newDownvotes);
+        }
+        
+        console.log('✅ UI updated optimistically');
+        
+        // ============================================
+        // SEND TO SERVER (BACKGROUND)
+        // ============================================
+        try { 
+            await this.postConnection.invoke("VotePost", postId, voteType);
+            console.log('✅ Post vote synced to server successfully');
+        }
+        catch (err) { 
+            console.error("❌ Failed to sync vote to server:", err);
+            
+            // REVERT UI on error
+            if (upvoteCountEl) {
+                upvoteCountEl.textContent = originalState.upvoteCount;
+            }
+            if (downvoteCountEl) {
+                downvoteCountEl.textContent = originalState.downvoteCount;
+            }
+            if (upvoteBtn) {
+                originalState.upvoteActive ? upvoteBtn.classList.add('active') : upvoteBtn.classList.remove('active');
+            }
+            if (downvoteBtn) {
+                originalState.downvoteActive ? downvoteBtn.classList.add('active') : downvoteBtn.classList.remove('active');
+            }
+            
+            this.showNotification('Failed to vote. Please try again.', 'error');
+            console.log('🔄 UI reverted to original state');
+        }
     }
 
     async castPollVote(postId, optionId) {
-        try { await this.postConnection.invoke("CastPollVote", postId, optionId); }
-        catch (err) { console.error("Failed to cast poll vote:", err); }
+        console.log('📊 Voting on poll. Post:', postId, 'Option:', optionId);
+        
+        // Debounce poll votes
+        const debounceKey = `poll-${postId}`;
+        if (!this.debounce(debounceKey, null, 500)) {
+            console.log('⏱️ Poll vote ignored (debounced)');
+            this.showNotification('Please wait before voting again', 'warning');
+            return;
+        }
+        
+        // Find poll option element for visual feedback
+        const pollOption = document.querySelector(`.poll-option[data-option-id="${optionId}"]`);
+        const pollContainer = document.querySelector(`.poll-container[data-post-id="${postId}"]`);
+        
+        // Add loading state
+        if (pollOption) {
+            pollOption.style.opacity = '0.6';
+            pollOption.style.pointerEvents = 'none';
+        }
+        if (pollContainer) {
+            pollContainer.style.opacity = '0.8';
+            pollContainer.style.pointerEvents = 'none';
+        }
+        
+        try { 
+            await this.postConnection.invoke("CastPollVote", postId, optionId);
+            console.log('✅ Poll vote sent to hub successfully');
+            
+            // Success feedback
+            if (pollOption) {
+                pollOption.style.transition = 'all 0.3s ease';
+                pollOption.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    pollOption.style.backgroundColor = '';
+                }, 1000);
+            }
+        }
+        catch (err) { 
+            console.error("❌ Failed to cast poll vote:", err);
+            this.showNotification('Failed to vote on poll. Please try again.', 'error');
+            
+            // Remove loading state on error
+            if (pollOption) {
+                pollOption.style.opacity = '1';
+                pollOption.style.pointerEvents = 'auto';
+            }
+            if (pollContainer) {
+                pollContainer.style.opacity = '1';
+                pollContainer.style.pointerEvents = 'auto';
+            }
+        }
+        finally {
+            // Always restore after poll update or 2 seconds
+            setTimeout(() => {
+                if (pollOption) {
+                    pollOption.style.opacity = '1';
+                    pollOption.style.pointerEvents = 'auto';
+                }
+                if (pollContainer) {
+                    pollContainer.style.opacity = '1';
+                    pollContainer.style.pointerEvents = 'auto';
+                }
+            }, 2000);
+        }
     }
 
     // AUTHENTICATION METHODS
@@ -428,17 +815,161 @@
         }
     }
 
-    updateCommentVotes(commentId, upvoteCount, downvoteCount, score) {
-        const voteCountEl = document.querySelector(`#commentVote${commentId}`);
-        if (voteCountEl) voteCountEl.textContent = score;
+    updateCommentVotes(commentId, upvoteCount, downvoteCount, score, userVote) {
+        console.log('🔄 Updating comment votes:', { commentId, upvoteCount, downvoteCount, score, userVote });
+        
+        const upvoteCountEl = document.getElementById(`commentUpvote${commentId}`);
+        const downvoteCountEl = document.getElementById(`commentDownvote${commentId}`);
+        const upvoteBtn = document.querySelector(`[data-comment-id="${commentId}"][data-vote-type="1"]`);
+        const downvoteBtn = document.querySelector(`[data-comment-id="${commentId}"][data-vote-type="-1"]`);
+        
+        console.log('🔍 Comment elements found:', {
+            upvoteCountEl: !!upvoteCountEl,
+            downvoteCountEl: !!downvoteCountEl,
+            upvoteBtn: !!upvoteBtn,
+            downvoteBtn: !!downvoteBtn
+        });
+        
+        // Ensure we have numbers
+        const upCount = parseInt(upvoteCount) || 0;
+        const downCount = parseInt(downvoteCount) || 0;
+        
+        console.log('📊 Comment calculated values:', { upCount, downCount, userVote });
+        
+        // Update individual counts (Reddit style)
+        if (upvoteCountEl) {
+            upvoteCountEl.textContent = upCount.toString();
+            console.log('✅ Comment upvote count updated to:', upCount);
+            
+            // Animate upvote count
+            upvoteCountEl.style.transform = 'scale(1.2)';
+            upvoteCountEl.style.transition = 'transform 0.2s ease';
+            setTimeout(() => {
+                upvoteCountEl.style.transform = 'scale(1)';
+            }, 200);
+        } else {
+            console.warn('⚠️ Comment upvote count element not found:', `#commentUpvote${commentId}`);
+        }
+        
+        if (downvoteCountEl) {
+            downvoteCountEl.textContent = downCount.toString();
+            console.log('✅ Comment downvote count updated to:', downCount);
+            
+            // Animate downvote count
+            downvoteCountEl.style.transform = 'scale(1.2)';
+            downvoteCountEl.style.transition = 'transform 0.2s ease';
+            setTimeout(() => {
+                downvoteCountEl.style.transform = 'scale(1)';
+            }, 200);
+        } else {
+            console.warn('⚠️ Comment downvote count element not found:', `#commentDownvote${commentId}`);
+        }
+        
+        // Update button states based on user's vote
+        if (upvoteBtn && downvoteBtn) {
+            // Remove active states first
+            upvoteBtn.classList.remove('active');
+            downvoteBtn.classList.remove('active');
+            
+            // Add active state based on current user's vote
+            if (userVote === 1) {
+                upvoteBtn.classList.add('active');
+                console.log('✅ Comment upvote button activated');
+            } else if (userVote === -1) {
+                downvoteBtn.classList.add('active');
+                console.log('✅ Comment downvote button activated');
+            }
+            
+            console.log('🔄 Comment vote buttons updated');
+        } else {
+            console.warn('⚠️ Comment vote buttons not found');
+        }
     }
 
     updatePostVotesUI(postId, upvoteCount, downvoteCount, currentUserVote) {
-        document.getElementById(`upvoteCount-${postId}`).textContent = upvoteCount;
-        document.getElementById(`downvoteCount-${postId}`).textContent = `-${downvoteCount}`;
-        document.getElementById(`totalScore-${postId}`).textContent = `Score ${upvoteCount - downvoteCount}`;
-        document.getElementById(`upvoteBtn-${postId}`)?.classList.toggle('active', currentUserVote === 1);
-        document.getElementById(`downvoteBtn-${postId}`)?.classList.toggle('active', currentUserVote === -1);
+        console.log('🔄 UpdatePostVotesUI called:', { postId, upvoteCount, downvoteCount, currentUserVote });
+        console.log('📊 Received data types:', {
+            upvoteCount: typeof upvoteCount,
+            downvoteCount: typeof downvoteCount,
+            currentUserVote: typeof currentUserVote
+        });
+        
+        // Get vote display elements
+        const upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
+        const downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
+        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
+        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
+        
+        console.log('🔍 Elements found:', {
+            upvoteCountEl: !!upvoteCountEl,
+            downvoteCountEl: !!downvoteCountEl,
+            upvoteBtn: !!upvoteBtn,
+            downvoteBtn: !!downvoteBtn
+        });
+        
+        // Ensure we have numbers
+        const upCount = parseInt(upvoteCount) || 0;
+        const downCount = parseInt(downvoteCount) || 0;
+        
+        console.log('📊 Calculated values:', {
+            upCount,
+            downCount,
+            currentUserVote
+        });
+        
+        // Update individual counts (Reddit/Stack Overflow style)
+        if (upvoteCountEl) {
+            upvoteCountEl.textContent = upCount.toString();
+            console.log('✅ Upvote count updated to:', upCount);
+            
+            // Animate upvote count
+            upvoteCountEl.style.transform = 'scale(1.2)';
+            upvoteCountEl.style.transition = 'transform 0.2s ease';
+            setTimeout(() => {
+                upvoteCountEl.style.transform = 'scale(1)';
+            }, 200);
+        } else {
+            console.warn('⚠️ Upvote count element not found');
+        }
+        
+        if (downvoteCountEl) {
+            downvoteCountEl.textContent = downCount.toString();
+            console.log('✅ Downvote count updated to:', downCount);
+            
+            // Animate downvote count
+            downvoteCountEl.style.transform = 'scale(1.2)';
+            downvoteCountEl.style.transition = 'transform 0.2s ease';
+            setTimeout(() => {
+                downvoteCountEl.style.transform = 'scale(1)';
+            }, 200);
+        } else {
+            console.warn('⚠️ Downvote count element not found');
+        }
+        
+        // Update button states
+        if (upvoteBtn) {
+            if (currentUserVote === 1) {
+                upvoteBtn.classList.add('active');
+            } else {
+                upvoteBtn.classList.remove('active');
+            }
+            console.log('✅ Upvote button active:', currentUserVote === 1);
+        } else {
+            console.warn('⚠️ Upvote button not found for post:', postId);
+        }
+        
+        if (downvoteBtn) {
+            if (currentUserVote === -1) {
+                downvoteBtn.classList.add('active');
+            } else {
+                downvoteBtn.classList.remove('active');
+            }
+            console.log('✅ Downvote button active:', currentUserVote === -1);
+        } else {
+            console.warn('⚠️ Downvote button not found for post:', postId);
+        }
+        
+        console.log('✅ Post votes UI update complete');
     }
 
     updatePollResultsUI(pollData) { /* Your existing poll UI update logic */ }
@@ -491,6 +1022,8 @@
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 === POST DETAIL PAGE INITIALIZATION ===');
+    
     try {
         const signalRManager = new SignalRManager();
         window.signalRManager = signalRManager;
@@ -509,13 +1042,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         const postIdElement = document.getElementById('pagePostId');
         if (postIdElement) {
             signalRManager.pagePostId = parseInt(postIdElement.value, 10);
+            console.log('📄 Page Post ID:', signalRManager.pagePostId);
             if (!isNaN(signalRManager.pagePostId)) {
                 await signalRManager.joinPostGroup(signalRManager.pagePostId);
+                console.log('✅ Joined post group:', signalRManager.pagePostId);
             }
+        } else {
+            console.warn('⚠️ pagePostId element not found');
         }
 
         // This is the only event listener we need to set up now.
         signalRManager.initializeDelegatedListener();
+        console.log('✅ Delegated click listener initialized');
+        
+        // Count vote buttons for debugging
+        const voteButtons = document.querySelectorAll('.vote-btn');
+        const commentVoteButtons = document.querySelectorAll('.comment-vote-btn');
+        const pollOptions = document.querySelectorAll('.poll-option');
+        
+        console.log('📊 Found vote buttons:', voteButtons.length);
+        console.log('💬 Found comment vote buttons:', commentVoteButtons.length);
+        console.log('📊 Found poll options:', pollOptions.length);
+        
+        // Log button attributes for first vote button
+        if (voteButtons.length > 0) {
+            const firstBtn = voteButtons[0];
+            console.log('🔍 First vote button attributes:');
+            console.log('  - data-post-id:', firstBtn.dataset.postId);
+            console.log('  - data-vote-type:', firstBtn.dataset.voteType);
+            console.log('  - class:', firstBtn.className);
+        }
+        
+        console.log('✅ === INITIALIZATION COMPLETE ===');
 
         // Main comment form submission with loading animation
         const submitButton = document.getElementById('submitMainComment');

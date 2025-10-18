@@ -1,0 +1,81 @@
+@* Real-Time SEO Assistant Sidebar - Simplified for CreateTest page *@
+
+<div class="card shadow-lg border-success" style="margin-bottom: 20px;">
+    <div class="card-header text-white" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+        <h5 class="mb-0" style="font-size: 14px;">
+            <i class="fas fa-robot me-2"></i>AI SEO Assistant
+            <span class="badge bg-light text-success ms-2" style="font-size: 0.65rem;">LIVE</span>
+        </h5>
+        <small class="d-block mt-1" style="font-size: 11px;">
+            <i class="fas fa-bolt text-warning"></i> Real-time Google Search + AI
+        </small>
+    </div>
+    <div class="card-content" style="padding: 16px;">
+        <!-- SEO Score -->
+        <div class="mb-3">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px;">
+                <span style="font-weight: 600;">SEO Score</span>
+                <span id="seoScoreText" style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">0/100</span>
+            </div>
+            <div style="height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden;">
+                <div id="seoScoreBar" 
+                     style="height: 100%; width: 0%; background: #6c757d; transition: width 0.6s ease, background-color 0.3s ease;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div id="seoStatus" style="padding: 8px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; margin-bottom: 12px; font-size: 12px;">
+            <i class="fas fa-info-circle me-1"></i>Use AI Generator above or start typing...
+        </div>
+
+        <!-- Keyword Suggestions -->
+        <div id="keywordSuggestions" style="display: none;">
+            <h6 style="margin-bottom: 10px; font-size: 13px;">
+                <i class="fas fa-tags me-1 text-primary"></i>Suggested Keywords
+                <span id="keywordCount" style="background: #0079d3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">0</span>
+            </h6>
+            <div id="keywordList" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
+                <!-- Keywords inserted by JavaScript -->
+            </div>
+            <small style="color: #7c7c7c; font-size: 11px; display: block; margin-bottom: 8px;">
+                <i class="fas fa-lightbulb"></i> Keywords auto-added to post
+            </small>
+        </div>
+
+        <!-- Optimization Tips -->
+        <div id="seoTips">
+            <h6 style="margin-bottom: 8px; font-size: 13px;">
+                <i class="fas fa-list-check me-1 text-warning"></i>Tips
+            </h6>
+            <ul id="tipsList" style="font-size: 11px; margin: 0; padding-left: 20px; color: #666;">
+                <li>Use AI Generator for instant SEO optimization</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div style="background: #f8f9fa; padding: 8px; text-align: center; border-top: 1px solid #e1e5e9;">
+        <small style="color: #7c7c7c; font-size: 10px;">
+            <i class="fab fa-google" style="color: #4285f4;"></i> Google Search API
+        </small>
+    </div>
+</div>
+
+<style>
+    .keyword-badge {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #0079d3;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+    
+    .keyword-badge:hover {
+        transform: scale(1.05);
+        background: #0066b3;
+    }
+</style>
+

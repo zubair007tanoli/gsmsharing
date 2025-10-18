@@ -17,7 +17,7 @@ namespace discussionspot9.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.5")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -272,6 +272,76 @@ namespace discussionspot9.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.AdSenseRevenue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ActiveViewViewableImpressions")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("AdClicks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AdImpressions")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CPC")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("CTR")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("Coverage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Earnings")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("EstimatedEarnings")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("PageViews")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RPM")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("Date", "PostId");
+
+                    b.ToTable("AdSenseRevenues");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Award", b =>
                 {
                     b.Property<int>("AwardId")
@@ -374,6 +444,259 @@ namespace discussionspot9.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatAd", b =>
+                {
+                    b.Property<int>("ChatAdId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatAdId"));
+
+                    b.Property<string>("AdType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("banner");
+
+                    b.Property<decimal>("Budget")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ClickCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("CostPerImpression")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("DisplayFrequency")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(10);
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<int>("ImpressionCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("MinMessages")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Placement")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("chat-list");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TargetAudience")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("TargetUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ChatAdId");
+
+                    b.ToTable("ChatAds");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatMessage", b =>
+                {
+                    b.Property<int>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MessageId"));
+
+                    b.Property<string>("AttachmentType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AttachmentUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<int?>("ChatRoomId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReceiverId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ReplyToMessageId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("SentAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("ChatRoomId");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("SentAt");
+
+                    b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatRoom", b =>
+                {
+                    b.Property<int>("ChatRoomId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatRoomId"));
+
+                    b.Property<int?>("CommunityId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("CreatorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsPublic")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("MemberCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ChatRoomId");
+
+                    b.HasIndex("CommunityId");
+
+                    b.HasIndex("CreatorId");
+
+                    b.ToTable("ChatRooms");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatRoomMember", b =>
+                {
+                    b.Property<int>("ChatRoomMemberId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatRoomMemberId"));
+
+                    b.Property<int>("ChatRoomId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsMuted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("JoinedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTime?>("LastReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("member");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ChatRoomMemberId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ChatRoomId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ChatRoomMembers");
                 });
 
             modelBuilder.Entity("discussionspot9.Models.Domain.Comment", b =>
@@ -490,6 +813,67 @@ namespace discussionspot9.Migrations
                     b.HasIndex("CommentId");
 
                     b.ToTable("CommentAwards");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.CommentLinkPreview", b =>
+                {
+                    b.Property<int>("CommentLinkPreviewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentLinkPreviewId"));
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Domain")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FaviconUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("FetchSucceeded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("LastFetchedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.HasKey("CommentLinkPreviewId");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("Url");
+
+                    b.ToTable("CommentLinkPreviews");
                 });
 
             modelBuilder.Entity("discussionspot9.Models.Domain.CommentVote", b =>
@@ -663,6 +1047,163 @@ namespace discussionspot9.Migrations
                         });
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.ContentRecommendation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnalysisData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<int?>("CommunityId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ConfidenceScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<decimal>("EstimatedRevenueImpact")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("EstimatedTrafficImpact")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime?>("ImplementedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImplementedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RecommendationType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("RelatedPostId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommunityId");
+
+                    b.HasIndex("RelatedPostId");
+
+                    b.HasIndex("Status", "Priority");
+
+                    b.ToTable("ContentRecommendations");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.EnhancedSeoMetadata", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CompetitorAnalysis")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmotionalTriggers")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("KeywordDensity")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("LsiKeywords")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("OptimizedMetaDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OriginalMetaDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PowerWords")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("PredictedCtrImprovement")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("PrimaryKeywords")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("ReadabilityScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("SecondaryKeywords")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("SeoScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SerpPreview")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("TotalSearchVolume")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("EnhancedSeoMetadata");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Media", b =>
                 {
                     b.Property<int>("MediaId")
@@ -682,12 +1223,6 @@ namespace discussionspot9.Migrations
                     b.Property<string>("ContentType")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DisplayOrder")
-                        .HasColumnType("int");
 
                     b.Property<int?>("Duration")
                         .HasColumnType("int");
@@ -730,9 +1265,6 @@ namespace discussionspot9.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("UploadedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -760,6 +1292,74 @@ namespace discussionspot9.Migrations
                         {
                             t.HasCheckConstraint("CK_Media_Type", "MediaType IN ('image', 'video', 'document', 'audio')");
                         });
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.MultiSiteRevenue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActiveViewViewableImpressions")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AdClicks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AdImpressions")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CPC")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("CTR")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("Coverage")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Earnings")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("EstimatedEarnings")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PageViews")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PostUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("RPM")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("SiteDomain")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("MultiSiteRevenues");
                 });
 
             modelBuilder.Entity("discussionspot9.Models.Domain.Notification", b =>
@@ -829,6 +1429,13 @@ namespace discussionspot9.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ClosedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -847,6 +1454,14 @@ namespace discussionspot9.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(2);
 
+                    b.Property<string>("PollDescription")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PollQuestion")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("ShowResultsBeforeEnd")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -863,6 +1478,8 @@ namespace discussionspot9.Migrations
                         .HasDefaultValueSql("GETDATE()");
 
                     b.HasKey("PostId");
+
+                    b.HasIndex("ClosedByUserId");
 
                     b.HasIndex("EndDate");
 
@@ -1122,6 +1739,195 @@ namespace discussionspot9.Migrations
                     b.ToTable("PostAwards");
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.PostKeyword", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Competition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DifficultyScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Keyword")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("KeywordType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SearchVolume")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("SuggestedBidHigh")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("SuggestedBidLow")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("PostKeywords");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.PostPerformanceMetric", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AdCTR")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("AdClicks")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("AdRevenue")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("AvgSearchPosition")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("AvgTimeOnPage")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("BounceRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("CPC")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("CommentCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RPM")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("SearchCTR")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("SearchClicks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SearchImpressions")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ShareCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UniqueVisitors")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Views")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("PostId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("PostPerformanceMetrics");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.PostSeoQueue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<decimal?>("EstimatedRevenueImpact")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("RequiresApproval")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SuggestedChanges")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("Status", "Priority");
+
+                    b.ToTable("PostSeoQueues");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.PostTag", b =>
                 {
                     b.Property<int>("PostId")
@@ -1166,27 +1972,24 @@ namespace discussionspot9.Migrations
 
             modelBuilder.Entity("discussionspot9.Models.Domain.SavedPost", b =>
                 {
-                    b.Property<int>("SavedPostId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SavedPostId"));
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("PostId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("SavedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("SavedPostId")
+                        .HasColumnType("int");
 
-                    b.HasKey("SavedPostId");
+                    b.HasKey("UserId", "PostId");
 
                     b.HasIndex("PostId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("SavedPosts");
                 });
@@ -1268,6 +2071,76 @@ namespace discussionspot9.Migrations
                         });
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.SeoOptimizationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<DateTime>("OptimizedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("PerformanceAfter")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<string>("PerformanceBefore")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("RevenueImpact")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("TrafficImpact")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Trigger")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("PostId", "OptimizedAt");
+
+                    b.ToTable("SeoOptimizationLogs");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Tag", b =>
                 {
                     b.Property<int>("TagId")
@@ -1306,6 +2179,128 @@ namespace discussionspot9.Migrations
                         .IsUnique();
 
                     b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.UserActivity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("ActivityAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("ActivityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("CommunityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DeviceType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Metadata")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<int?>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Referrer")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ScrollDepthPercent")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("TimeSpentSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommunityId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("PostId", "ActivityAt");
+
+                    b.HasIndex("UserId", "ActivityAt");
+
+                    b.ToTable("UserActivities");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.UserPresence", b =>
+                {
+                    b.Property<int>("PresenceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PresenceId"));
+
+                    b.Property<string>("ConnectionId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CurrentPage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsTyping")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("LastSeen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("online");
+
+                    b.Property<string>("TypingInChatWith")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("PresenceId");
+
+                    b.HasIndex("ConnectionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserPresences");
                 });
 
             modelBuilder.Entity("discussionspot9.Models.Domain.UserProfile", b =>
@@ -1426,6 +2421,16 @@ namespace discussionspot9.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.AdSenseRevenue", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Category", b =>
                 {
                     b.HasOne("discussionspot9.Models.Domain.Category", "ParentCategory")
@@ -1434,6 +2439,68 @@ namespace discussionspot9.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ParentCategory");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatMessage", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.ChatRoom", "ChatRoom")
+                        .WithMany("Messages")
+                        .HasForeignKey("ChatRoomId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChatRoom");
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatRoom", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Community", "Community")
+                        .WithMany()
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Creator")
+                        .WithMany()
+                        .HasForeignKey("CreatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Community");
+
+                    b.Navigation("Creator");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatRoomMember", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.ChatRoom", "ChatRoom")
+                        .WithMany("Members")
+                        .HasForeignKey("ChatRoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChatRoom");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("discussionspot9.Models.Domain.Comment", b =>
@@ -1483,6 +2550,17 @@ namespace discussionspot9.Migrations
                     b.Navigation("Award");
 
                     b.Navigation("AwardedByUser");
+
+                    b.Navigation("Comment");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.CommentLinkPreview", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Comment", "Comment")
+                        .WithMany("LinkPreviews")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Comment");
                 });
@@ -1542,6 +2620,34 @@ namespace discussionspot9.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.ContentRecommendation", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Community", "Community")
+                        .WithMany()
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("discussionspot9.Models.Domain.Post", "RelatedPost")
+                        .WithMany()
+                        .HasForeignKey("RelatedPostId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Community");
+
+                    b.Navigation("RelatedPost");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.EnhancedSeoMetadata", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Media", b =>
                 {
                     b.HasOne("discussionspot9.Models.Domain.Post", "Post")
@@ -1559,6 +2665,15 @@ namespace discussionspot9.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.MultiSiteRevenue", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId");
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Notification", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
@@ -1572,11 +2687,18 @@ namespace discussionspot9.Migrations
 
             modelBuilder.Entity("discussionspot9.Models.Domain.PollConfiguration", b =>
                 {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "ClosedByUser")
+                        .WithMany()
+                        .HasForeignKey("ClosedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("discussionspot9.Models.Domain.Post", "Post")
                         .WithOne("PollConfiguration")
                         .HasForeignKey("discussionspot9.Models.Domain.PollConfiguration", "PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ClosedByUser");
 
                     b.Navigation("Post");
                 });
@@ -1662,6 +2784,39 @@ namespace discussionspot9.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.PostKeyword", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.PostPerformanceMetric", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.PostSeoQueue", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.PostTag", b =>
                 {
                     b.HasOne("discussionspot9.Models.Domain.Post", "Post")
@@ -1719,6 +2874,45 @@ namespace discussionspot9.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.SeoOptimizationLog", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.UserActivity", b =>
+                {
+                    b.HasOne("discussionspot9.Models.Domain.Community", "Community")
+                        .WithMany()
+                        .HasForeignKey("CommunityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("discussionspot9.Models.Domain.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Community");
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("discussionspot9.Models.Domain.UserPresence", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.UserProfile", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
@@ -1744,11 +2938,20 @@ namespace discussionspot9.Migrations
                     b.Navigation("Communities");
                 });
 
+            modelBuilder.Entity("discussionspot9.Models.Domain.ChatRoom", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Messages");
+                });
+
             modelBuilder.Entity("discussionspot9.Models.Domain.Comment", b =>
                 {
                     b.Navigation("Awards");
 
                     b.Navigation("ChildComments");
+
+                    b.Navigation("LinkPreviews");
 
                     b.Navigation("Votes");
                 });

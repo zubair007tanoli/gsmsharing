@@ -897,28 +897,41 @@ namespace discussionspot9.Services
         }
         public async Task<VoteResult> VotePostAsync(int postId, string userId, int voteType)
         {
-            var existingVote = await _context.PostVotes
-                .FirstOrDefaultAsync(pv => pv.PostId == postId && pv.UserId == userId);
-
-            var post = await _context.Posts.FindAsync(postId);
-            if (post == null)
+            try
             {
-                return new VoteResult { Success = false, ErrorMessage = "Post not found" };
-            }
+                _logger.LogInformation($"🗳️ VotePostAsync called - PostId: {postId}, UserId: {userId}, VoteType: {voteType}");
+                
+                var existingVote = await _context.PostVotes
+                    .FirstOrDefaultAsync(pv => pv.PostId == postId && pv.UserId == userId);
+
+                _logger.LogInformation($"📊 Existing vote: {(existingVote != null ? $"Found (Type: {existingVote.VoteType})" : "Not found")}");
+
+                var post = await _context.Posts.FindAsync(postId);
+                if (post == null)
+                {
+                    _logger.LogError($"❌ Post {postId} not found");
+                    return new VoteResult { Success = false, ErrorMessage = "Post not found" };
+                }
+
+                _logger.LogInformation($"📊 Post before vote - Up: {post.UpvoteCount}, Down: {post.DownvoteCount}, Score: {post.Score}");
 
             if (existingVote != null)
             {
                 if (existingVote.VoteType == voteType)
                 {
+                    // Removing vote
+                    _logger.LogInformation($"➖ Removing existing {(voteType == 1 ? "upvote" : "downvote")}");
                     _context.PostVotes.Remove(existingVote);
-                    if (voteType == 1) post.UpvoteCount--;
-                    else post.DownvoteCount--;
+                    if (voteType == 1) post.UpvoteCount = Math.Max(0, post.UpvoteCount - 1);
+                    else post.DownvoteCount = Math.Max(0, post.DownvoteCount - 1);
                     voteType = 0;
                 }
                 else
                 {
-                    if (existingVote.VoteType == 1) post.UpvoteCount--;
-                    else post.DownvoteCount--;
+                    // Changing vote
+                    _logger.LogInformation($"🔄 Changing vote from {existingVote.VoteType} to {voteType}");
+                    if (existingVote.VoteType == 1) post.UpvoteCount = Math.Max(0, post.UpvoteCount - 1);
+                    else post.DownvoteCount = Math.Max(0, post.DownvoteCount - 1);
 
                     existingVote.VoteType = voteType;
                     existingVote.VotedAt = DateTime.UtcNow;
@@ -929,6 +942,8 @@ namespace discussionspot9.Services
             }
             else
             {
+                // New vote
+                _logger.LogInformation($"➕ Adding new {(voteType == 1 ? "upvote" : "downvote")}");
                 _context.PostVotes.Add(new PostVote
                 {
                     PostId = postId,
@@ -942,9 +957,39 @@ namespace discussionspot9.Services
             }
 
             post.Score = post.UpvoteCount - post.DownvoteCount;
-            await _context.SaveChangesAsync();
+            post.UpdatedAt = DateTime.UtcNow;
+            
+            _logger.LogInformation($"📊 Post after vote - Up: {post.UpvoteCount}, Down: {post.DownvoteCount}, Score: {post.Score}");
+            
+            // Explicitly mark specific properties as modified
+            var postEntry = _context.Entry(post);
+            postEntry.Property(p => p.UpvoteCount).IsModified = true;
+            postEntry.Property(p => p.DownvoteCount).IsModified = true;
+            postEntry.Property(p => p.Score).IsModified = true;
+            postEntry.Property(p => p.UpdatedAt).IsModified = true;
+            
+            _logger.LogInformation($"🔄 Entity state: {postEntry.State}");
+            _logger.LogInformation($"💾 Saving changes to database...");
+            
+            var savedCount = await _context.SaveChangesAsync();
+            
+            _logger.LogInformation($"✅ SaveChanges completed. Entities saved: {savedCount}");
+            
+            if (savedCount == 0)
+            {
+                _logger.LogWarning($"⚠️ WARNING: SaveChanges returned 0 - no entities were saved!");
+            }
+            
+            // Detach the entity to ensure GetPostByIdAsync gets fresh data
+            _context.Entry(post).State = EntityState.Detached;
 
-            return new VoteResult { Success = true, UserVote = voteType == 0 ? null : voteType };
+                return new VoteResult { Success = true, UserVote = voteType == 0 ? null : voteType };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"❌ Error in VotePostAsync for post {postId}");
+                return new VoteResult { Success = false, ErrorMessage = $"Failed to save vote: {ex.Message}" };
+            }
         }
 
         public async Task<int> GetPostVoteCountAsync(int postId)
@@ -1114,8 +1159,13 @@ namespace discussionspot9.Services
 
         public async Task<Post> GetPostByIdAsync(int postId)
         {
-            var posts = await _context.Posts.FindAsync(postId);
-            return posts ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
+            // Use AsNoTracking to ensure we get fresh data from database
+            // FindAsync can return cached/tracked entities with stale vote counts
+            var post = await _context.Posts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.PostId == postId);
+            
+            return post ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
         }
 
         public async Task<PollViewModel?> GetPollDetailsAsync(int postId, string? userId)

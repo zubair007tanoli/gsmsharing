@@ -1,0 +1,311 @@
+@model IEnumerable<discussionspot9.Models.ViewModels.CreativeViewModels.CommentTreeViewModel>
+@using discussionspot9.Helpers
+
+@foreach (var commentTree in Model)
+{
+    <div class="comment-item-reddit" id="comment-@commentTree.Comment.CommentId" data-comment-id="@commentTree.Comment.CommentId">
+        <div class="comment-body-reddit">
+            <div class="comment-header-reddit">
+                <div class="comment-avatar-mini" style="background: linear-gradient(135deg, @(commentTree.Comment.AuthorDisplayName.ToAvatarColor()) 0%, @(commentTree.Comment.AuthorDisplayName.ToAvatarColor())dd 100%);">
+                    @commentTree.Comment.AuthorDisplayName.Substring(0, 1).ToUpper()
+                </div>
+                <a href="/user/@commentTree.Comment.AuthorDisplayName" class="comment-author-name">@commentTree.Comment.AuthorDisplayName</a>
+                <span class="comment-time-ago">@Html.TimeAgo(commentTree.Comment.CreatedAt)</span>
+            </div>
+
+            <div class="comment-content-reddit">
+                @Html.Raw(commentTree.Comment.Content)
+            </div>
+
+            <div class="comment-actions-reddit">
+                <div class="comment-vote-group">
+                    <button class="comment-vote-btn comment-up @(commentTree.Comment.CurrentUserVote == 1 ? "active" : "")" 
+                            data-comment-id="@commentTree.Comment.CommentId" 
+                            data-vote-type="1"
+                            title="Upvote">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <span class="comment-vote-score" id="commentVote@commentTree.Comment.CommentId">@commentTree.Comment.Score</span>
+                    <button class="comment-vote-btn comment-down @(commentTree.Comment.CurrentUserVote == -1 ? "active" : "")" 
+                            data-comment-id="@commentTree.Comment.CommentId" 
+                            data-vote-type="-1"
+                            title="Downvote">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                </div>
+
+                <button class="comment-reply-btn-reddit" data-comment-id="@commentTree.Comment.CommentId">
+                    <i class="fas fa-reply"></i>
+                    <span>Reply</span>
+                </button>
+
+                @if (User.Identity?.Name == commentTree.Comment.AuthorDisplayName)
+                {
+                    <button class="comment-edit-btn-reddit" data-comment-id="@commentTree.Comment.CommentId">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit</span>
+                    </button>
+                    <button class="comment-delete-btn-reddit" data-comment-id="@commentTree.Comment.CommentId">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                }
+
+                <button class="comment-award-btn-reddit" data-comment-id="@commentTree.Comment.CommentId">
+                    <i class="fas fa-award"></i>
+                    <span>Award</span>
+                </button>
+            </div>
+
+            <!-- Reply Form (Hidden by default) -->
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="reply-form-reddit" id="replyForm-@commentTree.Comment.CommentId" style="display: none;">
+                    <div class="reply-editor-wrapper">
+                        <div class="user-avatar-tiny" style="background: linear-gradient(135deg, @(User.Identity.Name.ToAvatarColor()) 0%, @(User.Identity.Name.ToAvatarColor())dd 100%);">
+                            @User.Identity.Name.Substring(0, 1).ToUpper()
+                        </div>
+                        <div class="reply-editor-container">
+                            <div id="replyEditor-@commentTree.Comment.CommentId"></div>
+                        </div>
+                    </div>
+                    <div class="reply-form-actions">
+                        <button class="btn-cancel-reply" data-comment-id="@commentTree.Comment.CommentId">Cancel</button>
+                        <button class="btn-submit-reply" data-comment-id="@commentTree.Comment.CommentId">
+                            <i class="fas fa-paper-plane"></i>
+                            Reply
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Nested Replies -->
+        @if (commentTree.Children != null && commentTree.Children.Any())
+        {
+            <div class="comment-replies-reddit">
+                @await Html.PartialAsync("_CommentThreadReddit", commentTree.Children)
+            </div>
+        }
+    </div>
+}
+
+<style>
+/* Comment Threading Styles */
+.comment-item-reddit {
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+
+.comment-body-reddit {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    transition: all var(--transition-fast);
+}
+
+.comment-item-reddit:hover > .comment-body-reddit {
+    background: var(--bg-tertiary);
+}
+
+.comment-header-reddit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.comment-avatar-mini {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+.comment-author-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.comment-author-name:hover {
+    color: var(--reddit-blue);
+    text-decoration: underline;
+}
+
+.comment-time-ago {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.comment-content-reddit {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+}
+
+.comment-actions-reddit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.comment-vote-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.comment-vote-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+}
+
+.comment-vote-btn:hover {
+    background: var(--bg-tertiary);
+}
+
+.comment-vote-btn.comment-up:hover,
+.comment-vote-btn.comment-up.active {
+    color: var(--reddit-orange);
+}
+
+.comment-vote-btn.comment-down:hover,
+.comment-vote-btn.comment-down.active {
+    color: var(--reddit-blue);
+}
+
+.comment-vote-score {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 24px;
+    text-align: center;
+}
+
+.comment-reply-btn-reddit,
+.comment-edit-btn-reddit,
+.comment-delete-btn-reddit,
+.comment-award-btn-reddit {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.comment-reply-btn-reddit:hover,
+.comment-edit-btn-reddit:hover,
+.comment-delete-btn-reddit:hover,
+.comment-award-btn-reddit:hover {
+    background: var(--bg-card);
+}
+
+.comment-replies-reddit {
+    margin-left: var(--space-6);
+    margin-top: var(--space-3);
+    padding-left: var(--space-4);
+    border-left: 2px solid var(--border-light);
+}
+
+/* Reply Form */
+.reply-form-reddit {
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.reply-editor-wrapper {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.user-avatar-tiny {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+
+.reply-editor-container {
+    flex: 1;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+}
+
+.reply-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+.btn-cancel-reply,
+.btn-submit-reply {
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-cancel-reply {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+}
+
+.btn-cancel-reply:hover {
+    background: var(--bg-tertiary);
+}
+
+.btn-submit-reply {
+    background: var(--reddit-blue);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.btn-submit-reply:hover {
+    background: #0066B8;
+}
+</style>
+

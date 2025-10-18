@@ -52,7 +52,7 @@ namespace discussionspot9.Services
             }
         }
 
-        public async Task<List<RandomPostViewModel>> GetRandomPostsAsync(int count = 4)
+        public async Task<List<RandomPostViewModel>> GetRandomPostsAsync(int count = 8)
         {
             const string cacheKey = "homepage_random_posts";
 
@@ -155,7 +155,7 @@ namespace discussionspot9.Services
             }
         }
 
-        public async Task<List<RecentPostViewModel>> GetRecentPostsAsync(int count = 3)
+        public async Task<List<RecentPostViewModel>> GetRecentPostsAsync(int count = 10)
         {
             const string cacheKey = "homepage_recent_posts";
 
@@ -244,12 +244,12 @@ namespace discussionspot9.Services
 
             await using var context = await _contextFactory.CreateDbContextAsync();
             var trending = await context.Posts
-                .Where(p => p.Status == "published") // Remove date filter for now
+.Where(p => p.Status == "published") // Remove date filter for now
                 .Include(p => p.Community)
                 .ThenInclude(c => c!.Category)
                 .AsNoTracking()
                 .OrderByDescending(p => (p.Score * 2) + (p.CommentCount * 3) + p.ViewCount) // Better trending algorithm
-                .Take(5) // Show 5 instead of 4
+                .Take(15) // Show 15 trending posts for more content
                 .Select(p => new TrendingTopicViewModel
                 {
                     PostId = p.PostId,
@@ -257,7 +257,11 @@ namespace discussionspot9.Services
                     Slug = p.Slug,
                     CategoryName = p.Community!.Category!.Name,
                     CategorySlug = p.Community.Category.Slug,
+                    CommunitySlug = p.Community.Slug,
                     ReplyCount = p.CommentCount,
+                    TrendingScore = (p.Score * 2) + (p.CommentCount * 3) + p.ViewCount,
+                    UpvoteCount = p.UpvoteCount,
+                    DownvoteCount = p.DownvoteCount,
                     IsHot = p.CommentCount > 5 || p.Score > 50, // Better hot logic
                     CreatedAt = p.CreatedAt,
                     LastActivity = p.UpdatedAt

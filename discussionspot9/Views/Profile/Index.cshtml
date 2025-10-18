@@ -282,6 +282,160 @@
             padding: 20px;
         }
 
+        /* Activity Feed Styles */
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .activity-item {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .activity-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.post {
+            background-color: rgba(0, 121, 211, 0.1);
+            color: var(--primary-color);
+        }
+
+        .activity-icon.comment {
+            background-color: rgba(255, 69, 0, 0.1);
+            color: var(--accent-color);
+        }
+
+        .activity-info {
+            flex-grow: 1;
+        }
+
+        .activity-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .activity-title a {
+            color: var(--text-dark);
+            text-decoration: none;
+        }
+
+        .activity-title a:hover {
+            color: var(--primary-color);
+        }
+
+        .activity-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .activity-content {
+            margin-bottom: 12px;
+            color: var(--text-dark);
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .activity-content p {
+            margin: 0 0 8px 0;
+        }
+
+        .activity-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Style @@mentions in content */
+        .activity-content .mention {
+            color: var(--primary-color);
+            background: rgba(0, 121, 211, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .activity-content .mention:hover {
+            background: rgba(0, 121, 211, 0.2);
+            text-decoration: underline;
+        }
+
+        /* Style links in content */
+        .activity-content a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .activity-content a:hover {
+            text-decoration: underline;
+        }
+
+        /* Style code blocks */
+        .activity-content code {
+            background-color: var(--light-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        /* Style blockquotes */
+        .activity-content blockquote {
+            border-left: 4px solid var(--border-color);
+            padding-left: 12px;
+            margin: 8px 0;
+            color: var(--text-muted);
+        }
+
+        .activity-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .activity-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .activity-action:hover {
+            color: var(--primary-color);
+        }
+
+        .activity-action i {
+            font-size: 14px;
+        }
+
         /* Form Styles */
         .form-label {
             font-weight: 600;

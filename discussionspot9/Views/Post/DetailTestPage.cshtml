@@ -95,65 +95,13 @@
 
 <!-- # Java Scripts -->
 @section HeadScripts {
-    <link href="~/css/StyleTest/StyleSheet.css" rel="stylesheet" />
+    <link href="~/css/detail-test-page.css" rel="stylesheet" />
     <link href="~/css/link-preview.css" rel="stylesheet" />
     <!-- Quill Editor CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+    <!-- Quill Mention CSS for @@ mentions -->
+    <link href="https://cdn.jsdelivr.net/npm/quill-mention@4.0.0/dist/quill.mention.min.css" rel="stylesheet" />
     <style>
-        /* Custom styles for Quill editor in comment box */
-        .comment-editor-container {
-            background: var(--bg-light);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .ql-toolbar {
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            background: var(--bg-color);
-            border: none;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .ql-container {
-            border: none;
-            font-size: 14px;
-            min-height: 120px;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-        }
-        
-        .ql-editor {
-            min-height: 120px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .ql-editor.ql-blank::before {
-            color: var(--text-light);
-            font-style: normal;
-        }
-        
-        /* Reply editor styling */
-        .reply-editor-container {
-            background: var(--bg-light);
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .reply-editor-container .ql-toolbar {
-            background: var(--bg-color);
-        }
-        
-        .reply-editor-container .ql-container {
-            min-height: 80px;
-        }
-        
-        .reply-editor-container .ql-editor {
-            min-height: 80px;
-            max-height: 200px;
-        }
-        
         /* Ensure reply forms are hidden by default */
         .reply-form {
             display: none;
@@ -163,22 +111,31 @@
         .reply-form:not(.d-none) {
             display: block;
         }
+        
+        /* Theme toggle support */
+        [data-theme="dark"] .detail-test-page {
+            background-color: var(--bg-secondary);
+        }
+        
+        [data-theme="light"] .detail-test-page {
+            background-color: var(--bg-secondary);
+        }
     </style>
 }
 
 <!-- #endregion -->
 
-<div class="post-detail-page">
-    <div class="container-fluid" style="max-width: 90%;">
-        <div class="row">
-            <!-- Left Sidebar -->
-            <div class="col-xl-3 col-lg-3 left-sidebar">
+<div class="detail-test-page">
+    <div class="container-fluid" style="max-width: 1400px; padding: 20px;">
+        <div class="row g-4">
+            <!-- Left Sidebar - Hidden on mobile/tablet -->
+            <div class="col-xl-3 col-lg-3 d-none d-lg-block left-sidebar">
                 <!-- Trending Topics and Latest News -->
                 @await Component.InvokeAsync("LeftSideBar")
             </div>
 
-            <!-- Main Content Column -->
-            <div class="col-xl-6 col-lg-6">
+            <!-- Main Content Column - Full width on mobile -->
+            <div class="col-xl-6 col-lg-9 col-md-12 col-sm-12">
               
                 <input type="hidden" id="pagePostId" value="@Model.Post.PostId" />
                 <input type="hidden" id="isAuthenticated" value="@User.Identity.IsAuthenticated.ToString().ToLower()" />
@@ -197,13 +154,13 @@
                             <span>@Html.TimeAgo(Model.Post.CreatedAt)</span>
                         </div>
                         <h1 class="post-title">@Model.Post.Title</h1>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex flex-wrap gap-2" style="max-width: 100%; margin-top: 0.75rem;">
                             @foreach (var tag in Model.Post.Tags)
                             {
-                                <span class="badge bg-primary">@tag</span>
+                                <span class="badge bg-primary post-tag-badge">@tag</span>
                             }
                             @* Category name can also be displayed, assuming it's part of the community or directly on the post *@
-                            <span class="badge bg-secondary">@Model.Post.CommunityName</span>
+                            <span class="badge bg-secondary post-tag-badge">@Model.Post.CommunityName</span>
                         </div>
                     </div>
 
@@ -211,7 +168,7 @@
                         @* Render Text Content if present *@
                         @if (!string.IsNullOrWhiteSpace(Model.Post.Content))
                         {
-                            <div class="post-text">
+                            <div class="post-text" id="postContent">
                                 @Html.Raw(Model.Post.Content) @* Use Html.Raw if your content contains HTML markup from a rich text editor *@
                             </div>
                         }
@@ -295,24 +252,25 @@
                             </button>                            
                         </div> *@
                         <div class="vote-buttons">
-                            <span class="upvote-count" id="upvoteCount-@Model.Post.PostId">@Model.Post.UpvoteCount</span>
                             <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")"
                                     id="upvoteBtn-@Model.Post.PostId"
                                     data-post-id="@Model.Post.PostId"
-                                    data-vote-type="1">
+                                    data-vote-type="1"
+                                    title="Upvote">
                                 <i class="fas fa-arrow-up"></i>
                             </button>
-                           
-                            <span class="downvote-count" id="downvoteCount-@Model.Post.PostId">-@Model.Post.DownvoteCount</span>
-                            <!-- Optional: You can keep a net score if desired, or remove it if only up/down counts are needed -->
-                           
+                            <div class="vote-counts-display">
+                                <span class="upvote-number" id="upvoteCount-@Model.Post.PostId">@Model.Post.UpvoteCount</span>
+                                <span class="vote-separator">•</span>
+                                <span class="downvote-number" id="downvoteCount-@Model.Post.PostId">@Model.Post.DownvoteCount</span>
+                            </div>
                             <button class="vote-btn downvote @(Model.Post.CurrentUserVote == -1 ? "active" : "")"
                                     id="downvoteBtn-@Model.Post.PostId"
                                     data-post-id="@Model.Post.PostId"
-                                    data-vote-type="-1">
+                                    data-vote-type="-1"
+                                    title="Downvote">
                                 <i class="fas fa-arrow-down"></i>
                             </button>
-                            <span class="total-score" id="totalScore-@Model.Post.PostId">Score @Model.Post.Score</span>
                         </div>
                       @* <div class="vote-buttons">
                             <button class="vote-btn upvote @(Model.Post.CurrentUserVote == 1 ? "active" : "")"
@@ -416,8 +374,8 @@
                 @await Component.InvokeAsync("CommentList", new { postId = Model.Post.PostId })
             </div>
 
-            <!-- Right Sidebar -->
-            <div class="col-xl-3 col-lg-3 right-sidebar">
+            <!-- Right Sidebar - Hidden on mobile/tablet, shown on xl screens -->
+            <div class="col-xl-3 d-none d-xl-block right-sidebar">
                 @* Render Community Info View Component with actual data *@
                 @await Component.InvokeAsync("CommunityInfo", new { community = Model.Community })
 
@@ -436,11 +394,51 @@
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <!-- Quill Editor JS -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <!-- Quill Mention JS for @@ mentions -->
+    <script src="https://cdn.jsdelivr.net/npm/quill-mention@4.0.0/dist/quill.mention.min.js"></script>
     <script src="~/js/SignalR_Script/Post_Script_Real_Time_Fix.js"></script>
     
     <script>
         // Initialize Quill editor after DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Clean up post content formatting
+            const postContent = document.getElementById('postContent');
+            if (postContent) {
+                // Remove empty paragraphs and excessive line breaks
+                const paragraphs = postContent.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    const text = p.textContent.trim();
+                    if (!text || text === '') {
+                        p.remove();
+                    }
+                });
+                
+                // Remove excessive line breaks
+                const content = postContent.innerHTML;
+                const cleanedContent = content
+                    .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br>') // Replace multiple <br> with single
+                    .replace(/<p>\s*<\/p>/gi, '') // Remove empty paragraphs
+                    .replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '') // Remove paragraphs with only <br>
+                    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+                    .trim();
+                
+                postContent.innerHTML = cleanedContent;
+            }
+            
+            // Position share dropdown correctly
+            const shareDropdown = document.querySelector('.share-dropdown');
+            if (shareDropdown) {
+                const shareBtn = shareDropdown.querySelector('.action-btn');
+                const shareMenu = shareDropdown.querySelector('.share-dropdown-menu');
+                
+                if (shareBtn && shareMenu) {
+                    shareDropdown.addEventListener('mouseenter', function() {
+                        const btnRect = shareBtn.getBoundingClientRect();
+                        shareMenu.style.top = (btnRect.bottom + 8) + 'px';
+                        shareMenu.style.left = (btnRect.left - (shareMenu.offsetWidth / 2) + (btnRect.width / 2)) + 'px';
+                    });
+                }
+            }
             // Configure Quill with toolbar options
             const toolbarOptions = [
                 ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
@@ -450,13 +448,78 @@
                 ['clean']                                         // remove formatting button
             ];
 
-            // Initialize the main comment editor
+            // ============================================
+            // @@ MENTION CONFIGURATION
+            // ============================================
+            // Get unique commenters from the page (only users who commented on this post)
+            function getCommentersFromPage() {
+                const commenters = new Map(); // Use Map to avoid duplicates
+                
+                // Find all comment authors on the page
+                const commentAuthors = document.querySelectorAll('.comment-author');
+                
+                commentAuthors.forEach(authorEl => {
+                    const authorName = authorEl.textContent.trim();
+                    const avatar = authorEl.previousElementSibling; // Get the avatar element
+                    const initials = avatar?.textContent.trim() || authorName.substring(0, 2).toUpperCase();
+                    
+                    if (authorName && !commenters.has(authorName)) {
+                        commenters.set(authorName, {
+                            id: authorName.toLowerCase().replace(/\s+/g, '_'),
+                            value: authorName,
+                            displayName: authorName,
+                            initials: initials
+                        });
+                    }
+                });
+                
+                return Array.from(commenters.values());
+            }
+
+            const mentionModule = {
+                allowedChars: /^[A-Za-z0-9_\-\sÀ-ÖØ-öø-ÿ]*$/,
+                mentionDenotationChars: [String.fromCharCode(64)], // @@ symbol (ASCII 64)
+                source: function(searchTerm, renderList, mentionChar) {
+                    console.log('🔍 Searching commenters for:', searchTerm);
+                    
+                    // Get all commenters from the page
+                    const allCommenters = getCommentersFromPage();
+                    console.log('📋 All commenters:', allCommenters);
+                    
+                    if (searchTerm.length === 0) {
+                        // Show all commenters if no search term
+                        renderList(allCommenters.slice(0, 10), searchTerm);
+                        return;
+                    }
+
+                    // Filter commenters by search term
+                    const searchLower = searchTerm.toLowerCase();
+                    const filtered = allCommenters.filter(user => 
+                        user.displayName.toLowerCase().includes(searchLower) ||
+                        user.value.toLowerCase().includes(searchLower)
+                    );
+                    
+                    console.log('✅ Found commenters:', filtered);
+                    renderList(filtered.slice(0, 10), searchTerm);
+                },
+                renderItem: function(item, searchTerm) {
+                    const atSymbol = String.fromCharCode(64);
+                    return `<div class="mention-item"><div class="mention-avatar" style="background-color: #4f46e5;">${item.initials}</div><div class="mention-info"><div class="mention-name">${item.displayName}</div><div class="mention-username">${atSymbol}${item.value}</div></div></div>`;
+                },
+                onSelect: function(item, insertItem) {
+                    console.log('✅ User selected:', item);
+                    insertItem(item);
+                }
+            };
+
+            // Initialize the main comment editor with @@ mention
             window.mainCommentQuill = new Quill('#mainCommentEditor', {
                 theme: 'snow',
                 modules: {
-                    toolbar: toolbarOptions
+                    toolbar: toolbarOptions,
+                    mention: mentionModule
                 },
-                placeholder: 'What are your thoughts? You can use formatting, add links, and more...'
+                placeholder: 'What are your thoughts? Use @@ to mention users...'
             });
 
             // Clear button functionality
@@ -472,6 +535,93 @@
                 const content = window.mainCommentQuill.root.innerHTML;
                 document.getElementById('mainCommentContent').value = content;
             });
+            
+            // NOTE: Poll voting is handled by Post_Script_Real_Time_Fix.js via SignalR
+            // The castPollVote method in that script handles all poll interactions
+        });
+
+        // ============================================
+        // COMMENT SORTING
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const sortBtn = document.getElementById('commentSortBtn');
+            const sortMenu = document.getElementById('sortDropdownMenu');
+            const currentSortText = document.getElementById('currentSort');
+            const sortOptions = document.querySelectorAll('.sort-option');
+            const commentList = document.querySelector('.comment-list');
+
+            if (!sortBtn || !sortMenu) return;
+
+            // Toggle dropdown
+            sortBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sortMenu.classList.toggle('show');
+                sortBtn.classList.toggle('active');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!sortBtn.contains(e.target) && !sortMenu.contains(e.target)) {
+                    sortMenu.classList.remove('show');
+                    sortBtn.classList.remove('active');
+                }
+            });
+
+            // Handle sort option click
+            sortOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sortType = this.dataset.sort;
+                    const sortLabel = this.textContent.trim();
+                    
+                    console.log('Sorting comments by:', sortType);
+                    currentSortText.textContent = sortLabel;
+                    
+                    // Sort comments
+                    sortComments(sortType);
+                    
+                    // Close dropdown
+                    sortMenu.classList.remove('show');
+                    sortBtn.classList.remove('active');
+                });
+            });
+
+            function sortComments(sortType) {
+                if (!commentList) return;
+
+                const comments = Array.from(commentList.children);
+                
+                comments.sort((a, b) => {
+                    const aVoteCount = parseInt(a.querySelector('.comment-vote-count')?.textContent || '0');
+                    const bVoteCount = parseInt(b.querySelector('.comment-vote-count')?.textContent || '0');
+                    const aUpvotes = parseInt(a.querySelector('.comment-upvote-number')?.textContent || '0');
+                    const bUpvotes = parseInt(b.querySelector('.comment-upvote-number')?.textContent || '0');
+                    const aTime = new Date(a.querySelector('.comment-time')?.getAttribute('data-time') || 0);
+                    const bTime = new Date(b.querySelector('.comment-time')?.getAttribute('data-time') || 0);
+
+                    switch(sortType) {
+                        case 'best':
+                            // Best = highest upvotes
+                            return bUpvotes - aUpvotes;
+                        case 'top':
+                            // Top = highest net score
+                            return bVoteCount - aVoteCount;
+                        case 'new':
+                            // New = most recent first
+                            return bTime - aTime;
+                        case 'old':
+                            // Old = oldest first
+                            return aTime - bTime;
+                        default:
+                            return 0;
+                    }
+                });
+
+                // Re-append sorted comments
+                comments.forEach(comment => commentList.appendChild(comment));
+                
+                console.log(`✅ Comments sorted by ${sortType}`);
+            }
         });
     </script>
     @* <script src="~/js/SignalR_Script/Working/Post_Script_Real_Time_Fix_Claude.js"></script> *@

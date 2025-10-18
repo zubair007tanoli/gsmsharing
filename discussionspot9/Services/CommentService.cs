@@ -63,76 +63,121 @@ namespace discussionspot9.Services
         {
             using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
 
+            // Use AsNoTracking to ensure fresh data from database (no EF Core caching)
             var comment = await dbContext.Comments
+                .AsNoTracking()
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.CommentId == commentId);
 
             if (comment == null) return null;
 
             var userProfile = await dbContext.UserProfiles
+                .AsNoTracking()
                 .FirstOrDefaultAsync(up => up.UserId == comment.UserId);
 
             return MapToCommentViewModel(comment, userProfile);
         }
         public async Task<VoteResult> VoteCommentAsync(int commentId, string userId, int voteType)
         {
-            using var dbContext = _context.CreateDbContext();
-
-            var existingVote = await dbContext.CommentVotes
-                .FirstOrDefaultAsync(cv => cv.CommentId == commentId && cv.UserId == userId);
-
-            var comment = await dbContext.Comments.FindAsync(commentId);
-            if (comment == null)
+            try
             {
-                return new VoteResult { Success = false, ErrorMessage = "Comment not found" };
-            }
+                using var dbContext = _context.CreateDbContext();
 
-            if (existingVote != null)
-            {
-                if (existingVote.VoteType == voteType)
+                _logger.LogInformation($"💬 VoteCommentAsync called - CommentId: {commentId}, UserId: {userId}, VoteType: {voteType}");
+
+                var existingVote = await dbContext.CommentVotes
+                    .FirstOrDefaultAsync(cv => cv.CommentId == commentId && cv.UserId == userId);
+
+                _logger.LogInformation($"📊 Existing comment vote: {(existingVote != null ? $"Found (Type: {existingVote.VoteType})" : "Not found")}");
+
+                var comment = await dbContext.Comments.FindAsync(commentId);
+                if (comment == null)
                 {
-                    // Remove vote
-                    dbContext.CommentVotes.Remove(existingVote);
-                    if (voteType == 1) comment.UpvoteCount--;
-                    else comment.DownvoteCount--;
-                    voteType = 0; // Represents vote removal
+                    _logger.LogError($"❌ Comment {commentId} not found");
+                    return new VoteResult { Success = false, ErrorMessage = "Comment not found" };
+                }
+
+                _logger.LogInformation($"📊 Comment before vote - Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, Score: {comment.Score}");
+
+                if (existingVote != null)
+                {
+                    if (existingVote.VoteType == voteType)
+                    {
+                        // Remove vote
+                        _logger.LogInformation($"➖ Removing existing {(voteType == 1 ? "upvote" : "downvote")}");
+                        dbContext.CommentVotes.Remove(existingVote);
+                        if (voteType == 1) comment.UpvoteCount = Math.Max(0, comment.UpvoteCount - 1);
+                        else comment.DownvoteCount = Math.Max(0, comment.DownvoteCount - 1);
+                        voteType = 0; // Represents vote removal
+                    }
+                    else
+                    {
+                        // Change vote
+                        _logger.LogInformation($"🔄 Changing vote from {existingVote.VoteType} to {voteType}");
+                        if (existingVote.VoteType == 1) comment.UpvoteCount = Math.Max(0, comment.UpvoteCount - 1);
+                        else comment.DownvoteCount = Math.Max(0, comment.DownvoteCount - 1);
+
+                        existingVote.VoteType = voteType;
+                        existingVote.VotedAt = DateTime.UtcNow;
+
+                        if (voteType == 1) comment.UpvoteCount++;
+                        else comment.DownvoteCount++;
+                    }
                 }
                 else
                 {
-                    // Change vote
-                    if (existingVote.VoteType == 1) comment.UpvoteCount--;
-                    else comment.DownvoteCount--;
-
-                    existingVote.VoteType = voteType;
-                    existingVote.VotedAt = DateTime.UtcNow;
+                    // New vote
+                    _logger.LogInformation($"➕ Adding new {(voteType == 1 ? "upvote" : "downvote")}");
+                    dbContext.CommentVotes.Add(new CommentVote
+                    {
+                        CommentId = commentId,
+                        UserId = userId,
+                        VoteType = voteType,
+                        VotedAt = DateTime.UtcNow
+                    });
 
                     if (voteType == 1) comment.UpvoteCount++;
                     else comment.DownvoteCount++;
                 }
-            }
-            else
-            {
-                // New vote
-                dbContext.CommentVotes.Add(new CommentVote
+
+                comment.Score = comment.UpvoteCount - comment.DownvoteCount;
+                comment.UpdatedAt = DateTime.UtcNow;
+
+                _logger.LogInformation($"📊 Comment after vote - Up: {comment.UpvoteCount}, Down: {comment.DownvoteCount}, Score: {comment.Score}");
+
+                // Explicitly mark specific properties as modified to force EF Core to save
+                var commentEntry = dbContext.Entry(comment);
+                commentEntry.Property(c => c.UpvoteCount).IsModified = true;
+                commentEntry.Property(c => c.DownvoteCount).IsModified = true;
+                commentEntry.Property(c => c.Score).IsModified = true;
+                commentEntry.Property(c => c.UpdatedAt).IsModified = true;
+
+                _logger.LogInformation($"🔄 Entity state: {commentEntry.State}");
+                _logger.LogInformation($"💾 Saving changes to database...");
+
+                var savedCount = await dbContext.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ SaveChanges completed. Entities saved: {savedCount}");
+
+                if (savedCount == 0)
                 {
-                    CommentId = commentId,
-                    UserId = userId,
-                    VoteType = voteType,
-                    VotedAt = DateTime.UtcNow
-                });
+                    _logger.LogWarning($"⚠️ WARNING: SaveChanges returned 0 - no entities were saved!");
+                }
+                
+                // Detach the entity to ensure GetCommentByIdAsync gets fresh data
+                dbContext.Entry(comment).State = EntityState.Detached;
 
-                if (voteType == 1) comment.UpvoteCount++;
-                else comment.DownvoteCount++;
+                return new VoteResult
+                {
+                    Success = true,
+                    UserVote = voteType == 0 ? null : (int?)voteType
+                };
             }
-
-            comment.Score = comment.UpvoteCount - comment.DownvoteCount;
-            await dbContext.SaveChangesAsync();
-
-            return new VoteResult
+            catch (Exception ex)
             {
-                Success = true,
-                UserVote = voteType == 0 ? null : (int?)voteType
-            };
+                _logger.LogError(ex, $"❌ Error in VoteCommentAsync for comment {commentId}");
+                return new VoteResult { Success = false, ErrorMessage = $"Failed to save vote: {ex.Message}" };
+            }
         }
         //public async Task<VoteResult> VoteCommentAsync(int commentId, string userId, int voteType)
         //{

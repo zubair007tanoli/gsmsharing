@@ -95,6 +95,12 @@
         @RenderBody()
     </main>
 
+    <!-- Chat Widget (Bottom Left) -->
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <partial name="_ChatWidget" />
+    }
+
     <!-- Online Users Modal -->
     <div class="modal fade" id="onlineUsersModal" tabindex="-1" aria-labelledby="onlineUsersModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

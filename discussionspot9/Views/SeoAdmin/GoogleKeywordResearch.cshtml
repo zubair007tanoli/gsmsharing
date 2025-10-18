@@ -1,0 +1,364 @@
+@{
+    ViewData["Title"] = "Google Keyword Research + AI";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .keyword-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #4285f4;
+    }
+    .keyword-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .search-result-card {
+        border-left: 4px solid #34a853;
+        margin-bottom: 15px;
+    }
+    .keyword-badge {
+        margin: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .keyword-badge:hover {
+        transform: scale(1.1);
+    }
+    .search-box {
+        border-radius: 50px;
+        padding: 15px 30px;
+        font-size: 18px;
+        border: 2px solid #4285f4;
+    }
+    .search-box:focus {
+        box-shadow: 0 0 0 0.2rem rgba(66,133,244,.25);
+        border-color: #4285f4;
+    }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+    .competitor-table {
+        overflow-x: auto;
+    }
+    .score-badge {
+        font-size: 1.1rem;
+        padding: 8px 15px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white p-4">
+                    <h1 class="display-4 mb-2">
+                        <i class="fab fa-google me-3"></i>Google Keyword Research + AI
+                    </h1>
+                    <p class="lead mb-0">
+                        <i class="fas fa-bolt text-warning"></i> Real-time Google Search data powered by AI analysis
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Box -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fab fa-google text-primary"></i>
+                        </span>
+                        <input type="text" 
+                               id="keywordSearchInput" 
+                               class="form-control search-box border-start-0" 
+                               placeholder="Enter keyword or topic (e.g., 'typing', 'programming', 'seo tips')..."
+                               autocomplete="off">
+                        <button class="btn btn-primary px-5" onclick="searchGoogle()" style="border-radius: 50px;">
+                            <i class="fas fa-search me-2"></i>Research
+                        </button>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-lightbulb text-warning"></i> 
+                        Pro tip: Use specific keywords for better results (e.g., "best typing software 2025" vs "typing")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Searching Google and analyzing with AI...</p>
+    </div>
+
+    <!-- Results Container -->
+    <div id="resultsContainer" style="display: none;">
+        <!-- Stats Row -->
+        <div class="row mb-4" id="statsRow">
+            <div class="col-md-3">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-muted">Search Results</h5>
+                        <h2 class="text-primary mb-0" id="totalResults">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-muted">Related Keywords</h5>
+                        <h2 class="text-success mb-0" id="totalKeywords">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-muted">Competitors Found</h5>
+                        <h2 class="text-warning mb-0" id="totalCompetitors">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-muted">Avg Title Length</h5>
+                        <h2 class="text-info mb-0" id="avgTitleLength">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Keywords Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card keyword-card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tags me-2"></i>Related Keywords 
+                            <span class="badge bg-light text-primary ms-2" id="keywordCount">0</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="relatedKeywords" class="d-flex flex-wrap">
+                            <!-- Keywords will be inserted here -->
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-outline-primary btn-sm" onclick="copyKeywords()">
+                                <i class="fas fa-copy me-2"></i>Copy All Keywords
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="exportKeywords()">
+                                <i class="fas fa-download me-2"></i>Export as CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Search Results -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fab fa-google me-2"></i>Top Google Search Results
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                        <div id="searchResults">
+                            <!-- Search results will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competitor Insights -->
+            <div class="col-lg-4">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Competitor Insights
+                        </h5>
+                    </div>
+                    <div class="card-body" id="competitorInsights">
+                        <!-- Competitor insights will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentKeywords = [];
+    let currentSearchTerm = '';
+
+    // Enter key handler
+    document.getElementById('keywordSearchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchGoogle();
+        }
+    });
+
+    async function searchGoogle() {
+        const keyword = document.getElementById('keywordSearchInput').value.trim();
+        
+        if (!keyword) {
+            alert('Please enter a keyword to search');
+            return;
+        }
+
+        currentSearchTerm = keyword;
+        
+        // Show loading, hide results
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+
+        try {
+            const response = await fetch(`/admin/seo/api/google-search?query=${encodeURIComponent(keyword)}&limit=10`);
+            const data = await response.json();
+
+            if (data.success) {
+                displayResults(data.data);
+                await loadTopicInsights(keyword);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while searching');
+        } finally {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+    }
+
+    function displayResults(data) {
+        // Update stats
+        document.getElementById('totalResults').textContent = data.totalResults;
+        document.getElementById('totalKeywords').textContent = data.relatedKeywords ? data.relatedKeywords.length : 0;
+        
+        // Display related keywords
+        const keywordsContainer = document.getElementById('relatedKeywords');
+        keywordsContainer.innerHTML = '';
+        currentKeywords = data.relatedKeywords || [];
+        
+        currentKeywords.forEach(keyword => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary keyword-badge';
+            badge.textContent = keyword;
+            badge.onclick = () => {
+                document.getElementById('keywordSearchInput').value = keyword;
+                searchGoogle();
+            };
+            badge.title = 'Click to search this keyword';
+            keywordsContainer.appendChild(badge);
+        });
+
+        document.getElementById('keywordCount').textContent = currentKeywords.length;
+
+        // Display search results
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = '';
+        
+        data.results.forEach(result => {
+            const resultCard = `
+                <div class="card search-result-card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <span class="badge bg-primary me-2">#${result.position}</span>
+                                    ${result.title}
+                                </h6>
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-link"></i> ${new URL(result.url).hostname}
+                                </small>
+                                <p class="text-muted small mb-2">${result.description}</p>
+                                <a href="${result.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i>Visit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            resultsContainer.innerHTML += resultCard;
+        });
+
+        // Extract unique domains for competitor insights
+        const domains = [...new Set(data.results.map(r => new URL(r.url).hostname.replace('www.', '')))];
+        document.getElementById('totalCompetitors').textContent = domains.length;
+        
+        const competitorHTML = domains.slice(0, 5).map(domain => `
+            <div class="mb-2 p-2 bg-light rounded">
+                <i class="fas fa-globe text-warning me-2"></i>
+                <strong>${domain}</strong>
+            </div>
+        `).join('');
+        
+        document.getElementById('competitorInsights').innerHTML = competitorHTML;
+
+        // Show results
+        document.getElementById('resultsContainer').style.display = 'block';
+    }
+
+    async function loadTopicInsights(topic) {
+        try {
+            const response = await fetch(`/admin/seo/api/topic-insights?topic=${encodeURIComponent(topic)}`);
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('avgTitleLength').textContent = data.data.avgTitleLength;
+            }
+        } catch (error) {
+            console.error('Error loading topic insights:', error);
+        }
+    }
+
+    function copyKeywords() {
+        if (currentKeywords.length === 0) {
+            alert('No keywords to copy');
+            return;
+        }
+
+        const text = currentKeywords.join(', ');
+        navigator.clipboard.writeText(text).then(() => {
+            alert('✅ Keywords copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
+    }
+
+    function exportKeywords() {
+        if (currentKeywords.length === 0) {
+            alert('No keywords to export');
+            return;
+        }
+
+        let csv = 'Keyword\n';
+        currentKeywords.forEach(keyword => {
+            csv += `"${keyword}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `keywords_${currentSearchTerm}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+}
+

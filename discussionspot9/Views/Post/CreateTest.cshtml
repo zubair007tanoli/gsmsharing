@@ -796,9 +796,39 @@
                         <input type="hidden" asp-for="TagsInput" id="tagsInputHidden" />
                         <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
+                        <!-- AI CONTENT GENERATOR - NEW! -->
+                        <div class="card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                            <div class="card-header" style="background: transparent; border: none; padding: 20px 20px 10px;">
+                                <h5 class="mb-0 text-white">
+                                    <i class="fas fa-robot me-2"></i>🚀 AI Content Generator
+                                    <span class="badge bg-light text-primary ms-2" style="font-size: 0.7rem;">ULTIMATE</span>
+                                </h5>
+                            </div>
+                            <div class="card-content" style="padding: 0 20px 20px;">
+                                <p class="text-white mb-3 small">
+                                    <i class="fas fa-sparkles me-1"></i>
+                                    Enter ONE keyword → AI generates complete post with Title, Content, Keywords, Meta Tags!
+                                </p>
+                                <div class="input-group">
+                                    <input type="text" id="seedKeyword" class="form-control" 
+                                           placeholder="e.g., 'python programming', 'seo optimization', 'web development'"
+                                           style="border: 2px solid white; padding: 12px;">
+                                    <button type="button" class="btn btn-light" onclick="generateFromKeyword()" style="padding: 12px 24px; font-weight: 600;">
+                                        <i class="fas fa-magic me-2"></i>Generate Complete Post
+                                    </button>
+                                </div>
+                                <div id="aiGeneratorStatus" class="mt-2 text-white small" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin me-1"></i>
+                                    <span id="aiStatusText">Analyzing keyword...</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Title -->
                         <div class="form-group">
-                            <label class="form-label" asp-for="Title">Title *</label>
+                            <label class="form-label" asp-for="Title">Title * 
+                                <small class="text-muted">(or use AI Generator above)</small>
+                            </label>
                             <input asp-for="Title" class="form-input" id="title" placeholder="An interesting title" maxlength="300" required>
                             <span asp-validation-for="Title" class="text-danger"></span>
                             <div class="char-count">
@@ -991,7 +1021,14 @@
 
         <!-- Right Sidebar -->
         <aside class="right-sidebar">
-            <div class="card">
+            <!-- DEBUG PANEL (Remove after testing) -->
+            @await Html.PartialAsync("_SeoAssistantDebug")
+            
+            <!-- SEO ASSISTANT - NEW! -->
+            @await Html.PartialAsync("_SeoAssistant")
+            
+            <!-- Original Posting Guidelines -->
+            <div class="card" style="margin-top: 20px;">
                 <div class="card-header">
                     <i class="fas fa-lightbulb"></i> Posting Guidelines
                 </div>
@@ -1295,6 +1332,43 @@
     }
 
     function handleFormSubmit(isDraft) {
+        console.log('🚀 === FORM SUBMIT STARTED ===');
+        console.log('Draft mode:', isDraft);
+        console.log('Post type:', currentPostType);
+        
+        // CRITICAL: ALWAYS sync Quill content FIRST (even if on poll/image/link tab!)
+        if (typeof contentQuill !== 'undefined' && contentQuill !== null) {
+            const quillHtml = contentQuill.root.innerHTML;
+            const quillText = contentQuill.getText().trim();
+            const textarea = document.getElementById('contentTextarea');
+            
+            if (textarea) {
+                // FORCE sync - content should save for ALL post types!
+                textarea.value = quillHtml;
+                console.log('✅ FORCE Quill sync (PostType: ' + currentPostType + ')');
+                console.log('  - Quill HTML length:', quillHtml.length);
+                console.log('  - Quill text length:', quillText.length);
+                console.log('  - Textarea value length:', textarea.value.length);
+                console.log('  - Content preview:', quillHtml.substring(0, 200));
+                
+                // Verify sync worked
+                if (quillText.length > 10 && textarea.value.length === 0) {
+                    console.error('❌ SYNC FAILED! Stopping submit...');
+                    alert('Error: Content sync failed. Please try again.');
+                    return; // Stop submission
+                }
+                
+                // Success message
+                if (quillText.length > 0) {
+                    console.log('✅ Content WILL be saved with PostType:', currentPostType);
+                }
+            } else {
+                console.error('❌ CRITICAL: contentTextarea not found!');
+            }
+        } else {
+            console.warn('⚠️ Quill editor not found (OK if not initialized yet)');
+        }
+        
         // Validate required fields
         if (!selectedCommunity) {
             showStatus('error', 'Please select a community');
@@ -1312,8 +1386,21 @@
 
         // Update content based on post type
         if (currentPostType === 'link') {
-            document.querySelector('textarea[name="Content"]').value = document.getElementById('linkDescription').value;
+            const linkDesc = document.getElementById('linkDescription');
+            if (linkDesc && linkDesc.value) {
+                document.getElementById('contentTextarea').value = linkDesc.value;
+                console.log('✅ Link description copied to content');
+            }
         }
+        
+        // FINAL DEBUG: Log all form data before submit
+        console.log('=== FINAL FORM DATA ===');
+        console.log('Title:', title);
+        console.log('Content (textarea):', document.getElementById('contentTextarea').value.substring(0, 150));
+        console.log('PostType:', document.getElementById('postType').value);
+        console.log('Community ID:', document.getElementById('communityId').value);
+        console.log('Tags:', document.getElementById('tagsInputHidden').value);
+        console.log('Status:', document.getElementById('status').value);
 
         // Show loading state
         const submitBtn = document.getElementById('submitPost');
@@ -1330,6 +1417,7 @@
         showStatus('info', isDraft ? 'Saving draft...' : 'Publishing post...');
 
         // Submit the form
+        console.log('📤 Submitting form now...');
         document.getElementById('postForm').submit();
     }
 
@@ -1353,6 +1441,280 @@
         setTimeout(() => {
             statusMessage.style.display = 'none';
         }, 3000);
+    }
+
+    // ======================================================
+    // AI CONTENT GENERATOR - KEYWORD-FIRST APPROACH
+    // ======================================================
+
+    async function generateFromKeyword() {
+        const keyword = document.getElementById('seedKeyword').value.trim();
+        
+        if (!keyword) {
+            alert('❌ Please enter a keyword first!\n\nExample: "python programming", "seo tips", "web development"');
+            return;
+        }
+        
+        if (!selectedCommunity) {
+            alert('❌ Please select a community first!');
+            document.getElementById('communitySearch').focus();
+            return;
+        }
+        
+        // Show AI working status
+        const statusDiv = document.getElementById('aiGeneratorStatus');
+        const statusText = document.getElementById('aiStatusText');
+        statusDiv.style.display = 'block';
+        statusText.textContent = '🤖 Calling Google Search API...';
+        
+        try {
+            // STEP 1: Get keywords from Google Search API
+            statusText.textContent = '🔍 Analyzing keyword with Google...';
+            const response = await fetch(`/admin/seo/api/suggest-keywords-realtime?title=${encodeURIComponent(keyword)}&content=`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to get keywords');
+            }
+            
+            const keywords = data.keywords || [];
+            console.log('✅ Google returned', keywords.length, 'keywords:', keywords);
+            
+            if (keywords.length === 0) {
+                alert('⚠️ No related keywords found. Try a different keyword.');
+                statusDiv.style.display = 'none';
+                return;
+            }
+            
+            // STEP 2: Categorize keywords
+            statusText.textContent = '📊 Categorizing keywords...';
+            const primary = keyword;
+            const secondary = keywords.filter(k => k.split(' ').length <= 2).slice(0, 5);
+            const longtail = keywords.filter(k => k.split(' ').length >= 3).slice(0, 5);
+            
+            console.log('PRIMARY:', primary);
+            console.log('SECONDARY:', secondary);
+            console.log('LONGTAIL:', longtail);
+            
+            // STEP 3: Generate content
+            statusText.textContent = '✍️ Generating SEO-optimized content...';
+            const year = new Date().getFullYear();
+            
+            // 3A: Generate TITLE
+            const generatedTitle = `Complete Guide to ${capitalizeFirst(primary)} - Everything You Need to Know ${year}`;
+            document.getElementById('title').value = generatedTitle;
+            updateCharCount(document.getElementById('title'), 'titleCount', 300);
+            
+            // 3B: Generate CONTENT with keywords embedded
+            const generatedContent = generateSeoOptimizedContent(primary, secondary, longtail, keywords);
+            
+            // Insert into Quill
+            if (contentQuill) {
+                contentQuill.root.innerHTML = generatedContent;
+                document.getElementById('contentTextarea').value = generatedContent;
+                console.log('✅ Content inserted into Quill. Length:', generatedContent.length);
+            }
+            
+            // STEP 4: Fill SEO META FIELDS
+            statusText.textContent = '🎯 Filling SEO meta tags...';
+            
+            // Open SEO section first
+            const seoSection = document.getElementById('seoSection');
+            const seoToggle = document.getElementById('seoToggle');
+            seoSection.classList.add('show');
+            seoToggle.innerHTML = '<i class="fas fa-chevron-up"></i> Hide SEO Settings';
+            
+            // Fill Meta Title
+            const metaTitleInput = document.querySelector('[name="MetaTitle"]');
+            if (metaTitleInput) {
+                metaTitleInput.value = `${capitalizeFirst(primary)} - Complete Guide ${year}`;
+            }
+            
+            // Fill Meta Description
+            const metaDescInput = document.querySelector('[name="MetaDescription"]');
+            if (metaDescInput) {
+                metaDescInput.value = `Discover everything about ${primary}. Expert guide covering ${secondary.slice(0, 3).join(', ')} and more. Updated ${year}.`;
+            }
+            
+            // Fill Keywords
+            const keywordsInput = document.querySelector('[name="Keywords"]');
+            if (keywordsInput) {
+                const allKeywords = [primary, ...secondary, ...longtail].slice(0, 15);
+                keywordsInput.value = allKeywords.join(', ');
+                console.log('✅ Keywords field filled:', keywordsInput.value);
+            }
+            
+            // STEP 5: Auto-generate TAGS
+            statusText.textContent = '🏷️ Creating tags...';
+            tags = keywords.slice(0, 5);
+            document.getElementById('tagsInputHidden').value = tags.join(',');
+            
+            // Render tags visually
+            const tagContainer = document.getElementById('tagContainer');
+            tagContainer.querySelectorAll('.tag').forEach(el => el.remove());
+            
+            tags.forEach(tagText => {
+                const tagElement = document.createElement('div');
+                tagElement.className = 'tag';
+                tagElement.innerHTML = `
+                    ${tagText}
+                    <button type="button" class="tag-remove" onclick="removeTag('${tagText}', this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                tagContainer.insertBefore(tagElement, document.getElementById('tagInput'));
+            });
+            
+            // STEP 6: Update SEO Assistant Card
+            updateSeoAssistantCard(data.seoScore, keywords, data.suggestions || []);
+            
+            // STEP 7: Success!
+            statusDiv.style.display = 'none';
+            showStatus('success', `✅ POST GENERATED! SEO Score: ${data.seoScore}/100 | Keywords: ${keywords.length} | Review and publish!`);
+            
+            // Show summary
+            setTimeout(() => {
+                alert(`🎉 AI GENERATION COMPLETE!\n\n` +
+                      `PRIMARY: ${primary}\n` +
+                      `SECONDARY: ${secondary.join(', ')}\n` +
+                      `LONGTAIL: ${longtail.join(', ')}\n\n` +
+                      `SEO Score: ${data.seoScore}/100\n\n` +
+                      `✅ Title filled\n` +
+                      `✅ Content generated (${generatedContent.length} chars)\n` +
+                      `✅ Meta tags filled\n` +
+                      `✅ ${tags.length} tags added\n\n` +
+                      `You can now edit and publish!`);
+            }, 500);
+            
+        } catch (error) {
+            console.error('❌ AI Generation Error:', error);
+            statusDiv.style.display = 'none';
+            showStatus('error', 'Failed to generate content: ' + error.message);
+            alert('❌ Error: ' + error.message);
+        }
+    }
+
+    function capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function updateSeoAssistantCard(score, keywords, suggestions) {
+        // Update SEO score
+        const scoreBar = document.getElementById('seoScoreBar');
+        const scoreText = document.getElementById('seoScoreText');
+        
+        if (scoreBar && scoreText) {
+            scoreBar.style.width = score + '%';
+            scoreText.textContent = Math.round(score) + '/100';
+            
+            // Color based on score
+            if (score >= 80) {
+                scoreBar.style.background = '#28a745';
+                scoreText.style.background = '#28a745';
+            } else if (score >= 60) {
+                scoreBar.style.background = '#ffc107';
+                scoreText.style.background = '#ffc107';
+            } else {
+                scoreBar.style.background = '#dc3545';
+                scoreText.style.background = '#dc3545';
+            }
+        }
+        
+        // Update status
+        const statusDiv = document.getElementById('seoStatus');
+        if (statusDiv) {
+            statusDiv.innerHTML = '<i class="fas fa-check-circle me-1" style="color: #28a745;"></i>Analysis complete!';
+            statusDiv.style.background = '#d4edda';
+            statusDiv.style.borderColor = '#c3e6cb';
+        }
+        
+        // Show keywords
+        const keywordList = document.getElementById('keywordList');
+        const keywordSuggestions = document.getElementById('keywordSuggestions');
+        const keywordCount = document.getElementById('keywordCount');
+        
+        if (keywordList && keywords.length > 0) {
+            keywordList.innerHTML = '';
+            keywords.slice(0, 10).forEach(keyword => {
+                const badge = document.createElement('span');
+                badge.className = 'keyword-badge';
+                badge.textContent = keyword;
+                keywordList.appendChild(badge);
+            });
+            
+            if (keywordCount) keywordCount.textContent = keywords.length;
+            if (keywordSuggestions) keywordSuggestions.style.display = 'block';
+        }
+        
+        // Update tips
+        const tipsList = document.getElementById('tipsList');
+        if (tipsList && suggestions.length > 0) {
+            tipsList.innerHTML = suggestions.map(tip => `<li>${tip}</li>`).join('');
+        }
+    }
+
+    function generateSeoOptimizedContent(primary, secondary, longtail, allKeywords) {
+        const year = new Date().getFullYear();
+        
+        return `<h2>${capitalizeFirst(primary)}: A Comprehensive Guide</h2>
+
+<p>If you're looking to understand <strong>${primary}</strong>, you've come to the right place. This complete guide covers everything you need to know about ${primary}, including ${secondary.slice(0, 3).join(', ')} and expert insights for ${year}.</p>
+
+<h3>What is ${primary}?</h3>
+<p>${capitalizeFirst(primary)} has become increasingly important in today's digital landscape. Whether you're a beginner interested in <strong>${secondary[0]}</strong> or looking to master <strong>${secondary[1]}</strong>, understanding ${primary} will provide significant value.</p>
+
+<h3>Key Aspects of ${primary}</h3>
+<p>When exploring ${primary}, consider these essential components:</p>
+<ul>
+${secondary.map(k => `  <li><strong>${capitalizeFirst(k)}</strong> - A crucial element to master</li>`).join('\n')}
+</ul>
+
+<h3>Getting Started with ${primary}</h3>
+<p>Follow these steps to begin your journey with ${primary}:</p>
+<ol>
+  <li>Understand the fundamentals of ${primary}</li>
+  <li>Practice with ${secondary[0]} regularly</li>
+  <li>Explore ${secondary[1]} for deeper knowledge</li>
+  <li>Master advanced concepts like ${secondary[2]}</li>
+  <li>Stay updated with latest developments in ${primary}</li>
+</ol>
+
+<h3>Advanced Topics</h3>
+<p>For those looking to go deeper into ${primary}, explore these advanced areas:</p>
+<ul>
+${longtail.slice(0, 4).map(k => `  <li>${capitalizeFirst(k)}</li>`).join('\n')}
+</ul>
+
+<h3>Best Practices for ${primary}</h3>
+<p>To get the most out of ${primary}, follow these expert recommendations:</p>
+<ul>
+  <li>Focus on ${secondary[0]} as your foundation</li>
+  <li>Regularly practice ${secondary[1]} techniques</li>
+  <li>Stay informed about ${secondary[2]} updates</li>
+  <li>Join communities discussing ${primary}</li>
+  <li>Share your knowledge and learn from others</li>
+</ul>
+
+<h3>Common Challenges and Solutions</h3>
+<p>When working with ${primary}, you might encounter challenges. Here's how to overcome them:</p>
+<ul>
+  <li><strong>Getting Started:</strong> Begin with ${secondary[0]} basics</li>
+  <li><strong>Intermediate Level:</strong> Focus on ${secondary[1]}</li>
+  <li><strong>Advanced Mastery:</strong> Explore ${longtail[0]}</li>
+</ul>
+
+<h3>Resources and Next Steps</h3>
+<p>Continue your ${primary} journey by exploring these related topics: ${allKeywords.slice(0, 8).join(', ')}. Each of these areas will help you build a comprehensive understanding of ${primary}.</p>
+
+<h3>Conclusion</h3>
+<p>Mastering <strong>${primary}</strong> requires understanding ${secondary[0]} and ${secondary[1]}. By following this guide and exploring ${longtail[0]}, you'll be well on your way to becoming proficient in ${primary}. Remember to practice regularly and stay updated with the latest trends.</p>
+
+<p><em>Keywords: ${allKeywords.slice(0, 12).join(', ')}</em></p>
+
+<hr>
+
+<p><small>This guide was created with AI assistance and optimized for search engines. Last updated: ${year}.</small></p>`;
     }
 </script>
 
@@ -1388,28 +1750,66 @@
                 placeholder: 'Write your post content here... Use headings, formatting, and add links to make your post more engaging and SEO-friendly!'
             });
 
-            // Sync Quill content with hidden textarea
+            // Sync Quill content with hidden textarea on every change
             contentQuill.on('text-change', function() {
                 const htmlContent = contentQuill.root.innerHTML;
-                document.getElementById('contentTextarea').value = htmlContent;
+                const textarea = document.getElementById('contentTextarea');
+                if (textarea) {
+                    textarea.value = htmlContent;
+                    console.log('📝 Quill auto-synced. Length:', htmlContent.length);
+                    console.log('📝 Textarea value set:', textarea.value.length);
+                } else {
+                    console.error('❌ contentTextarea not found during auto-sync!');
+                }
             });
             
             console.log('✅ Quill editor initialized for post content');
+            console.log('✅ Content textarea found:', document.getElementById('contentTextarea') ? 'YES' : 'NO');
+            
+            // CRITICAL: Make Quill globally accessible for form submit
+            window.contentQuill = contentQuill;
         });
         
-        // Override the handleFormSubmit function to work with Quill
-        const originalHandleFormSubmit = window.handleFormSubmit;
-        window.handleFormSubmit = function(isDraft) {
-            // Sync Quill content before submit
-            if (contentQuill) {
-                const htmlContent = contentQuill.root.innerHTML;
-                document.getElementById('contentTextarea').value = htmlContent;
-            }
+        // CRITICAL FIX: Always sync Quill content REGARDLESS of tab/PostType
+        document.getElementById('postForm').addEventListener('submit', function(e) {
+            console.log('📤 Form submit event triggered');
+            console.log('Current PostType:', document.getElementById('postType').value);
             
-            // Call original function
-            if (originalHandleFormSubmit) {
-                originalHandleFormSubmit(isDraft);
+            // ALWAYS sync Quill content, even if tab is not "text"
+            if (window.contentQuill) {
+                const quillContent = window.contentQuill.root.innerHTML;
+                const quillText = window.contentQuill.getText().trim();
+                const textarea = document.getElementById('contentTextarea');
+                
+                if (textarea) {
+                    // FORCE sync regardless of visibility
+                    textarea.value = quillContent;
+                    console.log('✅ FORCE SYNC on submit (regardless of tab)');
+                    console.log('  - Quill HTML length:', quillContent.length);
+                    console.log('  - Quill text length:', quillText.length);
+                    console.log('  - Textarea set to:', textarea.value.length);
+                    console.log('  - PostType:', document.getElementById('postType').value);
+                    
+                    // If Quill has content but textarea is empty, STOP submit
+                    if (quillText.length > 10 && textarea.value.length === 0) {
+                        console.error('❌ CRITICAL: Quill has content but textarea is empty!');
+                        e.preventDefault();
+                        alert('Error: Content sync failed. Please try again or contact support.');
+                        return false;
+                    }
+                    
+                    // Log what will be saved
+                    if (quillText.length > 0) {
+                        console.log('✅ Content WILL be saved. Preview:', quillContent.substring(0, 150));
+                    } else {
+                        console.log('ℹ️ No content in Quill editor (this is OK for link/image-only posts)');
+                    }
+                } else {
+                    console.error('❌ Textarea #contentTextarea not found!');
+                }
+            } else {
+                console.warn('⚠️ Quill not initialized yet');
             }
-        };
+        });
     </script>
 }

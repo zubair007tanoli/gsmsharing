@@ -1,0 +1,440 @@
+@using discussionspot9.Helpers
+@using discussionspot9.Models.ViewModels.PollViewModels
+
+@model discussionspot9.Models.ViewModels.CreativeViewModels.PostDetailPageViewModelCopy
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = $"{Model.Post.Title} | r/{Model.Post.CommunitySlug} | DiscussionSpot";
+    
+    // SEO Meta Tags
+    var excerpt = Model.Post.Content != null && Model.Post.Content.Length > 155 
+        ? Model.Post.Content.Substring(0, 155) + "..." 
+        : Model.Post.Content ?? "Join the discussion on DiscussionSpot";
+    var tags = Model.Post.Tags != null && Model.Post.Tags.Any() 
+        ? string.Join(", ", Model.Post.Tags) 
+        : $"{Model.Post.CommunityName}, discussion, forum";
+    var postUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.CommunitySlug}/post/{Model.Post.Slug}";
+    var imageUrl = Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "image")
+        ? Model.Post.Media.First(m => m.MediaType == "image").Url
+        : $"{Context.Request.Scheme}://{Context.Request.Host}/images/default-og-image.png";
+}
+
+<!-- SEO Meta Tags -->
+@section MetaTags {
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="@ViewData["Title"]" />
+    <meta name="description" content="@excerpt" />
+    <meta name="keywords" content="@tags" />
+    <meta name="author" content="@Model.Post.AuthorDisplayName" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="@postUrl" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="@postUrl" />
+    <meta property="og:title" content="@Model.Post.Title" />
+    <meta property="og:description" content="@excerpt" />
+    <meta property="og:image" content="@imageUrl" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@Model.Post.Title" />
+    <meta name="twitter:description" content="@excerpt" />
+    <meta name="twitter:image" content="@imageUrl" />
+}
+
+@section HeadScripts {
+    <link href="~/css/reddit-style.css" rel="stylesheet" />
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+}
+
+<div class="reddit-style-page">
+    <div class="page-container">
+        <div class="content-wrapper">
+            
+            <!-- Main Content Area -->
+            <main class="main-content">
+                
+                <!-- Post Card -->
+                <article class="post-card" id="post-@Model.Post.PostId" data-post-id="@Model.Post.PostId">
+                    
+                    <!-- Compact Post Header -->
+                    <header class="post-header-compact">
+                        <div class="post-meta-line">
+                            <div class="community-avatar" style="background: linear-gradient(135deg, @(Model.Post.CommunitySlug.ToAvatarColor()) 0%, @(Model.Post.CommunitySlug.ToAvatarColor())dd 100%);">
+                                @Model.Post.CommunitySlug.Substring(0, 1).ToUpper()
+                            </div>
+                            <a href="/r/@Model.Post.CommunitySlug" class="community-link">r/@Model.Post.CommunitySlug</a>
+                            <span class="separator">•</span>
+                            <span class="post-author">
+                                Posted by 
+                                <a href="@Model.Post.AuthorUrl" class="author-link">u/@Model.Post.AuthorDisplayName</a>
+                            </span>
+                            <span class="separator">•</span>
+                            <time class="post-time" datetime="@Model.Post.CreatedAt.ToString("o")">
+                                @Html.TimeAgo(Model.Post.CreatedAt)
+                            </time>
+                        </div>
+                    </header>
+
+                    <!-- Post Title & Tags -->
+                    <div class="post-title-section">
+                        <h1 class="post-title-main">@Model.Post.Title</h1>
+                        @if (Model.Post.Tags != null && Model.Post.Tags.Any())
+                        {
+                            <div class="post-tags-row">
+                                @foreach (var tag in Model.Post.Tags)
+                                {
+                                    <span class="tag-pill">@tag</span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Post Content -->
+                    <div class="post-body">
+                        @if (!string.IsNullOrWhiteSpace(Model.Post.Content))
+                        {
+                            <div class="post-content-text" id="postContent">
+                                @Html.Raw(Model.Post.Content)
+                            </div>
+                        }
+
+                        <!-- Images -->
+                        @if (Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "image"))
+                        {
+                            <div class="post-images">
+                                @foreach (var media in Model.Post.Media.Where(m => m.MediaType == "image"))
+                                {
+                                    <div class="image-item">
+                                        <img src="@media.Url" alt="Post image" loading="lazy" />
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <!-- Videos -->
+                        @if (Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "video"))
+                        {
+                            <div class="post-videos">
+                                @foreach (var media in Model.Post.Media.Where(m => m.MediaType == "video"))
+                                {
+                                    <div class="video-item">
+                                        <video controls>
+                                            <source src="@media.Url" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <!-- Poll Section -->
+                        @if (Model.Post.Poll != null)
+                        {
+                            <div class="poll-section-modern" data-post-id="@Model.Post.PostId">
+                                <div class="poll-header-modern">
+                                    <span class="poll-badge-icon">
+                                        <i class="fas fa-poll-h"></i>
+                                        <span>POLL</span>
+                                    </span>
+                                    <h3 class="poll-title">@Model.Post.Poll.Question</h3>
+                                </div>
+
+                                <div class="poll-options-modern" id="pollOptions">
+                                    @foreach (var option in Model.Post.Poll.Options)
+                                    {
+                                        var percentage = Model.Post.Poll.TotalVotes > 0
+                                            ? ((double)option.VoteCount / Model.Post.Poll.TotalVotes * 100)
+                                            : 0;
+                                        var isVoted = Model.Post.Poll.UserVotedOptionIds != null && Model.Post.Poll.UserVotedOptionIds.Contains(option.PollOptionId);
+                                        
+                                        <div class="poll-option-modern @(isVoted ? "voted" : "")" 
+                                             data-option-id="@option.PollOptionId" 
+                                             data-percentage="@percentage">
+                                            
+                                            <button type="button" class="poll-option-btn" 
+                                                    data-post-id="@Model.Post.PostId" 
+                                                    data-option-id="@option.PollOptionId">
+                                                <div class="poll-option-content-wrapper">
+                                                    <div class="poll-radio-modern">
+                                                        <div class="radio-dot @(isVoted ? "selected" : "")"></div>
+                                                    </div>
+                                                    <div class="poll-option-details">
+                                                        <span class="poll-option-label">@option.OptionText</span>
+                                                        <div class="poll-result-info">
+                                                            <span class="poll-vote-count-text">@option.VoteCount votes</span>
+                                                            <span class="poll-percentage-text">@percentage.ToString("F1")%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="poll-progress-fill" style="width: @percentage%"></div>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="poll-footer-info">
+                                    <div class="poll-stat">
+                                        <i class="fas fa-users"></i>
+                                        <span>@Model.Post.Poll.TotalVotes total votes</span>
+                                    </div>
+                                    @if (Model.Post.Poll.EndDate.HasValue)
+                                    {
+                                        <div class="poll-stat">
+                                            <i class="fas fa-clock"></i>
+                                            <span>Ends @Html.TimeAgo(Model.Post.Poll.EndDate.Value)</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="poll-stat">
+                                            <i class="fas fa-infinity"></i>
+                                            <span>No end date</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Action Footer with Voting -->
+                    <footer class="post-footer-actions">
+                        <div class="action-bar-left">
+                            <!-- Voting System -->
+                            <div class="voting-group">
+                                <button class="vote-btn vote-up @(Model.Post.CurrentUserVote == 1 ? "active" : "")" 
+                                        id="upvoteBtn-@Model.Post.PostId" 
+                                        data-post-id="@Model.Post.PostId" 
+                                        data-vote-type="1"
+                                        title="Upvote">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <span class="vote-score" id="voteScore-@Model.Post.PostId">@(Model.Post.UpvoteCount - Model.Post.DownvoteCount)</span>
+                                <button class="vote-btn vote-down @(Model.Post.CurrentUserVote == -1 ? "active" : "")" 
+                                        id="downvoteBtn-@Model.Post.PostId" 
+                                        data-post-id="@Model.Post.PostId" 
+                                        data-vote-type="-1"
+                                        title="Downvote">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="action-btns-group">
+                                <button class="action-btn-footer" title="Comments">
+                                    <i class="fas fa-comment"></i>
+                                    <span>@Model.Post.CommentCount</span>
+                                </button>
+                                
+                                <div class="share-dropdown-footer">
+                                    <button class="action-btn-footer" id="shareBtn-@Model.Post.PostId" title="Share">
+                                        <i class="fas fa-share-alt"></i>
+                                        <span>Share</span>
+                                    </button>
+                                    <div class="share-menu-footer">
+                                        <a href="#" class="share-item" data-platform="facebook">
+                                            <i class="fab fa-facebook-f"></i>
+                                            <span>Facebook</span>
+                                        </a>
+                                        <a href="#" class="share-item" data-platform="twitter">
+                                            <i class="fab fa-twitter"></i>
+                                            <span>Twitter</span>
+                                        </a>
+                                        <a href="#" class="share-item" data-platform="reddit">
+                                            <i class="fab fa-reddit"></i>
+                                            <span>Reddit</span>
+                                        </a>
+                                        <a href="#" class="share-item" data-platform="copy">
+                                            <i class="fas fa-link"></i>
+                                            <span>Copy Link</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <button class="action-btn-footer @(Model.Post.IsSavedByUser ? "active" : "")" 
+                                        id="saveBtn-@Model.Post.PostId" 
+                                        data-post-id="@Model.Post.PostId"
+                                        title="Save">
+                                    <i class="fas fa-bookmark"></i>
+                                </button>
+
+                                <button class="action-btn-footer" title="Report">
+                                    <i class="fas fa-flag"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </footer>
+
+                </article>
+
+                <!-- Comment Section -->
+                <section class="comments-section">
+                    <div class="comments-header-bar">
+                        <h2 class="comments-title">@Model.Post.CommentCount Comments</h2>
+                        <div class="comment-sort-selector">
+                            <button class="sort-btn active" data-sort="best">
+                                <i class="fas fa-trophy"></i>
+                                <span>Best</span>
+                            </button>
+                            <button class="sort-btn" data-sort="top">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>Top</span>
+                            </button>
+                            <button class="sort-btn" data-sort="new">
+                                <i class="fas fa-clock"></i>
+                                <span>New</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Comment Form -->
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <div class="add-comment-form">
+                            <div class="comment-editor-wrapper">
+                                <div class="user-avatar-small" style="background: linear-gradient(135deg, @(User.Identity.Name.ToAvatarColor()) 0%, @(User.Identity.Name.ToAvatarColor())dd 100%);">
+                                    @User.Identity.Name.Substring(0, 1).ToUpper()
+                                </div>
+                                <div class="editor-container-main">
+                                    <div id="mainCommentEditor"></div>
+                                </div>
+                            </div>
+                            <div class="comment-actions-row">
+                                <button class="btn-cancel-comment">Cancel</button>
+                                <button class="btn-submit-comment" id="submitComment" data-post-id="@Model.Post.PostId">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Comment
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="login-to-comment">
+                            <p>
+                                <a href="/Account/Login?returnUrl=@Context.Request.Path">Log in</a> or 
+                                <a href="/Account/Register?returnUrl=@Context.Request.Path">sign up</a> to leave a comment
+                            </p>
+                        </div>
+                    }
+
+                    <!-- Comments List -->
+                    <div class="comments-thread" id="commentsThread">
+                        @if (Model.Comments != null && Model.Comments.Any())
+                        {
+                            @await Html.PartialAsync("_CommentThreadReddit", Model.Comments)
+                        }
+                        else
+                        {
+                            <div class="no-comments-yet">
+                                <i class="fas fa-comments"></i>
+                                <p>No comments yet</p>
+                                <span>Be the first to share what you think!</span>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="right-sidebar-modern">
+                
+                <!-- About Community Card -->
+                @if (Model.Community != null)
+                {
+                    <div class="sidebar-card-modern about-community">
+                        <div class="card-header-modern">
+                            <i class="fas fa-info-circle"></i>
+                            <span>About r/@Model.Community.Name</span>
+                        </div>
+                        <div class="card-body-modern">
+                            @if (!string.IsNullOrEmpty(Model.Community.Description))
+                            {
+                                <p class="community-desc">@Model.Community.Description</p>
+                            }
+                            
+                            <div class="community-stats-grid">
+                                <div class="stat-box">
+                                    <div class="stat-number">@Model.Community.FormattedMemberCount</div>
+                                    <div class="stat-label">Members</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-number">@Model.Community.FormattedPostCount</div>
+                                    <div class="stat-label">Posts</div>
+                                </div>
+                            </div>
+
+                            <div class="community-created">
+                                <i class="fas fa-cake-candles"></i>
+                                <span>Created @Model.Community.CreatedAt.ToString("MMM dd, yyyy")</span>
+                            </div>
+
+                            <div class="community-actions">
+                                <a href="/r/@Model.CommunitySlug" class="btn-community-primary">
+                                    <i class="fas fa-home"></i>
+                                    Visit Community
+                                </a>
+                                <a href="/r/@Model.CommunitySlug/submit" class="btn-community-secondary">
+                                    <i class="fas fa-plus"></i>
+                                    Create Post
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Ad Placement -->
+                <div class="sidebar-card-modern ad-card">
+                    <div class="ad-label-top">Advertisement</div>
+                    <div class="ad-content-area">
+                        <div class="ad-placeholder">
+                            <i class="fas fa-ad"></i>
+                            <span>Google AdSense</span>
+                            <small>300x250</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related Posts -->
+                @if (Model.RelatedPosts != null && Model.RelatedPosts.Any())
+                {
+                    <div class="sidebar-card-modern related-posts">
+                        <div class="card-header-modern">
+                            <i class="fas fa-fire"></i>
+                            <span>Trending Discussions</span>
+                        </div>
+                        <div class="card-body-modern">
+                            @foreach (var relatedPost in Model.RelatedPosts.Take(5))
+                            {
+                                <a href="/r/@relatedPost.CommunitySlug/posts/@relatedPost.Slug" class="related-post-item">
+                                    <div class="related-post-content">
+                                        <h4 class="related-post-title">@relatedPost.Title</h4>
+                                        <div class="related-post-meta">
+                                            <span class="related-community">r/@relatedPost.CommunitySlug</span>
+                                            <span class="related-stats">
+                                                <i class="fas fa-arrow-up"></i> @relatedPost.Score
+                                                <i class="fas fa-comment"></i> @relatedPost.CommentCount
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+
+            </aside>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="~/js/SignalR_Script/Post_Script_Real_Time_Fix.js"></script>
+    <script src="~/js/reddit-style.js"></script>
+}
+
