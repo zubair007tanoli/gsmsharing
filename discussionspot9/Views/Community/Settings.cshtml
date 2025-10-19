@@ -1,0 +1,352 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.CommunityDetailViewModel
+@{
+    ViewData["Title"] = $"{Model.Name} - Settings";
+}
+
+<link rel="stylesheet" href="~/css/admin-panel.css" />
+
+<div class="community-settings-container">
+    <div class="settings-header">
+        <h1>
+            <i class="fas fa-cog"></i> Community Settings: @Model.Name
+        </h1>
+        <p>Manage your community settings, members, and moderation</p>
+    </div>
+
+    <!-- Community Info -->
+    <div class="settings-section">
+        <h3><i class="fas fa-info-circle"></i> Community Information</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Slug:</strong> r/@Model.Slug</p>
+                <p><strong>Members:</strong> @Model.FormattedMemberCount</p>
+                <p><strong>Posts:</strong> @Model.FormattedPostCount</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Type:</strong> @Model.CommunityType</p>
+                <p><strong>Category:</strong> @Model.CategoryName</p>
+                <p><strong>Created:</strong> @Model.CreatedTimeAgo</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Management Section -->
+    <div class="settings-section">
+        <h3><i class="fas fa-users"></i> Member Management</h3>
+        
+        <div class="mb-3">
+            <input type="text" id="memberSearch" class="form-control" placeholder="Search members...">
+            <button class="btn btn-primary mt-2" onclick="loadCommunityMembers()">
+                <i class="fas fa-sync"></i> Load Members
+            </button>
+        </div>
+        
+        <div id="membersList">
+            <p class="text-muted">Click "Load Members" to view all community members</p>
+        </div>
+        
+        <div id="membersLoading" class="text-center" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Moderators Section -->
+    <div class="settings-section">
+        <h3><i class="fas fa-shield-alt"></i> Current Moderators</h3>
+        
+        <div class="moderators-list">
+            @if (Model.Moderators != null && Model.Moderators.Any())
+            {
+                @foreach (var moderator in Model.Moderators)
+                {
+                    <div class="member-item">
+                        <div class="member-info">
+                            @using discussionspot9.Helpers
+                            <img src="@AvatarHelper.GetAvatarUrl(moderator.DisplayName, null, 40)" 
+                                 alt="@moderator.DisplayName" 
+                                 class="member-avatar">
+                            <div>
+                                <strong>@moderator.DisplayName</strong>
+                                <br>
+                                <small class="text-muted">Moderator</small>
+                            </div>
+                        </div>
+                        <div class="member-actions">
+                            <span class="role-badge moderator">
+                                <i class="fas fa-shield-alt"></i>
+                                MODERATOR
+                            </span>
+                            
+                            @if (Model.IsCurrentUserModerator)
+                            {
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openRoleChangeModal(@Model.CommunityId, '@moderator.UserId', '@moderator.DisplayName')">
+                                    <i class="fas fa-user-edit"></i> Change Role
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted">No moderators assigned yet.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Change Role Modal -->
+<div class="modal fade" id="roleChangeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-shield"></i> Change Member Role
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Change role for: <strong id="roleChangeUserName"></strong></p>
+                <input type="hidden" id="roleChangeUserId">
+                <input type="hidden" id="roleChangeCommunityId">
+                @Html.AntiForgeryToken()
+                
+                <div class="mb-3">
+                    <label for="newRole" class="form-label"><strong>New Role:</strong></label>
+                    <select id="newRole" class="form-select">
+                        <option value="member">👤 Member - Regular member</option>
+                        <option value="moderator">🛡️ Moderator - Can moderate content</option>
+                        <option value="admin">👑 Admin - Full community control</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn btn-primary w-100" onclick="confirmRoleChange()">
+                    <i class="fas fa-check"></i> Change Role
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Community Ban Modal -->
+<div class="modal fade" id="communityBanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-ban"></i> Ban from Community
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> This will remove the user from the community and prevent them from rejoining.
+                </div>
+                
+                <p>Banning user: <strong id="communityBanUserName"></strong></p>
+                <input type="hidden" id="communityBanUserId">
+                <input type="hidden" id="communityBanCommunityId">
+                
+                <div class="mb-3">
+                    <label for="communityBanReason" class="form-label"><strong>Reason (Required):</strong></label>
+                    <textarea id="communityBanReason" class="form-control" rows="3" placeholder="Explain why..." required></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="communityBanDuration" class="form-label"><strong>Duration:</strong></label>
+                    <select id="communityBanDuration" class="form-select">
+                        <option value="1">1 Day</option>
+                        <option value="7">7 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="90">90 Days</option>
+                        <option value="0" selected>Permanent</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn btn-danger w-100" onclick="confirmCommunityBan()">
+                    <i class="fas fa-ban"></i> Confirm Ban
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const communityId = @Model.CommunityId;
+        
+        async function loadCommunityMembers() {
+            const loadingDiv = document.getElementById('membersLoading');
+            const listDiv = document.getElementById('membersList');
+            
+            loadingDiv.style.display = 'block';
+            listDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/community/members-management/${communityId}`);
+                const result = await response.json();
+                
+                if (result.success && result.members) {
+                    displayMembers(result.members);
+                } else {
+                    listDiv.innerHTML = '<p class="text-danger">Failed to load members</p>';
+                }
+            } catch (error) {
+                console.error('Error loading members:', error);
+                listDiv.innerHTML = '<p class="text-danger">Error loading members</p>';
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        function displayMembers(members) {
+            const listDiv = document.getElementById('membersList');
+            let html = '';
+            
+            members.forEach(member => {
+                const roleClass = member.role.toLowerCase();
+                const roleIcon = member.role === 'admin' ? 'fa-crown' : 
+                                member.role === 'moderator' ? 'fa-shield-alt' : 'fa-user';
+                                
+                html += `
+                    <div class="member-item" data-user-id="${member.userId}">
+                        <div class="member-info">
+                            <div class="member-avatar" style="background: #007bff; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                ${member.initials || member.displayName.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <strong>${member.displayName}</strong><br>
+                                <small class="text-muted">Joined ${member.formattedJoinedAt}</small>
+                            </div>
+                        </div>
+                        <div class="member-actions">
+                            <span class="role-badge ${roleClass}">
+                                <i class="fas ${roleIcon}"></i>
+                                ${member.role.toUpperCase()}
+                            </span>
+                            ${member.role !== 'admin' ? `
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openRoleChangeModal(${communityId}, '${member.userId}', '${member.displayName}')">
+                                    <i class="fas fa-user-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="openCommunityBanModal(${communityId}, '${member.userId}', '${member.displayName}')">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            listDiv.innerHTML = html || '<p class="text-muted">No members found</p>';
+        }
+        
+        function openRoleChangeModal(communityId, userId, userName) {
+            document.getElementById('roleChangeCommunityId').value = communityId;
+            document.getElementById('roleChangeUserId').value = userId;
+            document.getElementById('roleChangeUserName').textContent = userName;
+            
+            const modal = new bootstrap.Modal(document.getElementById('roleChangeModal'));
+            modal.show();
+        }
+        
+        async function confirmRoleChange() {
+            const communityId = parseInt(document.getElementById('roleChangeCommunityId').value);
+            const userId = document.getElementById('roleChangeUserId').value;
+            const newRole = document.getElementById('newRole').value;
+            
+            if (!confirm(`Change this user's role to ${newRole}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/community/change-member-role', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        communityId: communityId,
+                        userId: userId,
+                        newRole: newRole
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Role changed to ${newRole} successfully`);
+                    bootstrap.Modal.getInstance(document.getElementById('roleChangeModal')).hide();
+                    loadCommunityMembers(); // Reload members
+                } else {
+                    alert(result.message || result.errorMessage || 'Failed to change role');
+                }
+            } catch (error) {
+                console.error('Error changing role:', error);
+                alert('An error occurred');
+            }
+        }
+        
+        function openCommunityBanModal(communityId, userId, userName) {
+            document.getElementById('communityBanCommunityId').value = communityId;
+            document.getElementById('communityBanUserId').value = userId;
+            document.getElementById('communityBanUserName').textContent = userName;
+            document.getElementById('communityBanReason').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('communityBanModal'));
+            modal.show();
+        }
+        
+        async function confirmCommunityBan() {
+            const communityId = parseInt(document.getElementById('communityBanCommunityId').value);
+            const userId = document.getElementById('communityBanUserId').value;
+            const reason = document.getElementById('communityBanReason').value;
+            const durationDays = parseInt(document.getElementById('communityBanDuration').value);
+            
+            if (!reason.trim()) {
+                alert('Ban reason is required');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/community/ban-member', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        communityId: communityId,
+                        userId: userId,
+                        reason: reason,
+                        banDurationDays: durationDays > 0 ? durationDays : null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('User banned from community successfully');
+                    bootstrap.Modal.getInstance(document.getElementById('communityBanModal')).hide();
+                    loadCommunityMembers(); // Reload members
+                } else {
+                    alert(result.message || 'Failed to ban user');
+                }
+            } catch (error) {
+                console.error('Error banning user:', error);
+                alert('An error occurred');
+            }
+        }
+        
+        // Search members
+        document.getElementById('memberSearch')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const memberItems = document.querySelectorAll('.member-item');
+            
+            memberItems.forEach(item => {
+                const displayName = item.querySelector('strong').textContent.toLowerCase();
+                item.style.display = displayName.includes(searchTerm) ? 'flex' : 'none';
+            });
+        });
+    </script>
+}

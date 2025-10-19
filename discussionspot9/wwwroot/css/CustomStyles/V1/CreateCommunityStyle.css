@@ -229,38 +229,90 @@ body.dark-mode .community-creator-container .form-label {
 }
 
 .community-creator-container .form-input,
-.community-creator-container .form-textarea,
-.community-creator-container .form-select {
+.community-creator-container .form-textarea {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #edeff1;
-    border-radius: 4px;
+    padding: 10px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
     font-size: 14px;
     font-family: inherit;
     background: white;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+.community-creator-container .form-select {
+    width: 100%;
+    padding: 10px 40px 10px 12px; /* Extra right padding for custom arrow */
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    background: white;
+    /* Custom dropdown arrow SVG */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%230079D3' d='M7 10L2 5h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    appearance: none; /* Remove default browser arrow */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.community-creator-container .form-select:hover {
+    border-color: #0079D3;
+    box-shadow: 0 2px 8px rgba(0, 121, 211, 0.12);
+    background-color: #f8fafc;
+}
+
+.community-creator-container .form-select option {
+    padding: 12px;
+    font-weight: 500;
+}
+
+/* Dark mode styles */
 body.dark-mode .community-creator-container .form-input,
-body.dark-mode .community-creator-container .form-textarea,
-body.dark-mode .community-creator-container .form-select {
-    background: #374151;
-    border-color: #4b5563;
+body.dark-mode .community-creator-container .form-textarea {
+    background: #1f2937;
+    border-color: #374151;
     color: #f9fafb;
 }
 
+body.dark-mode .community-creator-container .form-select {
+    background-color: #1f2937;
+    /* Light arrow for dark mode */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23818cf8' d='M7 10L2 5h10z'/%3E%3C/svg%3E");
+    border-color: #374151;
+    color: #f9fafb;
+}
+
+body.dark-mode .community-creator-container .form-select:hover {
+    border-color: #818cf8;
+    box-shadow: 0 2px 8px rgba(129, 140, 248, 0.15);
+    background-color: #111827;
+}
+
+/* Focus states */
 .community-creator-container .form-input:focus,
-.community-creator-container .form-textarea:focus,
+.community-creator-container .form-textarea:focus {
+    outline: none;
+    border-color: #0079D3;
+    box-shadow: 0 0 0 3px rgba(0, 121, 211, 0.1);
+}
+
 .community-creator-container .form-select:focus {
     outline: none;
     border-color: #0079D3;
+    box-shadow: 0 0 0 3px rgba(0, 121, 211, 0.1);
 }
 
 body.dark-mode .community-creator-container .form-input:focus,
 body.dark-mode .community-creator-container .form-textarea:focus,
 body.dark-mode .community-creator-container .form-select:focus {
     border-color: #818cf8;
-    box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
 }
 
 .community-creator-container .form-textarea {

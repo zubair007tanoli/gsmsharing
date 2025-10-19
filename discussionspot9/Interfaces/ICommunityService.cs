@@ -10,7 +10,7 @@ namespace discussionspot9.Interfaces
         Task<CommunityDetailViewModel?> GetCommunityDetailsAsync(string slug);
         Task<CommunityDetailViewModel?> GetCommunityBySlugAsync(string slug);
         Task<CreateCommunityResult> CreateCommunityAsync(CreateCommunityViewModel model);
-        Task<ServiceResult> ToggleMembershipAsync(int communityId, string userId);
+        Task<ServiceResult<bool>> ToggleMembershipAsync(int communityId, string userId);
         Task<List<MemberViewModel>> GetCommunityMembersAsync(int communityId, int page = 1);
         Task<bool> IsCommunityMemberAsync(int communityId, string userId);
         Task<bool> IsCommunityAdminAsync(int communityId, string userId);

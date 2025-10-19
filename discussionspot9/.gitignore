@@ -1,0 +1,28 @@
+# User-uploaded files - DO NOT commit to repository
+wwwroot/uploads/**/*
+
+# Keep directory structure but ignore files
+!wwwroot/uploads/**/.gitkeep
+
+# Development files
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Sensitive configuration
+appsettings.Development.json
+Config/google-adsense-credentials.json
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+

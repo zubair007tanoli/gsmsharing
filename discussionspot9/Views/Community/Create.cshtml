@@ -47,18 +47,24 @@
                 </div>
                 <div class="sidebar-content">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
-                            <strong>Technology</strong> - 1,234 communities
-                        </div>
-                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
-                            <strong>Gaming</strong> - 987 communities
-                        </div>
-                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
-                            <strong>Science</strong> - 654 communities
-                        </div>
-                        <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
-                            <strong>Arts & Culture</strong> - 432 communities
-                        </div>
+                        @{
+                            var popularCategories = ViewData["PopularCategories"] as List<dynamic>;
+                        }
+                        @if (popularCategories != null && popularCategories.Any())
+                        {
+                            foreach (var cat in popularCategories)
+                            {
+                                <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px; cursor: pointer;" onclick="selectCategory('@cat.CategoryName')">
+                                    <strong>@cat.CategoryName</strong> - @cat.CommunityCount.ToString("N0") @(cat.CommunityCount == 1 ? "community" : "communities")
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div style="padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 12px;">
+                                <em>No categories yet</em>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -105,11 +111,15 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label" asp-for="CategoryId">Category *</label>
-                            <select class="form-select" asp-for="CategoryId" required>
+                            <select class="form-select" asp-for="CategoryId" id="categorySelect" required>
                                 <option value="">Select a category</option>
                                 @foreach (var category in Model.AvailableCategories)
                                 {
-                                    <option value="@category.CategoryId">@category.Name</option>
+                                    <option value="@category.CategoryId" 
+                                            data-icon="@category.Icon" 
+                                            data-description="@category.Description">
+                                        @category.Name
+                                    </option>
                                 }
                             </select>
                             <span asp-validation-for="CategoryId" class="text-danger"></span>
@@ -342,7 +352,91 @@
     </div>
 </div>
 @section Scripts {
+    <!-- Choices.js for enhanced dropdowns -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    
     <script src="/js/CustomScripts/V1/CreateCommunityScript.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Choices.js on category dropdown
+            const categorySelect = new Choices('#categorySelect', {
+                searchEnabled: true,
+                itemSelectText: '',
+                shouldSort: false,
+                placeholderValue: 'Select a category',
+                noResultsText: 'No categories found',
+                searchPlaceholderValue: 'Search categories...',
+                callbackOnCreateTemplates: function(template) {
+                    return {
+                        // Custom template for options with icons
+                        choice: (classNames, data) => {
+                            const icon = data.customProperties?.icon || 'fa-folder';
+                            const description = data.customProperties?.description || '';
+                            return template(`
+                                <div class="${classNames.item} ${classNames.itemChoice} ${
+                                    data.disabled ? classNames.itemDisabled : classNames.itemSelectable
+                                }" data-select-text="${this.config.itemSelectText}" data-choice ${
+                                    data.disabled ? 'data-choice-disabled aria-disabled="true"' : 'data-choice-selectable'
+                                } data-id="${data.id}" data-value="${data.value}" ${
+                                    data.groupId > 0 ? 'role="treeitem"' : 'role="option"'
+                                }>
+                                    <i class="fas ${icon}" style="margin-right: 8px; color: #0079D3;"></i>
+                                    <span>${data.label}</span>
+                                    ${description ? `<br><small style="color: #6b7280; margin-left: 26px;">${description}</small>` : ''}
+                                </div>
+                            `);
+                        },
+                        // Template for selected item
+                        item: (classNames, data) => {
+                            const icon = data.customProperties?.icon || 'fa-folder';
+                            return template(`
+                                <div class="${classNames.item} ${
+                                    data.highlighted ? classNames.highlightedState : classNames.itemSelectable
+                                }" data-item data-id="${data.id}" data-value="${data.value}" ${
+                                    data.active ? 'aria-selected="true"' : ''
+                                } ${data.disabled ? 'aria-disabled="true"' : ''}>
+                                    <i class="fas ${icon}" style="margin-right: 8px;"></i>
+                                    ${data.label}
+                                </div>
+                            `);
+                        }
+                    };
+                }
+            });
+            
+            // Pass icon and description data to Choices
+            const selectElement = document.querySelector('#categorySelect');
+            const options = Array.from(selectElement.options).slice(1); // Skip first empty option
+            const choicesData = options.map(option => ({
+                value: option.value,
+                label: option.text,
+                customProperties: {
+                    icon: option.dataset.icon,
+                    description: option.dataset.description
+                }
+            }));
+            
+            // Update Choices with custom properties
+            if (choicesData.length > 0) {
+                categorySelect.setChoices(choicesData, 'value', 'label', true);
+            }
+        });
+        
+        // Helper function to select category from sidebar click
+        function selectCategory(categoryName) {
+            const categorySelect = document.querySelector('#categorySelect');
+            const option = Array.from(categorySelect.options).find(opt => 
+                opt.text.toLowerCase() === categoryName.toLowerCase()
+            );
+            if (option) {
+                categorySelect.value = option.value;
+                // Trigger change event for Choices.js
+                categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+    </script>
 }
 
 

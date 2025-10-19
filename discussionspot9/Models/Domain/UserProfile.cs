@@ -15,6 +15,21 @@ namespace discussionspot9.Models.Domain
         public DateTime LastActive { get; set; }
         public int KarmaPoints { get; set; }
         public bool IsVerified { get; set; }
+        
+        /// <summary>
+        /// If true, user is currently site-banned
+        /// </summary>
+        public bool IsBanned { get; set; }
+        
+        /// <summary>
+        /// Ban expiration date (null = permanent ban)
+        /// </summary>
+        public DateTime? BanExpiresAt { get; set; }
+        
+        /// <summary>
+        /// Reason for ban (shown to user)
+        /// </summary>
+        public string? BanReason { get; set; }
 
         // Navigation property
         public virtual IdentityUser User { get; set; } = null!;

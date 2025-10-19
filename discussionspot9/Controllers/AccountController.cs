@@ -79,6 +79,11 @@ namespace DiscussionSpot9.Controllers
 
             if (result.Succeeded)
             {
+                // Clear authentication response cache to ensure fresh user data
+                Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                Response.Headers["Pragma"] = "no-cache";
+                Response.Headers["Expires"] = "0";
+                
                 TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {registerViewModel.DisplayName}! Your account has been created successfully.";
 
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -133,6 +138,11 @@ namespace DiscussionSpot9.Controllers
 
             if (result.Succeeded)
             {
+                // Clear authentication response cache to ensure fresh user data
+                Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                Response.Headers["Pragma"] = "no-cache";
+                Response.Headers["Expires"] = "0";
+                
                 TempData["SuccessMessage"] = "Welcome back!";
 
                 if (!string.IsNullOrEmpty(loginViewModel.ReturnUrl) && Url.IsLocalUrl(loginViewModel.ReturnUrl))
@@ -165,7 +175,8 @@ namespace DiscussionSpot9.Controllers
         public async Task<IActionResult> Logout()
         {
             await _userService.LogoutUserAsync();
-            TempData["InfoMessage"] = "You have been logged out successfully.";
+            // Don't set TempData message - it shows on wrong page after redirect
+            // User will see they're logged out from navbar (no user menu)
             return RedirectToAction("Index", "Home");
         }
         #endregion
@@ -513,6 +524,12 @@ namespace DiscussionSpot9.Controllers
                     if (signInResult.Succeeded)
                     {
                         await UpdateLastActiveAsync(existingUser.Id);
+                        
+                        // Clear authentication response cache to ensure fresh user data
+                        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                        Response.Headers["Pragma"] = "no-cache";
+                        Response.Headers["Expires"] = "0";
+                        
                         TempData["SuccessMessage"] = "Welcome back!";
                         return LocalRedirect(returnUrl);
                     }
@@ -526,6 +543,12 @@ namespace DiscussionSpot9.Controllers
                     {
                         await _signInManager.SignInAsync(existingUser, isPersistent: false);
                         await UpdateLastActiveAsync(existingUser.Id);
+                        
+                        // Clear authentication response cache to ensure fresh user data
+                        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                        Response.Headers["Pragma"] = "no-cache";
+                        Response.Headers["Expires"] = "0";
+                        
                         TempData["SuccessMessage"] = "External login added successfully!";
                         return LocalRedirect(returnUrl);
                     }
@@ -573,6 +596,12 @@ namespace DiscussionSpot9.Controllers
                         await _context.SaveChangesAsync();
 
                         await _signInManager.SignInAsync(user, isPersistent: false);
+                        
+                        // Clear authentication response cache to ensure fresh user data
+                        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                        Response.Headers["Pragma"] = "no-cache";
+                        Response.Headers["Expires"] = "0";
+                        
                         TempData["SuccessMessage"] = $"Welcome to DiscussionSpot, {name}! Your account has been created successfully.";
                         return LocalRedirect(returnUrl);
                     }

@@ -15,12 +15,14 @@ namespace discussionspot9.Services
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly ILogger<CommunityService> _logger;
+        private readonly IFileStorageService _fileStorageService;
 
-        public CommunityService(ApplicationDbContext context, IMemoryCache cache, ILogger<CommunityService> logger)
+        public CommunityService(ApplicationDbContext context, IMemoryCache cache, ILogger<CommunityService> logger, IFileStorageService fileStorageService)
         {
             _context = context;
             _cache = cache;
             _logger = logger;
+            _fileStorageService = fileStorageService;
         }
 
         //public async Task<CommunityListViewModel> GetAllCommunitiesAsync(string sort, int page)
@@ -197,6 +199,48 @@ namespace discussionspot9.Services
                 };
             }
 
+            // Process file uploads
+            string? iconUrl = null;
+            string? bannerUrl = null;
+
+            try
+            {
+                // Save community icon if uploaded
+                if (model.IconFile != null)
+                {
+                    _logger.LogInformation("Processing community icon upload for: {CommunityName}", model.Name);
+                    iconUrl = await _fileStorageService.SaveImageAsync(model.IconFile, "communities/icons", 256, 256);
+                    _logger.LogInformation("Community icon saved: {IconUrl}", iconUrl);
+                }
+                else if (!string.IsNullOrEmpty(model.IconUrl))
+                {
+                    // Use provided URL if no file uploaded
+                    iconUrl = model.IconUrl;
+                }
+
+                // Save community banner if uploaded
+                if (model.BannerFile != null)
+                {
+                    _logger.LogInformation("Processing community banner upload for: {CommunityName}", model.Name);
+                    bannerUrl = await _fileStorageService.SaveImageAsync(model.BannerFile, "communities/banners", 1920, 384);
+                    _logger.LogInformation("Community banner saved: {BannerUrl}", bannerUrl);
+                }
+                else if (!string.IsNullOrEmpty(model.BannerUrl))
+                {
+                    // Use provided URL if no file uploaded
+                    bannerUrl = model.BannerUrl;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading community images for: {CommunityName}", model.Name);
+                return new CreateCommunityResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Failed to upload images: {ex.Message}"
+                };
+            }
+
             var slug = model.Name.ToSlug();
             var community = new Community
             {
@@ -204,15 +248,16 @@ namespace discussionspot9.Services
                 Slug = slug,
                 Title = model.Title,
                 Description = model.Description,
-                ShortDescription = model.Description?.Length > 500 ?
-                    model.Description.Substring(0, 497) + "..." : model.Description,
+                ShortDescription = model.ShortDescription ?? (model.Description?.Length > 500 ?
+                    model.Description.Substring(0, 497) + "..." : model.Description),
                 CategoryId = model.CategoryId,
                 CreatorId = model.CreatorId,
                 CommunityType = model.CommunityType,
                 IsNSFW = model.IsNSFW,
                 Rules = model.Rules,
-                IconUrl = model.IconUrl,
-                BannerUrl = model.BannerUrl,
+                ThemeColor = model.ThemeColor ?? "#0079D3",
+                IconUrl = iconUrl,
+                BannerUrl = bannerUrl,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -233,39 +278,75 @@ namespace discussionspot9.Services
             community.MemberCount = 1;
             await _context.SaveChangesAsync();
 
+            _logger.LogInformation("Community created successfully: {CommunityName} (Slug: {Slug})", model.Name, slug);
             return new CreateCommunityResult { Success = true, Slug = slug };
         }
 
-        public async Task<ServiceResult> ToggleMembershipAsync(int communityId, string userId)
+        public async Task<ServiceResult<bool>> ToggleMembershipAsync(int communityId, string userId)
         {
-            var member = await _context.CommunityMembers
-                .FirstOrDefaultAsync(cm => cm.CommunityId == communityId && cm.UserId == userId);
+            try
+            {
+                _logger.LogInformation("ToggleMembershipAsync: CommunityId={CommunityId}, UserId={UserId}", communityId, userId);
+                
+                var member = await _context.CommunityMembers
+                    .FirstOrDefaultAsync(cm => cm.CommunityId == communityId && cm.UserId == userId);
 
-            var community = await _context.Communities.FindAsync(communityId);
-            if (community == null)
-            {
-                return ServiceResult.ErrorResult("Community not found.");
-            }
-
-            if (member != null)
-            {
-                _context.CommunityMembers.Remove(member);
-                community.MemberCount = Math.Max(0, community.MemberCount - 1);
-            }
-            else
-            {
-                _context.CommunityMembers.Add(new CommunityMember
+                var community = await _context.Communities.FindAsync(communityId);
+                if (community == null)
                 {
-                    UserId = userId,
-                    CommunityId = communityId,
-                    Role = "member",
-                    JoinedAt = DateTime.UtcNow
-                });
-                community.MemberCount++;
-            }
+                    _logger.LogWarning("Community not found: {CommunityId}", communityId);
+                    return new ServiceResult<bool> 
+                    { 
+                        Success = false, 
+                        ErrorMessage = "Community not found.",
+                        Data = false
+                    };
+                }
 
-            await _context.SaveChangesAsync();
-            return ServiceResult.SuccessResult();
+                bool isMember;
+                if (member != null)
+                {
+                    // User is leaving
+                    _logger.LogInformation("User {UserId} leaving community {CommunityId}", userId, communityId);
+                    _context.CommunityMembers.Remove(member);
+                    community.MemberCount = Math.Max(0, community.MemberCount - 1);
+                    isMember = false;
+                }
+                else
+                {
+                    // User is joining
+                    _logger.LogInformation("User {UserId} joining community {CommunityId}", userId, communityId);
+                    _context.CommunityMembers.Add(new CommunityMember
+                    {
+                        UserId = userId,
+                        CommunityId = communityId,
+                        Role = "member",
+                        JoinedAt = DateTime.UtcNow
+                    });
+                    community.MemberCount++;
+                    isMember = true;
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Membership toggled successfully. IsMember={IsMember}, NewCount={MemberCount}", isMember, community.MemberCount);
+                
+                return new ServiceResult<bool> 
+                { 
+                    Success = true, 
+                    Data = isMember,
+                    ErrorMessage = null
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ToggleMembershipAsync for community {CommunityId}, user {UserId}", communityId, userId);
+                return new ServiceResult<bool>
+                {
+                    Success = false,
+                    ErrorMessage = $"Database error: {ex.Message}",
+                    Data = false
+                };
+            }
         }
 
         public async Task<List<MemberViewModel>> GetCommunityMembersAsync(int communityId, int page = 1)

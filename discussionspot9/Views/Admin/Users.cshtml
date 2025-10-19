@@ -1,0 +1,448 @@
+@model List<discussionspot9.Models.Domain.UserProfile>
+@{
+    ViewData["Title"] = "User Management";
+    var currentPage = ViewBag.CurrentPage ?? 1;
+    var totalPages = ViewBag.TotalPages ?? 1;
+    var search = ViewBag.Search ?? "";
+    var userActivities = ViewBag.UserActivities as Dictionary<string, int> ?? new Dictionary<string, int>();
+}
+
+<link rel="stylesheet" href="~/css/admin-panel.css" />
+
+<div class="admin-container">
+    <div class="admin-header">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="admin-title">
+                    <i class="fas fa-users"></i> User Management
+                </h1>
+                <p class="admin-subtitle">Manage user roles, permissions, and bans</p>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6">@ViewBag.TotalUsers Total Users</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="admin-toolbar">
+        <form method="get" class="search-form">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" name="search" value="@search" placeholder="Search by name or email...">
+                <button type="submit" class="btn btn-primary">Search</button>
+                @if (!string.IsNullOrEmpty(search))
+                {
+                    <a href="/admin/manage/users" class="btn btn-secondary">Clear</a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="admin-card">
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Joined</th>
+                        <th>Activity</th>
+                        <th>Karma</th>
+                        <th>Status</th>
+                        <th>Roles</th>
+                        <th style="width: 200px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr data-user-id="@user.UserId">
+                            <td>@((currentPage - 1) * 20 + Model.IndexOf(user) + 1)</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    @using discussionspot9.Helpers
+                                    <img src="@AvatarHelper.GetAvatarUrl(user.DisplayName, user.AvatarUrl, 32)" 
+                                         alt="@user.DisplayName" 
+                                         class="rounded-circle" 
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <div>
+                                        <strong>@user.DisplayName</strong>
+                                        @if (user.IsVerified)
+                                        {
+                                            <i class="fas fa-check-circle text-primary" title="Verified"></i>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted">@user.User.Email</small>
+                            </td>
+                            <td>
+                                <small>@user.JoinDate.ToString("MMM dd, yyyy")</small>
+                            </td>
+                            <td>
+                                @if (userActivities.ContainsKey(user.UserId))
+                                {
+                                    <span class="badge bg-success">@userActivities[user.UserId] actions</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-info">@user.KarmaPoints</span>
+                            </td>
+                            <td>
+                                @if (user.IsBanned)
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-ban"></i> Banned
+                                    </span>
+                                    @if (user.BanExpiresAt.HasValue)
+                                    {
+                                        <br><small class="text-muted">Until: @user.BanExpiresAt.Value.ToString("MMM dd")</small>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Active
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div id="user-roles-@user.UserId">
+                                    <span class="badge bg-secondary">Loading...</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical w-100" role="group">
+                                    <button class="btn btn-sm btn-primary" onclick="openRoleModal('@user.UserId', '@user.DisplayName')">
+                                        <i class="fas fa-user-shield"></i> Roles
+                                    </button>
+                                    @if (!user.IsBanned)
+                                    {
+                                        <button class="btn btn-sm btn-danger" onclick="openBanModal('@user.UserId', '@user.DisplayName')">
+                                            <i class="fas fa-ban"></i> Ban
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success" onclick="unbanUser('@user.UserId')">
+                                            <i class="fas fa-check-circle"></i> Unban
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            <a class="page-link" href="?page=@i@(string.IsNullOrEmpty(search) ? "" : $"&search={search}")">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+
+<!-- Assign Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-shield"></i> Manage User Roles
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Managing roles for: <strong id="roleModalUserName"></strong></p>
+                <input type="hidden" id="roleModalUserId">
+                
+                <div class="mb-3">
+                    <label class="form-label"><strong>Current Roles:</strong></label>
+                    <div id="currentRoles" class="mb-2">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="roleSelect" class="form-label"><strong>Add Role:</strong></label>
+                    <select id="roleSelect" class="form-select">
+                        <option value="">Select a role to add</option>
+                        <option value="SiteAdmin">🛡️ Site Admin (Full platform control)</option>
+                        <option value="Moderator">⚖️ Moderator (Platform moderation)</option>
+                        <option value="Verified">✓ Verified (Verified user badge)</option>
+                        <option value="VIP">⭐ VIP (Special privileges)</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn btn-primary w-100" onclick="assignRole()">
+                    <i class="fas fa-plus"></i> Assign Selected Role
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ban User Modal -->
+<div class="modal fade" id="banModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-ban"></i> Ban User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> This will ban the user site-wide and remove all their permissions.
+                </div>
+                
+                <p>Banning user: <strong id="banModalUserName"></strong></p>
+                <input type="hidden" id="banModalUserId">
+                @Html.AntiForgeryToken()
+                
+                <div class="mb-3">
+                    <label for="banReason" class="form-label"><strong>Ban Reason (Required):</strong></label>
+                    <textarea id="banReason" class="form-control" rows="3" placeholder="Explain why this user is being banned..." required></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="banDuration" class="form-label"><strong>Ban Duration:</strong></label>
+                    <select id="banDuration" class="form-select">
+                        <option value="1">1 Day</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">7 Days (1 Week)</option>
+                        <option value="14">14 Days (2 Weeks)</option>
+                        <option value="30">30 Days (1 Month)</option>
+                        <option value="90">90 Days (3 Months)</option>
+                        <option value="365">365 Days (1 Year)</option>
+                        <option value="0" selected>Permanent</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn btn-danger w-100" onclick="confirmBan()">
+                    <i class="fas fa-ban"></i> Confirm Ban
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Load user roles on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userRows = document.querySelectorAll('[data-user-id]');
+            for (const row of userRows) {
+                const userId = row.dataset.userId;
+                await loadUserRoles(userId);
+            }
+        });
+        
+        async function loadUserRoles(userId) {
+            // For now, show placeholder - will implement API endpoint
+            const rolesDiv = document.getElementById(`user-roles-${userId}`);
+            rolesDiv.innerHTML = '<span class="badge bg-secondary">Member</span>';
+        }
+        
+        function openRoleModal(userId, userName) {
+            document.getElementById('roleModalUserId').value = userId;
+            document.getElementById('roleModalUserName').textContent = userName;
+            document.getElementById('currentRoles').innerHTML = '<span class="badge bg-secondary">Loading...</span>';
+            
+            const modal = new bootstrap.Modal(document.getElementById('roleModal'));
+            modal.show();
+            
+            // Load current roles (implement API call later)
+            loadCurrentRoles(userId);
+        }
+        
+        async function loadCurrentRoles(userId) {
+            // Placeholder - will implement with API
+            const rolesDiv = document.getElementById('currentRoles');
+            rolesDiv.innerHTML = `
+                <span class="badge bg-secondary me-1">
+                    Member
+                    <i class="fas fa-times ms-1" style="cursor: pointer;" onclick="removeRole('${userId}', 'Member')"></i>
+                </span>
+            `;
+        }
+        
+        async function assignRole() {
+            const userId = document.getElementById('roleModalUserId').value;
+            const roleName = document.getElementById('roleSelect').value;
+            
+            if (!roleName) {
+                alert('Please select a role to assign');
+                return;
+            }
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            try {
+                const response = await fetch('/admin/manage/user/assign-role', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'roleName': roleName,
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload(); // Refresh to show updated roles
+                } else {
+                    alert(result.message || 'Failed to assign role');
+                }
+            } catch (error) {
+                console.error('Error assigning role:', error);
+                alert('An error occurred while assigning the role');
+            }
+        }
+        
+        async function removeRole(userId, roleName) {
+            if (!confirm(`Remove '${roleName}' role from this user?`)) {
+                return;
+            }
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            try {
+                const response = await fetch('/admin/manage/user/remove-role', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'roleName': roleName,
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to remove role');
+                }
+            } catch (error) {
+                console.error('Error removing role:', error);
+                alert('An error occurred while removing the role');
+            }
+        }
+        
+        function openBanModal(userId, userName) {
+            document.getElementById('banModalUserId').value = userId;
+            document.getElementById('banModalUserName').textContent = userName;
+            document.getElementById('banReason').value = '';
+            document.getElementById('banDuration').value = '0';
+            
+            const modal = new bootstrap.Modal(document.getElementById('banModal'));
+            modal.show();
+        }
+        
+        async function confirmBan() {
+            const userId = document.getElementById('banModalUserId').value;
+            const reason = document.getElementById('banReason').value;
+            const durationDays = parseInt(document.getElementById('banDuration').value);
+            
+            if (!reason.trim()) {
+                alert('Ban reason is required');
+                return;
+            }
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const isPermanent = durationDays === 0;
+            
+            try {
+                const response = await fetch('/admin/manage/user/ban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'reason': reason,
+                        'banDurationDays': durationDays.toString(),
+                        'isPermanent': isPermanent.toString(),
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('User banned successfully');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to ban user');
+                }
+            } catch (error) {
+                console.error('Error banning user:', error);
+                alert('An error occurred while banning the user');
+            }
+        }
+        
+        async function unbanUser(userId) {
+            const reason = prompt('Reason for unbanning (optional):');
+            if (reason === null) return; // Cancelled
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            try {
+                const response = await fetch('/admin/manage/user/unban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'reason': reason || 'Unbanned by administrator',
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('User unbanned successfully');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to unban user');
+                }
+            } catch (error) {
+                console.error('Error unbanning user:', error);
+                alert('An error occurred while unbanning the user');
+            }
+        }
+    </script>
+}
+

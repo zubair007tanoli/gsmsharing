@@ -28,7 +28,7 @@
     <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
     <meta property="og:title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
     <meta property="og:description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more.")">
-    <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-default.png")">
+    <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
     <meta property="og:site_name" content="DiscussionSpot">
     <meta property="og:locale" content="en_US">
     
@@ -37,14 +37,26 @@
     <meta name="twitter:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
     <meta name="twitter:title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
     <meta name="twitter:description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more.")">
-    <meta name="twitter:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-default.png")">
+    <meta name="twitter:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
     
     <!-- Google AdSense -->
     <meta name="google-adsense-account" content="ca-pub-5934633595595089">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="~/Assets/Logo_Auth.png">
+    <link rel="shortcut icon" type="image/png" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="~/Assets/Logo_Auth.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="~/Assets/Logo_Auth.png">
+    <meta name="msapplication-TileImage" content="~/Assets/Logo_Auth.png">
+    <meta name="msapplication-TileColor" content="#2dd4bf">
     
     <!-- DNS Prefetch for performance -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com">

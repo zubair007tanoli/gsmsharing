@@ -19,6 +19,11 @@ namespace discussionspot9.Components
 
         public async Task<IViewComponentResult> InvokeAsync()
         {
+            // Disable caching for authentication-dependent content
+            ViewContext.HttpContext.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            ViewContext.HttpContext.Response.Headers["Pragma"] = "no-cache";
+            ViewContext.HttpContext.Response.Headers["Expires"] = "0";
+            
             var model = new HeaderViewModel();
 
             if (User.Identity?.IsAuthenticated == true)
@@ -32,6 +37,7 @@ namespace discussionspot9.Components
 
                     // Get user profile data
                     var userProfile = await _context.UserProfiles
+                        .AsNoTracking()  // Add AsNoTracking for better performance
                         .FirstOrDefaultAsync(p => p.UserId == user.Id);
 
                     if (userProfile != null)

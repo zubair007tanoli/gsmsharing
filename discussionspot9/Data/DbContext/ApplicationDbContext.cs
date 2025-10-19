@@ -54,6 +54,11 @@ namespace discussionspot9.Data.DbContext
         public DbSet<ChatRoomMember> ChatRoomMembers { get; set; }
         public DbSet<UserPresence> UserPresences { get; set; }
         public DbSet<ChatAd> ChatAds { get; set; }
+        
+        // Admin & Moderation System tables
+        public DbSet<UserBan> UserBans { get; set; }
+        public DbSet<ModerationLog> ModerationLogs { get; set; }
+        public DbSet<SiteRole> SiteRoles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

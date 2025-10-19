@@ -46,6 +46,7 @@
                             <th>Last Active</th>
                             <th>Activity (30d)</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -82,14 +83,45 @@
                                     <span class="badge bg-info">@activityCount actions</span>
                                 </td>
                                 <td>
-                                    @if (isActive)
+                                    @if (user.IsBanned)
                                     {
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban"></i> Banned
+                                        </span>
+                                        @if (user.BanExpiresAt.HasValue)
+                                        {
+                                            <br><small class="text-muted">Until: @user.BanExpiresAt.Value.ToString("MMM dd")</small>
+                                        }
+                                    }
+                                    else if (isActive)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Active
+                                        </span>
                                     }
                                     else
                                     {
                                         <span class="badge bg-secondary">Inactive</span>
                                     }
+                                </td>
+                                <td>
+                                    <div class="btn-group-vertical" role="group">
+                                        <button class="btn btn-sm btn-primary" onclick="openRoleModal('@user.UserId', '@user.DisplayName')">
+                                            <i class="fas fa-user-shield"></i> Roles
+                                        </button>
+                                        @if (!user.IsBanned)
+                                        {
+                                            <button class="btn btn-sm btn-danger" onclick="openBanModal('@user.UserId', '@user.DisplayName')">
+                                                <i class="fas fa-ban"></i> Ban
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-success" onclick="unbanUser('@user.UserId', '@user.DisplayName')">
+                                                <i class="fas fa-check-circle"></i> Unban
+                                            </button>
+                                        }
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -114,4 +146,218 @@
         </div>
     </div>
 </div>
+
+<!-- Assign Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-shield"></i> Manage User Roles
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Managing roles for: <strong id="roleModalUserName"></strong></p>
+                <input type="hidden" id="roleModalUserId">
+                @Html.AntiForgeryToken()
+                
+                <div class="mb-3">
+                    <label for="roleSelect" class="form-label"><strong>Assign Role:</strong></label>
+                    <select id="roleSelect" class="form-select">
+                        <option value="">Select a role</option>
+                        <option value="SiteAdmin">🛡️ Site Admin - Full platform control</option>
+                        <option value="Moderator">⚖️ Moderator - Platform moderation</option>
+                        <option value="Verified">✓ Verified - Verified user badge</option>
+                        <option value="VIP">⭐ VIP - Special privileges</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn btn-primary w-100" onclick="assignRole()">
+                    <i class="fas fa-plus"></i> Assign Selected Role
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ban User Modal -->
+<div class="modal fade" id="banModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-ban"></i> Ban User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> This will ban the user site-wide.
+                </div>
+                
+                <p>Banning user: <strong id="banModalUserName"></strong></p>
+                <input type="hidden" id="banModalUserId">
+                
+                <div class="mb-3">
+                    <label for="banReason" class="form-label"><strong>Ban Reason (Required):</strong></label>
+                    <textarea id="banReason" class="form-control" rows="3" placeholder="Explain why..." required></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="banDuration" class="form-label"><strong>Ban Duration:</strong></label>
+                    <select id="banDuration" class="form-select">
+                        <option value="1">1 Day</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">7 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="90">90 Days</option>
+                        <option value="365">1 Year</option>
+                        <option value="0" selected>Permanent</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn btn-danger w-100" onclick="confirmBan()">
+                    <i class="fas fa-ban"></i> Confirm Ban
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openRoleModal(userId, userName) {
+            document.getElementById('roleModalUserId').value = userId;
+            document.getElementById('roleModalUserName').textContent = userName;
+            document.getElementById('roleSelect').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('roleModal'));
+            modal.show();
+        }
+        
+        async function assignRole() {
+            const userId = document.getElementById('roleModalUserId').value;
+            const roleName = document.getElementById('roleSelect').value;
+            
+            if (!roleName) {
+                alert('Please select a role');
+                return;
+            }
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            try {
+                const response = await fetch('/admin/manage/user/assign-role', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'roleName': roleName,
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to assign role');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred');
+            }
+        }
+        
+        function openBanModal(userId, userName) {
+            document.getElementById('banModalUserId').value = userId;
+            document.getElementById('banModalUserName').textContent = userName;
+            document.getElementById('banReason').value = '';
+            document.getElementById('banDuration').value = '0';
+            
+            const modal = new bootstrap.Modal(document.getElementById('banModal'));
+            modal.show();
+        }
+        
+        async function confirmBan() {
+            const userId = document.getElementById('banModalUserId').value;
+            const reason = document.getElementById('banReason').value;
+            const durationDays = parseInt(document.getElementById('banDuration').value);
+            
+            if (!reason.trim()) {
+                alert('Ban reason is required');
+                return;
+            }
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const isPermanent = durationDays === 0;
+            
+            try {
+                const response = await fetch('/admin/manage/user/ban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'reason': reason,
+                        'banDurationDays': durationDays.toString(),
+                        'isPermanent': isPermanent.toString(),
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('User banned successfully');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to ban user');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred');
+            }
+        }
+        
+        async function unbanUser(userId, userName) {
+            const reason = prompt(`Reason for unbanning ${userName}:`);
+            if (reason === null) return;
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            try {
+                const response = await fetch('/admin/manage/user/unban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'userId': userId,
+                        'reason': reason || 'Unbanned by admin',
+                        '__RequestVerificationToken': token
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('User unbanned successfully');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to unban user');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred');
+            }
+        }
+    </script>
+}
 

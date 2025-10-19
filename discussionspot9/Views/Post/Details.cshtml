@@ -9,7 +9,7 @@
     
     var imageUrl = Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "image")
         ? Model.Post.Media.First(m => m.MediaType == "image").Url
-        : $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-default.png";
+        : $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
     
     var tags = Model.Post.Tags != null && Model.Post.Tags.Any() 
         ? string.Join(", ", Model.Post.Tags) 

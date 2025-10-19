@@ -1,7 +1,9 @@
 using discussionspot9.Data.DbContext;
+using discussionspot9.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace discussionspot9.Controllers
 {
@@ -11,13 +13,23 @@ namespace discussionspot9.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AdminManagementController> _logger;
+        private readonly IAdminService _adminService;
 
         public AdminManagementController(
             ApplicationDbContext context,
-            ILogger<AdminManagementController> logger)
+            ILogger<AdminManagementController> logger,
+            IAdminService adminService)
         {
             _context = context;
             _logger = logger;
+            _adminService = adminService;
+        }
+        
+        private async Task<bool> IsCurrentUserAdmin()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return false;
+            return await _adminService.IsUserSiteAdminAsync(userId);
         }
 
         // Users Management
@@ -202,6 +214,180 @@ namespace discussionspot9.Controllers
 
             TempData["SuccessMessage"] = "Post deleted";
             return RedirectToAction(nameof(Posts));
+        }
+        
+        // ===============================================
+        // USER ROLE & BAN MANAGEMENT (NEW)
+        // ===============================================
+        
+        /// <summary>
+        /// Assign a site-wide role to a user
+        /// </summary>
+        [HttpPost("user/assign-role")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignUserRole(string userId, string roleName)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized - SiteAdmin role required" });
+            }
+            
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            var result = await _adminService.AssignSiteRoleAsync(userId, roleName, currentUserId);
+            
+            if (result)
+            {
+                _logger.LogInformation("Site role {RoleName} assigned to user {UserId} by {AdminId}", roleName, userId, currentUserId);
+                return Json(new { success = true, message = $"Role '{roleName}' assigned successfully" });
+            }
+            
+            return Json(new { success = false, message = "Failed to assign role" });
+        }
+        
+        /// <summary>
+        /// Remove a site-wide role from a user
+        /// </summary>
+        [HttpPost("user/remove-role")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveUserRole(string userId, string roleName)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized - SiteAdmin role required" });
+            }
+            
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            var result = await _adminService.RemoveSiteRoleAsync(userId, roleName, currentUserId);
+            
+            if (result)
+            {
+                _logger.LogInformation("Site role {RoleName} removed from user {UserId} by {AdminId}", roleName, userId, currentUserId);
+                return Json(new { success = true, message = $"Role '{roleName}' removed successfully" });
+            }
+            
+            return Json(new { success = false, message = "Failed to remove role" });
+        }
+        
+        /// <summary>
+        /// Ban a user site-wide
+        /// </summary>
+        [HttpPost("user/ban")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BanUser(string userId, string reason, int? banDurationDays, bool isPermanent)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized - SiteAdmin role required" });
+            }
+            
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return Json(new { success = false, message = "Ban reason is required" });
+            }
+            
+            DateTime? expiresAt = null;
+            if (!isPermanent && banDurationDays.HasValue && banDurationDays.Value > 0)
+            {
+                expiresAt = DateTime.UtcNow.AddDays(banDurationDays.Value);
+            }
+            
+            var result = await _adminService.BanUserAsync(userId, currentUserId, reason, expiresAt, isPermanent);
+            
+            if (result)
+            {
+                _logger.LogInformation("User {UserId} banned by {AdminId}. Reason: {Reason}, Duration: {Duration}", 
+                    userId, currentUserId, reason, isPermanent ? "Permanent" : $"{banDurationDays} days");
+                return Json(new { success = true, message = "User banned successfully" });
+            }
+            
+            return Json(new { success = false, message = "Failed to ban user (may already be banned)" });
+        }
+        
+        /// <summary>
+        /// Unban a user
+        /// </summary>
+        [HttpPost("user/unban")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnbanUser(string userId, string reason)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized - SiteAdmin role required" });
+            }
+            
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                reason = "Ban lifted by administrator";
+            }
+            
+            var result = await _adminService.UnbanUserAsync(userId, currentUserId, reason);
+            
+            if (result)
+            {
+                _logger.LogInformation("User {UserId} unbanned by {AdminId}. Reason: {Reason}", userId, currentUserId, reason);
+                return Json(new { success = true, message = "User unbanned successfully" });
+            }
+            
+            return Json(new { success = false, message = "Failed to unban user (may not be banned)" });
+        }
+        
+        /// <summary>
+        /// Get user details for admin panel
+        /// </summary>
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> UserDetail(string userId)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Forbid();
+            }
+            
+            var userDetail = await _adminService.GetUserDetailAsync(userId);
+            if (userDetail == null)
+            {
+                return NotFound();
+            }
+            
+            return View(userDetail);
+        }
+        
+        /// <summary>
+        /// Get moderation logs
+        /// </summary>
+        [HttpGet("moderation-logs")]
+        public async Task<IActionResult> ModerationLogs(int page = 1)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Forbid();
+            }
+            
+            var logs = await _adminService.GetModerationLogsAsync(page, 50);
+            ViewBag.CurrentPage = page;
+            
+            return View(logs);
         }
     }
 }

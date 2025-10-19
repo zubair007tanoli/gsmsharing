@@ -19,6 +19,8 @@ namespace discussionspot9.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
+        private readonly IAdminService _adminService;
+        
         public CommunityController(
             ICommunityService communityService,
             IPostService postService,
@@ -26,7 +28,8 @@ namespace discussionspot9.Controllers
             ILogger<CommunityController> logger,
             ApplicationDbContext context,
             UserManager<IdentityUser> userManager,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IAdminService adminService)
         {
             _communityService = communityService;
             _postService = postService;
@@ -35,6 +38,7 @@ namespace discussionspot9.Controllers
             _context = context;
             _userManager = userManager;
             _httpContextAccessor = httpContextAccessor;
+            _adminService = adminService;
         }
 
         /// <summary>
@@ -202,8 +206,60 @@ namespace discussionspot9.Controllers
             var model = new CreateCommunityViewModel();
             await LoadCategories(model);
             
+            // Get popular categories with community counts
+            var popularCategories = await _context.Communities
+                .Where(c => !c.IsDeleted && c.Category != null)
+                .GroupBy(c => new { c.Category.CategoryId, c.Category.Name })
+                .Select(g => new 
+                { 
+                    CategoryName = g.Key.Name,
+                    CommunityCount = g.Count()
+                })
+                .OrderByDescending(x => x.CommunityCount)
+                .Take(4)
+                .ToListAsync();
+            
+            ViewData["PopularCategories"] = popularCategories;
             ViewData["ReturnUrl"] = returnUrl;
             return View(model);
+        }
+        
+        /// <summary>
+        /// Community Settings - Admin/Moderator only
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("r/{slug}/settings")]
+        public async Task<IActionResult> Settings(string slug)
+        {
+            if (string.IsNullOrEmpty(slug))
+            {
+                return NotFound();
+            }
+            
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+            
+            var community = await _communityService.GetCommunityDetailsAsync(slug);
+            if (community == null)
+            {
+                return NotFound();
+            }
+            
+            // Check if user is admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(community.CommunityId, userId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(community.CommunityId, userId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access community settings";
+                return RedirectToAction("Details", new { communitySlug = slug });
+            }
+            
+            return View(community);
         }
 
         /// <summary>
@@ -268,24 +324,42 @@ namespace discussionspot9.Controllers
         [HttpPost]
         [Route("api/community/togglemembership")]
         [Authorize]
-        public async Task<IActionResult> ToggleMembership(int communityId)
+        public async Task<IActionResult> ToggleMembership([FromBody] ToggleMembershipRequest request)
         {
             try
             {
+                _logger.LogInformation("ToggleMembership called for community {CommunityId}", request?.CommunityId);
+                
+                if (request == null || request.CommunityId <= 0)
+                {
+                    _logger.LogWarning("Invalid request: CommunityId is {CommunityId}", request?.CommunityId);
+                    return Json(new { success = false, message = "Invalid community ID" });
+                }
+
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
+                    _logger.LogWarning("User not authenticated");
                     return Json(new { success = false, message = "User not authenticated" });
                 }
 
-                var result = await _communityService.ToggleMembershipAsync(communityId, userId);
+                _logger.LogInformation("User {UserId} toggling membership for community {CommunityId}", userId, request.CommunityId);
+                var result = await _communityService.ToggleMembershipAsync(request.CommunityId, userId);
+                
+                _logger.LogInformation("Toggle result: {Success}, IsMember: {IsMember}", result.Success, result.Data);
                 return Json(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error toggling community membership");
-                return Json(new { success = false, message = "An error occurred" });
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
             }
+        }
+        
+        // Request model for toggle membership
+        public class ToggleMembershipRequest
+        {
+            public int CommunityId { get; set; }
         }
 
         /// <summary>
@@ -321,7 +395,9 @@ namespace discussionspot9.Controllers
                     .Select(c => new CategoryDropdownItem
                     {
                         CategoryId = c.CategoryId,
-                        Name = c.Name
+                        Name = c.Name,
+                        Icon = GetCategoryIcon(c.Name), // Auto-assign icons based on name
+                        Description = c.Description
                     })
                     .ToListAsync();
 
@@ -334,6 +410,37 @@ namespace discussionspot9.Controllers
                 throw;
             }
         }
+        
+        /// <summary>
+        /// Get appropriate FontAwesome icon for category name
+        /// </summary>
+        private static string GetCategoryIcon(string categoryName)
+        {
+            return categoryName.ToLower() switch
+            {
+                var name when name.Contains("tech") || name.Contains("programming") => "fa-microchip",
+                var name when name.Contains("gaming") || name.Contains("game") => "fa-gamepad",
+                var name when name.Contains("science") => "fa-flask",
+                var name when name.Contains("sport") => "fa-football-ball",
+                var name when name.Contains("entertain") || name.Contains("movie") => "fa-film",
+                var name when name.Contains("business") => "fa-briefcase",
+                var name when name.Contains("health") || name.Contains("fitness") => "fa-heartbeat",
+                var name when name.Contains("education") || name.Contains("learning") => "fa-graduation-cap",
+                var name when name.Contains("music") => "fa-music",
+                var name when name.Contains("art") || name.Contains("design") => "fa-palette",
+                var name when name.Contains("food") || name.Contains("cooking") => "fa-utensils",
+                var name when name.Contains("travel") => "fa-plane",
+                var name when name.Contains("news") => "fa-newspaper",
+                var name when name.Contains("photo") => "fa-camera",
+                var name when name.Contains("book") || name.Contains("read") => "fa-book",
+                var name when name.Contains("car") || name.Contains("auto") => "fa-car",
+                var name when name.Contains("fashion") => "fa-tshirt",
+                var name when name.Contains("home") || name.Contains("garden") => "fa-home",
+                var name when name.Contains("pet") || name.Contains("animal") => "fa-paw",
+                var name when name.Contains("finance") || name.Contains("money") => "fa-dollar-sign",
+                _ => "fa-folder" // Default icon
+            };
+        }
 
         /// <summary>
         /// Validates category selection against database
@@ -344,6 +451,271 @@ namespace discussionspot9.Controllers
 
             return await _context.Categories
                 .AnyAsync(c => c.CategoryId == categoryId && c.IsActive);
+        }
+        
+        // ===============================================
+        // COMMUNITY MODERATION (NEW)
+        // ===============================================
+        
+        /// <summary>
+        /// Ban user from community (Community Admin/Moderator only)
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        [Route("api/community/ban-member")]
+        public async Task<IActionResult> BanMemberFromCommunity(int communityId, string userId, string reason, int? banDurationDays)
+        {
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            // Check if current user is community admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(communityId, currentUserId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(communityId, currentUserId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                return Json(new { success = false, message = "Insufficient permissions - Admin or Moderator role required" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return Json(new { success = false, message = "Ban reason is required" });
+            }
+            
+            DateTime? expiresAt = null;
+            if (banDurationDays.HasValue && banDurationDays.Value > 0)
+            {
+                expiresAt = DateTime.UtcNow.AddDays(banDurationDays.Value);
+            }
+            
+            var result = await _adminService.BanUserFromCommunityAsync(userId, communityId, currentUserId, reason, expiresAt);
+            
+            if (result)
+            {
+                _logger.LogInformation("User {UserId} banned from community {CommunityId} by {ModeratorId}", userId, communityId, currentUserId);
+                return Json(new { success = true, message = "User banned from community" });
+            }
+            
+            return Json(new { success = false, message = "Failed to ban user from community" });
+        }
+        
+        /// <summary>
+        /// Unban user from community
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        [Route("api/community/unban-member")]
+        public async Task<IActionResult> UnbanMemberFromCommunity(int communityId, string userId)
+        {
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            // Check if current user is community admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(communityId, currentUserId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(communityId, currentUserId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                return Json(new { success = false, message = "Insufficient permissions - Admin or Moderator role required" });
+            }
+            
+            var result = await _adminService.UnbanUserFromCommunityAsync(userId, communityId, currentUserId);
+            
+            if (result)
+            {
+                _logger.LogInformation("User {UserId} unbanned from community {CommunityId} by {ModeratorId}", userId, communityId, currentUserId);
+                return Json(new { success = true, message = "User unbanned from community" });
+            }
+            
+            return Json(new { success = false, message = "Failed to unban user from community" });
+        }
+        
+        /// <summary>
+        /// Change community member role (Community Admin only)
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        [Route("api/community/change-member-role")]
+        public async Task<IActionResult> ChangeMemberRole(int communityId, string userId, string newRole)
+        {
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            // Check if current user is community admin
+            var isAdmin = await _communityService.IsCommunityAdminAsync(communityId, currentUserId);
+            
+            if (!isAdmin)
+            {
+                return Json(new { success = false, message = "Only community admins can change member roles" });
+            }
+            
+            // Validate role
+            if (newRole != "member" && newRole != "moderator" && newRole != "admin")
+            {
+                return Json(new { success = false, message = "Invalid role. Must be 'member', 'moderator', or 'admin'" });
+            }
+            
+            var result = await _communityService.PromoteDemoteCommunityMemberAsync(communityId, userId, newRole, currentUserId);
+            
+            if (result.Success)
+            {
+                _logger.LogInformation("User {UserId} role changed to {NewRole} in community {CommunityId} by {AdminId}", 
+                    userId, newRole, communityId, currentUserId);
+                    
+                // Log to moderation system
+                await _adminService.LogModerationActionAsync(currentUserId, userId, "role_change_community", 
+                    $"Role changed to {newRole}", null, communityId);
+            }
+            
+            return Json(result);
+        }
+        
+        /// <summary>
+        /// Get community members for moderation (Admin/Moderator only)
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("api/community/members-management/{communityId}")]
+        public async Task<IActionResult> GetMembersForManagement(int communityId, int page = 1)
+        {
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            // Check if current user is community admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(communityId, currentUserId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(communityId, currentUserId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                return Json(new { success = false, message = "Insufficient permissions" });
+            }
+            
+            var members = await _communityService.GetCommunityMembersAsync(communityId, page);
+            return Json(new { success = true, members });
+        }
+        
+        /// <summary>
+        /// Get user's communities (for sidebar)
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("api/community/user-communities")]
+        public async Task<IActionResult> GetUserCommunities()
+        {
+            try
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "Not authenticated" });
+                }
+                
+                var communities = await _context.CommunityMembers
+                    .Where(m => m.UserId == userId)
+                    .Include(m => m.Community)
+                    .OrderByDescending(m => m.JoinedAt)
+                    .Take(10)
+                    .Select(m => new
+                    {
+                        slug = m.Community.Slug,
+                        name = m.Community.Name,
+                        iconUrl = m.Community.IconUrl,
+                        memberCount = m.Community.MemberCount,
+                        isAdmin = m.Role == "admin",
+                        isModerator = m.Role == "moderator"
+                    })
+                    .ToListAsync();
+                
+                return Json(new { success = true, communities });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching user communities");
+                return Json(new { success = false, message = "Error loading communities" });
+            }
+        }
+        
+        /// <summary>
+        /// Get suggested/popular communities (for sidebar)
+        /// </summary>
+        [HttpGet]
+        [Route("api/community/suggested")]
+        public async Task<IActionResult> GetSuggestedCommunities(int limit = 5, int? exclude = null)
+        {
+            try
+            {
+                var query = _context.Communities
+                    .Where(c => !c.IsDeleted);
+                
+                if (exclude.HasValue)
+                {
+                    query = query.Where(c => c.CommunityId != exclude.Value);
+                }
+                
+                var communities = await query
+                    .OrderByDescending(c => c.MemberCount)
+                    .Take(limit)
+                    .Select(c => new
+                    {
+                        slug = c.Slug,
+                        name = c.Name,
+                        iconUrl = c.IconUrl,
+                        memberCount = c.MemberCount,
+                        postCount = c.PostCount
+                    })
+                    .ToListAsync();
+                
+                return Json(new { success = true, communities });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching suggested communities");
+                return Json(new { success = false, message = "Error loading suggestions" });
+            }
+        }
+        
+        /// <summary>
+        /// Get popular communities (fallback)
+        /// </summary>
+        [HttpGet]
+        [Route("api/community/popular")]
+        public async Task<IActionResult> GetPopularCommunities(int limit = 5)
+        {
+            try
+            {
+                var communities = await _context.Communities
+                    .Where(c => !c.IsDeleted)
+                    .OrderByDescending(c => c.MemberCount)
+                    .ThenByDescending(c => c.PostCount)
+                    .Take(limit)
+                    .Select(c => new
+                    {
+                        slug = c.Slug,
+                        name = c.Name,
+                        iconUrl = c.IconUrl,
+                        memberCount = c.MemberCount
+                    })
+                    .ToListAsync();
+                
+                return Json(new { communities });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching popular communities");
+                return Json(new { communities = new List<object>() });
+            }
         }
     }
 }

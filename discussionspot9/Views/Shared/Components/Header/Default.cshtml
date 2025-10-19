@@ -137,16 +137,12 @@
                                     }
                                     else
                                     {
-                                        <div class="avatar">
-                                            @if (!string.IsNullOrEmpty(Model.DisplayName))
-                                            {
-                                                @Model.DisplayName.Substring(0, Math.Min(2, Model.DisplayName.Length)).ToUpper()
-                                            }
-                                            else
-                                            {
-                                                <span>U</span>
-                                            }
-                                        </div>
+                                        @* Use AvatarHelper for dynamic avatar generation *@
+                                        @using discussionspot9.Helpers
+                                        <img src="@AvatarHelper.GetAvatarUrl(Model.DisplayName, null, 40)" 
+                                             alt="@Model.DisplayName" 
+                                             class="avatar"
+                                             style="border-radius: 50%; width: 40px; height: 40px; object-fit: cover;" />
                                     }
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">

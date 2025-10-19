@@ -208,6 +208,16 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IPresenceService, PresenceService>();
 builder.Services.AddScoped<IChatAdService, ChatAdService>();
 
+// =============================================
+// FILE STORAGE SERVICE
+// =============================================
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+
+// =============================================
+// ADMIN & MODERATION SYSTEM
+// =============================================
+builder.Services.AddScoped<IAdminService, AdminService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

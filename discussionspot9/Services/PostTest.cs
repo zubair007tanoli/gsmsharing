@@ -11,10 +11,14 @@ namespace discussionspot9.Services
     public class PostTest: IPostTest
     {
         private readonly ApplicationDbContext _context;
+        private readonly IFileStorageService _fileStorageService;
+        private readonly ILogger<PostTest> _logger;
 
-        public PostTest(ApplicationDbContext context)
+        public PostTest(ApplicationDbContext context, IFileStorageService fileStorageService, ILogger<PostTest> logger)
         {
             _context = context;
+            _fileStorageService = fileStorageService;
+            _logger = logger;
         }
 
         public async Task<CreatePostResult> CreatePostUpdatedAsync(CreatePostViewModel model)
@@ -135,33 +139,47 @@ namespace discussionspot9.Services
 
             foreach (var file in model.MediaFiles)
             {
-                // Determine media type based on content type
-                var mediaType = file.ContentType switch
+                try
                 {
-                    string ct when ct.StartsWith("image/") => "image",
-                    string ct when ct.StartsWith("video/") => "video",
-                    string ct when ct.StartsWith("audio/") => "audio",
-                    _ => "document"
-                };
+                    // Determine media type based on content type
+                    var mediaType = file.ContentType switch
+                    {
+                        string ct when ct.StartsWith("image/") => "image",
+                        string ct when ct.StartsWith("video/") => "video",
+                        string ct when ct.StartsWith("audio/") => "audio",
+                        _ => "document"
+                    };
 
-                var media = new Media
+                    // Save the actual file to disk
+                    _logger.LogInformation("Saving {MediaType} file for post {PostId}: {FileName}", mediaType, postId, file.FileName);
+                    var fileUrl = await _fileStorageService.SaveFileAsync(file, $"posts/{mediaType}s");
+
+                    var media = new Media
+                    {
+                        PostId = postId,
+                        Url = fileUrl,  // Use actual saved file URL
+                        MediaType = mediaType,
+                        ContentType = file.ContentType,
+                        FileName = file.FileName,
+                        FileSize = file.Length,
+                        Caption = model.MediaCaption,
+                        AltText = model.MediaAltText,
+                        UploadedAt = DateTime.UtcNow,
+                        UserId = model.UserId,
+                        StorageProvider = "local",
+                        IsProcessed = true
+                    };
+
+                    _context.Media.Add(media);
+                    _logger.LogInformation("Media file saved successfully: {Url}", fileUrl);
+                }
+                catch (Exception ex)
                 {
-                    PostId = postId,
-                    Url = $"/uploads/{Guid.NewGuid()}_{file.FileName}",
-                    MediaType = mediaType,
-                    ContentType = file.ContentType,
-                    FileName = file.FileName,
-                    Caption = model.MediaCaption,
-                    AltText = model.MediaAltText,
-                    UploadedAt = DateTime.UtcNow,
-                    UserId = model.UserId
-                };
-
-                _context.Media.Add(media);
-
-                // Here you would add actual file upload logic to your storage system
-                // await _fileService.UploadAsync(file, media.Url);
+                    _logger.LogError(ex, "Error processing media file: {FileName}", file.FileName);
+                    // Continue with other files even if one fails
+                }
             }
+            
             await _context.SaveChangesAsync();
         }
 
