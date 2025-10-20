@@ -1,0 +1,327 @@
+@model discussionspot9.Models.ViewModels.CommunityRulesViewModel
+@{
+    ViewData["Title"] = $"{Model.CommunityName} - Rules";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/community-settings.css" />
+    <link rel="stylesheet" href="~/css/community-pages.css" />
+}
+
+<div class="community-rules-container">
+    <!-- Header -->
+    <div class="rules-header">
+        <div class="header-content">
+            <h1>
+                <i class="fas fa-gavel"></i> Community Rules
+            </h1>
+            <p class="text-muted">Manage community rules and guidelines</p>
+        </div>
+        <div class="header-actions">
+            <a href="/r/@Model.CommunitySlug" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Community
+            </a>
+            @if (Model.CanEditRules)
+            {
+                <button class="btn btn-primary" onclick="addNewRule()">
+                    <i class="fas fa-plus"></i> Add Rule
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Rules List -->
+    <div class="rules-list">
+        @if (Model.Rules.Any())
+        {
+            <div class="rules-grid" id="rulesGrid">
+                @foreach (var rule in Model.Rules.OrderBy(r => r.DisplayOrder))
+                {
+                    <div class="rule-card" data-rule-id="@rule.RuleId">
+                        <div class="rule-header">
+                            <div class="rule-number">@rule.DisplayOrder</div>
+                            <div class="rule-icon">
+                                <i class="@rule.Icon"></i>
+                            </div>
+                            <div class="rule-title">@rule.Title</div>
+                            <div class="rule-severity @rule.Severity.ToString().ToLower()">
+                                @rule.Severity.ToString()
+                            </div>
+                        </div>
+                        <div class="rule-content">
+                            <p>@rule.Description</p>
+                        </div>
+                        <div class="rule-meta">
+                            <small class="text-muted">
+                                Created @rule.CreatedAt.ToString("MMM dd, yyyy") by @rule.CreatedBy
+                                @if (rule.UpdatedAt != rule.CreatedAt)
+                                {
+                                    <span> • Updated @rule.UpdatedAt.ToString("MMM dd, yyyy") by @rule.UpdatedBy</span>
+                                }
+                            </small>
+                        </div>
+                        @if (Model.CanEditRules)
+                        {
+                            <div class="rule-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editRule(@rule.RuleId)">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                @if (Model.CanDeleteRules)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRule(@rule.RuleId)">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                }
+                                @if (Model.CanReorderRules)
+                                {
+                                    <div class="reorder-buttons">
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="moveRuleUp(@rule.RuleId)" title="Move Up">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="moveRuleDown(@rule.RuleId)" title="Move Down">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-gavel"></i>
+                <h3>No rules yet</h3>
+                <p>Create your first community rule to get started.</p>
+                @if (Model.CanEditRules)
+                {
+                    <button class="btn btn-primary" onclick="addNewRule()">
+                        <i class="fas fa-plus"></i> Add First Rule
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Rule Templates -->
+    @if (Model.RuleTemplates.Any())
+    {
+        <div class="templates-section">
+            <h3>
+                <i class="fas fa-lightbulb"></i> Rule Templates
+            </h3>
+            <p class="text-muted">Quick-start templates for common community rules</p>
+            
+            <div class="templates-grid">
+                @foreach (var template in Model.RuleTemplates)
+                {
+                    <div class="template-card" data-template-id="@template.TemplateId">
+                        <div class="template-header">
+                            <div class="template-icon">
+                                <i class="@template.Icon"></i>
+                            </div>
+                            <div class="template-title">@template.Title</div>
+                            <div class="template-category">@template.Category</div>
+                        </div>
+                        <div class="template-content">
+                            <p>@template.Description</p>
+                        </div>
+                        <div class="template-actions">
+                            <button class="btn btn-sm btn-outline-primary" onclick="useTemplate(@template.TemplateId)">
+                                <i class="fas fa-plus"></i> Use Template
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Rule Modal -->
+<div class="modal fade" id="ruleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ruleModalTitle">
+                    <i class="fas fa-gavel"></i> Add New Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ruleForm">
+                    <input type="hidden" id="ruleId" value="0">
+                    
+                    <div class="mb-3">
+                        <label for="ruleTitle" class="form-label">Rule Title *</label>
+                        <input type="text" class="form-control" id="ruleTitle" placeholder="e.g., Be respectful" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ruleDescription" class="form-label">Description *</label>
+                        <textarea class="form-control" id="ruleDescription" rows="4" placeholder="Detailed description of the rule..." required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ruleSeverity" class="form-label">Severity</label>
+                                <select class="form-select" id="ruleSeverity">
+                                    <option value="General">General - Standard rule</option>
+                                    <option value="Important">Important - Significant rule</option>
+                                    <option value="Critical">Critical - Essential rule</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ruleIcon" class="form-label">Icon</label>
+                                <select class="form-select" id="ruleIcon">
+                                    <option value="fas fa-info-circle">Info Circle</option>
+                                    <option value="fas fa-exclamation-triangle">Warning Triangle</option>
+                                    <option value="fas fa-ban">Ban</option>
+                                    <option value="fas fa-heart">Heart</option>
+                                    <option value="fas fa-shield-alt">Shield</option>
+                                    <option value="fas fa-bullseye">Target</option>
+                                    <option value="fas fa-comments">Comments</option>
+                                    <option value="fas fa-lock">Lock</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ruleActive" checked>
+                            <label class="form-check-label" for="ruleActive">
+                                Rule is active
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveRule()">
+                    <i class="fas fa-save"></i> Save Rule
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Rule Modal -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash"></i> Delete Rule
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to delete this rule?</p>
+                <div class="rule-preview" id="deleteRulePreview"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteRule()">
+                    <i class="fas fa-trash"></i> Delete Rule
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentRuleId = 0;
+
+        // Add new rule
+        function addNewRule() {
+            currentRuleId = 0;
+            document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-gavel"></i> Add New Rule';
+            document.getElementById('ruleForm').reset();
+            document.getElementById('ruleId').value = '0';
+            new bootstrap.Modal(document.getElementById('ruleModal')).show();
+        }
+
+        // Edit rule
+        function editRule(ruleId) {
+            currentRuleId = ruleId;
+            document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Rule';
+            
+            // TODO: Load rule data from server
+            // For now, just show the modal
+            new bootstrap.Modal(document.getElementById('ruleModal')).show();
+        }
+
+        // Save rule
+        function saveRule() {
+            const title = document.getElementById('ruleTitle').value;
+            const description = document.getElementById('ruleDescription').value;
+            const severity = document.getElementById('ruleSeverity').value;
+            const icon = document.getElementById('ruleIcon').value;
+            const active = document.getElementById('ruleActive').checked;
+
+            if (!title.trim() || !description.trim()) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            // TODO: Implement API call to save rule
+            alert(`Rule save functionality will be implemented with API integration`);
+            bootstrap.Modal.getInstance(document.getElementById('ruleModal')).hide();
+        }
+
+        // Delete rule
+        function deleteRule(ruleId) {
+            currentRuleId = ruleId;
+            
+            // TODO: Load rule data for preview
+            document.getElementById('deleteRulePreview').innerHTML = 'Rule preview will be loaded here';
+            
+            new bootstrap.Modal(document.getElementById('deleteRuleModal')).show();
+        }
+
+        function confirmDeleteRule() {
+            // TODO: Implement API call to delete rule
+            alert(`Rule delete functionality will be implemented with API integration`);
+            bootstrap.Modal.getInstance(document.getElementById('deleteRuleModal')).hide();
+        }
+
+        // Move rule up
+        function moveRuleUp(ruleId) {
+            // TODO: Implement reordering
+            alert(`Rule reordering functionality will be implemented with API integration`);
+        }
+
+        // Move rule down
+        function moveRuleDown(ruleId) {
+            // TODO: Implement reordering
+            alert(`Rule reordering functionality will be implemented with API integration`);
+        }
+
+        // Use template
+        function useTemplate(templateId) {
+            // TODO: Load template data and populate form
+            alert(`Template functionality will be implemented with API integration`);
+        }
+
+        // Make rules sortable
+        document.addEventListener('DOMContentLoaded', function() {
+            const rulesGrid = document.getElementById('rulesGrid');
+            if (rulesGrid) {
+                // TODO: Implement drag and drop reordering
+                console.log('Rules grid ready for drag and drop implementation');
+            }
+        });
+    </script>
+}

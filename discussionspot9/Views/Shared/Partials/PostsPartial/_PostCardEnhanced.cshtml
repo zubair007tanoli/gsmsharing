@@ -121,9 +121,15 @@
             <a href="@Model.PostUrl#comments" class="action-btn">
                 <i class="fas fa-eye"></i> @Model.FormattedViewCount Views
             </a>
-            <button class="action-btn share-btn" data-post-url="@Url.AbsoluteUrl(Model.PostUrl)">
-                <i class="fas fa-share"></i> Share
-            </button>
+            @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
+                { "ShareTitle", Model.Title },
+                { "ShareDescription", Model.ContentPreview ?? Model.Title },
+                { "ShareUrl", $"{Context.Request.Scheme}://{Context.Request.Host}{Model.PostUrl}" },
+                { "ShareImage", Model.MediaUrl ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png" },
+                { "ShareType", "post" },
+                { "ContentId", Model.PostId.ToString() },
+                { "ShareVariant", "inline" }
+            })
             @if (SignInManager.IsSignedIn(User))
             {
                 <button class="action-btn save-btn @(Model.IsSavedByUser ? "saved" : "")">

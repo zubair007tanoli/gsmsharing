@@ -1,7 +1,134 @@
-﻿<header class="main-header sticky-top">
+﻿<style>
+    /* Live Bar Styles */
+    .live-bar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.6rem 0;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+
+    .live-bar-content {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        animation: scroll-left 30s linear infinite;
+    }
+
+    .live-bar:hover .live-bar-content {
+        animation-play-state: paused;
+    }
+
+    .live-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .live-badge {
+        background: rgba(255, 255, 255, 0.25);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .live-badge.hot {
+        background: #ff4500;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes scroll-left {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .live-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@media (max-width: 768px) {
+        .live-bar {
+            padding: 0.5rem 0;
+        }
+        .live-item {
+            font-size: 0.8rem;
+        }
+    }
+</style>
+
+<!-- Live Bar -->
+<div class="live-bar">
+    <div class="container">
+        <div class="live-bar-content">
+            <div class="live-item">
+                <span class="live-icon"><i class="fas fa-circle" style="font-size: 0.5rem;"></i></span>
+                <span class="live-badge hot">LIVE</span>
+                <span>🔥 523 users online right now</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-fire"></i>
+                <span>Trending: "Best coding practices 2025" - 234 comments</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-bolt"></i>
+                <span>New: 12 posts in the last hour</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-star"></i>
+                <span>Hot Topic: AI Discussion - 1.2K views</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-trophy"></i>
+                <span>Top Contributor: @@TechGuru - 89 posts this week</span>
+            </div>
+            <!-- Duplicate items for seamless loop -->
+            <div class="live-item">
+                <span class="live-icon"><i class="fas fa-circle" style="font-size: 0.5rem;"></i></span>
+                <span class="live-badge hot">LIVE</span>
+                <span>🔥 523 users online right now</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-fire"></i>
+                <span>Trending: "Best coding practices 2025" - 234 comments</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-bolt"></i>
+                <span>New: 12 posts in the last hour</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-star"></i>
+                <span>Hot Topic: AI Discussion - 1.2K views</span>
+            </div>
+            <div class="live-item">
+                <i class="fas fa-trophy"></i>
+                <span>Top Contributor: @@TechGuru - 89 posts this week</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<header class="main-header sticky-top">
     <div class="container">
         <nav class="navbar navbar-expand-lg">
-            <a href="index.html" class="logo me-3">
+            <a href="/" class="logo me-3">
                 <div class="logo-icon">D</div>
                 <span class="logo-text d-none d-sm-inline">iscussion<b>Spot</b></span>
             </a>
@@ -13,27 +140,27 @@
             <div class="collapse navbar-collapse" id="navbarContent">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="categories.html">
+                        <a class="nav-link" asp-controller="Category" asp-action="Index">
                             <i class="fas fa-th-large"></i> <span>Categories</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="forums.html">
-                            <i class="fas fa-comments"></i> <span>Forums</span>
+                        <a class="nav-link" asp-controller="Community" asp-action="Index">
+                            <i class="fas fa-comments"></i> <span>Communities</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="popular.html">
+                        <a class="nav-link" asp-controller="Home" asp-action="Popular">
                             <i class="fas fa-fire"></i> <span>Popular</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="recent.html">
+                        <a class="nav-link" asp-controller="Post" asp-action="All">
                             <i class="fas fa-clock"></i> <span>Recent</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="members.html">
+                        <a class="nav-link" asp-controller="User" asp-action="Index">
                             <i class="fas fa-users"></i> <span>Members</span>
                         </a>
                     </li>

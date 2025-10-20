@@ -1,0 +1,391 @@
+@*
+    Unified Social Share Component
+    Supports: Posts, Communities, Profiles, Categories
+    Features: All major platforms, QR codes, copy link, share tracking, mobile optimization
+*@
+
+@{
+    var shareTitle = ViewData["ShareTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "Check this out on DiscussionSpot";
+    var shareDescription = ViewData["ShareDescription"]?.ToString() ?? "";
+    var shareUrl = ViewData["ShareUrl"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
+    var shareType = ViewData["ShareType"]?.ToString() ?? "content"; // post, community, profile, category
+    var shareImage = ViewData["ShareImage"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
+    var contentId = ViewData["ContentId"]?.ToString() ?? "";
+    var variant = ViewData["ShareVariant"]?.ToString() ?? "dropdown"; // dropdown, inline, floating
+    
+    var encodedUrl = Uri.EscapeDataString(shareUrl);
+    var encodedTitle = Uri.EscapeDataString(shareTitle);
+    var encodedText = Uri.EscapeDataString($"{shareTitle} - {shareDescription}");
+}
+
+@if (variant == "inline")
+{
+    <!-- Inline Variant (for post cards/lists) -->
+    <div class="share-inline" data-share-url="@shareUrl" data-share-title="@shareTitle" data-content-type="@shareType" data-content-id="@contentId">
+        <button class="share-inline-trigger" onclick="openSharePopup(this)" title="Share">
+            <i class="fas fa-share-alt"></i>
+            <span class="share-count" id="share-count-@contentId"></span>
+        </button>
+    </div>
+}
+else if (variant == "floating")
+{
+    <!-- Floating Variant (sticky mobile button) -->
+    <button class="floating-share-btn" onclick="toggleFloatingShare()" id="floatingShareBtn">
+        <i class="fas fa-share-alt"></i>
+    </button>
+    
+    <div class="floating-share-menu" id="floatingShareMenu" style="display: none;">
+        <div class="floating-share-header">
+            <h6>Share</h6>
+            <button class="btn-close" onclick="toggleFloatingShare()"></button>
+        </div>
+        <div class="floating-share-content">
+            @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) { 
+                { "ShareVariant", "content" } 
+            })
+        </div>
+    </div>
+}
+else
+{
+    <!-- Dropdown/Full Variant (default) -->
+    <div class="share-buttons-unified" data-share-url="@shareUrl" data-share-title="@shareTitle" data-content-type="@shareType" data-content-id="@contentId">
+        <div class="share-trigger">
+            <button class="btn btn-outline-primary btn-share" onclick="toggleShareMenu(this)">
+                <i class="fas fa-share-alt"></i>
+                <span class="d-none d-sm-inline">Share</span>
+            </button>
+        </div>
+        
+        <div class="share-dropdown-menu" style="display: none;">
+            <div class="share-menu-header">
+                <h6><i class="fas fa-share-alt"></i> Share @shareType</h6>
+                <button class="btn-close" onclick="closeShareMenu(this)"></button>
+            </div>
+            
+            <div class="share-options-grid">
+                <!-- Facebook -->
+                <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" 
+                   class="share-option facebook" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   onclick="trackShare('@shareType', '@contentId', 'facebook')">
+                    <div class="share-option-icon">
+                        <i class="fab fa-facebook-f"></i>
+                    </div>
+                    <span>Facebook</span>
+                </a>
+                
+                <!-- Twitter/X -->
+                <a href="https://twitter.com/intent/tweet?url=@encodedUrl&text=@encodedTitle" 
+                   class="share-option twitter" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   onclick="trackShare('@shareType', '@contentId', 'twitter')">
+                    <div class="share-option-icon">
+                        <i class="fab fa-twitter"></i>
+                    </div>
+                    <span>Twitter</span>
+                </a>
+                
+                <!-- LinkedIn -->
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@encodedUrl" 
+                   class="share-option linkedin" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   onclick="trackShare('@shareType', '@contentId', 'linkedin')">
+                    <div class="share-option-icon">
+                        <i class="fab fa-linkedin-in"></i>
+                    </div>
+                    <span>LinkedIn</span>
+                </a>
+                
+                <!-- Reddit -->
+                <a href="https://reddit.com/submit?url=@encodedUrl&title=@encodedTitle" 
+                   class="share-option reddit" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   onclick="trackShare('@shareType', '@contentId', 'reddit')">
+                    <div class="share-option-icon">
+                        <i class="fab fa-reddit-alien"></i>
+                    </div>
+                    <span>Reddit</span>
+                </a>
+                
+                <!-- WhatsApp -->
+                <a href="https://wa.me/?text=@encodedText%20@encodedUrl" 
+                   class="share-option whatsapp" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   onclick="trackShare('@shareType', '@contentId', 'whatsapp')">
+                    <div class="share-option-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <span>WhatsApp</span>
+                </a>
+                
+                <!-- Telegram -->
+                <a href="https://t.me/share/url?url=@encodedUrl&text=@encodedTitle" 
+                   class="share-option telegram" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   onclick="trackShare('@shareType', '@contentId', 'telegram')">
+                    <div class="share-option-icon">
+                        <i class="fab fa-telegram-plane"></i>
+                    </div>
+                    <span>Telegram</span>
+                </a>
+                
+                <!-- Email -->
+                <a href="mailto:?subject=@encodedTitle&body=@encodedText%0A%0A@encodedUrl" 
+                   class="share-option email"
+                   onclick="trackShare('@shareType', '@contentId', 'email')">
+                    <div class="share-option-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <span>Email</span>
+                </a>
+                
+                <!-- Copy Link -->
+                <button type="button" 
+                        class="share-option copy" 
+                        onclick="copyShareLink(this, '@shareUrl', '@shareType', '@contentId')">
+                    <div class="share-option-icon">
+                        <i class="fas fa-copy"></i>
+                    </div>
+                    <span>Copy Link</span>
+                </button>
+            </div>
+            
+            <!-- URL Input -->
+            <div class="share-url-section">
+                <div class="input-group">
+                    <input type="text" class="form-control share-url-input" value="@shareUrl" readonly onclick="this.select()">
+                    <button class="btn btn-outline-secondary" onclick="copyShareLink(this, '@shareUrl', '@shareType', '@contentId')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- QR Code Section -->
+            <div class="share-qr-section">
+                <button class="btn btn-outline-primary btn-qr" onclick="generateQRCode('@shareUrl', '@shareTitle')">
+                    <i class="fas fa-qrcode"></i> Generate QR Code
+                </button>
+            </div>
+            
+            <!-- Share Count -->
+            <div class="share-stats">
+                <small class="text-muted">
+                    <i class="fas fa-chart-line"></i>
+                    <span id="share-count-display-@contentId">Loading shares...</span>
+                </small>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-qrcode"></i> QR Code
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrCodeContainer" class="mb-3">
+                    <canvas id="qrCodeCanvas"></canvas>
+                </div>
+                <p class="mb-2"><strong id="qrCodeTitle"></strong></p>
+                <p class="text-muted small">Scan to share</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadQRCode()">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Share Menu Toggle
+    function toggleShareMenu(button) {
+        const container = button.closest('.share-buttons-unified');
+        const menu = container.querySelector('.share-dropdown-menu');
+        const isOpen = menu.style.display !== 'none';
+        
+        // Close all other share menus
+        document.querySelectorAll('.share-dropdown-menu').forEach(m => m.style.display = 'none');
+        
+        menu.style.display = isOpen ? 'none' : 'block';
+        
+        if (!isOpen) {
+            // Load share count
+            const contentType = container.dataset.shareContentType;
+            const contentId = container.dataset.contentId;
+            if (contentId) {
+                loadShareCount(contentType, contentId);
+            }
+        }
+    }
+    
+    function closeShareMenu(button) {
+        const menu = button.closest('.share-dropdown-menu');
+        menu.style.display = 'none';
+    }
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.share-buttons-unified')) {
+            document.querySelectorAll('.share-dropdown-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
+    
+    // Copy Link Function
+    function copyShareLink(button, url, contentType, contentId) {
+        navigator.clipboard.writeText(url).then(() => {
+            const originalHTML = button.innerHTML;
+            const icon = button.querySelector('.share-option-icon, i');
+            if (icon) {
+                icon.innerHTML = '<i class="fas fa-check"></i>';
+            }
+            const span = button.querySelector('span');
+            if (span) {
+                span.textContent = 'Copied!';
+            }
+            
+            button.classList.add('share-success');
+            
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.classList.remove('share-success');
+            }, 2000);
+            
+            trackShare(contentType, contentId, 'copy');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            alert('Failed to copy link to clipboard');
+        });
+    }
+    
+    // QR Code Generation
+    function generateQRCode(url, title) {
+        document.getElementById('qrCodeTitle').textContent = title;
+        
+        // Simple QR code generation using Google Charts API
+        const qrCanvas = document.getElementById('qrCodeCanvas');
+        const ctx = qrCanvas.getContext('2d');
+        
+        // Set canvas size
+        qrCanvas.width = 300;
+        qrCanvas.height = 300;
+        
+        // Create QR code image
+        const qrImage = new Image();
+        qrImage.crossOrigin = 'anonymous';
+        qrImage.onload = function() {
+            ctx.drawImage(qrImage, 0, 0, 300, 300);
+        };
+        qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
+        modal.show();
+    }
+    
+    function downloadQRCode() {
+        const canvas = document.getElementById('qrCodeCanvas');
+        const link = document.createElement('a');
+        link.download = 'qr-code.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+    
+    // Share Tracking
+    function trackShare(contentType, contentId, platform) {
+        if (!contentId) return;
+        
+        fetch('/api/share/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contentType: contentType,
+                contentId: contentId,
+                platform: platform
+            })
+        }).catch(err => console.log('Share tracking failed:', err));
+    }
+    
+    // Load Share Count
+    function loadShareCount(contentType, contentId) {
+        if (!contentId) return;
+        
+        fetch(`/api/share/count?contentType=${contentType}&contentId=${contentId}`)
+            .then(response => response.json())
+            .then(data => {
+                const displayElement = document.getElementById(`share-count-display-${contentId}`);
+                if (displayElement) {
+                    const count = data.count || 0;
+                    displayElement.textContent = count === 0 ? 'Be the first to share!' : `Shared ${count} time${count !== 1 ? 's' : ''}`;
+                }
+                
+                const countBadge = document.getElementById(`share-count-${contentId}`);
+                if (countBadge && data.count > 0) {
+                    countBadge.textContent = data.count;
+                    countBadge.style.display = 'inline-block';
+                }
+            })
+            .catch(err => {
+                console.log('Failed to load share count:', err);
+                const displayElement = document.getElementById(`share-count-display-${contentId}`);
+                if (displayElement) {
+                    displayElement.textContent = '';
+                }
+            });
+    }
+    
+    // Web Share API (for mobile)
+    function useNativeShare(url, title, text) {
+        if (navigator.share) {
+            navigator.share({
+                title: title,
+                text: text,
+                url: url
+            }).then(() => {
+                console.log('Shared successfully');
+            }).catch(err => {
+                console.log('Share cancelled or failed:', err);
+            });
+        }
+    }
+    
+    // Floating Share Button
+    function toggleFloatingShare() {
+        const menu = document.getElementById('floatingShareMenu');
+        const isOpen = menu.style.display !== 'none';
+        menu.style.display = isOpen ? 'none' : 'block';
+    }
+    
+    // Show floating button after scroll
+    window.addEventListener('scroll', function() {
+        const floatingBtn = document.getElementById('floatingShareBtn');
+        if (floatingBtn) {
+            if (window.scrollY > 300) {
+                floatingBtn.classList.add('show');
+            } else {
+                floatingBtn.classList.remove('show');
+            }
+        }
+    });
+</script>
+

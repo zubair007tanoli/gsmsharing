@@ -1,0 +1,272 @@
+@{
+    var communitySlug = ViewData["CommunitySlug"] as string ?? "";
+    var postId = ViewData["PostId"] as int?;
+    var title = ViewData["ShareTitle"] as string ?? "Check this out!";
+    var description = ViewData["ShareDescription"] as string ?? "";
+    var url = ViewData["ShareUrl"] as string ?? "";
+    var shareType = ViewData["ShareType"] as string ?? "community"; // community or post
+}
+
+<div class="share-buttons-container">
+    <div class="share-trigger">
+        <button class="btn btn-outline-primary share-btn" onclick="toggleShareMenu()">
+            <i class="fas fa-share-alt"></i> Share
+        </button>
+    </div>
+    
+    <div class="share-menu" id="shareMenu" style="display: none;">
+        <div class="share-menu-header">
+            <h6>Share @(shareType == "community" ? "Community" : "Post")</h6>
+            <button class="btn-close" onclick="toggleShareMenu()"></button>
+        </div>
+        
+        <div class="share-options">
+            <!-- Facebook -->
+            <button class="share-option facebook" onclick="shareOnFacebook()">
+                <i class="fab fa-facebook-f"></i>
+                <span>Facebook</span>
+            </button>
+            
+            <!-- Twitter -->
+            <button class="share-option twitter" onclick="shareOnTwitter()">
+                <i class="fab fa-twitter"></i>
+                <span>Twitter</span>
+            </button>
+            
+            <!-- LinkedIn -->
+            <button class="share-option linkedin" onclick="shareOnLinkedIn()">
+                <i class="fab fa-linkedin-in"></i>
+                <span>LinkedIn</span>
+            </button>
+            
+            <!-- Reddit -->
+            <button class="share-option reddit" onclick="shareOnReddit()">
+                <i class="fab fa-reddit-alien"></i>
+                <span>Reddit</span>
+            </button>
+            
+            <!-- WhatsApp -->
+            <button class="share-option whatsapp" onclick="shareOnWhatsApp()">
+                <i class="fab fa-whatsapp"></i>
+                <span>WhatsApp</span>
+            </button>
+            
+            <!-- Email -->
+            <button class="share-option email" onclick="shareViaEmail()">
+                <i class="fas fa-envelope"></i>
+                <span>Email</span>
+            </button>
+            
+            <!-- Copy Link -->
+            <button class="share-option copy" onclick="copyToClipboard()">
+                <i class="fas fa-copy"></i>
+                <span>Copy Link</span>
+            </button>
+        </div>
+        
+        <div class="share-url-section">
+            <div class="input-group">
+                <input type="text" class="form-control" id="shareUrlInput" value="@url" readonly>
+                <button class="btn btn-outline-secondary" onclick="copyToClipboard()">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+        
+        @if (shareType == "community")
+        {
+            <div class="share-qr-section">
+                <button class="btn btn-outline-primary" onclick="generateQRCode()">
+                    <i class="fas fa-qrcode"></i> Generate QR Code
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-qrcode"></i> QR Code
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrCodeContainer">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Generating QR Code...</span>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0">Scan to share</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="downloadQRCode()">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Share data
+    const shareData = {
+        title: '@Html.Raw(title)',
+        description: '@Html.Raw(description)',
+        url: '@url',
+        communitySlug: '@communitySlug',
+        postId: @(postId?.ToString() ?? "null"),
+        shareType: '@shareType'
+    };
+
+    // Toggle share menu
+    function toggleShareMenu() {
+        const menu = document.getElementById('shareMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const container = document.querySelector('.share-buttons-container');
+        const menu = document.getElementById('shareMenu');
+        
+        if (!container.contains(event.target) && menu.style.display === 'block') {
+            menu.style.display = 'none';
+        }
+    });
+
+    // Facebook sharing
+    function shareOnFacebook() {
+        const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareData.url)}`;
+        openShareWindow(facebookUrl, 'Facebook');
+    }
+
+    // Twitter sharing
+    function shareOnTwitter() {
+        const text = shareData.shareType === 'community' 
+            ? `Check out this community: ${shareData.title}`
+            : shareData.title;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareData.url)}`;
+        openShareWindow(twitterUrl, 'Twitter');
+    }
+
+    // LinkedIn sharing
+    function shareOnLinkedIn() {
+        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareData.url)}`;
+        openShareWindow(linkedinUrl, 'LinkedIn');
+    }
+
+    // Reddit sharing
+    function shareOnReddit() {
+        const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(shareData.url)}&title=${encodeURIComponent(shareData.title)}`;
+        openShareWindow(redditUrl, 'Reddit');
+    }
+
+    // WhatsApp sharing
+    function shareOnWhatsApp() {
+        const text = shareData.shareType === 'community' 
+            ? `Check out this community: ${shareData.title} - ${shareData.url}`
+            : `${shareData.title} - ${shareData.url}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        openShareWindow(whatsappUrl, 'WhatsApp');
+    }
+
+    // Email sharing
+    function shareViaEmail() {
+        const subject = shareData.shareType === 'community' 
+            ? `Check out this community: ${shareData.title}`
+            : shareData.title;
+        const body = shareData.shareType === 'community' 
+            ? `I found this interesting community: ${shareData.title}\n\n${shareData.description}\n\nCheck it out: ${shareData.url}`
+            : `${shareData.description}\n\nCheck it out: ${shareData.url}`;
+        
+        const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = emailUrl;
+    }
+
+    // Copy to clipboard
+    function copyToClipboard() {
+        const urlInput = document.getElementById('shareUrlInput');
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999); // For mobile devices
+        
+        try {
+            document.execCommand('copy');
+            showCopySuccess();
+        } catch (err) {
+            // Fallback for modern browsers
+            navigator.clipboard.writeText(shareData.url).then(() => {
+                showCopySuccess();
+            }).catch(() => {
+                alert('Failed to copy to clipboard');
+            });
+        }
+    }
+
+    // Show copy success message
+    function showCopySuccess() {
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        }, 2000);
+    }
+
+    // Generate QR Code
+    function generateQRCode() {
+        const modal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
+        modal.show();
+        
+        // Generate QR code using a simple API (you can replace with a proper QR library)
+        const qrContainer = document.getElementById('qrCodeContainer');
+        qrContainer.innerHTML = `
+            <div class="qr-code-placeholder">
+                <i class="fas fa-qrcode" style="font-size: 4rem; color: #007bff;"></i>
+                <p class="mt-2">QR Code for: ${shareData.url}</p>
+                <small class="text-muted">QR code generation will be implemented with a proper library</small>
+            </div>
+        `;
+    }
+
+    // Download QR Code
+    function downloadQRCode() {
+        // TODO: Implement QR code download
+        alert('QR code download functionality will be implemented with a proper QR library');
+    }
+
+    // Open share window
+    function openShareWindow(url, platform) {
+        const width = 600;
+        const height = 400;
+        const left = (screen.width - width) / 2;
+        const top = (screen.height - height) / 2;
+        
+        const shareWindow = window.open(
+            url,
+            `${platform}Share`,
+            `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+        );
+        
+        if (shareWindow) {
+            shareWindow.focus();
+        }
+        
+        // Track sharing (optional)
+        trackShare(platform);
+    }
+
+    // Track sharing events (optional analytics)
+    function trackShare(platform) {
+        // TODO: Implement analytics tracking
+        console.log(`Shared on ${platform}:`, shareData);
+    }
+</script>

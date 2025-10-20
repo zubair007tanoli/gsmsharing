@@ -785,23 +785,8 @@
                 </div>
             }
 
-            <!-- Ad Space - Middle -->
-            <div class="ad-space">
-                <div class="w-100">
-                    <p class="ad-label text-center">Advertisement</p>
-                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
-                            crossorigin="anonymous"></script>
-                    <ins class="adsbygoogle"
-                         style="display:block"
-                         data-ad-client="ca-pub-5934633595595089"
-                         data-ad-slot="3578533723"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                    <script>
-                        (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                </div>
-            </div>
+            <!-- In-Feed Ad - Blends with content -->
+            <partial name="_AdUnit_InFeed" />
 
             <!-- Recent Posts -->
             @if (Model?.RecentPosts?.Any() == true)
@@ -921,23 +906,8 @@
 
         <!-- Sidebar Column (30%) -->
         <div class="col-lg-4">
-            <!-- Ad Space - Sidebar Top -->
-            <div class="ad-space">
-                <div class="w-100">
-                    <p class="ad-label text-center">Advertisement</p>
-                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
-                            crossorigin="anonymous"></script>
-                    <ins class="adsbygoogle"
-                         style="display:block"
-                         data-ad-client="ca-pub-5934633595595089"
-                         data-ad-slot="7326207040"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                    <script>
-                        (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                </div>
-            </div>
+            <!-- Enhanced Sticky Ad - Top -->
+            <partial name="_AdUnit_Sticky" />
 
             <!-- Online Users - Enhanced with Chat -->
             @if (Model?.Sidebar?.HasOnlineUsers == true)
@@ -1006,8 +976,8 @@
                 </div>
             }
 
-            <!-- Ad Space - Sidebar Middle -->
-            <div class="ad-space">
+            <!-- Ad Space - Sidebar Middle (Another Sticky Position) -->
+            <div class="ad-space" style="position: sticky; top: 400px;">
                 <div class="w-100">
                     <p class="ad-label text-center">Advertisement</p>
                     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
@@ -1052,8 +1022,8 @@
                 </div>
             }
 
-            <!-- Ad Space - Sidebar Bottom -->
-            <div class="ad-space">
+            <!-- Ad Space - Sidebar Bottom (Sticky) -->
+            <div class="ad-space" style="position: sticky; top: 700px; margin-bottom: 2rem;">
                 <div class="w-100">
                     <p class="ad-label text-center">Advertisement</p>
                     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
@@ -1072,6 +1042,9 @@
         </div>
     </div>
 </div>
+
+<!-- Floating Bottom Ad (Mobile Only) -->
+<partial name="_AdUnit_FloatingBottom" />
 
 @functions {
     private static readonly string[] Colors = new[] { 

@@ -153,11 +153,14 @@
                 <!-- Social Share Buttons -->
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body">
-                        @{
-                            ViewData["Title"] = Model.Post.Title;
-                            ViewData["Url"] = postUrl;
-                        }
-                        <partial name="_SocialShareButtons" />
+                        @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
+                            { "ShareTitle", Model.Post.Title },
+                            { "ShareDescription", excerpt },
+                            { "ShareUrl", postUrl },
+                            { "ShareImage", imageUrl },
+                            { "ShareType", "post" },
+                            { "ContentId", Model.Post.PostId.ToString() }
+                        })
                     </div>
                 </div>
 

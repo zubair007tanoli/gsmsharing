@@ -32,6 +32,7 @@ namespace discussionspot9.Data.DbContext
         public DbSet<PollOption> PollOptions { get; set; }
         public DbSet<PollVote> PollVotes { get; set; }
         public DbSet<PollConfiguration> PollConfigurations { get; set; }
+        public DbSet<ShareActivity> ShareActivities { get; set; }
         public DbSet<SavedPost> SavedPosts { get; set; }
         public DbSet<CommentLinkPreview> CommentLinkPreviews { get; set; }
         

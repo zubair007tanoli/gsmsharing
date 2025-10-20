@@ -1,0 +1,83 @@
+@* In-Feed Ad Unit - Blends with content *@
+<div class="infeed-ad-modern">
+    <div class="ad-card">
+        <div class="ad-badge">
+            <i class="fas fa-bullhorn"></i> Sponsored Content
+        </div>
+        <div class="ad-body">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                    crossorigin="anonymous"></script>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-format="fluid"
+                 data-ad-layout-key="-6t+ed+2i-1n-4w"
+                 data-ad-client="ca-pub-5934633595595089"
+                 data-ad-slot="3578533723"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </div>
+</div>
+
+<style>
+    .infeed-ad-modern {
+        margin: 2rem 0;
+        animation: slideInFade 0.8s ease-out;
+    }
+
+    .infeed-ad-modern .ad-card {
+        background: #ffffff;
+        border: 1px solid #e1e8ed;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s ease;
+    }
+
+    .infeed-ad-modern .ad-card:hover {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .ad-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ad-body {
+        padding: 1.25rem;
+        min-height: 200px;
+    }
+
+    @@keyframes slideInFade {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .infeed-ad-modern {
+            margin: 1.5rem 0;
+        }
+        
+        .ad-body {
+            padding: 1rem;
+            min-height: 150px;
+        }
+    }
+</style>
+

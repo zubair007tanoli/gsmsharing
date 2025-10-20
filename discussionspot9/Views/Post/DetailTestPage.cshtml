@@ -295,38 +295,14 @@
                                 <i class="fas fa-comment"></i>
                                 <span>Comments (@Model.Post.CommentCount)</span>
                             </button>
-                            <div class="share-dropdown">
-                                <button class="action-btn" id="shareBtn-@Model.Post.PostId">
-                                    <i class="fas fa-share"></i>
-                                    <span>Share</span>
-                                </button>
-                                <div class="share-dropdown-menu">
-                                    <a href="#" class="share-option" data-platform="facebook">
-                                        <i class="fab fa-facebook-f" style="color: #1877F2;"></i>
-                                        <span>Facebook</span>
-                                    </a>
-                                    <a href="#" class="share-option" data-platform="twitter">
-                                        <i class="fab fa-twitter" style="color: #1DA1F2;"></i>
-                                        <span>Twitter</span>
-                                    </a>
-                                    <a href="#" class="share-option" data-platform="reddit">
-                                        <i class="fab fa-reddit" style="color: #FF4500;"></i>
-                                        <span>Reddit</span>
-                                    </a>
-                                    <a href="#" class="share-option" data-platform="linkedin">
-                                        <i class="fab fa-linkedin" style="color: #0A66C2;"></i>
-                                        <span>LinkedIn</span>
-                                    </a>
-                                    <a href="#" class="share-option" data-platform="whatsapp">
-                                        <i class="fab fa-whatsapp" style="color: #25D366;"></i>
-                                        <span>WhatsApp</span>
-                                    </a>
-                                    <a href="#" class="share-option" data-platform="copy">
-                                        <i class="fas fa-copy"></i>
-                                        <span>Copy Link</span>
-                                    </a>
-                                </div>
-                            </div>
+                            @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
+                                { "ShareTitle", Model.Post.Title },
+                                { "ShareDescription", excerpt },
+                                { "ShareUrl", postUrl },
+                                { "ShareImage", imageUrl },
+                                { "ShareType", "post" },
+                                { "ContentId", Model.Post.PostId.ToString() }
+                            })
                             <button class="action-btn" id="saveBtn-@Model.Post.PostId" data-post-id="@Model.Post.PostId" data-issaved="@Model.Post.IsSavedByUser.ToString().ToLower()">
                                 <i class="fas fa-bookmark @(Model.Post.IsSavedByUser ? "text-primary" : "")"></i>
                                 <span>@(Model.Post.IsSavedByUser ? "Saved" : "Save")</span>

@@ -1,0 +1,503 @@
+@model discussionspot9.Models.ViewModels.ContentFiltersViewModel
+@{
+    ViewData["Title"] = $"{Model.CommunityName} - Content Filters";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/community-settings.css" />
+    <link rel="stylesheet" href="~/css/community-pages.css" />
+}
+
+<div class="community-filters-container">
+    <!-- Header -->
+    <div class="filters-header">
+        <div class="header-content">
+            <h1>
+                <i class="fas fa-filter"></i> Content Filters
+            </h1>
+            <p class="text-muted">Configure automated content moderation and spam detection</p>
+        </div>
+        <div class="header-actions">
+            <a href="/r/@Model.CommunitySlug" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Community
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Statistics -->
+    <div class="filter-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.TotalFilteredItems</div>
+                <div class="stat-label">Total Filtered</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.FilteredToday</div>
+                <div class="stat-label">Today</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.FilteredThisWeek</div>
+                <div class="stat-label">This Week</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Banned Words Section -->
+    <div class="filter-section">
+        <div class="section-header">
+            <h3>
+                <i class="fas fa-ban"></i> Banned Words
+            </h3>
+            <p class="text-muted">Words and phrases that will be automatically filtered</p>
+        </div>
+        
+        <div class="banned-words-controls">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="text" id="newBannedWord" class="form-control" placeholder="Enter word or phrase...">
+                        <button class="btn btn-primary" onclick="addBannedWord()">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="caseSensitive" @(Model.CaseSensitive ? "checked" : "")>
+                        <label class="form-check-label" for="caseSensitive">
+                            Case sensitive
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="wholeWordOnly" @(Model.WholeWordOnly ? "checked" : "")>
+                        <label class="form-check-label" for="wholeWordOnly">
+                            Whole word only
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="banned-words-list">
+            @if (Model.BannedWords.Any())
+            {
+                @foreach (var word in Model.BannedWords)
+                {
+                    <div class="banned-word-item" data-word-id="@word.Id">
+                        <div class="word-info">
+                            <div class="word-text">@word.Word</div>
+                            <div class="word-settings">
+                                @if (word.CaseSensitive)
+                                {
+                                    <span class="badge bg-info">Case Sensitive</span>
+                                }
+                                @if (word.WholeWordOnly)
+                                {
+                                    <span class="badge bg-warning">Whole Word</span>
+                                }
+                                <span class="badge bg-@(word.Action == "remove" ? "danger" : word.Action == "flag" ? "warning" : "secondary")">
+                                    @word.Action.ToUpper()
+                                </span>
+                            </div>
+                            <div class="word-meta">
+                                <small class="text-muted">
+                                    Added @word.CreatedAt.ToString("MMM dd, yyyy") by @word.CreatedBy
+                                    • Used @word.UsageCount times
+                                </small>
+                            </div>
+                        </div>
+                        <div class="word-actions">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editBannedWord(@word.Id)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeBannedWord(@word.Id)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-ban"></i>
+                    <p>No banned words configured</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- AutoMod Settings -->
+    <div class="filter-section">
+        <div class="section-header">
+            <h3>
+                <i class="fas fa-robot"></i> AutoMod Settings
+            </h3>
+            <p class="text-muted">Automated moderation based on user behavior and content</p>
+        </div>
+        
+        <div class="automod-settings">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="setting-group">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="automodEnabled" @(Model.AutoModSettings.IsEnabled ? "checked" : "")>
+                            <label class="form-check-label" for="automodEnabled">
+                                <strong>Enable AutoMod</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">Automatically moderate content based on rules</small>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="minAccountAge" class="form-label">Minimum Account Age (days)</label>
+                        <input type="number" class="form-control" id="minAccountAge" value="@Model.AutoModSettings.MinAccountAge" min="0">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="minKarma" class="form-label">Minimum Karma Required</label>
+                        <input type="number" class="form-control" id="minKarma" value="@Model.AutoModSettings.MinKarma" min="0">
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="setting-group">
+                        <label for="maxPostsPerDay" class="form-label">Max Posts Per Day</label>
+                        <input type="number" class="form-control" id="maxPostsPerDay" value="@Model.AutoModSettings.MaxPostsPerDay" min="1">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="maxCommentsPerDay" class="form-label">Max Comments Per Day</label>
+                        <input type="number" class="form-control" id="maxCommentsPerDay" value="@Model.AutoModSettings.MaxCommentsPerDay" min="1">
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="requireApprovalNewUsers" @(Model.AutoModSettings.RequireApprovalForNewUsers ? "checked" : "")>
+                        <label class="form-check-label" for="requireApprovalNewUsers">
+                            Require approval for new users
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spam Detection Settings -->
+    <div class="filter-section">
+        <div class="section-header">
+            <h3>
+                <i class="fas fa-shield-virus"></i> Spam Detection
+            </h3>
+            <p class="text-muted">Advanced spam detection and prevention</p>
+        </div>
+        
+        <div class="spam-settings">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="spamDetectionEnabled" @(Model.SpamSettings.IsEnabled ? "checked" : "")>
+                        <label class="form-check-label" for="spamDetectionEnabled">
+                            <strong>Enable Spam Detection</strong>
+                        </label>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="spamThreshold" class="form-label">Spam Threshold (0-1)</label>
+                        <input type="range" class="form-range" id="spamThreshold" min="0" max="1" step="0.1" value="@Model.SpamSettings.SpamThreshold">
+                        <div class="range-value">@Model.SpamSettings.SpamThreshold</div>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkLinks" @(Model.SpamSettings.CheckLinks ? "checked" : "")>
+                        <label class="form-check-label" for="checkLinks">
+                            Check links for spam
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkImages" @(Model.SpamSettings.CheckImages ? "checked" : "")>
+                        <label class="form-check-label" for="checkImages">
+                            Check images for spam
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="setting-group">
+                        <label for="maxLinksPerPost" class="form-label">Max Links Per Post</label>
+                        <input type="number" class="form-control" id="maxLinksPerPost" value="@Model.SpamSettings.MaxLinksPerPost" min="0">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="maxImagesPerPost" class="form-label">Max Images Per Post</label>
+                        <input type="number" class="form-control" id="maxImagesPerPost" value="@Model.SpamSettings.MaxImagesPerPost" min="0">
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="checkRepetitiveContent" @(Model.SpamSettings.CheckRepetitiveContent ? "checked" : "")>
+                        <label class="form-check-label" for="checkRepetitiveContent">
+                            Check for repetitive content
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Approval Settings -->
+    <div class="filter-section">
+        <div class="section-header">
+            <h3>
+                <i class="fas fa-check-circle"></i> Content Approval
+            </h3>
+            <p class="text-muted">Manual approval requirements for content</p>
+        </div>
+        
+        <div class="approval-settings">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="requireApproval" @(Model.ApprovalSettings.RequireApproval ? "checked" : "")>
+                        <label class="form-check-label" for="requireApproval">
+                            <strong>Require Content Approval</strong>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="requireApprovalNewUsers" @(Model.ApprovalSettings.RequireApprovalForNewUsers ? "checked" : "")>
+                        <label class="form-check-label" for="requireApprovalNewUsers">
+                            Require approval for new users
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="requireApprovalPosts" @(Model.ApprovalSettings.RequireApprovalForPosts ? "checked" : "")>
+                        <label class="form-check-label" for="requireApprovalPosts">
+                            Require approval for posts
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="requireApprovalComments" @(Model.ApprovalSettings.RequireApprovalForComments ? "checked" : "")>
+                        <label class="form-check-label" for="requireApprovalComments">
+                            Require approval for comments
+                        </label>
+                    </div>
+                    
+                    <div class="approval-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Queue Size:</span>
+                            <span class="stat-value">@Model.ApprovalSettings.ApprovalQueueSize</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Pending:</span>
+                            <span class="stat-value">@Model.ApprovalSettings.PendingApprovals</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Logs -->
+    <div class="filter-section">
+        <div class="section-header">
+            <h3>
+                <i class="fas fa-history"></i> Recent Filter Activity
+            </h3>
+            <p class="text-muted">Recent content that was filtered or flagged</p>
+        </div>
+        
+        <div class="filter-logs">
+            @if (Model.RecentLogs.Any())
+            {
+                @foreach (var log in Model.RecentLogs)
+                {
+                    <div class="log-item">
+                        <div class="log-icon">
+                            <i class="fas fa-@(log.Action == "removed" ? "trash" : log.Action == "flagged" ? "flag" : "check")"></i>
+                        </div>
+                        <div class="log-content">
+                            <div class="log-header">
+                                <span class="log-type">@log.ContentType.ToUpper()</span>
+                                <span class="log-action @log.Action">@log.Action.ToUpper()</span>
+                                <span class="log-time">@log.FilteredAt.ToString("MMM dd, HH:mm")</span>
+                            </div>
+                            <div class="log-details">
+                                <strong>@log.AuthorName</strong> - @log.FilterReason
+                            </div>
+                            <div class="log-preview">@log.ContentPreview</div>
+                            <div class="log-meta">
+                                <small class="text-muted">
+                                    Filtered by @log.FilteredBy
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <p>No recent filter activity</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Banned Word Modal -->
+<div class="modal fade" id="bannedWordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bannedWordModalTitle">
+                    <i class="fas fa-ban"></i> Add Banned Word
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bannedWordForm">
+                    <input type="hidden" id="bannedWordId" value="0">
+                    
+                    <div class="mb-3">
+                        <label for="bannedWordText" class="form-label">Word or Phrase *</label>
+                        <input type="text" class="form-control" id="bannedWordText" placeholder="Enter word or phrase..." required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bannedWordAction" class="form-label">Action</label>
+                        <select class="form-select" id="bannedWordAction">
+                            <option value="remove">Remove content</option>
+                            <option value="flag">Flag for review</option>
+                            <option value="replace">Replace with text</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="replacementGroup" style="display: none;">
+                        <label for="bannedWordReplacement" class="form-label">Replacement Text</label>
+                        <input type="text" class="form-control" id="bannedWordReplacement" placeholder="Text to replace with...">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="bannedWordCaseSensitive">
+                                <label class="form-check-label" for="bannedWordCaseSensitive">
+                                    Case sensitive
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="bannedWordWholeWord" checked>
+                                <label class="form-check-label" for="bannedWordWholeWord">
+                                    Whole word only
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveBannedWord()">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Banned word functionality
+        function addBannedWord() {
+            const word = document.getElementById('newBannedWord').value.trim();
+            if (!word) {
+                alert('Please enter a word or phrase');
+                return;
+            }
+            
+            // TODO: Implement API call to add banned word
+            alert(`Add banned word functionality will be implemented with API integration`);
+            document.getElementById('newBannedWord').value = '';
+        }
+
+        function editBannedWord(wordId) {
+            // TODO: Load word data and show edit modal
+            alert(`Edit banned word functionality will be implemented with API integration`);
+        }
+
+        function removeBannedWord(wordId) {
+            if (confirm('Are you sure you want to remove this banned word?')) {
+                // TODO: Implement API call to remove banned word
+                alert(`Remove banned word functionality will be implemented with API integration`);
+            }
+        }
+
+        function saveBannedWord() {
+            const word = document.getElementById('bannedWordText').value.trim();
+            const action = document.getElementById('bannedWordAction').value;
+            const replacement = document.getElementById('bannedWordReplacement').value;
+            const caseSensitive = document.getElementById('bannedWordCaseSensitive').checked;
+            const wholeWord = document.getElementById('bannedWordWholeWord').checked;
+
+            if (!word) {
+                alert('Please enter a word or phrase');
+                return;
+            }
+
+            // TODO: Implement API call to save banned word
+            alert(`Save banned word functionality will be implemented with API integration`);
+            bootstrap.Modal.getInstance(document.getElementById('bannedWordModal')).hide();
+        }
+
+        // Action change handler
+        document.getElementById('bannedWordAction').addEventListener('change', function() {
+            const replacementGroup = document.getElementById('replacementGroup');
+            if (this.value === 'replace') {
+                replacementGroup.style.display = 'block';
+            } else {
+                replacementGroup.style.display = 'none';
+            }
+        });
+
+        // Spam threshold slider
+        document.getElementById('spamThreshold').addEventListener('input', function() {
+            document.querySelector('.range-value').textContent = this.value;
+        });
+
+        // Save settings
+        function saveSettings() {
+            // TODO: Implement API call to save all settings
+            alert('Settings save functionality will be implemented with API integration');
+        }
+
+        // Auto-save on change
+        document.addEventListener('change', function(e) {
+            if (e.target.matches('input, select, textarea')) {
+                // Debounce auto-save
+                clearTimeout(window.autoSaveTimeout);
+                window.autoSaveTimeout = setTimeout(saveSettings, 2000);
+            }
+        });
+    </script>
+}

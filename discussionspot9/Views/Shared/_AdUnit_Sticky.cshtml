@@ -1,0 +1,100 @@
+@* Enhanced Sticky Ad Unit with Modern Design *@
+<div class="sticky-ad-enhanced">
+    <div class="ad-wrapper">
+        <div class="ad-label-modern">
+            <i class="fas fa-ad"></i> Sponsored
+        </div>
+        <div class="ad-content">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                    crossorigin="anonymous"></script>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5934633595595089"
+                 data-ad-slot="7326207040"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sticky-ad-enhanced {
+        position: sticky;
+        top: 80px;
+        z-index: 900;
+        margin-bottom: 1.5rem;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .sticky-ad-enhanced .ad-wrapper {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 2px solid #e1e8ed;
+        transition: all 0.3s ease;
+    }
+
+    .sticky-ad-enhanced .ad-wrapper:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .ad-label-modern {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: #657786;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e1e8ed;
+    }
+
+    .ad-label-modern i {
+        color: #667eea;
+    }
+
+    .ad-content {
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 991px) {
+        .sticky-ad-enhanced {
+            position: relative;
+            top: 0;
+        }
+    }
+
+    /* Hide on very small screens */
+    @@media (max-width: 576px) {
+        .sticky-ad-enhanced {
+            display: none;
+        }
+    }
+</style>
+

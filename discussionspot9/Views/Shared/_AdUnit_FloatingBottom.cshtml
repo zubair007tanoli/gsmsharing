@@ -1,0 +1,111 @@
+@* Floating Bottom Ad - Mobile Optimized *@
+<div class="floating-bottom-ad" id="floatingBottomAd">
+    <button class="ad-close-btn" onclick="closeFloatingAd()">
+        <i class="fas fa-times"></i>
+    </button>
+    <div class="floating-ad-content">
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                crossorigin="anonymous"></script>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-5934633595595089"
+             data-ad-slot="3578533723"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+</div>
+
+<style>
+    .floating-bottom-ad {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 9999;
+        padding: 0.75rem;
+        max-height: 120px;
+        display: none; /* Show only on mobile */
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .ad-close-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: #ff4500;
+        color: white;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.8rem;
+        z-index: 10;
+        transition: all 0.2s;
+    }
+
+    .ad-close-btn:hover {
+        background: #e03d00;
+        transform: scale(1.1);
+    }
+
+    .floating-ad-content {
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    @@keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    /* Show only on mobile and tablet */
+    @@media (max-width: 991px) {
+        .floating-bottom-ad {
+            display: block;
+        }
+    }
+
+    /* Adjust body padding to prevent content from being hidden */
+    @@media (max-width: 991px) {
+        body {
+            padding-bottom: 120px;
+        }
+    }
+</style>
+
+<script>
+    function closeFloatingAd() {
+        const ad = document.getElementById('floatingBottomAd');
+        if (ad) {
+            ad.style.animation = 'slideDown 0.3s ease-out';
+            setTimeout(() => {
+                ad.style.display = 'none';
+                document.body.style.paddingBottom = '0';
+            }, 300);
+        }
+    }
+
+    // Add slide down animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @@keyframes slideDown {
+            from { transform: translateY(0); }
+            to { transform: translateY(100%); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+

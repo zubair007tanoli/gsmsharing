@@ -1,0 +1,648 @@
+/* DiscussionSpot9 - Advanced Ad Optimization Styles */
+/* Version 2.0 - October 2025 */
+
+:root {
+    --ad-primary: #667eea;
+    --ad-secondary: #764ba2;
+    --ad-accent: #ff4500;
+    --ad-bg: #ffffff;
+    --ad-border: #e1e8ed;
+    --ad-text: #657786;
+}
+
+/* ====================================
+   1. GLOBAL AD CONTAINER STYLES
+   ==================================== */
+
+.ad-container {
+    position: relative;
+    margin: 1.5rem 0;
+    animation: adFadeIn 0.6s ease-out;
+}
+
+.ad-wrapper {
+    background: var(--ad-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.ad-wrapper:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ====================================
+   2. AD LABELS & BADGES
+   ==================================== */
+
+.ad-label,
+.ad-badge {
+    font-size: 0.7rem;
+    color: var(--ad-text);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ad-label-modern {
+    background: linear-gradient(135deg, var(--ad-primary) 0%, var(--ad-secondary) 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ad-label-modern i {
+    color: #ffd700;
+}
+
+/* ====================================
+   3. STICKY AD IMPLEMENTATIONS
+   ==================================== */
+
+.sticky-ad-wrapper {
+    position: sticky;
+    top: 80px;
+    z-index: 900;
+    margin-bottom: 1.5rem;
+}
+
+.sticky-ad-enhanced {
+    position: sticky;
+    top: 80px;
+    z-index: 900;
+    animation: slideInRight 0.6s ease-out;
+}
+
+/* Multiple Sticky Positions */
+.sticky-top-80 { top: 80px; }
+.sticky-top-150 { top: 150px; }
+.sticky-top-220 { top: 220px; }
+.sticky-top-400 { top: 400px; }
+
+/* ====================================
+   4. IN-FEED AD STYLES
+   ==================================== */
+
+.infeed-ad-modern {
+    margin: 2.5rem 0;
+    animation: adFadeInScale 0.7s ease-out;
+}
+
+.infeed-ad-modern .ad-card {
+    background: var(--ad-bg);
+    border: 1px solid var(--ad-border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.infeed-ad-modern .ad-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Native Ad Styling */
+.ad-native {
+    border: 1px solid var(--ad-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+/* ====================================
+   5. FLOATING/FIXED ADS
+   ==================================== */
+
+.floating-bottom-ad {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    padding: 0.75rem;
+    animation: slideUpFromBottom 0.5s ease-out;
+}
+
+.floating-top-ad {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    padding: 0.75rem;
+    animation: slideDownFromTop 0.5s ease-out;
+}
+
+/* ====================================
+   6. PREMIUM AD PLACEMENTS
+   ==================================== */
+
+.premium-ad-container {
+    margin: 2.5rem 0;
+    position: relative;
+}
+
+.premium-ad-wrapper {
+    background: linear-gradient(135deg, var(--ad-primary) 0%, var(--ad-secondary) 100%);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.premium-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+/* ====================================
+   7. SIDEBAR AD OPTIMIZATIONS
+   ==================================== */
+
+.sidebar-ad-sticky {
+    position: sticky;
+    top: 80px;
+    z-index: 100;
+}
+
+.sidebar-ad-card {
+    background: white;
+    border: 1px solid var(--ad-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* ====================================
+   8. AD CLOSE BUTTONS
+   ==================================== */
+
+.ad-close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--ad-accent);
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.ad-close-btn:hover {
+    background: #e03d00;
+    transform: scale(1.1);
+}
+
+.ad-close-btn:active {
+    transform: scale(0.95);
+}
+
+/* ====================================
+   9. RESPONSIVE AD CONTAINERS
+   ==================================== */
+
+.ad-responsive {
+    width: 100%;
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-square {
+    width: 300px;
+    height: 250px;
+}
+
+.ad-leaderboard {
+    width: 728px;
+    height: 90px;
+}
+
+.ad-rectangle {
+    width: 300px;
+    height: 250px;
+}
+
+.ad-skyscraper {
+    width: 160px;
+    height: 600px;
+}
+
+/* ====================================
+   10. AD LOADING STATES
+   ==================================== */
+
+.ad-loading {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    min-height: 250px;
+    border-radius: 8px;
+}
+
+.ad-skeleton {
+    background: #f0f0f0;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ad-skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    animation: skeleton-loading 1.5s infinite;
+}
+
+/* ====================================
+   11. AD VIEWABILITY OPTIMIZATION
+   ==================================== */
+
+.ad-lazy-load {
+    min-height: 250px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-lazy-load::before {
+    content: 'Advertisement Loading...';
+    color: var(--ad-text);
+    font-size: 0.85rem;
+}
+
+/* Intersection Observer Support */
+.ad-intersecting {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.6s ease-out;
+}
+
+.ad-not-intersecting {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+/* ====================================
+   12. AD ANIMATIONS
+   ==================================== */
+
+@keyframes adFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes adFadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideUpFromBottom {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDownFromTop {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes skeleton-loading {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* ====================================
+   13. MOBILE OPTIMIZATIONS
+   ==================================== */
+
+@media (max-width: 991px) {
+    /* Disable sticky on tablets */
+    .sticky-ad-wrapper,
+    .sticky-ad-enhanced,
+    .sidebar-ad-sticky {
+        position: relative;
+        top: 0;
+    }
+
+    /* Show floating ads */
+    .floating-bottom-ad {
+        display: block;
+    }
+
+    /* Reduce ad sizes */
+    .ad-responsive {
+        min-height: 200px;
+    }
+
+    /* Adjust premium ad padding */
+    .premium-ad-wrapper {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Reduce margins */
+    .ad-container,
+    .infeed-ad-modern,
+    .premium-ad-container {
+        margin: 1.5rem 0;
+    }
+
+    /* Smaller ad labels */
+    .ad-label-modern {
+        font-size: 0.65rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    /* Compact close buttons */
+    .ad-close-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Hide certain ads on very small screens */
+    .ad-hide-mobile {
+        display: none;
+    }
+
+    /* Full width ads */
+    .ad-responsive {
+        width: 100%;
+        min-height: 150px;
+    }
+
+    /* Adjust floating ad */
+    .floating-bottom-ad {
+        padding: 0.5rem;
+    }
+
+    /* Compact premium ads */
+    .premium-ad-wrapper {
+        padding: 0.75rem;
+    }
+
+    .premium-ad-content {
+        min-height: 150px;
+    }
+}
+
+/* ====================================
+   14. DARK MODE SUPPORT
+   ==================================== */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ad-bg: #1a1a1b;
+        --ad-border: #343536;
+        --ad-text: #d7dadc;
+    }
+
+    .ad-wrapper,
+    .sidebar-ad-card,
+    .infeed-ad-modern .ad-card {
+        background: var(--ad-bg);
+        border-color: var(--ad-border);
+    }
+
+    .ad-loading {
+        background: linear-gradient(90deg, #2a2a2b 25%, #3a3a3b 50%, #2a2a2b 75%);
+        background-size: 200% 100%;
+    }
+
+    .floating-bottom-ad,
+    .floating-top-ad {
+        background: var(--ad-bg);
+        border-color: var(--ad-border);
+    }
+}
+
+/* ====================================
+   15. ACCESSIBILITY
+   ==================================== */
+
+/* Screen reader only */
+.ad-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Focus states */
+.ad-close-btn:focus {
+    outline: 2px solid var(--ad-accent);
+    outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .ad-container,
+    .sticky-ad-enhanced,
+    .infeed-ad-modern,
+    .floating-bottom-ad,
+    .premium-ad-container {
+        animation: none;
+    }
+
+    .ad-wrapper,
+    .ad-card {
+        transition: none;
+    }
+}
+
+/* ====================================
+   16. PRINT STYLES
+   ==================================== */
+
+@media print {
+    .ad-container,
+    .sticky-ad-enhanced,
+    .infeed-ad-modern,
+    .floating-bottom-ad,
+    .floating-top-ad,
+    .premium-ad-container,
+    .sidebar-ad-sticky {
+        display: none !important;
+    }
+}
+
+/* ====================================
+   17. AD BLOCKER DETECTION FALLBACK
+   ==================================== */
+
+.adsbygoogle[data-ad-status="unfilled"] {
+    min-height: 0 !important;
+}
+
+.ad-fallback {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    color: var(--ad-text);
+}
+
+.ad-fallback h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: var(--ad-primary);
+}
+
+.ad-fallback p {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+/* ====================================
+   18. PERFORMANCE OPTIMIZATIONS
+   ==================================== */
+
+/* GPU Acceleration */
+.ad-wrapper,
+.sticky-ad-enhanced,
+.floating-bottom-ad {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Content visibility */
+.ad-offscreen {
+    content-visibility: auto;
+}
+
+/* Lazy load images */
+.ad-image {
+    loading: lazy;
+}
+
+/* ====================================
+   19. UTILITY CLASSES
+   ==================================== */
+
+.ad-mt-1 { margin-top: 0.5rem; }
+.ad-mt-2 { margin-top: 1rem; }
+.ad-mt-3 { margin-top: 1.5rem; }
+.ad-mt-4 { margin-top: 2rem; }
+
+.ad-mb-1 { margin-bottom: 0.5rem; }
+.ad-mb-2 { margin-bottom: 1rem; }
+.ad-mb-3 { margin-bottom: 1.5rem; }
+.ad-mb-4 { margin-bottom: 2rem; }
+
+.ad-p-1 { padding: 0.5rem; }
+.ad-p-2 { padding: 1rem; }
+.ad-p-3 { padding: 1.5rem; }
+.ad-p-4 { padding: 2rem; }
+
+/* Spacing utilities */
+.ad-spacing-normal { margin: 1.5rem 0; }
+.ad-spacing-large { margin: 2.5rem 0; }
+.ad-spacing-small { margin: 1rem 0; }
+
+/* Border radius */
+.ad-rounded-sm { border-radius: 8px; }
+.ad-rounded-md { border-radius: 12px; }
+.ad-rounded-lg { border-radius: 16px; }
+.ad-rounded-xl { border-radius: 20px; }
+
+/* ====================================
+   END OF AD OPTIMIZATION STYLES
+   ==================================== */
+

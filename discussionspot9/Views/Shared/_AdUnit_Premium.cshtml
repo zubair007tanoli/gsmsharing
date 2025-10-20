@@ -1,0 +1,135 @@
+@* Premium Ad Unit - High Visibility Placement *@
+<div class="premium-ad-container">
+    <div class="premium-ad-wrapper">
+        <div class="premium-badge">
+            <i class="fas fa-star"></i>
+            <span>Premium Placement</span>
+        </div>
+        <div class="premium-ad-content">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                    crossorigin="anonymous"></script>
+            <!-- Premium Display Ad -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5934633595595089"
+                 data-ad-slot="3578533723"
+                 data-ad-format="horizontal"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+    </div>
+</div>
+
+<style>
+    .premium-ad-container {
+        margin: 2.5rem 0;
+        animation: fadeInScale 0.8s ease-out;
+    }
+
+    .premium-ad-wrapper {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .premium-ad-wrapper::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 70%
+        );
+        animation: shimmer 3s infinite;
+    }
+
+    .premium-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        color: white;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .premium-badge i {
+        color: #ffd700;
+        animation: twinkle 2s ease-in-out infinite;
+    }
+
+    .premium-ad-content {
+        background: white;
+        border-radius: 12px;
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+    }
+
+    @@keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @@keyframes shimmer {
+        0% {
+            transform: translateX(-100%) translateY(-100%);
+        }
+        100% {
+            transform: translateX(100%) translateY(100%);
+        }
+    }
+
+    @@keyframes twinkle {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.7;
+            transform: scale(1.2);
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .premium-ad-container {
+            margin: 1.5rem 0;
+        }
+
+        .premium-ad-wrapper {
+            padding: 1rem;
+        }
+
+        .premium-ad-content {
+            min-height: 200px;
+        }
+    }
+</style>
+

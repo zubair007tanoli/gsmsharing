@@ -228,30 +228,14 @@
                                     <span>@Model.Post.CommentCount</span>
                                 </button>
                                 
-                                <div class="share-dropdown-footer">
-                                    <button class="action-btn-footer" id="shareBtn-@Model.Post.PostId" title="Share">
-                                        <i class="fas fa-share-alt"></i>
-                                        <span>Share</span>
-                                    </button>
-                                    <div class="share-menu-footer">
-                                        <a href="#" class="share-item" data-platform="facebook">
-                                            <i class="fab fa-facebook-f"></i>
-                                            <span>Facebook</span>
-                                        </a>
-                                        <a href="#" class="share-item" data-platform="twitter">
-                                            <i class="fab fa-twitter"></i>
-                                            <span>Twitter</span>
-                                        </a>
-                                        <a href="#" class="share-item" data-platform="reddit">
-                                            <i class="fab fa-reddit"></i>
-                                            <span>Reddit</span>
-                                        </a>
-                                        <a href="#" class="share-item" data-platform="copy">
-                                            <i class="fas fa-link"></i>
-                                            <span>Copy Link</span>
-                                        </a>
-                                    </div>
-                                </div>
+                                @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
+                                    { "ShareTitle", Model.Post.Title },
+                                    { "ShareDescription", excerpt },
+                                    { "ShareUrl", postUrl },
+                                    { "ShareImage", imageUrl },
+                                    { "ShareType", "post" },
+                                    { "ContentId", Model.Post.PostId.ToString() }
+                                })
 
                                 <button class="action-btn-footer @(Model.Post.IsSavedByUser ? "active" : "")" 
                                         id="saveBtn-@Model.Post.PostId" 

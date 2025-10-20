@@ -1,0 +1,461 @@
+/* Unified Share Buttons Styling */
+
+/* Base Share Container */
+.share-buttons-unified {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-share {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 0.5rem 1rem;
+}
+
+.btn-share:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Dropdown Menu */
+.share-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 1050;
+    min-width: 320px;
+    margin-top: 8px;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.share-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.share-menu-header h6 {
+    margin: 0;
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.share-menu-header .btn-close {
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+.share-menu-header .btn-close:hover {
+    opacity: 1;
+}
+
+/* Share Options Grid */
+.share-options-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 15px;
+}
+
+.share-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #2c3e50;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.share-option:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.share-option-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #fff;
+    transition: all 0.2s ease;
+}
+
+.share-option:hover .share-option-icon {
+    transform: scale(1.1);
+}
+
+/* Platform Colors */
+.share-option.facebook .share-option-icon {
+    background: linear-gradient(135deg, #1877f2, #4267B2);
+}
+
+.share-option.twitter .share-option-icon {
+    background: linear-gradient(135deg, #1da1f2, #0c85d0);
+}
+
+.share-option.linkedin .share-option-icon {
+    background: linear-gradient(135deg, #0077b5, #005582);
+}
+
+.share-option.reddit .share-option-icon {
+    background: linear-gradient(135deg, #ff4500, #cc3700);
+}
+
+.share-option.whatsapp .share-option-icon {
+    background: linear-gradient(135deg, #25d366, #128c7e);
+}
+
+.share-option.telegram .share-option-icon {
+    background: linear-gradient(135deg, #0088cc, #006699);
+}
+
+.share-option.email .share-option-icon {
+    background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+.share-option.copy .share-option-icon {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+}
+
+.share-option.share-success .share-option-icon {
+    background: linear-gradient(135deg, #28a745, #218838) !important;
+}
+
+/* URL Section */
+.share-url-section {
+    padding: 15px 20px;
+    border-top: 1px solid #f8f9fa;
+}
+
+.share-url-input {
+    font-size: 0.9rem;
+    border-radius: 6px 0 0 6px;
+    background: #f8f9fa;
+}
+
+.share-url-section .btn {
+    border-radius: 0 6px 6px 0;
+}
+
+/* QR Code Section */
+.share-qr-section {
+    padding: 15px 20px;
+    border-top: 1px solid #f8f9fa;
+    text-align: center;
+}
+
+.btn-qr {
+    width: 100%;
+    border-radius: 6px;
+}
+
+/* Share Stats */
+.share-stats {
+    padding: 10px 20px;
+    border-top: 1px solid #f8f9fa;
+    text-align: center;
+}
+
+.share-stats small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Inline Variant */
+.share-inline {
+    display: inline-block;
+}
+
+.share-inline-trigger {
+    background: none;
+    border: none;
+    color: #6c757d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.share-inline-trigger:hover {
+    background: #f8f9fa;
+    color: #007bff;
+}
+
+.share-count {
+    display: none;
+    background: #007bff;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Floating Share Button (Mobile) */
+.floating-share-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    z-index: 1040;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.floating-share-btn.show {
+    display: flex;
+    animation: floatIn 0.3s ease;
+}
+
+.floating-share-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.5);
+}
+
+@keyframes floatIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.floating-share-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    z-index: 1050;
+    max-height: 70vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+.floating-share-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #f8f9fa;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+}
+
+.floating-share-content {
+    padding: 15px;
+}
+
+/* QR Code Modal */
+#qrCodeCanvas {
+    max-width: 300px;
+    max-height: 300px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .share-dropdown-menu {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: 20px 20px 0 0;
+        margin: 0;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .share-options-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .share-option {
+        padding: 10px 5px;
+        font-size: 0.75rem;
+    }
+    
+    .share-option-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .floating-share-btn {
+        display: flex;
+    }
+}
+
+@media (max-width: 480px) {
+    .share-options-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }
+    
+    .share-option {
+        padding: 8px 4px;
+        font-size: 0.7rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .share-dropdown-menu,
+    .floating-share-menu {
+        background: #2c3e50;
+        border-color: #34495e;
+    }
+    
+    .share-menu-header {
+        border-color: #34495e;
+    }
+    
+    .share-menu-header h6 {
+        color: #ecf0f1;
+    }
+    
+    .share-option {
+        background: #34495e;
+        color: #ecf0f1;
+    }
+    
+    .share-option:hover {
+        background: #3d5873;
+    }
+    
+    .share-url-section,
+    .share-qr-section,
+    .share-stats {
+        border-color: #34495e;
+    }
+    
+    .share-url-input {
+        background: #34495e;
+        color: #ecf0f1;
+        border-color: #4a6278;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .share-buttons-unified,
+    .floating-share-btn {
+        display: none;
+    }
+}
+
+/* Accessibility */
+.share-option:focus,
+.btn-share:focus,
+.floating-share-btn:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Loading State */
+.share-loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.share-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success Animation */
+@keyframes successPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.share-success {
+    animation: successPulse 0.3s ease;
+}
+

@@ -111,38 +111,63 @@
                 <div class="community-actions">
                     @if (User.Identity.IsAuthenticated)
                     {
-                        <button class="btn @(Model.Community.IsCurrentUserMember ? "btn-outline-light" : "btn-primary") join-btn" 
-                                id="joinCommunityBtn" 
-                                data-community-id="@Model.Community.CommunityId"
-                                data-is-member="@Model.Community.IsCurrentUserMember.ToString().ToLower()">
-                            <i class="fas fa-@(Model.Community.IsCurrentUserMember ? "check" : "plus")"></i> 
-                            @(Model.Community.IsCurrentUserMember ? "Joined" : "Join Community")
-                        </button>
-                        
                         @if (Model.Community.IsCurrentUserModerator)
                         {
-                            <a href="@Url.Action("Settings", "Community", new { slug = Model.Community.Slug })" class="btn btn-outline-light edit-btn">
-                                <i class="fas fa-cog"></i> Community Settings
+                            <!-- Admin/Moderator Controls -->
+                            <span class="badge bg-warning text-dark me-2" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                <i class="fas fa-shield-alt"></i> @(Model.Community.CurrentUserRole?.ToUpper() ?? "MODERATOR")
+                            </span>
+                            <a href="@Url.Action("Settings", "Community", new { slug = Model.Community.Slug })" class="btn btn-light">
+                                <i class="fas fa-cog"></i> Mod Tools
                             </a>
-                            <button class="btn btn-outline-light edit-btn" data-bs-toggle="modal" data-bs-target="#editCommunityModal">
-                                <i class="fas fa-edit"></i> Edit Details
+                            <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#editCommunityModal">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn @(Model.Community.IsCurrentUserMember ? "btn-outline-light" : "btn-primary") join-btn" 
+                                    id="joinCommunityBtn" 
+                                    data-community-id="@Model.Community.CommunityId"
+                                    data-is-member="@Model.Community.IsCurrentUserMember.ToString().ToLower()">
+                                <i class="fas fa-@(Model.Community.IsCurrentUserMember ? "check" : "plus")"></i> 
+                                @(Model.Community.IsCurrentUserMember ? "Joined" : "Join Community")
                             </button>
                         }
                     }
                     else
                     {
-                        <a href="/auth?returnUrl=@Uri.EscapeDataString(Context.Request.Path)" class="btn btn-primary join-btn">
+                        <a href="/Account/Auth?returnUrl=@Uri.EscapeDataString(Context.Request.Path)" class="btn btn-primary join-btn">
                             <i class="fas fa-plus"></i> Join Community
                         </a>
                     }
+                    
+                    <!-- Share Buttons -->
+                    @await Html.PartialAsync("_ShareButtons", new { 
+                        CommunitySlug = Model.Community.Slug,
+                        ShareTitle = Model.Community.Title,
+                        ShareDescription = Model.Community.ShortDescription,
+                        ShareUrl = Url.Action("Details", "Community", new { slug = Model.Community.Slug }, Context.Request.Scheme),
+                        ShareType = "community"
+                    })
                     
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="fas fa-ellipsis-h"></i>
                         </button>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#" onclick="shareCommunity(); return false;"><i class="fas fa-share"></i> Share</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-flag"></i> Report</a></li>
+                            @if (Model.Community.IsCurrentUserModerator)
+                            {
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/r/@Model.Community.Slug/members"><i class="fas fa-users-cog"></i> Members & Moderators</a></li>
+                                <li><a class="dropdown-item" href="/r/@Model.Community.Slug/analytics"><i class="fas fa-chart-bar"></i> Statistics</a></li>
+                                <li><a class="dropdown-item" href="/r/@Model.Community.Slug/filters"><i class="fas fa-filter"></i> Content Filters</a></li>
+                            }
+                            else
+                            {
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-flag"></i> Report</a></li>
+                            }
                             <li><a class="dropdown-item" href="#"><i class="fas fa-bookmark"></i> Save</a></li>
                         </ul>
                     </div>
@@ -314,18 +339,67 @@
             <!-- Rules Tab -->
             <div class="tab-pane" id="rules-content">
                 <div class="rules-section">
-                    <h3>Community Rules</h3>
+                    <div class="rules-header">
+                        <h3>Community Rules</h3>
+                        <div class="rules-actions">
+                            @if (Model.Community.IsCurrentUserModerator)
+                            {
+                                <a href="/r/@Model.Community.Slug/rules" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit Rules
+                                </a>
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" onclick="reportRuleViolation()">
+                                <i class="fas fa-flag"></i> Report Violation
+                            </button>
+                        </div>
+                    </div>
+                    
                     @if (!string.IsNullOrEmpty(Model.Community.Rules))
                     {
                         <div class="rules-content">
-                            @Html.Raw(Model.Community.Rules.Replace("\n", "<br>"))
+                            @{
+                                var rules = Model.Community.Rules.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                var ruleNumber = 1;
+                            }
+                            @foreach (var rule in rules)
+                            {
+                                if (!string.IsNullOrWhiteSpace(rule))
+                                {
+                                    <div class="rule-item">
+                                        <div class="rule-number">@ruleNumber</div>
+                                        <div class="rule-text">@rule.Trim()</div>
+                                        <div class="rule-actions">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="copyRuleLink(@ruleNumber)">
+                                                <i class="fas fa-link"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    ruleNumber++;
+                                }
+                            }
+                        </div>
+                        
+                        <div class="rules-footer">
+                            <div class="rules-note">
+                                <i class="fas fa-info-circle"></i>
+                                <span>These rules help maintain a positive community environment. Please follow them to ensure everyone has a great experience.</span>
+                            </div>
                         </div>
                     }
                     else
                     {
                         <div class="no-rules">
-                            <i class="fas fa-info-circle"></i>
-                            <p>No specific rules have been set for this community yet. Please follow general community guidelines.</p>
+                            <div class="no-rules-icon">
+                                <i class="fas fa-gavel"></i>
+                            </div>
+                            <h4>No Rules Yet</h4>
+                            <p>This community hasn't established specific rules yet. Please follow general community guidelines and be respectful to other members.</p>
+                            @if (Model.Community.IsCurrentUserModerator)
+                            {
+                                <a href="/r/@Model.Community.Slug/rules" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Create First Rule
+                                </a>
+                            }
                         </div>
                     }
                 </div>
@@ -379,6 +453,53 @@
 
     <!-- Right Sidebar -->
     <aside class="right-sidebar">
+        @if (Model.Community.IsCurrentUserModerator)
+        {
+            <!-- Moderator Control Panel -->
+            <div class="sidebar-section moderator-panel">
+                <div class="moderator-panel-header">
+                    <h3><i class="fas fa-shield-alt"></i> Moderator Tools</h3>
+                    <span class="badge bg-warning text-dark">@(Model.Community.CurrentUserRole?.ToUpper() ?? "MOD")</span>
+                </div>
+                <div class="moderator-actions">
+                    <a href="/r/@Model.Community.Slug/settings" class="mod-action-btn">
+                        <i class="fas fa-cog"></i>
+                        <span>Community Settings</span>
+                    </a>
+                    <a href="/r/@Model.Community.Slug/members" class="mod-action-btn">
+                        <i class="fas fa-users-cog"></i>
+                        <span>Manage Members</span>
+                    </a>
+                    <a href="/r/@Model.Community.Slug/rules" class="mod-action-btn">
+                        <i class="fas fa-gavel"></i>
+                        <span>Edit Rules</span>
+                    </a>
+                    <button class="mod-action-btn" data-bs-toggle="modal" data-bs-target="#editCommunityModal">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Details</span>
+                    </button>
+                    <a href="/r/@Model.Community.Slug/analytics" class="mod-action-btn">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>View Analytics</span>
+                    </a>
+                    <a href="/r/@Model.Community.Slug/filters" class="mod-action-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>Content Filters</span>
+                    </a>
+                </div>
+                <div class="mod-quick-stats mt-3">
+                    <div class="mod-stat-item">
+                        <i class="fas fa-flag text-danger"></i>
+                        <span>0 Reports</span>
+                    </div>
+                    <div class="mod-stat-item">
+                        <i class="fas fa-clock text-warning"></i>
+                        <span>0 Pending</span>
+                    </div>
+                </div>
+            </div>
+        }
+        
         <!-- Community Quick Stats -->
         <div class="sidebar-section">
             <h3><i class="fas fa-chart-line"></i> Quick Stats</h3>
@@ -740,6 +861,41 @@
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toString();
+        }
+
+        // Rules functionality
+        function reportRuleViolation() {
+            // TODO: Implement rule violation reporting
+            alert('Rule violation reporting will be implemented');
+        }
+
+        function copyRuleLink(ruleNumber) {
+            const url = window.location.href + '#rule-' + ruleNumber;
+            navigator.clipboard.writeText(url).then(() => {
+                // Show success message
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.classList.add('btn-success');
+                button.classList.remove('btn-outline-primary');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            }).catch(() => {
+                alert('Failed to copy link to clipboard');
+            });
+        }
+
+        // Share community functionality
+        function shareCommunity() {
+            // This will be handled by the share buttons partial
+            const shareBtn = document.querySelector('.share-btn');
+            if (shareBtn) {
+                shareBtn.click();
+            }
         }
     </script>
 }

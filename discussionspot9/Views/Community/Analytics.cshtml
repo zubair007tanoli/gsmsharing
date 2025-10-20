@@ -1,0 +1,499 @@
+@model discussionspot9.Models.ViewModels.CommunityAnalyticsViewModel
+@{
+    ViewData["Title"] = $"{Model.CommunityName} - Analytics";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/community-settings.css" />
+    <link rel="stylesheet" href="~/css/community-pages.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+}
+
+<div class="community-analytics-container">
+    <!-- Header -->
+    <div class="analytics-header">
+        <div class="header-content">
+            <h1>
+                <i class="fas fa-chart-line"></i> Community Analytics
+            </h1>
+            <p class="text-muted">Track community growth and engagement</p>
+        </div>
+        <div class="header-actions">
+            <a href="/r/@Model.CommunitySlug" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Community
+            </a>
+            @if (Model.CanExportData)
+            {
+                <button class="btn btn-primary" onclick="exportData()">
+                    <i class="fas fa-download"></i> Export Data
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="date-range-selector">
+        <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="dateRange" id="range7d" value="7d" @(Model.DateRange == "7d" ? "checked" : "")>
+            <label class="btn btn-outline-primary" for="range7d">7 Days</label>
+
+            <input type="radio" class="btn-check" name="dateRange" id="range30d" value="30d" @(Model.DateRange == "30d" ? "checked" : "")>
+            <label class="btn btn-outline-primary" for="range30d">30 Days</label>
+
+            <input type="radio" class="btn-check" name="dateRange" id="range90d" value="90d" @(Model.DateRange == "90d" ? "checked" : "")>
+            <label class="btn btn-outline-primary" for="range90d">90 Days</label>
+
+            <input type="radio" class="btn-check" name="dateRange" id="range1y" value="1y" @(Model.DateRange == "1y" ? "checked" : "")>
+            <label class="btn btn-outline-primary" for="range1y">1 Year</label>
+        </div>
+    </div>
+
+    <!-- Overview Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-number">@Model.TotalMembers</div>
+                <div class="metric-label">Total Members</div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i> +@Model.GrowthRate.ToString("P0") this period
+                </div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-number">@Model.TotalPosts</div>
+                <div class="metric-label">Total Posts</div>
+                <div class="metric-change">
+                    <i class="fas fa-chart-line"></i> Activity tracking
+                </div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-number">@Model.TotalComments</div>
+                <div class="metric-label">Total Comments</div>
+                <div class="metric-change">
+                    <i class="fas fa-chart-line"></i> Engagement tracking
+                </div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-eye"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-number">@Model.TotalViews</div>
+                <div class="metric-label">Total Views</div>
+                <div class="metric-change">
+                    <i class="fas fa-chart-line"></i> Reach tracking
+                </div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="metric-content">
+                <div class="metric-number">@Model.EngagementRate.ToString("P0")</div>
+                <div class="metric-label">Engagement Rate</div>
+                <div class="metric-change">
+                    <i class="fas fa-chart-line"></i> User interaction
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Member Growth</h3>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleChart('memberGrowth')">
+                                <i class="fas fa-chart-line"></i> Line
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleChart('memberGrowth')">
+                                <i class="fas fa-chart-bar"></i> Bar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="memberGrowthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Activity Distribution</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Post Activity</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="postActivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Comment Activity</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="commentActivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Contributors -->
+    <div class="contributors-section">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="contributors-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-trophy"></i> Top Contributors
+                        </h3>
+                    </div>
+                    <div class="contributors-list">
+                        @if (Model.TopContributors.Any())
+                        {
+                            @foreach (var contributor in Model.TopContributors.Take(5))
+                            {
+                                <div class="contributor-item">
+                                    <div class="contributor-rank">@(Model.TopContributors.IndexOf(contributor) + 1)</div>
+                                    <div class="contributor-avatar">
+                                        @if (!string.IsNullOrEmpty(contributor.AvatarUrl))
+                                        {
+                                            <img src="@contributor.AvatarUrl" alt="@contributor.DisplayName">
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-initials">@contributor.Initials</div>
+                                        }
+                                    </div>
+                                    <div class="contributor-info">
+                                        <div class="contributor-name">@contributor.DisplayName</div>
+                                        <div class="contributor-stats">
+                                            <span>@contributor.PostCount posts</span>
+                                            <span>@contributor.CommentCount comments</span>
+                                        </div>
+                                    </div>
+                                    <div class="contributor-karma">@contributor.TotalKarma</div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <p>No contributor data available</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="contributors-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-pen"></i> Top Posters
+                        </h3>
+                    </div>
+                    <div class="contributors-list">
+                        @if (Model.TopPosters.Any())
+                        {
+                            @foreach (var poster in Model.TopPosters.Take(5))
+                            {
+                                <div class="contributor-item">
+                                    <div class="contributor-rank">@(Model.TopPosters.IndexOf(poster) + 1)</div>
+                                    <div class="contributor-avatar">
+                                        @if (!string.IsNullOrEmpty(poster.AvatarUrl))
+                                        {
+                                            <img src="@poster.AvatarUrl" alt="@poster.DisplayName">
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-initials">@poster.Initials</div>
+                                        }
+                                    </div>
+                                    <div class="contributor-info">
+                                        <div class="contributor-name">@poster.DisplayName</div>
+                                        <div class="contributor-stats">
+                                            <span>@poster.PostCount posts</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <p>No poster data available</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="contributors-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-comments"></i> Top Commenters
+                        </h3>
+                    </div>
+                    <div class="contributors-list">
+                        @if (Model.TopCommenters.Any())
+                        {
+                            @foreach (var commenter in Model.TopCommenters.Take(5))
+                            {
+                                <div class="contributor-item">
+                                    <div class="contributor-rank">@(Model.TopCommenters.IndexOf(commenter) + 1)</div>
+                                    <div class="contributor-avatar">
+                                        @if (!string.IsNullOrEmpty(commenter.AvatarUrl))
+                                        {
+                                            <img src="@commenter.AvatarUrl" alt="@commenter.DisplayName">
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-initials">@commenter.Initials</div>
+                                        }
+                                    </div>
+                                    <div class="contributor-info">
+                                        <div class="contributor-name">@commenter.DisplayName</div>
+                                        <div class="contributor-stats">
+                                            <span>@commenter.CommentCount comments</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <p>No commenter data available</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traffic Sources -->
+    @if (Model.TrafficSources.Any())
+    {
+        <div class="traffic-sources-section">
+            <h3>
+                <i class="fas fa-globe"></i> Traffic Sources
+            </h3>
+            <div class="traffic-sources-grid">
+                @foreach (var source in Model.TrafficSources)
+                {
+                    <div class="traffic-source-card">
+                        <div class="source-icon">
+                            <i class="@source.Icon"></i>
+                        </div>
+                        <div class="source-info">
+                            <div class="source-name">@source.Source</div>
+                            <div class="source-visitors">@source.Visitors visitors</div>
+                        </div>
+                        <div class="source-percentage">@source.Percentage.ToString("P1")</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Chart.js configuration
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#6c757d';
+
+        // Member Growth Chart
+        const memberGrowthCtx = document.getElementById('memberGrowthChart').getContext('2d');
+        const memberGrowthData = @Html.Raw(Json.Serialize(Model.MemberGrowth.Select(m => new { date = m.FormattedDate, value = m.Value })));
+        
+        new Chart(memberGrowthCtx, {
+            type: 'line',
+            data: {
+                labels: memberGrowthData.map(d => d.date),
+                datasets: [{
+                    label: 'New Members',
+                    data: memberGrowthData.map(d => d.value),
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Activity Distribution Chart
+        const activityCtx = document.getElementById('activityChart').getContext('2d');
+        new Chart(activityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Posts', 'Comments', 'Views'],
+                datasets: [{
+                    data: [@Model.TotalPosts, @Model.TotalComments, @Model.TotalViews],
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Post Activity Chart
+        const postActivityCtx = document.getElementById('postActivityChart').getContext('2d');
+        const postActivityData = @Html.Raw(Json.Serialize(Model.PostActivity.Select(p => new { date = p.FormattedDate, value = p.Value })));
+        
+        new Chart(postActivityCtx, {
+            type: 'bar',
+            data: {
+                labels: postActivityData.map(d => d.date),
+                datasets: [{
+                    label: 'Posts',
+                    data: postActivityData.map(d => d.value),
+                    backgroundColor: '#28a745',
+                    borderColor: '#28a745',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Comment Activity Chart
+        const commentActivityCtx = document.getElementById('commentActivityChart').getContext('2d');
+        const commentActivityData = @Html.Raw(Json.Serialize(Model.CommentActivity.Select(c => new { date = c.FormattedDate, value = c.Value })));
+        
+        new Chart(commentActivityCtx, {
+            type: 'bar',
+            data: {
+                labels: commentActivityData.map(d => d.date),
+                datasets: [{
+                    label: 'Comments',
+                    data: commentActivityData.map(d => d.value),
+                    backgroundColor: '#ffc107',
+                    borderColor: '#ffc107',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Date range change handler
+        document.querySelectorAll('input[name="dateRange"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    const currentUrl = new URL(window.location);
+                    currentUrl.searchParams.set('range', this.value);
+                    window.location.href = currentUrl.toString();
+                }
+            });
+        });
+
+        // Export data functionality
+        function exportData() {
+            // TODO: Implement data export
+            alert('Data export functionality will be implemented with API integration');
+        }
+
+        // Chart toggle functionality
+        function toggleChart(chartId) {
+            // TODO: Implement chart type switching
+            console.log('Chart toggle for:', chartId);
+        }
+    </script>
+}

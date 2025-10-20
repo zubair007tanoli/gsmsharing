@@ -1,6 +1,7 @@
 ﻿using discussionspot9.Data.DbContext;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -169,6 +170,28 @@ namespace discussionspot9.Controllers
                     return NotFound();
                 }
 
+                // Get current user ID if authenticated
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    // Check if user is a member
+                    community.IsCurrentUserMember = await _context.CommunityMembers
+                        .AnyAsync(cm => cm.CommunityId == community.CommunityId && cm.UserId == userId);
+                    
+                    // Check if user is moderator or creator
+                    var memberRole = await _context.CommunityMembers
+                        .Where(cm => cm.CommunityId == community.CommunityId && cm.UserId == userId)
+                        .Select(cm => cm.Role)
+                        .FirstOrDefaultAsync();
+                    
+                    community.IsCurrentUserModerator = memberRole == "moderator" || 
+                                                       memberRole == "admin" || 
+                                                       community.CreatorId == userId;
+                    community.CurrentUserRole = memberRole;
+                    community.CurrentUserId = userId;
+                }
+
                 // Get posts for this community
                 var posts = await _postService.GetCommunityPostsAsync(community.CommunityId, sort, page);
 
@@ -260,6 +283,237 @@ namespace discussionspot9.Controllers
             }
             
             return View(community);
+        }
+
+        /// <summary>
+        /// Community Members Management - Admin/Moderator only
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("r/{slug}/members")]
+        public async Task<IActionResult> Members(string slug, int page = 1, string search = "", string role = "all", string sort = "joined", string order = "desc")
+        {
+            if (string.IsNullOrEmpty(slug))
+            {
+                return NotFound();
+            }
+            
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+            
+            var community = await _communityService.GetCommunityDetailsAsync(slug);
+            if (community == null)
+            {
+                return NotFound();
+            }
+            
+            // Check if user is admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(community.CommunityId, userId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(community.CommunityId, userId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access community members";
+                return RedirectToAction("Details", new { communitySlug = slug });
+            }
+            
+            var model = new CommunityMembersViewModel
+            {
+                CommunityId = community.CommunityId,
+                CommunityName = community.Title,
+                CommunitySlug = community.Slug,
+                CurrentPage = page,
+                SearchTerm = search,
+                RoleFilter = role,
+                SortBy = sort,
+                SortOrder = order,
+                CanManageMembers = isAdmin || isModerator,
+                CanChangeRoles = isAdmin,
+                CanBanMembers = isAdmin || isModerator
+            };
+            
+            // Load members data (simplified for now)
+            model.Members = await LoadCommunityMembers(community.CommunityId, page, search, role, sort, order);
+            model.TotalMembers = await GetTotalMembersCount(community.CommunityId, search, role);
+            // TotalPages is computed property, no need to set it
+            
+            return View(model);
+        }
+
+        /// <summary>
+        /// Community Rules Management - Admin/Moderator only
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("r/{slug}/rules")]
+        public async Task<IActionResult> Rules(string slug)
+        {
+            if (string.IsNullOrEmpty(slug))
+            {
+                return NotFound();
+            }
+            
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+            
+            var community = await _communityService.GetCommunityDetailsAsync(slug);
+            if (community == null)
+            {
+                return NotFound();
+            }
+            
+            // Check if user is admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(community.CommunityId, userId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(community.CommunityId, userId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access community rules";
+                return RedirectToAction("Details", new { communitySlug = slug });
+            }
+            
+            var model = new CommunityRulesViewModel
+            {
+                CommunityId = community.CommunityId,
+                CommunityName = community.Title,
+                CommunitySlug = community.Slug,
+                CanEditRules = isAdmin || isModerator,
+                CanDeleteRules = isAdmin,
+                CanReorderRules = isAdmin || isModerator
+            };
+            
+            // Load rules and templates
+            model.Rules = await LoadCommunityRules(community.CommunityId);
+            model.RuleTemplates = await LoadRuleTemplates();
+            
+            return View(model);
+        }
+
+        /// <summary>
+        /// Community Analytics - Admin/Moderator only
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("r/{slug}/analytics")]
+        public async Task<IActionResult> Analytics(string slug, string range = "30d")
+        {
+            if (string.IsNullOrEmpty(slug))
+            {
+                return NotFound();
+            }
+            
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+            
+            var community = await _communityService.GetCommunityDetailsAsync(slug);
+            if (community == null)
+            {
+                return NotFound();
+            }
+            
+            // Check if user is admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(community.CommunityId, userId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(community.CommunityId, userId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access community analytics";
+                return RedirectToAction("Details", new { communitySlug = slug });
+            }
+            
+            var model = new CommunityAnalyticsViewModel
+            {
+                CommunityId = community.CommunityId,
+                CommunityName = community.Title,
+                CommunitySlug = community.Slug,
+                DateRange = range,
+                CanExportData = isAdmin || isModerator
+            };
+            
+            // Set date range
+            switch (range)
+            {
+                case "7d":
+                    model.StartDate = DateTime.Now.AddDays(-7);
+                    break;
+                case "30d":
+                    model.StartDate = DateTime.Now.AddDays(-30);
+                    break;
+                case "90d":
+                    model.StartDate = DateTime.Now.AddDays(-90);
+                    break;
+                case "1y":
+                    model.StartDate = DateTime.Now.AddYears(-1);
+                    break;
+                default:
+                    model.StartDate = DateTime.Now.AddDays(-30);
+                    break;
+            }
+            model.EndDate = DateTime.Now;
+            
+            // Load analytics data
+            await LoadAnalyticsData(model);
+            
+            return View(model);
+        }
+
+        /// <summary>
+        /// Content Filters Management - Admin/Moderator only
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        [Route("r/{slug}/filters")]
+        public async Task<IActionResult> Filters(string slug)
+        {
+            if (string.IsNullOrEmpty(slug))
+            {
+                return NotFound();
+            }
+            
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+            
+            var community = await _communityService.GetCommunityDetailsAsync(slug);
+            if (community == null)
+            {
+                return NotFound();
+            }
+            
+            // Check if user is admin/moderator
+            var isAdmin = await _communityService.IsCommunityAdminAsync(community.CommunityId, userId);
+            var isModerator = await _communityService.IsCommunityModeratorAsync(community.CommunityId, userId);
+            
+            if (!isAdmin && !isModerator)
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access content filters";
+                return RedirectToAction("Details", new { communitySlug = slug });
+            }
+            
+            var model = new ContentFiltersViewModel
+            {
+                CommunityId = community.CommunityId,
+                CommunityName = community.Title,
+                CommunitySlug = community.Slug,
+                CanEditFilters = isAdmin || isModerator,
+                CanViewLogs = isAdmin || isModerator
+            };
+            
+            // Load filter data
+            await LoadFilterData(model);
+            
+            return View(model);
         }
 
         /// <summary>
@@ -716,6 +970,327 @@ namespace discussionspot9.Controllers
                 _logger.LogError(ex, "Error fetching popular communities");
                 return Json(new { communities = new List<object>() });
             }
+        }
+
+        // ===============================================
+        // HELPER METHODS FOR NEW COMMUNITY MANAGEMENT PAGES
+        // ===============================================
+
+        /// <summary>
+        /// Load community members with pagination and filtering
+        /// </summary>
+        private async Task<List<discussionspot9.Models.ViewModels.MemberViewModel>> LoadCommunityMembers(int communityId, int page, string search, string role, string sort, string order)
+        {
+            var query = _context.CommunityMembers
+                .Where(cm => cm.CommunityId == communityId)
+                .Include(cm => cm.User)
+                .AsQueryable();
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(cm => cm.User.UserName.Contains(search) || 
+                                        cm.User.Email.Contains(search));
+            }
+
+            // Apply role filter
+            if (role != "all")
+            {
+                query = query.Where(cm => cm.Role.ToLower() == role.ToLower());
+            }
+
+            // Apply sorting
+            switch (sort.ToLower())
+            {
+                case "name":
+                    query = order.ToLower() == "asc" ? query.OrderBy(cm => cm.User.UserName) : query.OrderByDescending(cm => cm.User.UserName);
+                    break;
+                case "joined":
+                default:
+                    query = order.ToLower() == "asc" ? query.OrderBy(cm => cm.JoinedAt) : query.OrderByDescending(cm => cm.JoinedAt);
+                    break;
+            }
+
+            // Apply pagination
+            var members = await query
+                .Skip((page - 1) * 20)
+                .Take(20)
+                .Select(cm => new discussionspot9.Models.ViewModels.MemberViewModel
+                {
+                    UserId = cm.UserId,
+                    DisplayName = cm.User.UserName ?? "Unknown",
+                    Email = cm.User.Email,
+                    Role = cm.Role,
+                    JoinedAt = cm.JoinedAt,
+                    FormattedJoinedAt = FormatTimeAgo(cm.JoinedAt),
+                    PostCount = _context.Posts.Count(p => p.UserId == cm.UserId && p.CommunityId == communityId),
+                    CommentCount = _context.Comments.Count(c => c.UserId == cm.UserId && c.Post.CommunityId == communityId),
+                    Karma = 0, // TODO: Implement karma calculation when Votes table exists
+                    IsOnline = false, // TODO: Implement online status
+                    IsBanned = false, // TODO: Implement ban status
+                    Initials = GetInitials(cm.User.UserName ?? "U")
+                })
+                .ToListAsync();
+
+            return members;
+        }
+
+        /// <summary>
+        /// Get total members count for pagination
+        /// </summary>
+        private async Task<int> GetTotalMembersCount(int communityId, string search, string role)
+        {
+            var query = _context.CommunityMembers
+                .Where(cm => cm.CommunityId == communityId);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(cm => cm.User.UserName.Contains(search) || 
+                                        cm.User.Email.Contains(search));
+            }
+
+            if (role != "all")
+            {
+                query = query.Where(cm => cm.Role.ToLower() == role.ToLower());
+            }
+
+            return await query.CountAsync();
+        }
+
+        /// <summary>
+        /// Load community rules
+        /// </summary>
+        private async Task<List<RuleViewModel>> LoadCommunityRules(int communityId)
+        {
+            // For now, return sample rules. In a real implementation, you'd have a CommunityRules table
+            return new List<RuleViewModel>
+            {
+                new RuleViewModel
+                {
+                    RuleId = 1,
+                    CommunityId = communityId,
+                    Title = "Be respectful",
+                    Description = "Treat all community members with respect and kindness. No harassment, bullying, or personal attacks.",
+                    DisplayOrder = 1,
+                    Severity = RuleSeverity.Critical,
+                    Icon = "fas fa-heart",
+                    IsActive = true,
+                    CreatedAt = DateTime.Now.AddDays(-30),
+                    UpdatedAt = DateTime.Now.AddDays(-30),
+                    CreatedBy = "Admin",
+                    UpdatedBy = "Admin"
+                },
+                new RuleViewModel
+                {
+                    RuleId = 2,
+                    CommunityId = communityId,
+                    Title = "Stay on topic",
+                    Description = "Keep discussions relevant to the community's purpose. Off-topic posts may be removed.",
+                    DisplayOrder = 2,
+                    Severity = RuleSeverity.Important,
+                    Icon = "fas fa-bullseye",
+                    IsActive = true,
+                    CreatedAt = DateTime.Now.AddDays(-25),
+                    UpdatedAt = DateTime.Now.AddDays(-25),
+                    CreatedBy = "Admin",
+                    UpdatedBy = "Admin"
+                },
+                new RuleViewModel
+                {
+                    RuleId = 3,
+                    CommunityId = communityId,
+                    Title = "No spam",
+                    Description = "No excessive self-promotion, advertising, or spam. Keep promotional content to a minimum.",
+                    DisplayOrder = 3,
+                    Severity = RuleSeverity.Important,
+                    Icon = "fas fa-ban",
+                    IsActive = true,
+                    CreatedAt = DateTime.Now.AddDays(-20),
+                    UpdatedAt = DateTime.Now.AddDays(-20),
+                    CreatedBy = "Admin",
+                    UpdatedBy = "Admin"
+                }
+            };
+        }
+
+        /// <summary>
+        /// Load rule templates
+        /// </summary>
+        private async Task<List<RuleTemplateViewModel>> LoadRuleTemplates()
+        {
+            return new List<RuleTemplateViewModel>
+            {
+                new RuleTemplateViewModel
+                {
+                    TemplateId = 1,
+                    Title = "No NSFW Content",
+                    Description = "No adult, sexual, or inappropriate content is allowed in this community.",
+                    Category = "Content",
+                    Severity = RuleSeverity.Critical,
+                    Icon = "fas fa-exclamation-triangle",
+                    IsPopular = true
+                },
+                new RuleTemplateViewModel
+                {
+                    TemplateId = 2,
+                    Title = "No Personal Information",
+                    Description = "Do not share personal information such as addresses, phone numbers, or private details.",
+                    Category = "Privacy",
+                    Severity = RuleSeverity.Critical,
+                    Icon = "fas fa-shield-alt",
+                    IsPopular = true
+                },
+                new RuleTemplateViewModel
+                {
+                    TemplateId = 3,
+                    Title = "Use Descriptive Titles",
+                    Description = "Post titles should be clear and descriptive to help others understand your content.",
+                    Category = "Posting",
+                    Severity = RuleSeverity.General,
+                    Icon = "fas fa-heading",
+                    IsPopular = false
+                }
+            };
+        }
+
+        /// <summary>
+        /// Load analytics data
+        /// </summary>
+        private async Task LoadAnalyticsData(CommunityAnalyticsViewModel model)
+        {
+            // Sample data - in a real implementation, you'd query actual data
+            model.TotalMembers = await _context.CommunityMembers.CountAsync(cm => cm.CommunityId == model.CommunityId);
+            model.TotalPosts = await _context.Posts.CountAsync(p => p.CommunityId == model.CommunityId);
+            model.TotalComments = await _context.Comments.CountAsync(c => c.Post.CommunityId == model.CommunityId);
+            model.TotalViews = 0; // TODO: Implement view tracking
+            model.EngagementRate = 0.75; // Sample data
+            model.GrowthRate = 0.12; // Sample data
+
+            // Generate sample time series data
+            var days = (model.EndDate - model.StartDate).Days;
+            for (int i = 0; i <= days; i++)
+            {
+                var date = model.StartDate.AddDays(i);
+                model.MemberGrowth.Add(new AnalyticsDataPoint
+                {
+                    Date = date,
+                    Value = Random.Shared.Next(0, 10),
+                    FormattedDate = date.ToString("MMM dd")
+                });
+                model.PostActivity.Add(new AnalyticsDataPoint
+                {
+                    Date = date,
+                    Value = Random.Shared.Next(0, 20),
+                    FormattedDate = date.ToString("MMM dd")
+                });
+            }
+
+            // Load top contributors
+            model.TopContributors = await _context.CommunityMembers
+                .Where(cm => cm.CommunityId == model.CommunityId)
+                .Include(cm => cm.User)
+                .OrderByDescending(cm => cm.JoinedAt)
+                .Take(5)
+                .Select(cm => new TopContributorViewModel
+                {
+                    UserId = cm.UserId,
+                    DisplayName = cm.User.UserName ?? "Unknown",
+                    Initials = GetInitials(cm.User.UserName ?? "U"),
+                    PostCount = _context.Posts.Count(p => p.UserId == cm.UserId && p.CommunityId == model.CommunityId),
+                    CommentCount = _context.Comments.Count(c => c.UserId == cm.UserId && c.Post.CommunityId == model.CommunityId),
+                    TotalKarma = 0, // TODO: Calculate karma
+                    Role = cm.Role
+                })
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Load filter data
+        /// </summary>
+        private async Task LoadFilterData(ContentFiltersViewModel model)
+        {
+            // Sample banned words
+            model.BannedWords = new List<BannedWordViewModel>
+            {
+                new BannedWordViewModel
+                {
+                    Id = 1,
+                    Word = "spam",
+                    CaseSensitive = false,
+                    WholeWordOnly = true,
+                    Action = "remove",
+                    CreatedAt = DateTime.Now.AddDays(-10),
+                    CreatedBy = "Admin",
+                    UsageCount = 5
+                },
+                new BannedWordViewModel
+                {
+                    Id = 2,
+                    Word = "scam",
+                    CaseSensitive = false,
+                    WholeWordOnly = true,
+                    Action = "flag",
+                    CreatedAt = DateTime.Now.AddDays(-5),
+                    CreatedBy = "Moderator",
+                    UsageCount = 2
+                }
+            };
+
+            // Sample filter logs
+            model.RecentLogs = new List<FilterLogViewModel>
+            {
+                new FilterLogViewModel
+                {
+                    Id = 1,
+                    ContentType = "post",
+                    ContentId = "123",
+                    AuthorName = "User123",
+                    FilterReason = "Contains banned word: spam",
+                    Action = "removed",
+                    FilteredAt = DateTime.Now.AddHours(-2),
+                    FilteredBy = "AutoMod",
+                    ContentPreview = "This is a spam post..."
+                }
+            };
+
+            model.TotalFilteredItems = 15;
+            model.FilteredToday = 3;
+            model.FilteredThisWeek = 8;
+        }
+
+        /// <summary>
+        /// Format time ago string
+        /// </summary>
+        private string FormatTimeAgo(DateTime dateTime)
+        {
+            var timeSpan = DateTime.Now - dateTime;
+            
+            if (timeSpan.TotalDays >= 365)
+                return $"{(int)(timeSpan.TotalDays / 365)} year(s) ago";
+            if (timeSpan.TotalDays >= 30)
+                return $"{(int)(timeSpan.TotalDays / 30)} month(s) ago";
+            if (timeSpan.TotalDays >= 1)
+                return $"{(int)timeSpan.TotalDays} day(s) ago";
+            if (timeSpan.TotalHours >= 1)
+                return $"{(int)timeSpan.TotalHours} hour(s) ago";
+            if (timeSpan.TotalMinutes >= 1)
+                return $"{(int)timeSpan.TotalMinutes} minute(s) ago";
+            
+            return "Just now";
+        }
+
+        /// <summary>
+        /// Get user initials
+        /// </summary>
+        private string GetInitials(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return "U";
+            
+            var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length >= 2)
+                return $"{words[0][0]}{words[1][0]}".ToUpper();
+            
+            return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
         }
     }
 }
