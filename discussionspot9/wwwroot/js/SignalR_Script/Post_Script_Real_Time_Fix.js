@@ -90,6 +90,22 @@
             console.log('📊 Current DOM score after update:', document.getElementById(`voteScore-${postId}`)?.textContent);
         });
         
+        // CRITICAL: Poll update handler - receives poll data after voting
+        this.postConnection.on("ReceivePollUpdate", (pollData) => {
+            console.log('🎯🎯🎯 POLL UPDATE RECEIVED!', pollData);
+            this.updatePollResultsUI(pollData);
+        });
+        
+        this.postConnection.on("ReceivePollVoteError", (msg) => {
+            console.log('❌ Poll vote error:', msg);
+            this.showNotification(msg, 'error');
+        });
+        
+        this.postConnection.on("ReceivePollVoteSuccess", (msg) => {
+            console.log('✅ Poll vote success:', msg);
+            this.showNotification(msg, 'success');
+        });
+        
         // This handler for receiving comments remains the same and is working correctly.
         this.postConnection.on("ReceiveComment", (htmlContent, commentId, parentCommentId) => {
             const optimisticComment = document.getElementById('optimistic-comment-placeholder');
@@ -126,9 +142,7 @@
             this.updateCommentVotes(commentId, up, down, score, userVote);
         });
         // NOTE: UpdatePostVotesUI is already registered above with better logging
-        this.postConnection.on("ReceivePollUpdate", (pollData) => this.updatePollResultsUI(pollData));
-        this.postConnection.on("ReceivePollVoteError", (msg) => this.showNotification(msg, 'error'));
-        this.postConnection.on("ReceivePollVoteSuccess", (msg) => this.showNotification(msg, 'success'));
+        // NOTE: ReceivePollUpdate is already registered above with better logging
         this.postConnection.on("VoteError", (msg) => this.showNotification(msg, 'error'));
         this.postConnection.on("CommentError", (msg) => {
             document.getElementById('optimistic-comment-placeholder')?.remove();
@@ -616,6 +630,13 @@
     async castPollVote(postId, optionId) {
         console.log('📊 Voting on poll. Post:', postId, 'Option:', optionId);
         
+        // CRITICAL FIX: Check authentication before voting
+        if (!this.isAuthenticated) {
+            console.log('❌ User not authenticated, showing login prompt');
+            this.showLoginPrompt();
+            return;
+        }
+        
         // Debounce poll votes
         const debounceKey = `poll-${postId}`;
         if (!this.debounce(debounceKey, null, 500)) {
@@ -972,7 +993,138 @@
         console.log('✅ Post votes UI update complete');
     }
 
-    updatePollResultsUI(pollData) { /* Your existing poll UI update logic */ }
+    updatePollResultsUI(pollData) {
+        console.log('📊📊📊 updatePollResultsUI CALLED!');
+        console.log('📊 Poll data received:', JSON.stringify(pollData, null, 2));
+        
+        if (!pollData) {
+            console.error('❌ pollData is null or undefined');
+            return;
+        }
+        
+        // Handle both PascalCase (C#) and camelCase (JavaScript) property names
+        const data = {
+            postId: pollData.postId || pollData.PostId,
+            totalVotes: pollData.totalVotes || pollData.TotalVotes || 0,
+            hasUserVoted: pollData.hasUserVoted || pollData.HasUserVoted || false,
+            options: pollData.options || pollData.Options || []
+        };
+        
+        console.log('📊 Normalized data:', data);
+        
+        if (!data.options || data.options.length === 0) {
+            console.error('❌ No poll options found');
+            console.log('Available keys in pollData:', Object.keys(pollData));
+            return;
+        }
+        
+        console.log(`🔍 Looking for poll container with data-post-id="${data.postId}"`);
+        const pollContainer = document.querySelector(`.poll-container[data-post-id="${data.postId}"]`);
+        if (!pollContainer) {
+            console.error('❌ Poll container not found for postId:', data.postId);
+            console.log('🔍 Available poll containers:', document.querySelectorAll('.poll-container'));
+            return;
+        }
+        
+        console.log('✅ Found poll container');
+        
+        // Update total votes
+        const totalVotesElement = pollContainer.querySelector('.poll-total-votes');
+        if (totalVotesElement) {
+            const oldText = totalVotesElement.textContent;
+            totalVotesElement.textContent = `${data.totalVotes.toLocaleString()} total votes`;
+            console.log(`📊 Updated total votes: ${oldText} → ${totalVotesElement.textContent}`);
+        } else {
+            console.warn('⚠️ Total votes element not found');
+        }
+        
+        // Update "You have voted" status
+        const hasVotedMessage = pollContainer.querySelector('.voted-message');
+        const clickToVoteMessage = pollContainer.querySelector('p.text-muted');
+        if (data.hasUserVoted) {
+            if (clickToVoteMessage) {
+                clickToVoteMessage.style.display = 'none';
+                console.log('✅ Hid "click to vote" message');
+            }
+            if (!hasVotedMessage) {
+                const message = document.createElement('p');
+                message.className = 'text-success text-center small mb-3 voted-message';
+                message.innerHTML = '<i class="fas fa-check-circle"></i> You have voted in this poll';
+                pollContainer.querySelector('.poll-header')?.after(message);
+                console.log('✅ Added "you have voted" message');
+            }
+        }
+        
+        // Update each poll option
+        console.log(`📊 Updating ${data.options.length} poll options...`);
+        data.options.forEach((optionData, index) => {
+            // Handle both PascalCase and camelCase
+            const option = {
+                pollOptionId: optionData.pollOptionId || optionData.PollOptionId,
+                voteCount: optionData.voteCount || optionData.VoteCount || 0,
+                votePercentage: optionData.votePercentage || optionData.VotePercentage || 0,
+                hasUserVoted: optionData.hasUserVoted || optionData.HasUserVoted || false
+            };
+            
+            console.log(`   Processing option ${index + 1}:`, option);
+            
+            const optionElement = pollContainer.querySelector(`.poll-option[data-option-id="${option.pollOptionId}"]`);
+            if (!optionElement) {
+                console.warn(`⚠️ Option element not found for optionId: ${option.pollOptionId}`);
+                return;
+            }
+            
+            // Update vote count
+            const voteCountEl = optionElement.querySelector('.poll-vote-count, .poll-option-count');
+            if (voteCountEl) {
+                voteCountEl.textContent = `${option.voteCount.toLocaleString()} votes`;
+                console.log(`   ✅ Updated vote count to: ${option.voteCount}`);
+            }
+            
+            // Update percentage
+            const percentageEl = optionElement.querySelector('.poll-percentage-badge, .poll-option-percent');
+            if (percentageEl) {
+                percentageEl.textContent = `${option.votePercentage.toFixed(1)}%`;
+                console.log(`   ✅ Updated percentage to: ${option.votePercentage.toFixed(1)}%`);
+            }
+            
+            // Update progress bar
+            const progressBar = optionElement.querySelector('.poll-progress-bar, .poll-option-bar');
+            if (progressBar) {
+                progressBar.style.width = `${option.votePercentage}%`;
+                progressBar.setAttribute('data-width', option.votePercentage.toFixed(1));
+                console.log(`   ✅ Updated progress bar to: ${option.votePercentage}%`);
+            }
+            
+            // Update selection state
+            if (option.hasUserVoted) {
+                optionElement.classList.add('selected', 'voted');
+                const radioCircle = optionElement.querySelector('.radio-circle');
+                if (radioCircle && !radioCircle.classList.contains('selected')) {
+                    radioCircle.classList.add('selected');
+                    radioCircle.innerHTML = '<i class="fas fa-check"></i>';
+                    console.log(`   ✅ Marked option as selected`);
+                }
+            } else {
+                optionElement.classList.remove('selected');
+                const radioCircle = optionElement.querySelector('.radio-circle');
+                if (radioCircle) {
+                    radioCircle.classList.remove('selected');
+                    radioCircle.innerHTML = '';
+                }
+            }
+            
+            // Switch to results mode if user voted
+            if (data.hasUserVoted) {
+                optionElement.classList.add('results-mode');
+                // Hide vote button, show static display
+                const voteBtn = optionElement.querySelector('.poll-option-vote-btn');
+                if (voteBtn) voteBtn.style.display = 'none';
+            }
+        });
+        
+        console.log('✅✅✅ Poll UI updated successfully!');
+    }
     
     showNotification(message, type = 'info') {
         // Create toast notification

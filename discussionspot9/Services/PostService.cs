@@ -251,34 +251,44 @@ namespace discussionspot9.Services
 
         public async Task<VotePollResult> CastPollVoteAsync(int postId, int pollOptionId, string userId)
         {
+            _logger.LogInformation($"🎯 [START] CastPollVoteAsync - PostId: {postId}, OptionId: {pollOptionId}, UserId: {userId}");
+            
             if (pollOptionId <= 0)
             {
+                _logger.LogError($"❌ Invalid poll option ID: {pollOptionId}");
                 return new VotePollResult { Success = false, Message = "Invalid poll option selected." };
             }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            // CRITICAL FIX: Use execution strategy to handle transactions with retry logic
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                var post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _logger.LogInformation($"🔍 Step 1: Checking if post {postId} exists...");
+                    var post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
                 if (post == null)
                 {
-                    _logger.LogError($"Post not found: {postId}");
+                    _logger.LogError($"❌ Post not found: {postId}");
                     return new VotePollResult { Success = false, Message = "Post not found." };
                 }
+                _logger.LogInformation($"✅ Post found: {post.Title}, HasPoll: {post.HasPoll}");
 
                 if (!post.HasPoll)
                 {
-                    _logger.LogError($"Post {postId} is not a poll.");
+                    _logger.LogError($"❌ Post {postId} is not a poll.");
                     return new VotePollResult { Success = false, Message = "This post is not a poll." };
                 }
 
+                _logger.LogInformation($"🔍 Step 2: Loading poll configuration...");
                 var pollConfig = await _context.PollConfigurations
                     .AsNoTracking()
                     .FirstOrDefaultAsync(pc => pc.PostId == postId);
 
                 if (pollConfig == null)
                 {
-                    _logger.LogWarning($"Poll configuration not found for PostId: {postId}. Creating default configuration.");
+                    _logger.LogWarning($"⚠️ Poll configuration not found for PostId: {postId}. Creating default configuration.");
                     pollConfig = new PollConfiguration
                     {
                         PostId = postId,
@@ -290,22 +300,53 @@ namespace discussionspot9.Services
                     };
                     _context.PollConfigurations.Add(pollConfig);
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation($"✅ Created default poll configuration");
+                }
+                else
+                {
+                    _logger.LogInformation($"✅ Poll config found - AllowMultiple: {pollConfig.AllowMultipleChoices}");
                 }
 
-                var userVotesForPost = await _context.PollVotes
-                    .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
+                _logger.LogInformation($"🔍 Step 3: Validating poll option exists...");
+                var pollOptionExists = await _context.PollOptions
+                    .AnyAsync(po => po.PollOptionId == pollOptionId && po.PostId == postId);
+                
+                if (!pollOptionExists)
+                {
+                    _logger.LogError($"❌ Poll option {pollOptionId} not found for post {postId}");
+                    
+                    // Log all available options for debugging
+                    var availableOptions = await _context.PollOptions
+                        .Where(po => po.PostId == postId)
+                        .Select(po => po.PollOptionId)
                     .ToListAsync();
+                    _logger.LogError($"📋 Available poll options for post {postId}: {string.Join(", ", availableOptions)}");
+                    
+                    return new VotePollResult { Success = false, Message = "Invalid poll option." };
+                }
+                _logger.LogInformation($"✅ Poll option {pollOptionId} validated");
+
+                _logger.LogInformation($"🔍 Step 4: Loading user's existing votes...");
+                // FIXED: Use explicit JOIN instead of navigation property to avoid Include() issues
+                var userVotesForPost = await (from pv in _context.PollVotes
+                                              join po in _context.PollOptions on pv.PollOptionId equals po.PollOptionId
+                                              where pv.UserId == userId && po.PostId == postId
+                                              select pv).ToListAsync();
+                _logger.LogInformation($"📊 User has {userVotesForPost.Count} existing vote(s) for this poll");
 
                 var existingVoteForOption = userVotesForPost.FirstOrDefault(v => v.PollOptionId == pollOptionId);
 
                 if (existingVoteForOption != null)
                 {
+                    _logger.LogInformation($"🔄 Step 5: User is REMOVING their vote for option {pollOptionId}");
                     _context.PollVotes.Remove(existingVoteForOption);
                 }
                 else
                 {
+                    _logger.LogInformation($"➕ Step 5: User is ADDING a new vote for option {pollOptionId}");
                     if (!pollConfig.AllowMultipleChoices && userVotesForPost.Any())
                     {
+                        _logger.LogInformation($"🗑️ Removing {userVotesForPost.Count} existing vote(s) (single-choice poll)");
                         _context.PollVotes.RemoveRange(userVotesForPost);
                     }
 
@@ -316,40 +357,71 @@ namespace discussionspot9.Services
                         VotedAt = DateTime.UtcNow
                     };
                     _context.PollVotes.Add(newVote);
+                    _logger.LogInformation($"✅ New vote object created");
                 }
 
+                _logger.LogInformation($"💾 Step 6: Saving vote changes to database...");
                 await _context.SaveChangesAsync();
+                _logger.LogInformation($"✅ Vote changes saved");
 
+                _logger.LogInformation($"🔍 Step 7: Recalculating vote counts for all options...");
                 var pollOptions = await _context.PollOptions.Where(po => po.PostId == postId).ToListAsync();
+                _logger.LogInformation($"📊 Found {pollOptions.Count} poll options to update");
+                
                 foreach (var option in pollOptions)
                 {
+                    var oldCount = option.VoteCount;
                     option.VoteCount = await _context.PollVotes.CountAsync(v => v.PollOptionId == option.PollOptionId);
+                    _logger.LogInformation($"   Option {option.PollOptionId} '{option.OptionText}': {oldCount} → {option.VoteCount} votes");
                 }
 
-                post.PollVoteCount = pollOptions.Sum(po => po.VoteCount);
+                var totalVotes = pollOptions.Sum(po => po.VoteCount);
+                post.PollVoteCount = totalVotes;
+                _logger.LogInformation($"📊 Total poll votes calculated: {totalVotes}");
+                
+                // Log percentage calculation for debugging
+                foreach (var option in pollOptions)
+                {
+                    var percentage = totalVotes > 0 ? (decimal)option.VoteCount / totalVotes * 100 : 0;
+                    _logger.LogInformation($"   Option {option.PollOptionId} percentage: {option.VoteCount}/{totalVotes} = {percentage:F1}%");
+                }
 
+                _logger.LogInformation($"💾 Step 8: Saving updated vote counts...");
                 await _context.SaveChangesAsync();
+                _logger.LogInformation($"✅ Vote counts saved");
+                
+                _logger.LogInformation($"✅ Step 9: Committing transaction...");
                 await transaction.CommitAsync();
+                _logger.LogInformation($"✅ Transaction committed successfully");
 
                 var updatedVoteCounts = pollOptions
                     .ToDictionary(x => x.PollOptionId, x => x.VoteCount);
 
-                return new VotePollResult
+                _logger.LogInformation($"🎉 [SUCCESS] Poll vote completed - PostId: {postId}, OptionId: {pollOptionId}");
+                    return new VotePollResult
+                    {
+                        Success = true,
+                        UpdatedVoteCounts = updatedVoteCounts
+                    };
+                }
+                catch (Exception ex)
                 {
-                    Success = true,
-                    UpdatedVoteCounts = updatedVoteCounts
-                };
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error casting poll vote for PostId: {postId}, PollOptionId: {pollOptionId}");
-                return new VotePollResult
-                {
-                    Success = false,
-                    Message = "An error occurred while processing your vote."
-                };
-            }
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, $"❌❌❌ [EXCEPTION] Error casting poll vote - PostId: {postId}, OptionId: {pollOptionId}, UserId: {userId}");
+                    _logger.LogError($"❌ Exception Type: {ex.GetType().Name}");
+                    _logger.LogError($"❌ Exception Message: {ex.Message}");
+                    _logger.LogError($"❌ Stack Trace: {ex.StackTrace}");
+                    if (ex.InnerException != null)
+                    {
+                        _logger.LogError($"❌ Inner Exception: {ex.InnerException.Message}");
+                    }
+                    return new VotePollResult
+                    {
+                        Success = false,
+                        Message = "An error occurred while processing your vote."
+                    };
+                }
+            });
         }
         public async Task<List<PostAwardViewModel>> GetPostAwardsAsync(int postId)
         {
@@ -768,10 +840,11 @@ namespace discussionspot9.Services
                 List<int> userPollVotes = new();
                 if (!string.IsNullOrEmpty(currentUserId))
                 {
-                    userPollVotes = await _context.PollVotes
-                        .Where(pv => pv.PollOption.PostId == post.PostId && pv.UserId == currentUserId)
-                        .Select(pv => pv.PollOptionId)
-                        .ToListAsync();
+                    // FIXED: Use explicit JOIN instead of navigation property
+                    userPollVotes = await (from pv in _context.PollVotes
+                                          join po in _context.PollOptions on pv.PollOptionId equals po.PollOptionId
+                                          where pv.UserId == currentUserId && po.PostId == post.PostId
+                                          select pv.PollOptionId).ToListAsync();
                 }
 
                 pollViewModel = new PollViewModel
@@ -1099,9 +1172,11 @@ namespace discussionspot9.Services
         {
             try
             {
-                var existingVotes = await _context.PollVotes
-                    .Where(pv => pv.PollOption.PostId == postId && pv.UserId == userId)
-                    .ToListAsync();
+                // FIXED: Use explicit JOIN instead of navigation property
+                var existingVotes = await (from pv in _context.PollVotes
+                                          join po in _context.PollOptions on pv.PollOptionId equals po.PollOptionId
+                                          where pv.UserId == userId && po.PostId == postId
+                                          select pv).ToListAsync();
 
                 _context.PollVotes.RemoveRange(existingVotes);
 
@@ -1145,16 +1220,20 @@ namespace discussionspot9.Services
 
         public async Task<bool> HasUserVotedInPollAsync(int postId, string userId)
         {
-            return await _context.PollVotes
-                .AnyAsync(pv => pv.UserId == userId && pv.PollOption.PostId == postId);
+            // FIXED: Use explicit JOIN instead of navigation property
+            return await (from pv in _context.PollVotes
+                         join po in _context.PollOptions on pv.PollOptionId equals po.PollOptionId
+                         where pv.UserId == userId && po.PostId == postId
+                         select pv).AnyAsync();
         }
 
         public async Task<List<int>> GetUserPollVotesAsync(int postId, string userId)
         {
-            return await _context.PollVotes
-                .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
-                .Select(pv => pv.PollOptionId)
-                .ToListAsync();
+            // FIXED: Use explicit JOIN instead of navigation property
+            return await (from pv in _context.PollVotes
+                         join po in _context.PollOptions on pv.PollOptionId equals po.PollOptionId
+                         where pv.UserId == userId && po.PostId == postId
+                         select pv.PollOptionId).ToListAsync();
         }
 
         public async Task<Post> GetPostByIdAsync(int postId)
@@ -1180,15 +1259,19 @@ namespace discussionspot9.Services
             if (post == null || !post.HasPoll || post.PollOptions == null || !post.PollOptions.Any())
                 return null;
 
-            var totalVotes = post.PollOptions.Sum(po => po.Votes.Count);
+            // CRITICAL FIX: Use VoteCount property instead of Votes.Count
+            // The VoteCount is updated in CastPollVoteAsync and is the source of truth
+            var totalVotes = post.PollOptions.Sum(po => po.VoteCount);
+            _logger.LogInformation($"📊 GetPollDetailsAsync - Total votes: {totalVotes}");
 
             List<int> userVotedOptionIds = new List<int>();
             if (userId != null)
             {
-                userVotedOptionIds = await _context.PollVotes
-                    .Where(v => v.UserId == userId && v.PollOption.PostId == postId)
-                    .Select(v => v.PollOptionId)
-                    .ToListAsync();
+                // FIXED: Use explicit JOIN instead of navigation property
+                userVotedOptionIds = await (from pv in _context.PollVotes
+                                           join po in _context.PollOptions on pv.PollOptionId equals po.PollOptionId
+                                           where pv.UserId == userId && po.PostId == postId
+                                           select pv.PollOptionId).ToListAsync();
             }
             var hasUserVoted = userVotedOptionIds.Any();
 
@@ -1215,9 +1298,9 @@ namespace discussionspot9.Services
                 {
                     PollOptionId = po.PollOptionId,
                     OptionText = po.OptionText,
-                    VoteCount = po.Votes.Count,
+                    VoteCount = po.VoteCount, // FIXED: Use VoteCount property, not Votes.Count
                     HasUserVoted = userVotedOptionIds.Contains(po.PollOptionId),
-                    VotePercentage = totalVotes > 0 ? (decimal)po.Votes.Count / totalVotes * 100 : 0,
+                    VotePercentage = totalVotes > 0 ? (decimal)po.VoteCount / totalVotes * 100 : 0, // FIXED: Use VoteCount
                     DisplayOrder = po.DisplayOrder
                 })
                 .OrderBy(o => o.DisplayOrder)

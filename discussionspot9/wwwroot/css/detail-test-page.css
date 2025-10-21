@@ -1193,12 +1193,31 @@
     transform: translateX(3px);
 }
 
+/* FIXED: Limit comment nesting to prevent narrow replies */
 .detail-test-page .comment-replies {
     margin-left: 2rem;
     margin-top: 1rem;
     padding-left: 1rem;
     border-left: 2px solid var(--border-color);
     position: relative;
+}
+
+/* Limit nesting depth - Reddit-style max indent */
+.detail-test-page .comment-replies .comment-replies {
+    margin-left: 1.5rem; /* Level 2 */
+}
+
+.detail-test-page .comment-replies .comment-replies .comment-replies {
+    margin-left: 1rem; /* Level 3 */
+}
+
+.detail-test-page .comment-replies .comment-replies .comment-replies .comment-replies {
+    margin-left: 0.5rem; /* Level 4 */
+}
+
+/* Max depth reached - no more indentation after level 4 */
+.detail-test-page .comment-replies .comment-replies .comment-replies .comment-replies .comment-replies {
+    margin-left: 0; /* Level 5+ - no more indent */
 }
 
 .detail-test-page .main-comment-form {

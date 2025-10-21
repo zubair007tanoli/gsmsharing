@@ -276,6 +276,7 @@ namespace discussionspot9.Services
                     if (!pollConfig.AllowMultipleChoices)
                     {
                         var existingVotesForPost = await _context.PollVotes
+                            .Include(pv => pv.PollOption)
                             .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
                             .ToListAsync();
 
@@ -616,6 +617,7 @@ namespace discussionspot9.Services
                 if (!string.IsNullOrEmpty(currentUserId))
                 {
                     userPollVotes = await _context.PollVotes
+                        .Include(pv => pv.PollOption)
                         .Where(pv => pv.PollOption.PostId == post.PostId && pv.UserId == currentUserId)
                         .Select(pv => pv.PollOptionId)
                         .ToListAsync();
@@ -971,6 +973,7 @@ namespace discussionspot9.Services
                 if (!string.IsNullOrEmpty(currentUserId))
                 {
                     userPollVotes = await _context.PollVotes
+                        .Include(pv => pv.PollOption)
                         .Where(pv => pv.PollOption.PostId == post.PostId && pv.UserId == currentUserId)
                         .Select(pv => pv.PollOptionId)
                         .ToListAsync();
@@ -1278,6 +1281,7 @@ namespace discussionspot9.Services
             {
                 // Remove existing votes for this user on this poll
                 var existingVotes = await _context.PollVotes
+                    .Include(pv => pv.PollOption)
                     .Where(pv => pv.PollOption.PostId == postId && pv.UserId == userId)
                     .ToListAsync();
 
@@ -1326,12 +1330,14 @@ namespace discussionspot9.Services
         public async Task<bool> HasUserVotedInPollAsync(int postId, string userId)
         {
             return await _context.PollVotes
+                .Include(pv => pv.PollOption)
                 .AnyAsync(pv => pv.UserId == userId && pv.PollOption.PostId == postId);
         }
 
         public async Task<List<int>> GetUserPollVotesAsync(int postId, string userId)
         {
             return await _context.PollVotes
+                .Include(pv => pv.PollOption)
                 .Where(pv => pv.UserId == userId && pv.PollOption.PostId == postId)
                 .Select(pv => pv.PollOptionId)
                 .ToListAsync();

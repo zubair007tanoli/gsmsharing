@@ -102,14 +102,17 @@ namespace discussionspot9.Controllers
             if (postDetails.PostType == "poll" && postDetails.HasPoll)
             {
                 var pollDetails = await _postService.GetPollDetailsAsync(postDetails.PostId, userId);
-                postDetails.Poll = new PollViewModel
+                if (pollDetails != null)
                 {
-                    Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                    postDetails.Poll = new PollViewModel
                     {
-                        OptionText = option.OptionText,
-                        VoteCount = option.VoteCount
-                    }).ToList()
-                };
+                        Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                        {
+                            OptionText = option.OptionText,
+                            VoteCount = option.VoteCount
+                        }).ToList()
+                    };
+                }
             }
 
             await _postService.IncrementViewCountAsync(postDetails.PostId);
@@ -166,14 +169,17 @@ namespace discussionspot9.Controllers
             if (postDetails.PostType == "poll" && postDetails.HasPoll)
             {
                 var pollDetails = await _postService.GetPollDetailsAsync(postDetails.PostId, userId);
-                postDetails.Poll = new PollViewModel
+                if (pollDetails != null)
                 {
-                    Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                    postDetails.Poll = new PollViewModel
                     {
-                        OptionText = option.OptionText,
-                        VoteCount = option.VoteCount
-                    }).ToList()
-                };
+                        Options = pollDetails.Options.Select(option => new PollOptionViewModel
+                        {
+                            OptionText = option.OptionText,
+                            VoteCount = option.VoteCount
+                        }).ToList()
+                    };
+                }
             }
 
             await _postService.IncrementViewCountAsync(postDetails.PostId);

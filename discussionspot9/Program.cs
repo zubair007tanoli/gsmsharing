@@ -5,6 +5,7 @@ using discussionspot9.Hubs;
 using discussionspot9.Interfaces;
 using discussionspot9.Services;
 using discussionspot9.Repositories;
+using discussionspot9.Middleware;
 using DiscussionSpot9.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -28,7 +29,8 @@ var builder = WebApplication.CreateBuilder(args);
 // });
 
 // Add services to the container
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+// CRITICAL FIX: Use PooledDbContextFactory to avoid service lifetime conflicts
+builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     
@@ -36,11 +38,12 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions =>
     {
         sqlOptions.CommandTimeout(30); // Reduce command timeout
-        sqlOptions.EnableRetryOnFailure(3); // Retry failed commands
+        // REMOVED: EnableRetryOnFailure(3) - conflicts with manual transactions in CastPollVoteAsync
     });
     
-    // Disable change tracking for read-only operations
-    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    // CRITICAL FIX: Changed from NoTracking to TrackAll
+    // NoTracking was breaking poll voting and other write operations
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll);
     
     // Configure warnings
     options.ConfigureWarnings(warnings =>
@@ -52,6 +55,13 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
         options.EnableSensitiveDataLogging();
         options.EnableDetailedErrors();
     }
+});
+
+// Register scoped DbContext for services that inject ApplicationDbContext directly
+builder.Services.AddScoped<ApplicationDbContext>(serviceProvider =>
+{
+    var factory = serviceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+    return factory.CreateDbContext();
 });
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
@@ -223,9 +233,17 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    // IMPROVED: Use custom error controller for better GSC error handling
+    app.UseExceptionHandler("/Error");
+    app.UseStatusCodePagesWithReExecute("/Error/{0}");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+else
+{
+    // Development: Show detailed errors but still log them
+    app.UseDeveloperExceptionPage();
+    app.UseStatusCodePagesWithReExecute("/Error/{0}");
 }
 
 app.UseForwardedHeaders();
@@ -263,6 +281,9 @@ app.UseHttpsRedirection();
 
 // Static files (simplified configuration)
 app.UseStaticFiles();
+
+// GOOGLE SEARCH CONSOLE FIX: Canonical URL enforcement
+app.UseCanonicalUrls();
 
 app.UseRouting();
 app.UseAuthentication();

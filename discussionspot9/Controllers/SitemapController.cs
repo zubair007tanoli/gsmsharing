@@ -74,9 +74,14 @@ namespace discussionspot9.Controllers
                 AddUrl(sb, $"{baseUrl}/r/{community.Slug}", community.UpdatedAt, "daily", "0.8");
             }
 
-            // Posts (published only, limit to recent 10,000 for performance)
+            // Posts (published only, exclude deleted/removed content)
+            // IMPROVED: Better filtering to prevent 404 errors in GSC
             var posts = await _context.Posts
-                .Where(p => p.Status == "published" && !p.Community.IsDeleted)
+                .Where(p => p.Status == "published" 
+                         && !p.Community.IsDeleted
+                         && p.Community != null
+                         && !string.IsNullOrEmpty(p.Slug)
+                         && !string.IsNullOrEmpty(p.Community.Slug))
                 .OrderByDescending(p => p.UpdatedAt)
                 .Take(10000)
                 .Select(p => new 

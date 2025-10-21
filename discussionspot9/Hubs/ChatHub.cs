@@ -27,7 +27,8 @@ namespace discussionspot9.Hubs
             var userId = Context.UserIdentifier;
             if (!string.IsNullOrEmpty(userId))
             {
-                await _presenceService.UserConnectedAsync(userId, Context.ConnectionId);
+                // TEMPORARILY DISABLED: UserPresences table doesn't exist - blocking SignalR
+                // await _presenceService.UserConnectedAsync(userId, Context.ConnectionId);
                 
                 // Notify all users about this user coming online
                 await Clients.Others.SendAsync("UserOnline", userId);
@@ -43,7 +44,8 @@ namespace discussionspot9.Hubs
             var userId = Context.UserIdentifier;
             if (!string.IsNullOrEmpty(userId))
             {
-                await _presenceService.UserDisconnectedAsync(userId, Context.ConnectionId);
+                // TEMPORARILY DISABLED: UserPresences table doesn't exist - blocking SignalR
+                // await _presenceService.UserDisconnectedAsync(userId, Context.ConnectionId);
                 
                 // Notify all users about this user going offline
                 await Clients.Others.SendAsync("UserOffline", userId);
