@@ -142,14 +142,16 @@
                         </a>
                     }
                     
-                    <!-- Share Buttons -->
-                    @await Html.PartialAsync("_ShareButtons", new { 
-                        CommunitySlug = Model.Community.Slug,
-                        ShareTitle = Model.Community.Title,
-                        ShareDescription = Model.Community.ShortDescription,
-                        ShareUrl = Url.Action("Details", "Community", new { slug = Model.Community.Slug }, Context.Request.Scheme),
-                        ShareType = "community"
-                    })
+<!-- Share Buttons -->
+       @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
+           { "ShareTitle", Model.Community.Title },
+           { "ShareDescription", Model.Community.ShortDescription ?? Model.Community.Title },
+           { "ShareUrl", $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Community.Slug}" },
+           { "ShareImage", Model.Community.IconUrl ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png" },
+           { "ShareType", "community" },
+           { "ContentId", Model.Community.CommunityId.ToString() },
+           { "ShareVariant", "simple" }
+       })
                     
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">

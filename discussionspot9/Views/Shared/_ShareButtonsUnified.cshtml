@@ -28,6 +28,48 @@
         </button>
     </div>
 }
+else if (variant == "simple" || variant == "action-btn")
+{
+    <!-- Simple/Action Button Variant (matches existing action buttons) -->
+    <div class="share-simple-wrapper" style="display: inline-block; position: relative;">
+        <button class="action-btn share-trigger-btn" onclick="toggleShareDropdown(this, event)" data-share-id="@contentId">
+            <i class="fas fa-share-alt"></i>
+            <span>Share</span>
+        </button>
+        <div class="share-dropdown-popup" id="share-dropdown-@contentId" style="display: none;">
+            <div class="share-popup-header">
+                <span>Share this @shareType</span>
+                <button class="share-close-btn" onclick="closeShareDropdown('@contentId')">&times;</button>
+            </div>
+            <div class="share-options-list">
+                <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'facebook')">
+                    <i class="fab fa-facebook-f" style="color: #1877f2;"></i>
+                    <span>Facebook</span>
+                </a>
+                <a href="https://twitter.com/intent/tweet?url=@encodedUrl&text=@encodedTitle" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'twitter')">
+                    <i class="fab fa-twitter" style="color: #1da1f2;"></i>
+                    <span>Twitter</span>
+                </a>
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@encodedUrl" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'linkedin')">
+                    <i class="fab fa-linkedin-in" style="color: #0077b5;"></i>
+                    <span>LinkedIn</span>
+                </a>
+                <a href="https://reddit.com/submit?url=@encodedUrl&title=@encodedTitle" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'reddit')">
+                    <i class="fab fa-reddit-alien" style="color: #ff4500;"></i>
+                    <span>Reddit</span>
+                </a>
+                <a href="https://wa.me/?text=@encodedText%20@encodedUrl" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'whatsapp')">
+                    <i class="fab fa-whatsapp" style="color: #25d366;"></i>
+                    <span>WhatsApp</span>
+                </a>
+                <button type="button" class="share-popup-option" onclick="copyLinkSimple('@shareUrl', this, '@shareType', '@contentId')">
+                    <i class="fas fa-copy" style="color: #6c757d;"></i>
+                    <span>Copy Link</span>
+                </button>
+            </div>
+        </div>
+    </div>
+}
 else if (variant == "floating")
 {
     <!-- Floating Variant (sticky mobile button) -->
@@ -385,6 +427,56 @@ else
             } else {
                 floatingBtn.classList.remove('show');
             }
+        }
+    });
+    
+    // Simple variant functions
+    function toggleShareDropdown(button, event) {
+        event.stopPropagation();
+        const wrapper = button.closest('.share-simple-wrapper');
+        const dropdown = wrapper.querySelector('.share-dropdown-popup');
+        const shareId = button.getAttribute('data-share-id');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.share-dropdown-popup').forEach(d => {
+            if (d !== dropdown) d.style.display = 'none';
+        });
+        
+        // Toggle this dropdown
+        const isOpen = dropdown.style.display !== 'none';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+    }
+    
+    function closeShareDropdown(contentId) {
+        const dropdown = document.getElementById(`share-dropdown-${contentId}`);
+        if (dropdown) dropdown.style.display = 'none';
+    }
+    
+    function copyLinkSimple(url, button, contentType, contentId) {
+        navigator.clipboard.writeText(url).then(() => {
+            const originalText = button.querySelector('span').textContent;
+            button.querySelector('span').textContent = 'Copied!';
+            button.querySelector('i').className = 'fas fa-check';
+            button.style.color = '#28a745';
+            
+            setTimeout(() => {
+                button.querySelector('span').textContent = originalText;
+                button.querySelector('i').className = 'fas fa-copy';
+                button.style.color = '';
+            }, 2000);
+            
+            trackShare(contentType, contentId, 'copy');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            alert('Failed to copy link');
+        });
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.share-simple-wrapper') && !event.target.closest('.share-buttons-unified')) {
+            document.querySelectorAll('.share-dropdown-popup').forEach(d => d.style.display = 'none');
+            document.querySelectorAll('.share-dropdown-menu').forEach(d => d.style.display = 'none');
         }
     });
 </script>

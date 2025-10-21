@@ -301,7 +301,8 @@
                                 { "ShareUrl", postUrl },
                                 { "ShareImage", imageUrl },
                                 { "ShareType", "post" },
-                                { "ContentId", Model.Post.PostId.ToString() }
+                                { "ContentId", Model.Post.PostId.ToString() },
+                                { "ShareVariant", "simple" }
                             })
                             <button class="action-btn" id="saveBtn-@Model.Post.PostId" data-post-id="@Model.Post.PostId" data-issaved="@Model.Post.IsSavedByUser.ToString().ToLower()">
                                 <i class="fas fa-bookmark @(Model.Post.IsSavedByUser ? "text-primary" : "")"></i>

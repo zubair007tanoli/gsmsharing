@@ -404,10 +404,95 @@
     }
 }
 
+/* Simple/Action Button Variant */
+.share-simple-wrapper {
+    display: inline-block;
+    position: relative;
+}
+
+.share-dropdown-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 220px;
+    animation: slideDown 0.2s ease;
+}
+
+.share-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.share-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.share-close-btn:hover {
+    color: #000;
+}
+
+.share-options-list {
+    padding: 8px 0;
+}
+
+.share-popup-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    color: #2c3e50;
+    text-decoration: none;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.share-popup-option:hover {
+    background: #f8f9fa;
+}
+
+.share-popup-option i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.share-popup-option span {
+    flex: 1;
+}
+
 /* Print Styles */
 @media print {
     .share-buttons-unified,
-    .floating-share-btn {
+    .floating-share-btn,
+    .share-simple-wrapper {
         display: none;
     }
 }
