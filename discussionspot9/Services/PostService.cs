@@ -18,13 +18,15 @@ namespace discussionspot9.Services
         private readonly IMemoryCache _cache;
         private readonly ILogger<PostService> _logger;
         private readonly INotificationService _notificationService;
+        private readonly IStoryGenerationService _storyGenerationService;
 
-        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService)
+        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService, IStoryGenerationService storyGenerationService)
         {
             _context = context;
             _cache = cache;
             _logger = logger;
             _notificationService = notificationService;
+            _storyGenerationService = storyGenerationService;
         }
 
         public async Task<PostListViewModel> GetAllPostsAsync(string sort = "hot", string time = "all", int page = 1)
@@ -946,11 +948,34 @@ namespace discussionspot9.Services
 
             await _context.SaveChangesAsync();
 
+            // Queue story generation if enabled
+            try
+            {
+                var storyOptions = new StoryGenerationOptions
+                {
+                    AutoGenerate = model.AutoGenerateStory,
+                    UseAI = model.UseAIContent,
+                    Style = model.StoryStyle ?? "informative",
+                    Length = model.StoryLength ?? "medium",
+                    Keywords = model.StoryKeywords
+                };
+
+                if (storyOptions.AutoGenerate)
+                {
+                    await _storyGenerationService.QueueStoryGenerationAsync(post.PostId, storyOptions);
+                    _logger.LogInformation($"Story generation queued for post {post.PostId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error queuing story generation for post {post.PostId}");
+                // Don't fail the post creation if story generation fails
+            }
+
             return new CreatePostResult
             {
                 Success = true,
                 PostSlug = slug
-
             };
         }
 

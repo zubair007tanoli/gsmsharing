@@ -1,0 +1,863 @@
+@model discussionspot9.Models.ViewModels.CreateStoryViewModel
+@{
+    ViewData["Title"] = "Story Editor - DiscussionSpot";
+    ViewData["Description"] = "Create engaging web stories with our advanced visual editor.";
+}
+
+<div class="story-editor-container">
+    <!-- Editor Header -->
+    <div class="editor-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-book-open text-primary me-2 fs-4"></i>
+                        <h4 class="mb-0 fw-bold">Story Editor</h4>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center">
+                    <input type="text" class="form-control story-title-input" id="story-title" placeholder="Untitled Story">
+                </div>
+                <div class="col-md-3 text-end">
+                    <div class="btn-group me-2" role="group">
+                        <button class="btn btn-outline-secondary btn-sm" id="save-draft-btn" title="Save Draft">
+                            <i class="fas fa-save"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" id="preview-btn" title="Preview">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-success btn-sm me-2" id="publish-btn">
+                        <i class="fas fa-rocket"></i> Publish
+                    </button>
+                    <a href="/stories" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor Main Content -->
+    <div class="editor-main">
+        <!-- Left Sidebar -->
+        <div class="editor-sidebar">
+            <div class="sidebar-header">
+                <h6 class="mb-0"><i class="fas fa-th me-2"></i>Slides</h6>
+                <button class="btn btn-primary btn-sm" id="add-slide-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="slides-list" id="slides-list">
+                <!-- Slides will be dynamically added here -->
+            </div>
+            
+            <!-- Elements Panel -->
+            <div class="elements-panel">
+                <h6 class="mb-2"><i class="fas fa-layer-group me-2"></i>Add Elements</h6>
+                <div class="element-buttons">
+                    <button class="element-btn" id="add-text-btn">
+                        <i class="fas fa-font"></i>
+                        <span>Text</span>
+                    </button>
+                    <button class="element-btn" id="add-heading-btn">
+                        <i class="fas fa-heading"></i>
+                        <span>Heading</span>
+                    </button>
+                    <button class="element-btn" id="add-image-btn">
+                        <i class="fas fa-image"></i>
+                        <span>Image</span>
+                    </button>
+                    <button class="element-btn" id="add-video-btn">
+                        <i class="fas fa-video"></i>
+                        <span>Video</span>
+                    </button>
+                    <button class="element-btn" id="add-shape-btn">
+                        <i class="fas fa-shapes"></i>
+                        <span>Shape</span>
+                    </button>
+                    <button class="element-btn" id="add-sticker-btn">
+                        <i class="fas fa-smile"></i>
+                        <span>Sticker</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="editor-canvas">
+            <!-- Toolbar -->
+            <div class="editor-toolbar">
+                <div class="toolbar-group">
+                    <button class="tool-btn active" id="select-tool-btn" title="Select" data-active="true">
+                        <i class="fas fa-mouse-pointer"></i>
+                    </button>
+                    <button class="tool-btn" id="text-tool-btn" title="Text Tool">
+                        <i class="fas fa-font"></i>
+                    </button>
+                    <button class="tool-btn" id="draw-tool-btn" title="Draw">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="undo-btn" title="Undo">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button class="tool-btn" id="redo-btn" title="Redo">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="duplicate-element-btn" title="Duplicate Element">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="tool-btn" id="delete-element-btn" title="Delete Element">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-group ms-auto">
+                    <div class="slide-counter">
+                        <span class="badge bg-primary">
+                            <span id="current-slide">1</span> / <span id="total-slides">1</span>
+                        </span>
+                    </div>
+                    <button class="tool-btn" id="zoom-out-btn" title="Zoom Out">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                    <span class="zoom-level" id="zoom-level">100%</span>
+                    <button class="tool-btn" id="zoom-in-btn" title="Zoom In">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                    <button class="tool-btn" id="fit-screen-btn" title="Fit to Screen">
+                        <i class="fas fa-compress"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="canvas-wrapper" id="canvas-wrapper">
+                <div class="canvas-container" id="story-canvas">
+                    <div class="canvas-overlay" id="canvas-overlay">
+                        <div class="text-center text-muted p-5">
+                            <i class="fas fa-image fa-3x mb-3"></i>
+                            <p>Your story will appear here</p>
+                            <p class="small">Click "Add Slide" to get started</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="canvas-navigation">
+                <button class="nav-btn" id="prev-slide-btn">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary btn-sm" id="duplicate-slide-btn">
+                        <i class="fas fa-copy"></i> Duplicate Slide
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" id="delete-slide-btn">
+                        <i class="fas fa-trash"></i> Delete Slide
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" id="slide-settings-btn">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                </div>
+                <button class="nav-btn" id="next-slide-btn">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="editor-properties">
+            <div class="properties-header">
+                <h6 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Properties</h6>
+            </div>
+            <div class="properties-content" id="properties-content">
+                <!-- Slide Properties -->
+                <div class="properties-section" id="slide-properties">
+                    <h6 class="section-title">Slide Background</h6>
+                    
+                    <div class="property-group">
+                        <label class="property-label">Background Type</label>
+                        <select class="form-select form-select-sm" id="bg-type">
+                            <option value="color">Color</option>
+                            <option value="gradient">Gradient</option>
+                            <option value="image">Image</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group" id="bg-color-group">
+                        <label class="property-label">Background Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" class="form-control form-control-color" id="bg-color" value="#667eea">
+                            <input type="text" class="form-control form-control-sm" id="bg-color-text" value="#667eea">
+                        </div>
+                    </div>
+
+                    <div class="property-group d-none" id="bg-gradient-group">
+                        <label class="property-label">Gradient Colors</label>
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="color" class="form-control form-control-color" id="gradient-color-1" value="#667eea">
+                            <input type="color" class="form-control form-control-color" id="gradient-color-2" value="#764ba2">
+                        </div>
+                        <select class="form-select form-select-sm" id="gradient-direction">
+                            <option value="to right">Left to Right</option>
+                            <option value="to left">Right to Left</option>
+                            <option value="to bottom">Top to Bottom</option>
+                            <option value="to top">Bottom to Top</option>
+                            <option value="135deg">Diagonal</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group d-none" id="bg-image-group">
+                        <label class="property-label">Background Image</label>
+                        <input type="file" class="form-control form-control-sm" id="bg-image-upload" accept="image/*">
+                        <div class="mt-2">
+                            <input type="text" class="form-control form-control-sm" id="bg-image-url" placeholder="Or enter image URL">
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Duration (seconds)</label>
+                        <input type="range" class="form-range" id="slide-duration" min="1" max="30" value="5">
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>1s</span>
+                            <span id="duration-value">5s</span>
+                            <span>30s</span>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Transition</label>
+                        <select class="form-select form-select-sm" id="slide-transition">
+                            <option value="fade">Fade</option>
+                            <option value="slide-left">Slide Left</option>
+                            <option value="slide-right">Slide Right</option>
+                            <option value="slide-up">Slide Up</option>
+                            <option value="slide-down">Slide Down</option>
+                            <option value="zoom">Zoom</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Element Properties -->
+                <div class="properties-section d-none" id="element-properties">
+                    <h6 class="section-title">Element Properties</h6>
+                    
+                    <div class="property-group">
+                        <label class="property-label">Text Content</label>
+                        <textarea class="form-control form-control-sm" id="element-text" rows="3"></textarea>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Font Family</label>
+                        <select class="form-select form-select-sm" id="font-family">
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="'Times New Roman', serif">Times New Roman</option>
+                            <option value="'Courier New', monospace">Courier New</option>
+                            <option value="'Georgia', serif">Georgia</option>
+                            <option value="'Verdana', sans-serif">Verdana</option>
+                            <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                            <option value="'Impact', sans-serif">Impact</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Font Size</label>
+                        <input type="range" class="form-range" id="font-size" min="12" max="72" value="24">
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>12px</span>
+                            <span id="font-size-value">24px</span>
+                            <span>72px</span>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Font Weight</label>
+                        <select class="form-select form-select-sm" id="font-weight">
+                            <option value="300">Light</option>
+                            <option value="400">Normal</option>
+                            <option value="600">Semi-Bold</option>
+                            <option value="700">Bold</option>
+                            <option value="900">Black</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Text Color</label>
+                        <div class="color-picker-group">
+                            <input type="color" class="form-control form-control-color" id="text-color" value="#ffffff">
+                            <input type="text" class="form-control form-control-sm" id="text-color-text" value="#ffffff">
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Text Alignment</label>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-secondary btn-sm align-btn" data-align="left">
+                                <i class="fas fa-align-left"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm align-btn active" data-align="center">
+                                <i class="fas fa-align-center"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm align-btn" data-align="right">
+                                <i class="fas fa-align-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Text Shadow</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="text-shadow-toggle">
+                            <label class="form-check-label" for="text-shadow-toggle">Enable Shadow</label>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Animation</label>
+                        <select class="form-select form-select-sm" id="element-animation">
+                            <option value="none">None</option>
+                            <option value="fade-in">Fade In</option>
+                            <option value="slide-in-left">Slide In Left</option>
+                            <option value="slide-in-right">Slide In Right</option>
+                            <option value="slide-in-up">Slide In Up</option>
+                            <option value="slide-in-down">Slide In Down</option>
+                            <option value="zoom-in">Zoom In</option>
+                            <option value="bounce-in">Bounce In</option>
+                            <option value="rotate-in">Rotate In</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Animation Delay (ms)</label>
+                        <input type="number" class="form-control form-control-sm" id="animation-delay" value="0" min="0" max="5000" step="100">
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Opacity</label>
+                        <input type="range" class="form-range" id="element-opacity" min="0" max="100" value="100">
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>0%</span>
+                            <span id="opacity-value">100%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Layer Order</label>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-secondary btn-sm" id="bring-forward-btn">
+                                <i class="fas fa-arrow-up"></i> Forward
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="send-backward-btn">
+                                <i class="fas fa-arrow-down"></i> Backward
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Upload Modal -->
+<div class="modal fade" id="mediaUploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Media</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="upload-area">
+                    <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                    <p>Drag & drop your files here</p>
+                    <p class="small text-muted">or click to browse</p>
+                    <input type="file" id="media-upload-input" accept="image/*,video/*" multiple style="display: none;">
+                </div>
+                <div class="mt-3">
+                    <label class="form-label">Or enter URL</label>
+                    <input type="text" class="form-control" id="media-url-input" placeholder="https://example.com/image.jpg">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-media-btn">Add Media</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">Story Preview</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex align-items-center justify-content-center">
+                <div class="preview-container" id="preview-container">
+                    <!-- Preview content will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.story-editor-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f5f7fa;
+}
+
+/* ===== HEADER ===== */
+.editor-header {
+    background: white;
+    border-bottom: 1px solid #e0e4e9;
+    padding: 12px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    z-index: 100;
+}
+
+.story-title-input {
+    border: 2px solid transparent;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.story-title-input:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* ===== MAIN EDITOR ===== */
+.editor-main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* ===== LEFT SIDEBAR ===== */
+.editor-sidebar {
+    width: 280px;
+    background: white;
+    border-right: 1px solid #e0e4e9;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #e0e4e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.slides-list {
+    padding: 12px;
+    max-height: 50%;
+    overflow-y: auto;
+}
+
+.slide-thumbnail {
+    background: #f8f9fa;
+    border: 2px solid #e0e4e9;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.slide-thumbnail:hover {
+    border-color: #0066cc;
+    transform: translateX(4px);
+}
+
+.slide-thumbnail.active {
+    border-color: #0066cc;
+    background: #f0f8ff;
+    box-shadow: 0 2px 8px rgba(0,102,204,0.2);
+}
+
+.slide-number {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #0066cc;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.elements-panel {
+    padding: 16px;
+    border-top: 1px solid #e0e4e9;
+}
+
+.element-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.element-btn {
+    background: #f8f9fa;
+    border: 1px solid #e0e4e9;
+    padding: 12px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #666;
+}
+
+.element-btn:hover {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,102,204,0.3);
+}
+
+.element-btn i {
+    font-size: 20px;
+}
+
+/* ===== CANVAS AREA ===== */
+.editor-canvas {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow: hidden;
+}
+
+.editor-toolbar {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tool-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e0e4e9;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.tool-btn:hover {
+    background: #f0f8ff;
+    color: #0066cc;
+    border-color: #0066cc;
+    transform: scale(1.1);
+}
+
+.tool-btn[data-active="true"],
+.tool-btn.active {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+.zoom-level {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    min-width: 50px;
+    text-align: center;
+}
+
+.canvas-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8ecef;
+    border-radius: 12px;
+    padding: 24px;
+    overflow: auto;
+}
+
+.canvas-container {
+    width: 360px;
+    height: 640px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.3s ease;
+}
+
+.canvas-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.story-slide {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.story-element {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+    padding: 8px;
+    min-width: 50px;
+    min-height: 30px;
+}
+
+.story-element.selected {
+    outline: 2px dashed #0066cc;
+    outline-offset: 4px;
+}
+
+.story-element.text-element {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    word-break: break-word;
+}
+
+.story-element.image-element img,
+.story-element.video-element video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+.story-element.shape-element {
+    cursor: move;
+}
+
+.canvas-navigation {
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-btn {
+    background: white;
+    border: 1px solid #e0e4e9;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: #666;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,102,204,0.3);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== RIGHT SIDEBAR ===== */
+.editor-properties {
+    width: 320px;
+    background: white;
+    border-left: 1px solid #e0e4e9;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.properties-header {
+    padding: 16px;
+    border-bottom: 1px solid #e0e4e9;
+}
+
+.properties-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.properties-section {
+    padding: 16px;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e0e4e9;
+}
+
+.property-group {
+    margin-bottom: 16px;
+}
+
+.property-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.color-picker-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.form-control-color {
+    width: 50px;
+    height: 38px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.align-btn.active {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+/* ===== UPLOAD MODAL ===== */
+.upload-area {
+    border: 2px dashed #0066cc;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    background: #f0f8ff;
+    border-color: #0052a3;
+}
+
+.upload-area.drag-over {
+    background: #e3f2fd;
+    border-color: #0052a3;
+    transform: scale(1.02);
+}
+
+/* ===== PREVIEW MODAL ===== */
+.preview-container {
+    width: 360px;
+    height: 640px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+}
+
+/* ===== ANIMATIONS ===== */
+@@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@@keyframes slide-in-left {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@@keyframes slide-in-right {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@@keyframes slide-in-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@@keyframes slide-in-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@@keyframes zoom-in {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@@keyframes bounce-in {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@@keyframes rotate-in {
+    from { transform: rotate(-180deg) scale(0); opacity: 0; }
+    to { transform: rotate(0) scale(1); opacity: 1; }
+}
+</style>
+
+@section Scripts {
+<script src="~/js/story-editor.js"></script>
+}

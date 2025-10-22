@@ -1,0 +1,627 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+
+<div class="ai-enhancement-panel" id="ai-enhancement-panel" style="display: none;">
+    <div class="panel-header">
+        <h6 class="mb-0">
+            <i class="fas fa-robot text-primary me-2"></i>
+            AI Content Enhancement
+        </h6>
+        <button type="button" class="btn-close" id="close-ai-panel"></button>
+    </div>
+    
+    <div class="panel-content">
+        <!-- AI Enhancement Tabs -->
+        <ul class="nav nav-tabs mb-3" id="ai-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="enhance-tab" data-bs-toggle="tab" data-bs-target="#enhance-content" type="button">
+                    <i class="fas fa-magic me-1"></i> Enhance
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo-optimize" type="button">
+                    <i class="fas fa-search me-1"></i> SEO
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="related-tab" data-bs-toggle="tab" data-bs-target="#related-content" type="button">
+                    <i class="fas fa-link me-1"></i> Related
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analyze-tab" data-bs-toggle="tab" data-bs-target="#content-analysis" type="button">
+                    <i class="fas fa-chart-line me-1"></i> Analyze
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="ai-tab-content">
+            <!-- Content Enhancement Tab -->
+            <div class="tab-pane fade show active" id="enhance-content" role="tabpanel">
+                <div class="form-group mb-3">
+                    <label class="form-label">Enhancement Type</label>
+                    <select class="form-select" id="enhancement-type">
+                        <option value="readability">Improve Readability</option>
+                        <option value="engagement">Increase Engagement</option>
+                        <option value="clarity">Enhance Clarity</option>
+                        <option value="comprehensive">Comprehensive Enhancement</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary w-100" id="enhance-content-btn">
+                    <i class="fas fa-magic me-2"></i>Enhance Content
+                </button>
+                
+                <div id="enhancement-results" class="mt-3" style="display: none;">
+                    <div class="enhanced-content-preview">
+                        <h6>Enhanced Content:</h6>
+                        <div class="content-preview border rounded p-3 mb-3" id="enhanced-content-preview"></div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" id="apply-enhancement">
+                                <i class="fas fa-check me-1"></i>Apply
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="reject-enhancement">
+                                <i class="fas fa-times me-1"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="suggestions mt-3">
+                        <h6>AI Suggestions:</h6>
+                        <ul id="enhancement-suggestions" class="list-unstyled"></ul>
+                    </div>
+                    
+                    <div class="scores mt-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="score-item">
+                                    <label>Readability Score:</label>
+                                    <div class="progress">
+                                        <div class="progress-bar" id="readability-progress" role="progressbar"></div>
+                                    </div>
+                                    <small id="readability-score" class="text-muted"></small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="score-item">
+                                    <label>Engagement Score:</label>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" id="engagement-progress" role="progressbar"></div>
+                                    </div>
+                                    <small id="engagement-score" class="text-muted"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Optimization Tab -->
+            <div class="tab-pane fade" id="seo-optimize" role="tabpanel">
+                <div class="form-group mb-3">
+                    <label class="form-label">Target Keywords</label>
+                    <input type="text" class="form-control" id="seo-keywords" placeholder="Enter keywords separated by commas">
+                </div>
+                
+                <button class="btn btn-primary w-100" id="optimize-seo-btn">
+                    <i class="fas fa-search me-2"></i>Optimize for SEO
+                </button>
+                
+                <div id="seo-results" class="mt-3" style="display: none;">
+                    <div class="seo-optimization">
+                        <h6>SEO Optimized Content:</h6>
+                        <div class="content-preview border rounded p-3 mb-3" id="seo-content-preview"></div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" id="apply-seo">
+                                <i class="fas fa-check me-1"></i>Apply
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="reject-seo">
+                                <i class="fas fa-times me-1"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="seo-meta mt-3">
+                        <h6>Meta Description:</h6>
+                        <div class="meta-description border rounded p-2 mb-3" id="meta-description"></div>
+                    </div>
+                    
+                    <div class="seo-keywords mt-3">
+                        <h6>Suggested Keywords:</h6>
+                        <div id="suggested-keywords" class="d-flex flex-wrap gap-1"></div>
+                    </div>
+                    
+                    <div class="seo-score mt-3">
+                        <label>SEO Score:</label>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" id="seo-score-progress" role="progressbar"></div>
+                        </div>
+                        <small id="seo-score-text" class="text-muted"></small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Content Tab -->
+            <div class="tab-pane fade" id="related-content" role="tabpanel">
+                <div class="form-group mb-3">
+                    <label class="form-label">Maximum Results</label>
+                    <select class="form-select" id="max-related-results">
+                        <option value="3">3 results</option>
+                        <option value="5" selected>5 results</option>
+                        <option value="10">10 results</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary w-100" id="find-related-btn">
+                    <i class="fas fa-link me-2"></i>Find Related Content
+                </button>
+                
+                <div id="related-results" class="mt-3" style="display: none;">
+                    <h6>Related Content:</h6>
+                    <div id="related-content-list" class="list-group"></div>
+                </div>
+            </div>
+
+            <!-- Content Analysis Tab -->
+            <div class="tab-pane fade" id="content-analysis" role="tabpanel">
+                <button class="btn btn-primary w-100" id="analyze-content-btn">
+                    <i class="fas fa-chart-line me-2"></i>Analyze Content
+                </button>
+                
+                <div id="analysis-results" class="mt-3" style="display: none;">
+                    <div class="analysis-metrics">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <label>Sentiment:</label>
+                                    <span id="content-sentiment" class="badge"></span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <label>Readability:</label>
+                                    <span id="content-readability" class="badge"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <label>Word Count:</label>
+                                    <span id="word-count"></span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <label>Read Time:</label>
+                                    <span id="read-time"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="quality-score mt-3">
+                        <label>Quality Score:</label>
+                        <div class="progress">
+                            <div class="progress-bar" id="quality-score-progress" role="progressbar"></div>
+                        </div>
+                        <small id="quality-score-text" class="text-muted"></small>
+                    </div>
+                    
+                    <div class="topics mt-3">
+                        <h6>Main Topics:</h6>
+                        <div id="content-topics" class="d-flex flex-wrap gap-1"></div>
+                    </div>
+                    
+                    <div class="keywords mt-3">
+                        <h6>Keywords:</h6>
+                        <div id="content-keywords" class="d-flex flex-wrap gap-1"></div>
+                    </div>
+                    
+                    <div class="suggestions mt-3">
+                        <h6>Improvement Suggestions:</h6>
+                        <ul id="analysis-suggestions" class="list-unstyled"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ai-enhancement-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: white;
+    border-left: 1px solid #dee2e6;
+    z-index: 1050;
+    overflow-y: auto;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+.panel-content {
+    padding: 1rem;
+}
+
+.content-preview {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.score-item, .metric-item {
+    margin-bottom: 0.5rem;
+}
+
+.score-item label, .metric-item label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.suggestions ul {
+    margin-bottom: 0;
+}
+
+.suggestions li {
+    padding: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.related-content-item {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.related-content-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.related-content-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.related-content-snippet {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.related-content-score {
+    font-size: 0.8rem;
+    color: #28a745;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+/* Responsive */
+@@media (max-width: 768px) {
+    .ai-enhancement-panel {
+        width: 100%;
+        height: 100vh;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const aiPanel = document.getElementById('ai-enhancement-panel');
+    const closeBtn = document.getElementById('close-ai-panel');
+    const enhanceBtn = document.getElementById('enhance-content-btn');
+    const seoBtn = document.getElementById('optimize-seo-btn');
+    const relatedBtn = document.getElementById('find-related-btn');
+    const analyzeBtn = document.getElementById('analyze-content-btn');
+    
+    // Close panel
+    closeBtn.addEventListener('click', () => {
+        aiPanel.style.display = 'none';
+    });
+    
+    // Content Enhancement
+    enhanceBtn.addEventListener('click', async () => {
+        const content = document.querySelector('textarea[name="Content"]').value;
+        const title = document.querySelector('input[name="Title"]').value;
+        const postType = document.querySelector('input[name="PostType"]:checked')?.value || 'text';
+        
+        if (!content || !title) {
+            showNotification('Please enter content and title first', 'error');
+            return;
+        }
+        
+        enhanceBtn.disabled = true;
+        enhanceBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enhancing...';
+        
+        try {
+            const response = await fetch('/api/aienhancement/enhance-content', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ content, title, postType })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('enhanced-content-preview').textContent = result.enhancedContent;
+                document.getElementById('readability-score').textContent = result.readabilityScore + '/100';
+                document.getElementById('engagement-score').textContent = result.engagementScore + '/100';
+                document.getElementById('readability-progress').style.width = result.readabilityScore + '%';
+                document.getElementById('engagement-progress').style.width = result.engagementScore + '%';
+                
+                const suggestionsList = document.getElementById('enhancement-suggestions');
+                suggestionsList.innerHTML = '';
+                result.suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.textContent = suggestion;
+                    suggestionsList.appendChild(li);
+                });
+                
+                document.getElementById('enhancement-results').style.display = 'block';
+            } else {
+                showNotification('Enhancement failed: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('Error enhancing content: ' + error.message, 'error');
+        } finally {
+            enhanceBtn.disabled = false;
+            enhanceBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Enhance Content';
+        }
+    });
+    
+    // Apply enhancement
+    document.getElementById('apply-enhancement').addEventListener('click', () => {
+        const enhancedContent = document.getElementById('enhanced-content-preview').textContent;
+        document.querySelector('textarea[name="Content"]').value = enhancedContent;
+        showNotification('Enhanced content applied!', 'success');
+    });
+    
+    // SEO Optimization
+    seoBtn.addEventListener('click', async () => {
+        const content = document.querySelector('textarea[name="Content"]').value;
+        const title = document.querySelector('input[name="Title"]').value;
+        const keywords = document.getElementById('seo-keywords').value.split(',').map(k => k.trim()).filter(k => k);
+        
+        if (!content || !title) {
+            showNotification('Please enter content and title first', 'error');
+            return;
+        }
+        
+        seoBtn.disabled = true;
+        seoBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Optimizing...';
+        
+        try {
+            const response = await fetch('/api/aienhancement/optimize-seo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ content, title, keywords })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('seo-content-preview').textContent = result.optimizedContent;
+                document.getElementById('meta-description').textContent = result.metaDescription;
+                document.getElementById('seo-score-text').textContent = result.seoScore + '/100';
+                document.getElementById('seo-score-progress').style.width = result.seoScore + '%';
+                
+                const keywordsDiv = document.getElementById('suggested-keywords');
+                keywordsDiv.innerHTML = '';
+                result.suggestedKeywords.forEach(keyword => {
+                    const span = document.createElement('span');
+                    span.className = 'badge bg-secondary me-1 mb-1';
+                    span.textContent = keyword;
+                    keywordsDiv.appendChild(span);
+                });
+                
+                document.getElementById('seo-results').style.display = 'block';
+            } else {
+                showNotification('SEO optimization failed: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('Error optimizing SEO: ' + error.message, 'error');
+        } finally {
+            seoBtn.disabled = false;
+            seoBtn.innerHTML = '<i class="fas fa-search me-2"></i>Optimize for SEO';
+        }
+    });
+    
+    // Apply SEO
+    document.getElementById('apply-seo').addEventListener('click', () => {
+        const optimizedContent = document.getElementById('seo-content-preview').textContent;
+        document.querySelector('textarea[name="Content"]').value = optimizedContent;
+        showNotification('SEO optimized content applied!', 'success');
+    });
+    
+    // Find Related Content
+    relatedBtn.addEventListener('click', async () => {
+        const content = document.querySelector('textarea[name="Content"]').value;
+        const title = document.querySelector('input[name="Title"]').value;
+        const maxResults = parseInt(document.getElementById('max-related-results').value);
+        
+        if (!content || !title) {
+            showNotification('Please enter content and title first', 'error');
+            return;
+        }
+        
+        relatedBtn.disabled = true;
+        relatedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Finding...';
+        
+        try {
+            const response = await fetch('/api/aienhancement/find-related', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ content, title, maxResults })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const relatedList = document.getElementById('related-content-list');
+                relatedList.innerHTML = '';
+                
+                result.relatedContent.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'related-content-item';
+                    div.innerHTML = `
+                        <div class="related-content-title">${item.title}</div>
+                        <div class="related-content-snippet">${item.snippet}</div>
+                        <div class="related-content-score">Relevance: ${Math.round(item.relevanceScore * 100)}%</div>
+                    `;
+                    relatedList.appendChild(div);
+                });
+                
+                document.getElementById('related-results').style.display = 'block';
+            } else {
+                showNotification('Related content search failed: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('Error finding related content: ' + error.message, 'error');
+        } finally {
+            relatedBtn.disabled = false;
+            relatedBtn.innerHTML = '<i class="fas fa-link me-2"></i>Find Related Content';
+        }
+    });
+    
+    // Content Analysis
+    analyzeBtn.addEventListener('click', async () => {
+        const content = document.querySelector('textarea[name="Content"]').value;
+        const title = document.querySelector('input[name="Title"]').value;
+        
+        if (!content || !title) {
+            showNotification('Please enter content and title first', 'error');
+            return;
+        }
+        
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+        
+        try {
+            const response = await fetch('/api/aienhancement/analyze-content', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ content, title })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('content-sentiment').textContent = result.sentiment;
+                document.getElementById('content-sentiment').className = `badge ${getSentimentClass(result.sentiment)}`;
+                document.getElementById('content-readability').textContent = result.readabilityLevel;
+                document.getElementById('content-readability').className = `badge ${getReadabilityClass(result.readabilityLevel)}`;
+                document.getElementById('word-count').textContent = result.wordCount;
+                document.getElementById('read-time').textContent = result.estimatedReadTime + ' min';
+                document.getElementById('quality-score-text').textContent = result.qualityScore + '/100';
+                document.getElementById('quality-score-progress').style.width = result.qualityScore + '%';
+                
+                // Topics
+                const topicsDiv = document.getElementById('content-topics');
+                topicsDiv.innerHTML = '';
+                result.topics.forEach(topic => {
+                    const span = document.createElement('span');
+                    span.className = 'badge bg-info me-1 mb-1';
+                    span.textContent = topic;
+                    topicsDiv.appendChild(span);
+                });
+                
+                // Keywords
+                const keywordsDiv = document.getElementById('content-keywords');
+                keywordsDiv.innerHTML = '';
+                result.keywords.forEach(keyword => {
+                    const span = document.createElement('span');
+                    span.className = 'badge bg-secondary me-1 mb-1';
+                    span.textContent = keyword;
+                    keywordsDiv.appendChild(span);
+                });
+                
+                // Suggestions
+                const suggestionsList = document.getElementById('analysis-suggestions');
+                suggestionsList.innerHTML = '';
+                result.suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.textContent = suggestion;
+                    suggestionsList.appendChild(li);
+                });
+                
+                document.getElementById('analysis-results').style.display = 'block';
+            } else {
+                showNotification('Content analysis failed: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showNotification('Error analyzing content: ' + error.message, 'error');
+        } finally {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-chart-line me-2"></i>Analyze Content';
+        }
+    });
+    
+    function getSentimentClass(sentiment) {
+        switch(sentiment.toLowerCase()) {
+            case 'positive': return 'bg-success';
+            case 'negative': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+    
+    function getReadabilityClass(level) {
+        switch(level.toLowerCase()) {
+            case 'beginner': return 'bg-success';
+            case 'intermediate': return 'bg-warning';
+            case 'advanced': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+    
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+});
+</script>

@@ -2,6 +2,8 @@
 @model discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
 @{
     ViewData["Title"] = $"Create Post - r/{Model.CommunityName}";
+    ViewData["Description"] = "Create engaging posts and automatically generate Web Stories for better SEO and reach";
+    ViewData["Keywords"] = "create post, web stories, SEO, content creation, community";
 }
 
 <main class="container-fluid py-4">
@@ -11,12 +13,75 @@
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h1 class="h4 mb-0">
-                        <i class="fas fa-edit me-2"></i>Create a post in r/@Model.CommunityName
+                        <i class="fas fa-edit me-2"></i>
+                        @if (string.IsNullOrEmpty(Model.CommunityName))
+                        {
+                            <text>Create a post - Select Community</text>
+                        }
+                        else
+                        {
+                            <text>Create a post in r/@Model.CommunityName</text>
+                        }
                     </h1>
                 </div>
                 <div class="card-body">
-                    <!-- Post Type Tabs -->
-                    <ul class="nav nav-tabs mb-4" role="tablist">
+                    @if (string.IsNullOrEmpty(Model.CommunityName))
+                    {
+                        <!-- Community Selection Section -->
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>Select a Community
+                            </h6>
+                            <p class="mb-3">Choose a community to post in:</p>
+                            
+                            @if (Model.UserCommunities != null && Model.UserCommunities.Any())
+                            {
+                                <div class="mb-3">
+                                    <h6 class="text-primary">Your Communities</h6>
+                                    <div class="row">
+                                        @foreach (var community in Model.UserCommunities.Take(6))
+                                        {
+                                            <div class="col-md-4 mb-2">
+                                                <a href="/r/@community.Slug/create" class="btn btn-outline-primary btn-sm w-100 text-start">
+                                                    <i class="fas fa-users me-2"></i>r/@community.Slug
+                                                    <small class="d-block text-muted">@community.MemberCount members</small>
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            
+                            @if (Model.SuggestedCommunities != null && Model.SuggestedCommunities.Any())
+                            {
+                                <div class="mb-3">
+                                    <h6 class="text-success">Popular Communities</h6>
+                                    <div class="row">
+                                        @foreach (var community in Model.SuggestedCommunities.Take(6))
+                                        {
+                                            <div class="col-md-4 mb-2">
+                                                <a href="/r/@community.Slug/create" class="btn btn-outline-success btn-sm w-100 text-start">
+                                                    <i class="fas fa-fire me-2"></i>r/@community.Slug
+                                                    <small class="d-block text-muted">@community.MemberCount members</small>
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            
+                            <div class="text-center">
+                                <a href="/communities" class="btn btn-primary">
+                                    <i class="fas fa-search me-2"></i>Browse All Communities
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(Model.CommunityName))
+                    {
+                        <!-- Post Type Tabs -->
+                        <ul class="nav nav-tabs mb-4" role="tablist">
                         <li class="nav-item">
                             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#textPost" type="button">
                                 <i class="fas fa-align-left me-1"></i> Text
@@ -130,30 +195,105 @@
                             <div class="form-text">Separate tags with commas</div>
                         </div>
 
-                        <!-- Options -->
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input asp-for="IsNSFW" type="checkbox" class="form-check-input" />
-                                    <label asp-for="IsNSFW" class="form-check-label"></label>
+                        <!-- Auto-Story Generation Options -->
+                        <div class="card mb-4 border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-magic me-2"></i>Auto-Generate Web Story
+                                    <small class="ms-2">Boost SEO & Reach</small>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="autoGenerateStory" name="AutoGenerateStory" checked>
+                                            <label class="form-check-label" for="autoGenerateStory">
+                                                <strong>Generate Web Story</strong>
+                                                <small class="d-block text-muted">Automatically create a Web Story from this post</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="useAIContent" name="UseAIContent" checked>
+                                            <label class="form-check-label" for="useAIContent">
+                                                <strong>AI-Enhanced Content</strong>
+                                                <small class="d-block text-muted">Use AI to optimize story content</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Story Customization Options -->
+                                <div id="storyOptions" class="mt-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="storyStyle" class="form-label">Story Style</label>
+                                            <select class="form-select form-select-sm" id="storyStyle" name="StoryStyle">
+                                                <option value="informative">📚 Informative</option>
+                                                <option value="engaging">🎯 Engaging</option>
+                                                <option value="tutorial">🔧 Tutorial</option>
+                                                <option value="news">📰 News</option>
+                                                <option value="entertainment">🎭 Entertainment</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="storyLength" class="form-label">Story Length</label>
+                                            <select class="form-select form-select-sm" id="storyLength" name="StoryLength">
+                                                <option value="short">⚡ Short (3-5 slides)</option>
+                                                <option value="medium" selected>📖 Medium (6-10 slides)</option>
+                                                <option value="long">📚 Long (11-15 slides)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <label for="storyKeywords" class="form-label">SEO Keywords (optional)</label>
+                                        <input type="text" class="form-control form-control-sm" id="storyKeywords" name="StoryKeywords" 
+                                               placeholder="Enter keywords separated by commas">
+                                        <small class="form-text text-muted">Help AI generate better content for SEO</small>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-6">
+                        </div>
+
+                        <!-- Options -->
+                        <div class="row mb-4">
+                            <div class="col-4">
+                                <div class="form-check">
+                                    <input asp-for="IsNSFW" type="checkbox" class="form-check-input" />
+                                    <label asp-for="IsNSFW" class="form-check-label">NSFW</label>
+                                </div>
+                            </div>
+                            <div class="col-4">
                                 <div class="form-check">
                                     <input asp-for="IsSpoiler" type="checkbox" class="form-check-input" />
-                                    <label asp-for="IsSpoiler" class="form-check-label"></label>
+                                    <label asp-for="IsSpoiler" class="form-check-label">Spoiler</label>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enableComments" name="EnableComments" checked>
+                                    <label class="form-check-label" for="enableComments">Allow Comments</label>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Submit -->
                         <div class="d-flex justify-content-between">
-                            <a href="@Url.Community(Model.CommunitySlug)" class="btn btn-outline-secondary">Cancel</a>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary" id="ai-enhancement-btn">
+                                    <i class="fas fa-robot me-1"></i>AI Enhancement
+                                </button>
+                                <a href="@Url.Community(Model.CommunitySlug)" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-paper-plane me-1"></i> Post
                             </button>
                         </div>
                     </form>
+                    }
                 </div>
             </div>
         </div>
@@ -164,6 +304,9 @@
         </div>
     </div>
 </main>
+
+<!-- AI Enhancement Panel -->
+@await Html.PartialAsync("~/Views/Shared/Components/AIEnhancement/AIEnhancementPanel.cshtml", Model)
 
 @section Scripts {
     <script>
@@ -241,5 +384,131 @@
                 optionsDiv.appendChild(newOption);
             }
         });
+
+        // Auto-Story Generation Features
+        document.addEventListener('DOMContentLoaded', function() {
+            const autoGenerateCheckbox = document.getElementById('autoGenerateStory');
+            const storyOptions = document.getElementById('storyOptions');
+            
+            // Toggle story options visibility
+            function toggleStoryOptions() {
+                if (autoGenerateCheckbox && storyOptions) {
+                    if (autoGenerateCheckbox.checked) {
+                        storyOptions.style.display = 'block';
+                    } else {
+                        storyOptions.style.display = 'none';
+                    }
+                }
+            }
+            
+            if (autoGenerateCheckbox) {
+                autoGenerateCheckbox.addEventListener('change', toggleStoryOptions);
+                toggleStoryOptions(); // Initial state
+            }
+            
+            // Auto-fill story keywords from post title
+            const titleInput = document.querySelector('[name="Title"]');
+            const keywordsInput = document.getElementById('storyKeywords');
+            
+            if (titleInput && keywordsInput) {
+                titleInput.addEventListener('input', function() {
+                    if (keywordsInput.value === '') {
+                        // Extract potential keywords from title
+                        const title = this.value.toLowerCase();
+                        const keywords = title.split(' ')
+                            .filter(word => word.length > 3)
+                            .slice(0, 5)
+                            .join(', ');
+                        keywordsInput.value = keywords;
+                    }
+                });
+            }
+            
+            // Story style recommendations based on post type
+            const postTypeInput = document.getElementById('postTypeInput');
+            const storyStyleSelect = document.getElementById('storyStyle');
+            
+            function updateStoryStyleRecommendation() {
+                if (postTypeInput && storyStyleSelect) {
+                    const postType = postTypeInput.value;
+                    let recommendedStyle = 'informative';
+                    
+                    switch(postType) {
+                        case 'text':
+                            recommendedStyle = 'informative';
+                            break;
+                        case 'link':
+                            recommendedStyle = 'news';
+                            break;
+                        case 'image':
+                            recommendedStyle = 'engaging';
+                            break;
+                        case 'poll':
+                            recommendedStyle = 'engaging';
+                            break;
+                    }
+                    
+                    storyStyleSelect.value = recommendedStyle;
+                }
+            }
+            
+            // Update story style when post type changes
+            document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', updateStoryStyleRecommendation);
+            });
+            
+            // Show story generation preview
+            function showStoryPreview() {
+                if (autoGenerateCheckbox && autoGenerateCheckbox.checked) {
+                    const title = titleInput ? titleInput.value : '';
+                    const style = storyStyleSelect ? storyStyleSelect.value : '';
+                    const length = document.getElementById('storyLength') ? document.getElementById('storyLength').value : '';
+                    
+                    if (title) {
+                        // Show preview notification
+                        showNotification('Story will be generated automatically after posting!', 'success');
+                    }
+                }
+            }
+            
+            // AI Enhancement Panel
+            const aiEnhancementBtn = document.getElementById('ai-enhancement-btn');
+            const aiPanel = document.getElementById('ai-enhancement-panel');
+            
+            if (aiEnhancementBtn && aiPanel) {
+                aiEnhancementBtn.addEventListener('click', () => {
+                    aiPanel.style.display = aiPanel.style.display === 'none' ? 'block' : 'none';
+                });
+            }
+            
+            // Show preview when form is submitted
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (autoGenerateCheckbox && autoGenerateCheckbox.checked) {
+                        showStoryPreview();
+                    }
+                });
+            }
+        });
+        
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
     </script>
 }

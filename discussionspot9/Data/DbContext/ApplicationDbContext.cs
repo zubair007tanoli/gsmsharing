@@ -60,6 +60,10 @@ namespace discussionspot9.Data.DbContext
         public DbSet<UserBan> UserBans { get; set; }
         public DbSet<ModerationLog> ModerationLogs { get; set; }
         public DbSet<SiteRole> SiteRoles { get; set; }
+        
+        // Web Stories tables
+        public DbSet<Story> Stories { get; set; }
+        public DbSet<StorySlide> StorySlides { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -732,6 +736,85 @@ namespace discussionspot9.Data.DbContext
                     .WithMany()
                     .HasForeignKey(e => e.CommunityId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+            #endregion
+
+            #region Story Configuration
+            builder.Entity<Story>(entity =>
+            {
+                entity.HasKey(e => e.StoryId);
+                entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
+                entity.Property(e => e.Slug).HasMaxLength(320).IsRequired();
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.UserId).HasMaxLength(450);
+                entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("draft");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.ViewCount).HasDefaultValue(0);
+                entity.Property(e => e.SlideCount).HasDefaultValue(0);
+                entity.Property(e => e.TotalDuration).HasDefaultValue(0);
+                entity.Property(e => e.PosterImageUrl).HasMaxLength(2048);
+                entity.Property(e => e.PublisherLogo).HasMaxLength(2048);
+                entity.Property(e => e.PublisherName).HasMaxLength(200);
+                entity.Property(e => e.IsAmpEnabled).HasDefaultValue(true);
+                entity.Property(e => e.CanonicalUrl).HasMaxLength(2048);
+                entity.Property(e => e.MetaDescription).HasMaxLength(500);
+                entity.Property(e => e.MetaKeywords).HasMaxLength(500);
+
+                entity.HasIndex(e => new { e.Slug, e.CommunityId }).IsUnique();
+                entity.HasIndex(e => new { e.Status, e.PublishedAt });
+                entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+                entity.HasIndex(e => e.Slug);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.Community)
+                    .WithMany()
+                    .HasForeignKey(e => e.CommunityId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Story_Status", "Status IN ('draft', 'published', 'archived')");
+                });
+            });
+
+            builder.Entity<StorySlide>(entity =>
+            {
+                entity.HasKey(e => e.StorySlideId);
+                entity.Property(e => e.Caption).HasMaxLength(1000);
+                entity.Property(e => e.Headline).HasMaxLength(200);
+                entity.Property(e => e.Text).HasMaxLength(2000);
+                entity.Property(e => e.Duration).HasDefaultValue(5000);
+                entity.Property(e => e.OrderIndex).HasDefaultValue(0);
+                entity.Property(e => e.SlideType).HasMaxLength(20).HasDefaultValue("media");
+                entity.Property(e => e.BackgroundColor).HasMaxLength(20);
+                entity.Property(e => e.TextColor).HasMaxLength(20);
+                entity.Property(e => e.FontSize).HasMaxLength(20);
+                entity.Property(e => e.Alignment).HasMaxLength(20).HasDefaultValue("center");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(e => new { e.StoryId, e.OrderIndex });
+                entity.HasIndex(e => e.MediaId);
+
+                entity.HasOne(e => e.Story)
+                    .WithMany(e => e.Slides)
+                    .HasForeignKey(e => e.StoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Media)
+                    .WithMany()
+                    .HasForeignKey(e => e.MediaId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_StorySlide_Type", "SlideType IN ('media', 'text', 'video', 'image')");
+                });
             });
             #endregion
 

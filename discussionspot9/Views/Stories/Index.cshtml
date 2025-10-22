@@ -1,0 +1,462 @@
+@model IEnumerable<discussionspot9.Models.Domain.Story>
+@{
+    ViewData["Title"] = "WebStories - DiscussionSpot";
+    ViewData["Description"] = "Discover amazing stories from creators around the world";
+}
+
+<!-- HEADER SECTION -->
+<div class="header-section">
+    <div class="container">
+        <div class="header-content">
+            <h1><i class="fas fa-book-open"></i> WebStories</h1>
+            <p>Discover amazing stories from creators around the world</p>
+            <div class="d-flex gap-2 mt-3">
+                <a href="/stories/create" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus"></i> Create Story
+                </a>
+                <a href="/stories/editor" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-edit"></i> Visual Editor
+                </a>
+                <a href="/stories/info" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-info-circle"></i> Learn More
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container mt-4">
+    <!-- FILTERS -->
+    <div class="filters-section">
+        <span style="font-weight: 600; color: #333;">Filter by:</span>
+        <button class="filter-btn active" data-filter="all">All Stories</button>
+        <button class="filter-btn" data-filter="trending">Trending</button>
+        <button class="filter-btn" data-filter="recent">Recent</button>
+        <button class="filter-btn" data-filter="popular">Popular</button>
+    </div>
+
+    <!-- STORIES GRID -->
+    <div class="stories-grid">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var story in Model)
+            {
+                <div class="story-card" data-story-id="@story.StoryId">
+                    <div class="story-image-container">
+                        @if (!string.IsNullOrEmpty(story.PosterImageUrl))
+                        {
+                            <img src="@story.PosterImageUrl" alt="@story.Title" class="story-image">
+                        }
+                        else
+                        {
+                            <div class="story-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-image fa-3x text-white"></i>
+                            </div>
+                        }
+                        <div class="story-overlay">
+                            <div class="play-button">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                        @if (story.ViewCount > 1000)
+                        {
+                            <span class="story-badge">TRENDING</span>
+                        }
+                        else if ((DateTime.Now - story.CreatedAt).TotalDays < 7)
+                        {
+                            <span class="story-badge">NEW</span>
+                        }
+                    </div>
+                    <div class="story-content">
+                        <span class="story-category">Story</span>
+                        <h3 class="story-title">@story.Title</h3>
+                        @if (!string.IsNullOrEmpty(story.Description))
+                        {
+                            <p class="story-description">@story.Description</p>
+                        }
+                        <div class="story-meta">
+                            <div class="story-author">
+                                <div class="author-avatar">
+                                    @if (story.User != null && !string.IsNullOrEmpty(story.User.UserName))
+                                    {
+                                        @story.User.UserName.Substring(0, 2).ToUpper()
+                                    }
+                                    else
+                                    {
+                                        <span>DS</span>
+                                    }
+                                </div>
+                                <span>@(story.User?.UserName ?? "Anonymous")</span>
+                            </div>
+                            <div class="story-stats">
+                                <div class="stat-item">
+                                    <i class="fas fa-eye"></i>
+                                    <span>@story.ViewCount</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-images"></i>
+                                    <span>@story.SlideCount</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">No stories yet</h3>
+                <p class="text-muted">Be the first to create a story!</p>
+                <a href="/stories/create" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Create Your First Story
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+/* ===== HEADER SECTION ===== */
+.header-section {
+    background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+    animation: slideDown 0.6s ease;
+}
+
+@@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.header-content h1 {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.header-content p {
+    font-size: 18px;
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+/* ===== FILTERS & SORTING ===== */
+.filters-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-btn {
+    background: #f0f0f0;
+    border: 1px solid #e0e0e0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: #666;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+/* ===== STORY CARDS ===== */
+.stories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.story-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+}
+
+.story-card:nth-child(1) { animation-delay: 0.1s; }
+.story-card:nth-child(2) { animation-delay: 0.2s; }
+.story-card:nth-child(3) { animation-delay: 0.3s; }
+.story-card:nth-child(4) { animation-delay: 0.4s; }
+.story-card:nth-child(5) { animation-delay: 0.5s; }
+.story-card:nth-child(6) { animation-delay: 0.6s; }
+
+@@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.story-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.story-image-container {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.story-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.story-card:hover .story-image {
+    transform: scale(1.1);
+}
+
+.story-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.story-card:hover .story-overlay {
+    opacity: 1;
+}
+
+.play-button {
+    width: 50px;
+    height: 50px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #0066cc;
+    animation: pulse 2s infinite;
+}
+
+@@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.story-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ff6b6b;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    animation: slideIn 0.4s ease;
+}
+
+@@keyframes slideIn {
+    from {
+        transform: translateX(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.story-content {
+    padding: 16px;
+}
+
+.story-category {
+    display: inline-block;
+    background: #f0f0f0;
+    color: #0066cc;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.story-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.story-description {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.story-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 12px;
+    color: #999;
+}
+
+.story-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.author-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.story-stats {
+    display: flex;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    color: #0066cc;
+}
+
+/* ===== RESPONSIVE ===== */
+@@media (max-width: 768px) {
+    .stories-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .header-content h1 {
+        font-size: 28px;
+    }
+
+    .filters-section {
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+}
+
+@@media (max-width: 576px) {
+    .stories-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .header-content h1 {
+        font-size: 24px;
+    }
+}
+
+/* ===== LOADING ANIMATION ===== */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f0f0f0;
+    border-top-color: #0066cc;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            // TODO: Implement filtering logic
+            console.log('Filter:', filter);
+        });
+    });
+
+    // Story card click
+    document.querySelectorAll('.story-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!e.target.closest('.story-stats')) {
+                const storyId = this.dataset.storyId;
+                // Get the slug from the story - you'll need to add this as a data attribute
+                window.location.href = '/stories/viewer/' + storyId;
+            }
+        });
+    });
+});
+</script>
+}

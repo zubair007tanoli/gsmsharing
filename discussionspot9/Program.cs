@@ -169,6 +169,17 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
+
+// Story Generation Services
+builder.Services.AddScoped<IStoryGenerationService, StoryGenerationService>();
+builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+builder.Services.AddHostedService<QueuedHostedService>();
+
+// Media Upload Service
+builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
+
+// AI Content Enhancement Service
+builder.Services.AddScoped<IAIContentEnhancementService, AIContentEnhancementService>();
 builder.Services.AddScoped<IPostTest, PostTest>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<ISeoAnalyzerService, PythonSeoAnalyzerService>();
@@ -200,6 +211,8 @@ builder.Services.Configure<discussionspot9.Models.Configuration.AdSenseConfigura
     builder.Configuration.GetSection("GoogleAdSense"));
 builder.Services.Configure<discussionspot9.Models.Configuration.GoogleAdsConfiguration>(
     builder.Configuration.GetSection("GoogleAds"));
+builder.Services.Configure<discussionspot9.Models.Configuration.AdSenseConfiguration>(
+    builder.Configuration.GetSection("AdSense"));
 builder.Services.AddScoped<MultiSiteAdSenseService>();
 builder.Services.AddScoped<GoogleKeywordPlannerService>();
 
@@ -416,6 +429,50 @@ app.MapControllerRoute(
     pattern: "search",
     defaults: new { controller = "Search", action = "Index" });
 
+// Web Stories Routes
+app.MapControllerRoute(
+    name: "stories_index",
+    pattern: "stories",
+    defaults: new { controller = "Stories", action = "Index" });
+
+app.MapControllerRoute(
+    name: "stories_create",
+    pattern: "stories/create",
+    defaults: new { controller = "Stories", action = "Create" });
+
+app.MapControllerRoute(
+    name: "stories_editor",
+    pattern: "stories/editor",
+    defaults: new { controller = "Stories", action = "Editor" });
+
+app.MapControllerRoute(
+    name: "stories_info",
+    pattern: "stories/info",
+    defaults: new { controller = "Stories", action = "Info" });
+
+app.MapControllerRoute(
+    name: "stories_amp",
+    pattern: "stories/amp/{slug}",
+    defaults: new { controller = "Stories", action = "Amp" },
+    constraints: new { slug = @"^[a-zA-Z0-9_-]+$" });
+
+app.MapControllerRoute(
+    name: "stories_viewer",
+    pattern: "stories/viewer/{slug}",
+    defaults: new { controller = "Stories", action = "Viewer" },
+    constraints: new { slug = @"^[a-zA-Z0-9_-]+$" });
+
+app.MapControllerRoute(
+    name: "stories_view",
+    pattern: "stories/{slug}",
+    defaults: new { controller = "Stories", action = "ViewStory" },
+    constraints: new { slug = @"^[a-zA-Z0-9_-]+$" });
+
+app.MapControllerRoute(
+    name: "stories_edit",
+    pattern: "stories/edit/{id}",
+    defaults: new { controller = "Stories", action = "Edit" });
+
 // Home Page Alternatives
 app.MapControllerRoute(
     name: "home_popular",
@@ -443,10 +500,21 @@ app.MapControllerRoute(
     name: "api_routes",
     pattern: "api/{controller}/{action}/{id?}");
 
+// Sitemap Routes
+app.MapControllerRoute(
+    name: "sitemap",
+    pattern: "sitemap.xml",
+    defaults: new { controller = "Sitemap", action = "Sitemap" });
+
+app.MapControllerRoute(
+    name: "sitemap_stories",
+    pattern: "sitemap-stories.xml",
+    defaults: new { controller = "Sitemap", action = "StoriesSitemap" });
+
 app.MapControllerRoute(
     name: "post_create_general",
     pattern: "create",
-    defaults: new { controller = "Post", action = "CreateTest" });
+    defaults: new { controller = "Post", action = "Create" });
 
 // Default fallback route (keep this last)
 app.MapControllerRoute(

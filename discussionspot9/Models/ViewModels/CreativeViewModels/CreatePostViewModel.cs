@@ -89,6 +89,22 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         // SEO Analysis Result (not saved to DB, just for processing)
         public SeoMetadataViewModel? SeoMetadata { get; set; }
         
+        // Story Generation Properties
+        [Display(Name = "Auto-Generate Web Story")]
+        public bool AutoGenerateStory { get; set; } = true;
+        
+        [Display(Name = "Use AI-Enhanced Content")]
+        public bool UseAIContent { get; set; } = true;
+        
+        [Display(Name = "Story Style")]
+        public string? StoryStyle { get; set; } = "informative";
+        
+        [Display(Name = "Story Length")]
+        public string? StoryLength { get; set; } = "medium";
+        
+        [Display(Name = "Story Keywords")]
+        public string? StoryKeywords { get; set; }
+        
         // Sanitize data based on post type to prevent saving irrelevant fields
         public void SanitizeDataByPostType()
         {

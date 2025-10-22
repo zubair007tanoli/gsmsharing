@@ -12,7 +12,7 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto d-flex flex-row">
                     <li class="nav-item">
                         <a class="nav-link" asp-action="Index" asp-controller="Home">
                             <i class="fas fa-home"></i> <span>Home</span>
@@ -36,6 +36,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/categories">
                             <i class="fas fa-th-large"></i> <span>Categories</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-action="Index" asp-controller="Stories">
+                            <i class="fas fa-book-open"></i> <span>Stories</span>
                         </a>
                     </li>
                     @if (User.Identity?.IsAuthenticated == true)
@@ -186,5 +191,4 @@
             </div>
         </nav>
     </div>
-</header>
 </header>

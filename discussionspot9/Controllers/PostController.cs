@@ -494,11 +494,12 @@ namespace discussionspot9.Controllers
         /// </summary>
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> Create(string communitySlug, string? returnUrl = null)
+        public async Task<IActionResult> Create(string? communitySlug = null, string? returnUrl = null)
         {
             if (string.IsNullOrEmpty(communitySlug))
             {
-                return RedirectToAction("Index", "Community");
+                // If no community specified, show community selection page
+                return await CreateTest(communitySlug, returnUrl);
             }
 
             try
@@ -534,22 +535,48 @@ namespace discussionspot9.Controllers
         [Route("r/{communitySlug}/create")]
         public async Task<IActionResult> CreateTest(string? communitySlug, string? returnUrl = null)
         {
-            var model = new CreatePostViewModel();
-            model.CommunitySlug = communitySlug;
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!string.IsNullOrEmpty(userId))
+            // If no community specified, show enhanced create page with community selection
+            if (string.IsNullOrEmpty(communitySlug))
             {
-                model.UserCommunities = await _communityService.GetUserJoinedCommunitiesAsync(userId);
-                model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(userId);
+                var model = new CreatePostViewModel();
+                model.CommunitySlug = communitySlug;
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    model.UserCommunities = await _communityService.GetUserJoinedCommunitiesAsync(userId);
+                    model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(userId);
+                }
+                else
+                {
+                    model.UserCommunities = new List<CommunityViewModel>();
+                    model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(string.Empty);
+                }
+                
+                // Set SEO metadata for enhanced create page
+                ViewData["Title"] = "Create Post - DiscussionSpot";
+                ViewData["Description"] = "Create engaging posts and automatically generate Web Stories for better SEO and reach";
+                ViewData["Keywords"] = "create post, web stories, SEO, content creation, community";
+                ViewData["ReturnUrl"] = returnUrl;
+                
+                return View("Create", model); // Use the enhanced Create view
+            }
+            
+            // If community specified, use the original CreateTest logic
+            var modelWithCommunity = new CreatePostViewModel();
+            modelWithCommunity.CommunitySlug = communitySlug;
+            var userIdWithCommunity = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userIdWithCommunity))
+            {
+                modelWithCommunity.UserCommunities = await _communityService.GetUserJoinedCommunitiesAsync(userIdWithCommunity);
+                modelWithCommunity.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(userIdWithCommunity);
             }
             else
             {
-                // If not logged in, maybe show some general popular communities as suggestions
-                model.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(string.Empty); // Pass empty string to fetch general suggestions
+                modelWithCommunity.SuggestedCommunities = await _communityService.GetSuggestedCommunitiesAsync(string.Empty);
             }
             
             ViewData["ReturnUrl"] = returnUrl;
-            return View(model);
+            return View(modelWithCommunity);
         }
 
         //[HttpGet]
