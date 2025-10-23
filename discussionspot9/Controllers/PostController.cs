@@ -26,6 +26,7 @@ namespace discussionspot9.Controllers
         private readonly IBackgroundSeoService _backgroundSeoService;
         private readonly ApplicationDbContext _context;
         private readonly discussionspot9.Services.GoogleSearchSeoService _googleSeoService;
+        private readonly IStoryGenerationService _storyGenerationService;
         
         public PostController(
             IPostService postService,
@@ -38,7 +39,8 @@ namespace discussionspot9.Controllers
             IPostTest postTest,
             ISeoAnalyzerService seoAnalyzerService,
             IBackgroundSeoService backgroundSeoService,
-            discussionspot9.Services.GoogleSearchSeoService googleSeoService)
+            discussionspot9.Services.GoogleSearchSeoService googleSeoService,
+            IStoryGenerationService storyGenerationService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -51,6 +53,7 @@ namespace discussionspot9.Controllers
             _seoAnalyzerService = seoAnalyzerService;
             _backgroundSeoService = backgroundSeoService;
             _googleSeoService = googleSeoService;
+            _storyGenerationService = storyGenerationService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -340,6 +343,32 @@ namespace discussionspot9.Controllers
                 ".mp4" or ".webm" or ".mov" => "video",
                 _ => "text"
             };
+        }
+
+        // Test action for story generation
+        [HttpGet]
+        [Route("test-story/{postId}")]
+        public async Task<IActionResult> TestStoryGeneration(int postId)
+        {
+            try
+            {
+                var storyOptions = new StoryGenerationOptions
+                {
+                    AutoGenerate = true,
+                    UseAI = true,
+                    Style = "informative",
+                    Length = "medium"
+                };
+                
+                await _storyGenerationService.QueueStoryGenerationAsync(postId, storyOptions);
+                
+                return Json(new { success = true, message = $"Story generation queued for post {postId}" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error testing story generation for post {PostId}", postId);
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         // Add new action for saving posts

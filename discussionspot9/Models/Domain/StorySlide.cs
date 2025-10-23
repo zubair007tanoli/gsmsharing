@@ -20,6 +20,8 @@ namespace discussionspot9.Models.Domain
         public string? TextColor { get; set; }
         public string? FontSize { get; set; }
         public string? Alignment { get; set; } = "center";
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 

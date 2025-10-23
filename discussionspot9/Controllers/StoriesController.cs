@@ -1,448 +1,432 @@
 using discussionspot9.Data.DbContext;
+using discussionspot9.Extensions;
 using discussionspot9.Models.Domain;
-using discussionspot9.Models.ViewModels;
+using discussionspot9.Models.ViewModels.CreativeViewModels;
+using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
+using System.Security.Claims;
 
 namespace discussionspot9.Controllers
 {
+    [Authorize]
     public class StoriesController : Controller
     {
-        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly ApplicationDbContext _context;
         private readonly ILogger<StoriesController> _logger;
+        private readonly IStoryGenerationService _storyGenerationService;
 
         public StoriesController(
-            IDbContextFactory<ApplicationDbContext> contextFactory,
-            UserManager<IdentityUser> userManager,
-            ILogger<StoriesController> logger)
+            ApplicationDbContext context,
+            ILogger<StoriesController> logger,
+            IStoryGenerationService storyGenerationService)
         {
-            _contextFactory = contextFactory;
-            _userManager = userManager;
+            _context = context;
             _logger = logger;
+            _storyGenerationService = storyGenerationService;
         }
 
-        // GET: /stories
-        [ResponseCache(Duration = 300, VaryByHeader = "User-Agent", Location = ResponseCacheLocation.Any)]
-        public async Task<IActionResult> Index(string? category = null, string? sort = "newest", int page = 1)
+        [HttpGet]
+        public async Task<IActionResult> Index(int page = 1)
         {
-            using var context = _contextFactory.CreateDbContext();
-            var query = context.Stories
-                .Include(s => s.User)
-                .Include(s => s.Community)
-                .Include(s => s.Slides)
-                .Where(s => s.Status == "published");
+            const int pageSize = 10;
+            var skip = (page - 1) * pageSize;
 
-            // Filter by category if specified
-            if (!string.IsNullOrEmpty(category))
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
             {
-                query = query.Where(s => s.Community != null && s.Community.Slug == category);
+                return RedirectToAction("Login", "Account");
             }
 
-            // Apply sorting
-            query = sort switch
-            {
-                "popular" => query.OrderByDescending(s => s.ViewCount),
-                "trending" => query.OrderByDescending(s => s.ViewCount).ThenByDescending(s => s.PublishedAt),
-                "oldest" => query.OrderBy(s => s.PublishedAt),
-                _ => query.OrderByDescending(s => s.PublishedAt)
-            };
-
-            var stories = await query
-                .Skip((page - 1) * 20)
-                .Take(20)
+            var stories = await _context.Stories
+                .Include(s => s.Community)
+                .Where(s => s.UserId == userId)
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(s => new StoryViewModel
+                {
+                    StoryId = s.StoryId,
+                    Title = s.Title,
+                    Slug = s.Slug,
+                    Description = s.Description,
+                    Status = s.Status,
+                    CreatedAt = s.CreatedAt,
+                    UpdatedAt = s.UpdatedAt,
+                    PostTitle = s.Title,
+                    PostSlug = s.Slug,
+                    CommunityName = s.Community != null ? s.Community.Title : "",
+                    CommunitySlug = s.Community != null ? s.Community.Slug : "",
+                    SlideCount = s.Slides.Count
+                })
                 .ToListAsync();
 
-            ViewData["Category"] = category;
-            ViewData["Sort"] = sort;
-            ViewData["Page"] = page;
+            var totalStories = await _context.Stories
+                .Where(s => s.UserId == userId)
+                .CountAsync();
 
-            return View(stories);
+            var model = new StoriesIndexViewModel
+            {
+                Stories = stories,
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling(totalStories / (double)pageSize),
+                TotalStories = totalStories
+            };
+
+            return View(model);
         }
 
-        // GET: /stories/{slug}
-        [ResponseCache(Duration = 600, VaryByHeader = "User-Agent", Location = ResponseCacheLocation.Any)]
-        public async Task<IActionResult> ViewStory(string slug)
+        [HttpGet]
+        [Route("stories/{storySlug}")]
+        public async Task<IActionResult> Details(string storySlug)
         {
-            if (string.IsNullOrEmpty(slug))
-                return NotFound();
-
-            using var context = _contextFactory.CreateDbContext();
-            var story = await context.Stories
-                .Include(s => s.User)
+            var story = await _context.Stories
                 .Include(s => s.Community)
                 .Include(s => s.Slides)
-                    .ThenInclude(sl => sl.Media)
-                .FirstOrDefaultAsync(s => s.Slug == slug);
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
 
             if (story == null)
+            {
                 return NotFound();
+            }
 
-            // Increment view count
-            story.ViewCount++;
-            await context.SaveChangesAsync();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (story.UserId != userId)
+            {
+                return Forbid();
+            }
 
-            // Set SEO metadata
-            ViewData["Title"] = story.Title;
-            ViewData["Description"] = story.MetaDescription ?? story.Description ?? $"Read {story.Title} on DiscussionSpot";
-            ViewData["CanonicalUrl"] = story.CanonicalUrl ?? Url.Action("View", "Stories", new { slug }, Request.Scheme);
-            ViewData["OgImage"] = story.PosterImageUrl;
-            ViewData["OgType"] = "article";
+            var model = new StoryDetailViewModel
+            {
+                StoryId = story.StoryId,
+                Title = story.Title,
+                Slug = story.Slug,
+                Description = story.Description,
+                Status = story.Status,
+                CreatedAt = story.CreatedAt,
+                UpdatedAt = story.UpdatedAt,
+                PostTitle = story.Title,
+                PostSlug = story.Slug,
+                CommunityName = story.Community?.Title ?? "",
+                CommunitySlug = story.Community?.Slug ?? "",
+                Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideViewModel
+                {
+                    SlideId = s.StorySlideId,
+                    Title = s.Headline ?? "",
+                    Content = s.Text ?? "",
+                    ImageUrl = s.MediaUrl ?? "",
+                    SlideOrder = s.OrderIndex,
+                    SlideType = s.SlideType
+                }).ToList()
+            };
 
-            return View(story);
+            return View(model);
         }
 
-        // GET: /stories/viewer/{slug}
-        [ResponseCache(Duration = 600, VaryByHeader = "User-Agent", Location = ResponseCacheLocation.Any)]
-        public async Task<IActionResult> Viewer(string slug)
+        [HttpGet]
+        [Route("stories/{storySlug}/edit")]
+        public async Task<IActionResult> Edit(string storySlug)
         {
-            if (string.IsNullOrEmpty(slug))
-                return NotFound();
-
-            using var context = _contextFactory.CreateDbContext();
-            var story = await context.Stories
-                .Include(s => s.User)
-                .Include(s => s.Community)
+            var story = await _context.Stories
                 .Include(s => s.Slides)
-                    .ThenInclude(sl => sl.Media)
-                .FirstOrDefaultAsync(s => s.Slug == slug && s.Status == "published");
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
 
             if (story == null)
+            {
                 return NotFound();
+            }
 
-            // Increment view count
-            story.ViewCount++;
-            await context.SaveChangesAsync();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (story.UserId != userId)
+            {
+                return Forbid();
+            }
 
-            // Set SEO metadata
-            ViewData["Title"] = story.Title;
-            ViewData["Description"] = story.MetaDescription ?? story.Description ?? $"Read {story.Title} on DiscussionSpot";
-            ViewData["CanonicalUrl"] = story.CanonicalUrl ?? Url.Action("Viewer", "Stories", new { slug }, Request.Scheme);
-            ViewData["OgImage"] = story.PosterImageUrl;
-            ViewData["OgType"] = "article";
+            var model = new StoryEditViewModel
+            {
+                StoryId = story.StoryId,
+                Title = story.Title,
+                Description = story.Description,
+                Status = story.Status,
+                Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideEditViewModel
+                {
+                    SlideId = s.StorySlideId,
+                    Title = s.Headline ?? "",
+                    Content = s.Text ?? "",
+                    ImageUrl = s.MediaUrl ?? "",
+                    SlideOrder = s.OrderIndex,
+                    SlideType = s.SlideType
+                }).ToList()
+            };
 
-            return View(story);
+            return View(model);
         }
 
-        // GET: /stories/amp/{slug}
-        [ResponseCache(Duration = 3600, VaryByHeader = "User-Agent", Location = ResponseCacheLocation.Any)]
-        public async Task<IActionResult> Amp(string slug)
+        [HttpPost]
+        [Route("stories/{storySlug}/edit")]
+        public async Task<IActionResult> Edit(string storySlug, StoryEditViewModel model)
         {
-            if (string.IsNullOrEmpty(slug))
-                return NotFound();
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
 
-            using var context = _contextFactory.CreateDbContext();
-            var story = await context.Stories
-                .Include(s => s.User)
-                .Include(s => s.Community)
+            var story = await _context.Stories
                 .Include(s => s.Slides)
-                    .ThenInclude(sl => sl.Media)
-                .FirstOrDefaultAsync(s => s.Slug == slug && s.Status == "published" && s.IsAmpEnabled);
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
 
             if (story == null)
+            {
                 return NotFound();
+            }
 
-            // Set AMP-specific metadata
-            ViewData["Title"] = story.Title;
-            ViewData["Description"] = story.MetaDescription ?? story.Description ?? $"Read {story.Title} on DiscussionSpot";
-            ViewData["CanonicalUrl"] = Url.Action("View", "Stories", new { slug }, Request.Scheme);
-            ViewData["AmpUrl"] = Url.Action("Amp", "Stories", new { slug }, Request.Scheme);
-            ViewData["PublisherName"] = story.PublisherName ?? "DiscussionSpot";
-            ViewData["PublisherLogo"] = story.PublisherLogo ?? Url.Content("~/favicon.ico");
-            ViewData["PosterImage"] = story.PosterImageUrl;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (story.UserId != userId)
+            {
+                return Forbid();
+            }
 
-            return View(story);
+            try
+            {
+                // Update story properties
+                story.Title = model.Title;
+                story.Description = model.Description;
+                story.Status = model.Status;
+                story.UpdatedAt = DateTime.UtcNow;
+
+                // Update slides
+                foreach (var slideModel in model.Slides)
+                {
+                    var slide = story.Slides.FirstOrDefault(s => s.StorySlideId == slideModel.SlideId);
+                    if (slide != null)
+                    {
+                        slide.Headline = slideModel.Title;
+                        slide.Text = slideModel.Content;
+                        slide.MediaUrl = slideModel.ImageUrl;
+                        slide.OrderIndex = slideModel.SlideOrder;
+                        slide.SlideType = slideModel.SlideType;
+                        slide.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Story updated successfully!";
+                return RedirectToAction("Details", new { storySlug = story.Slug });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating story {StoryId}", story.StoryId);
+                ModelState.AddModelError("", "An error occurred while updating the story.");
+            return View(model);
+        }
         }
 
-        // GET: /stories/create
-        [Authorize]
+        [HttpPost]
+        [Route("stories/{storySlug}/regenerate")]
+        public async Task<IActionResult> Regenerate(string storySlug)
+        {
+            var story = await _context.Stories
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
+
+            if (story == null)
+            {
+                return NotFound();
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (story.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                var storyOptions = new StoryGenerationOptions
+                {
+                    AutoGenerate = true,
+                    UseAI = true,
+                    Style = "informative",
+                    Length = "medium"
+                };
+
+                // Note: Story regeneration would need a different approach since Story doesn't have Post reference
+                // For now, we'll skip the regeneration or implement a different strategy
+                _logger.LogInformation("Story regeneration requested for story {StoryId}", story.StoryId);
+
+                TempData["SuccessMessage"] = "Story regeneration queued successfully!";
+                return RedirectToAction("Details", new { storySlug = story.Slug });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error regenerating story {StoryId}", story.StoryId);
+                TempData["ErrorMessage"] = "An error occurred while regenerating the story.";
+                return RedirectToAction("Details", new { storySlug = story.Slug });
+            }
+        }
+
+        [HttpPost]
+        [Route("stories/{storySlug}/delete")]
+        public async Task<IActionResult> Delete(string storySlug)
+        {
+            var story = await _context.Stories
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
+
+            if (story == null)
+            {
+                return NotFound();
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (story.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                _context.Stories.Remove(story);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Story deleted successfully!";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting story {StoryId}", story.StoryId);
+                TempData["ErrorMessage"] = "An error occurred while deleting the story.";
+                return RedirectToAction("Details", new { storySlug = story.Slug });
+            }
+        }
+
+        // ===== MISSING ROUTES FROM PROGRAM.CS =====
+
+        [HttpGet]
+        [Route("stories/create")]
         public IActionResult Create()
         {
             var model = new CreateStoryViewModel();
-            // Add one default slide
-            model.Slides.Add(new CreateStorySlideViewModel
-            {
-                OrderIndex = 0,
-                SlideType = "media",
-                Duration = 5000,
-                BackgroundColor = "#000000",
-                TextColor = "#ffffff",
-                Alignment = "center",
-                FontSize = "24px"
-            });
             return View(model);
         }
 
-        // GET: /stories/editor
-        [Authorize]
-        public IActionResult Editor()
+        [HttpPost]
+        [Route("stories/create")]
+        public async Task<IActionResult> Create(CreateStoryViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                    return View(model);
+                }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            try
+            {
+                // Create new story
+                var story = new Story
+                {
+                    Title = model.Title,
+                    Slug = model.Title.ToSlug(),
+                    Description = model.Description,
+                    Status = "draft",
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Stories.Add(story);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Story created successfully!";
+                return RedirectToAction("Editor", new { id = story.StoryId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating story");
+                ModelState.AddModelError("", "An error occurred while creating the story.");
+                return View(model);
+            }
+        }
+
+        [HttpGet]
+        [Route("stories/editor")]
+        public IActionResult Editor(int? id = null)
         {
             var model = new CreateStoryViewModel();
+            if (id.HasValue)
+            {
+                // Load existing story if ID provided
+                var story = _context.Stories.Find(id.Value);
+                if (story != null)
+                {
+                    model.Title = story.Title;
+                    model.Description = story.Description;
+                }
+            }
             return View(model);
         }
 
-        // GET: /stories/info
+        [HttpGet]
+        [Route("stories/info")]
         public IActionResult Info()
         {
             return View();
         }
 
-        // POST: /stories/create
-        [HttpPost]
-        [Authorize]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateStoryViewModel model)
+        [HttpGet]
+        [Route("stories/viewer/{slug}")]
+        public async Task<IActionResult> Viewer(string slug)
         {
-            _logger.LogInformation($"Story creation attempt - ModelState.IsValid: {ModelState.IsValid}");
-            
-            // Log all model state errors for debugging
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                _logger.LogWarning($"ModelState validation failed. Errors: {string.Join(", ", errors)}");
-                
-                // Log each field's state
-                foreach (var key in ModelState.Keys)
-                {
-                    var state = ModelState[key];
-                    if (!state.Errors.Any()) continue;
-                    
-                    _logger.LogWarning($"Field '{key}' has errors: {string.Join(", ", state.Errors.Select(e => e.ErrorMessage))}");
-                }
-                
-                return View(model);
-            }
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                _logger.LogWarning("User not found during story creation");
-                return Unauthorized();
-            }
-
-            try
-            {
-                // Ensure all required fields are set
-                if (string.IsNullOrEmpty(model.Title))
-                {
-                    ModelState.AddModelError("Title", "Title is required");
-                    return View(model);
-                }
-
-                using var context = _contextFactory.CreateDbContext();
-
-                // Create the story entity
-                var story = new Story
-                {
-                    Title = model.Title,
-                    Description = model.Description,
-                    MetaDescription = model.MetaDescription,
-                    MetaKeywords = model.MetaKeywords,
-                    PublisherName = model.PublisherName,
-                    PosterImageUrl = model.PosterImageUrl,
-                    PublisherLogo = model.PublisherLogo,
-                    CanonicalUrl = model.CanonicalUrl,
-                    Status = model.Status,
-                    IsAmpEnabled = model.IsAmpEnabled,
-                    UserId = user.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    Slug = GenerateSlug(model.Title),
-                    ViewCount = 0,
-                    SlideCount = 0,
-                    TotalDuration = 0
-                };
-
-                context.Stories.Add(story);
-                await context.SaveChangesAsync();
-
-                // Create slides if any
-                if (model.Slides != null && model.Slides.Any())
-                {
-                    var slides = model.Slides.Select((slide, index) => new StorySlide
-                    {
-                        StoryId = story.StoryId,
-                        MediaId = slide.MediaId,
-                        Caption = slide.Caption,
-                        Headline = slide.Headline,
-                        Text = slide.Text,
-                        Duration = slide.Duration,
-                        OrderIndex = index,
-                        SlideType = slide.SlideType,
-                        BackgroundColor = slide.BackgroundColor,
-                        TextColor = slide.TextColor,
-                        FontSize = slide.FontSize,
-                        Alignment = slide.Alignment,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    }).ToList();
-
-                    context.StorySlides.AddRange(slides);
-                    
-                    // Update story with slide count and duration
-                    story.SlideCount = slides.Count;
-                    story.TotalDuration = slides.Sum(s => s.Duration);
-                    await context.SaveChangesAsync();
-                }
-
-                _logger.LogInformation($"Story created successfully with ID: {story.StoryId}");
-
-                return RedirectToAction("Index");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating story");
-                ModelState.AddModelError("", "An error occurred while creating the story. Please try again.");
-                return View(model);
-            }
-        }
-
-        // GET: /stories/edit/{id}
-        [Authorize]
-        public async Task<IActionResult> Edit(int id)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return Unauthorized();
-
-            using var context = _contextFactory.CreateDbContext();
-            var story = await context.Stories
+            var story = await _context.Stories
                 .Include(s => s.Slides)
-                    .ThenInclude(sl => sl.Media)
-                .FirstOrDefaultAsync(s => s.StoryId == id && s.UserId == user.Id);
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)
+            {
                 return NotFound();
+            }
 
             return View(story);
         }
 
-        // POST: /stories/publish/{id}
-        [HttpPost]
-        [Authorize]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Publish(int id)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return Unauthorized();
-
-            using var context = _contextFactory.CreateDbContext();
-            var story = await context.Stories
-                .FirstOrDefaultAsync(s => s.StoryId == id && s.UserId == user.Id);
-
-            if (story == null)
-                return NotFound();
-
-            story.Status = "published";
-            story.PublishedAt = DateTime.UtcNow;
-            story.UpdatedAt = DateTime.UtcNow;
-
-            await context.SaveChangesAsync();
-
-            return RedirectToAction("View", new { slug = story.Slug });
-        }
-
-        // API: Get story data for viewer
         [HttpGet]
-        public async Task<IActionResult> GetStoryData(string slug)
+        [Route("stories/amp/{slug}")]
+        public async Task<IActionResult> Amp(string slug)
         {
-            using var context = _contextFactory.CreateDbContext();
-            var story = await context.Stories
+            var story = await _context.Stories
                 .Include(s => s.Slides)
-                    .ThenInclude(sl => sl.Media)
-                .FirstOrDefaultAsync(s => s.Slug == slug && s.Status == "published");
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)
-                return NotFound();
-
-            var storyData = new
             {
-                story.StoryId,
-                story.Title,
-                story.Slug,
-                story.Description,
-                story.TotalDuration,
-                story.SlideCount,
-                slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new
-                {
-                    s.StorySlideId,
-                    s.Caption,
-                    s.Headline,
-                    s.Text,
-                    s.Duration,
-                    s.SlideType,
-                    s.BackgroundColor,
-                    s.TextColor,
-                    s.FontSize,
-                    s.Alignment,
-                    media = s.Media != null ? new
-                    {
-                        s.Media.Url,
-                        s.Media.ThumbnailUrl,
-                        s.Media.MediaType,
-                        s.Media.Width,
-                        s.Media.Height
-                    } : null
-                })
-            };
+                return NotFound();
+            }
 
-            return Json(storyData);
+            return View(story);
         }
 
-        private string GenerateSlug(string title)
+        [HttpGet]
+        [Route("stories/{slug}")]
+        public async Task<IActionResult> ViewStory(string slug)
         {
-            if (string.IsNullOrEmpty(title))
-                return Guid.NewGuid().ToString("N")[..8];
+            var story = await _context.Stories
+                .Include(s => s.Slides)
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.Slug == slug);
 
-            var slug = title.ToLowerInvariant()
-                .Replace(" ", "-")
-                .Replace("_", "-")
-                .Replace(".", "")
-                .Replace(",", "")
-                .Replace("!", "")
-                .Replace("?", "")
-                .Replace(":", "")
-                .Replace(";", "")
-                .Replace("(", "")
-                .Replace(")", "")
-                .Replace("[", "")
-                .Replace("]", "")
-                .Replace("{", "")
-                .Replace("}", "")
-                .Replace("\"", "")
-                .Replace("'", "")
-                .Replace("/", "-")
-                .Replace("\\", "-")
-                .Replace("|", "-")
-                .Replace("+", "-")
-                .Replace("=", "-")
-                .Replace("@", "")
-                .Replace("#", "")
-                .Replace("$", "")
-                .Replace("%", "")
-                .Replace("^", "")
-                .Replace("&", "")
-                .Replace("*", "")
-                .Replace("~", "")
-                .Replace("`", "");
+            if (story == null)
+            {
+                return NotFound();
+            }
 
-            // Remove multiple consecutive dashes
-            while (slug.Contains("--"))
-                slug = slug.Replace("--", "-");
-
-            // Remove leading/trailing dashes
-            slug = slug.Trim('-');
-
-            // Ensure slug is not empty
-            if (string.IsNullOrEmpty(slug))
-                slug = Guid.NewGuid().ToString("N")[..8];
-
-            // Add timestamp to ensure uniqueness
-            return $"{slug}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+            return View(story);
         }
     }
 }

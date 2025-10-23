@@ -84,8 +84,8 @@
 
 /* ===== MAIN CONTENT ===== */
 .main-content {
-    margin-left: 260px;
-    padding: 2rem;
+/*    margin-left: 260px;*/
+    /*padding: 2rem;*/
     transition: margin-left 0.3s ease;
     min-height: calc(100vh - 70px);
 }

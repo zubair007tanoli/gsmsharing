@@ -1,167 +1,153 @@
 @model discussionspot9.Models.Domain.Story
 @{
     Layout = null;
+    ViewData["Title"] = Model.Title;
 }
 
-<!doctype html>
-<html ⚡>
+<!DOCTYPE html>
+<html amp>
 <head>
     <meta charset="utf-8">
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     <title>@Model.Title</title>
-    <link rel="canonical" href="@ViewData["CanonicalUrl"]">
+    <link rel="canonical" href="@Url.Action("ViewStory", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
     <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
-    <meta name="description" content="@ViewData["Description"]">
+    <meta name="description" content="@(Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
     
-    <!-- AMP Web Stories -->
+    <!-- AMP Story Required -->
     <script async custom-element="amp-story" src="https://cdn.ampproject.org/v0/amp-story-1.0.js"></script>
     
-    <!-- AMP Analytics -->
-    <script async custom-element="amp-analytics" src="https://cdn.ampproject.org/v0/amp-analytics-0.1.js"></script>
+    <!-- AMP Story Bookend -->
+    <script async custom-element="amp-story-bookend" src="https://cdn.ampproject.org/v0/amp-story-bookend-1.0.js"></script>
     
-    <!-- AMP Ad -->
-    <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
+    <!-- AMP Story Grid Layer -->
+    <script async custom-element="amp-story-grid-layer" src="https://cdn.ampproject.org/v0/amp-story-grid-layer-1.0.js"></script>
     
-    <!-- Publisher Info -->
-    <meta name="publisher" content="@ViewData["PublisherName"]">
-    <link rel="icon" href="@ViewData["PublisherLogo"]">
+    <!-- AMP Story Page Attachment -->
+    <script async custom-element="amp-story-page-attachment" src="https://cdn.ampproject.org/v0/amp-story-page-attachment-1.0.js"></script>
     
-    <!-- Open Graph -->
-    <meta property="og:title" content="@Model.Title">
-    <meta property="og:description" content="@ViewData["Description"]">
-    <meta property="og:image" content="@ViewData["PosterImage"]">
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="@ViewData["CanonicalUrl"]">
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@Model.Title">
-    <meta name="twitter:description" content="@ViewData["Description"]">
-    <meta name="twitter:image" content="@ViewData["PosterImage"]">
-    
-    <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-        "@@context": "https://schema.org",
-        "@@type": "Article",
-        "headline": "@Model.Title",
-        "description": "@ViewData["Description"]",
-        "image": "@ViewData["PosterImage"]",
-        "author": {
-            "@@type": "Person",
-            "name": "@Model.User?.UserName"
-        },
-        "publisher": {
-            "@@type": "Organization",
-            "name": "@ViewData["PublisherName"]",
-            "logo": {
-                "@@type": "ImageObject",
-                "url": "@ViewData["PublisherLogo"]"
-            }
-        },
-        "datePublished": "@Model.PublishedAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")",
-        "dateModified": "@Model.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")"
-    }
-    </script>
-    
-    <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style><noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
+    <style amp-custom>
+        amp-story {
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .story-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .story-headline {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .story-text {
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-align: center;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }
+        
+        .story-caption {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            font-style: italic;
+            margin: 1rem 0;
+        }
+        
+        .story-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .story-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
 </head>
 <body>
-    <amp-story standalone
+    <amp-story standalone 
                title="@Model.Title"
-               publisher="@ViewData["PublisherName"]"
-               publisher-logo-src="@ViewData["PublisherLogo"]"
-               poster-portrait-src="@ViewData["PosterImage"]"
-               poster-square-src="@ViewData["PosterImage"]"
-               poster-landscape-src="@ViewData["PosterImage"]">
+               publisher="DiscussionSpot"
+               publisher-logo-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
+               poster-portrait-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
         
-        @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
+        @if (Model.Slides != null && Model.Slides.Any())
         {
-            <amp-story-page id="page-@slide.StorySlideId">
-                @if (slide.Media != null)
-                {
-                    if (slide.Media.MediaType == "video")
-                    {
-                        <amp-video autoplay
-                                   loop
-                                   width="720"
-                                   height="1280"
-                                   poster="@slide.Media.ThumbnailUrl"
-                                   layout="fill">
-                            <source src="@slide.Media.Url" type="video/mp4">
-                        </amp-video>
-                    }
-                    else
-                    {
-                        <amp-img src="@slide.Media.Url"
-                                 width="720"
-                                 height="1280"
-                                 layout="fill"
-                                 alt="@slide.Caption">
-                        </amp-img>
-                    }
-                }
-                
-                @if (!string.IsNullOrEmpty(slide.Headline) || !string.IsNullOrEmpty(slide.Text))
-                {
-                    <div class="story-content"
-                         style="background-color: @(slide.BackgroundColor ?? "transparent"); 
-                                color: @(slide.TextColor ?? "white"); 
-                                font-size: @(slide.FontSize ?? "1rem");
-                                text-align: @(slide.Alignment ?? "center");">
-                        
+            @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
+            {
+                <amp-story-page id="page-@slide.OrderIndex">
+                    <amp-story-grid-layer template="fill">
+                        @if (slide.Media != null && !string.IsNullOrEmpty(slide.Media.Url))
+                        {
+                            @if (IsVideoFile(slide.Media.Url))
+                            {
+                                <amp-video autoplay loop width="720" height="1280" poster="@slide.Media.Url">
+                                    <source src="@slide.Media.Url" type="video/mp4">
+                                </amp-video>
+                            }
+                            else
+                            {
+                                <amp-img src="@slide.Media.Url" width="720" height="1280" layout="fill" alt="@slide.Caption"></amp-img>
+                            }
+                        }
+                        else
+                        {
+                            <div class="story-page" style="background: @slide.BackgroundColor;"></div>
+                        }
+                    </amp-story-grid-layer>
+                    
+                    <amp-story-grid-layer template="vertical">
                         @if (!string.IsNullOrEmpty(slide.Headline))
                         {
                             <h1 class="story-headline">@slide.Headline</h1>
                         }
-                        
                         @if (!string.IsNullOrEmpty(slide.Text))
                         {
                             <p class="story-text">@slide.Text</p>
                         }
-                        
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
                             <p class="story-caption">@slide.Caption</p>
                         }
-                    </div>
-                }
-                
-                <!-- Ad placement in story -->
-                @if (slide.OrderIndex > 0 && slide.OrderIndex % 3 == 0)
-                {
-                    <amp-story-page-attachment layout="nodisplay">
-                        <amp-ad width="100vw" 
-                                height="320"
-                                type="adsense"
-                                data-ad-client="ca-pub-5934633595595089"
-                                data-ad-slot="7442650013"
-                                data-auto-format="rspv"
-                                data-full-width="">
-                            <div overflow=""></div>
-                        </amp-ad>
-                    </amp-story-page-attachment>
-                }
+                    </amp-story-grid-layer>
+                </amp-story-page>
+            }
+        }
+        else
+        {
+            <amp-story-page id="page-1">
+                <amp-story-grid-layer template="fill">
+                    <div class="story-page"></div>
+                </amp-story-grid-layer>
+                <amp-story-grid-layer template="vertical">
+                    <h1 class="story-headline">@Model.Title</h1>
+                    <p class="story-text">@(Model.Description ?? "Welcome to this story!")</p>
+                </amp-story-grid-layer>
             </amp-story-page>
         }
         
-        <!-- Bookend -->
+        <!-- Story Bookend -->
         <amp-story-bookend layout="nodisplay">
             <script type="application/json">
             {
                 "bookendVersion": "v1.0",
                 "shareProviders": [
                     {
-                        "name": "twitter",
-                        "title": "Share on Twitter"
+                        "provider": "facebook",
+                        "appId": "your-facebook-app-id"
                     },
                     {
-                        "name": "facebook",
-                        "title": "Share on Facebook"
-                    },
-                    {
-                        "name": "linkedin",
-                        "title": "Share on LinkedIn"
+                        "provider": "twitter"
                     }
                 ],
                 "components": [
@@ -171,75 +157,22 @@
                     },
                     {
                         "type": "small",
-                        "title": "DiscussionSpot",
-                        "url": "/",
-                        "image": "@ViewData["PublisherLogo"]"
+                        "title": "Create Your Own Story",
+                        "url": "/stories/create",
+                        "image": "@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
                     }
                 ]
             }
             </script>
         </amp-story-bookend>
     </amp-story>
-    
-    <!-- Analytics -->
-    <amp-analytics type="gtag" data-credentials="include">
-        <script type="application/json">
-        {
-            "vars": {
-                "gtag_id": "YOUR_GA_TRACKING_ID",
-                "config": {
-                    "YOUR_GA_TRACKING_ID": {
-                        "groups": "default"
-                    }
-                }
-            },
-            "triggers": {
-                "storyPageView": {
-                    "on": "story-page-visible",
-                    "request": "pageview",
-                    "vars": {
-                        "title": "@Model.Title",
-                        "custom_map": {
-                            "custom_parameter_1": "story_id",
-                            "custom_parameter_2": "story_slug"
-                        }
-                    }
-                }
-            }
-        }
-        </script>
-    </amp-analytics>
-    
-    <style amp-custom>
-        .story-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 20px;
-            text-align: center;
-            max-width: 80%;
-        }
-        
-        .story-headline {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-        }
-        
-        .story-text {
-            font-size: 1.2rem;
-            line-height: 1.5;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-            margin-bottom: 0.5rem;
-        }
-        
-        .story-caption {
-            font-size: 1rem;
-            opacity: 0.8;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-        }
-    </style>
 </body>
 </html>
+
+@functions {
+    private bool IsVideoFile(string url)
+    {
+        var videoExtensions = new[] { ".mp4", ".webm", ".ogg", ".avi", ".mov" };
+        return videoExtensions.Any(ext => url.ToLower().EndsWith(ext));
+    }
+}

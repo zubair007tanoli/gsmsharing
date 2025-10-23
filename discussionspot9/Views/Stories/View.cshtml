@@ -1,580 +1,245 @@
 @model discussionspot9.Models.Domain.Story
 @{
     ViewData["Title"] = Model.Title;
-    ViewData["Description"] = Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot";
+    ViewData["Description"] = Model.Description ?? $"Read {Model.Title} on DiscussionSpot";
+    ViewData["CanonicalUrl"] = Url.Action("ViewStory", "Stories", new { slug = Model.Slug }, Context.Request.Scheme);
 }
 
-<!-- Structured Data for SEO -->
-<script type="application/ld+json">
-{
-    "@@context": "https://schema.org",
-    "@@type": "Article",
-    "headline": "@Model.Title",
-    "description": "@ViewData["Description"]",
-    "image": "@Model.PosterImageUrl",
-    "author": {
-        "@@type": "Person",
-        "name": "@Model.User?.UserName"
-    },
-    "publisher": {
-        "@@type": "Organization",
-        "name": "@(Model.PublisherName ?? "DiscussionSpot")",
-        "logo": {
-            "@@type": "ImageObject",
-            "url": "@(Model.PublisherLogo ?? Url.Content("~/favicon.ico"))"
-        }
-    },
-    "datePublished": "@Model.PublishedAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")",
-    "dateModified": "@Model.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")",
-    "mainEntityOfPage": {
-        "@@type": "WebPage",
-        "@@id": "@ViewData["CanonicalUrl"]"
-    },
-    "articleSection": "Web Stories",
-    "wordCount": @Model.SlideCount,
-    "timeRequired": "PT@(TimeSpan.FromMilliseconds(Model.TotalDuration).TotalSeconds)S"
-}
-</script>
-
-<div class="story-viewer-container">
-    <!-- Story Viewer -->
-    <div id="story-viewer" class="story-viewer">
-        <div class="story-header">
-            <div class="story-progress">
-                <div class="progress-bar" id="progress-bar"></div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Story Header -->
+            <div class="story-header text-center py-4 mb-4">
+                <div class="container">
+                    <h1 class="display-4 fw-bold text-primary mb-3">@Model.Title</h1>
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <p class="lead text-muted mb-4">@Model.Description</p>
+                    }
+                    <div class="story-meta d-flex justify-content-center align-items-center gap-4 text-muted">
+                        <span><i class="fas fa-user me-2"></i>@(Model.User?.UserName ?? "Unknown")</span>
+                        <span><i class="fas fa-calendar me-2"></i>@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                        <span><i class="fas fa-images me-2"></i>@(Model.Slides?.Count ?? 0) slides</span>
             </div>
-            <div class="story-controls">
-                <button id="pause-btn" class="control-btn">
-                    <i class="fas fa-pause"></i>
-                </button>
-                <button id="close-btn" class="control-btn">
-                    <i class="fas fa-times"></i>
-                </button>
             </div>
         </div>
 
+            <!-- Story Content -->
         <div class="story-content">
-            <div id="story-slides" class="story-slides">
-                <!-- Slides will be loaded dynamically -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        @if (Model.Slides != null && Model.Slides.Any())
+                        {
+                            <div class="story-slides-container">
+                                @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
+                                {
+                                    <div class="story-slide-card mb-4">
+                                        <div class="slide-content" style="background: @slide.BackgroundColor; color: @slide.TextColor; text-align: @slide.Alignment;">
+                                            @if (!string.IsNullOrEmpty(slide.Headline))
+                                            {
+                                                <h2 class="slide-headline">@slide.Headline</h2>
+                                            }
+                                            @if (!string.IsNullOrEmpty(slide.Text))
+                                            {
+                                                <p class="slide-text">@slide.Text</p>
+                                            }
+                                            @if (!string.IsNullOrEmpty(slide.Caption))
+                                            {
+                                                <p class="slide-caption">@slide.Caption</p>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(slide.MediaUrl))
+                                        {
+                                            <div class="slide-media">
+                                                @if (IsVideoFile(slide.MediaUrl))
+                                                {
+                                                    <video class="slide-video" controls>
+                                                        <source src="@slide.MediaUrl" type="video/mp4">
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                }
+                                                else
+                                                {
+                                                    <img class="slide-image" src="@slide.MediaUrl" alt="@slide.Caption" />
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-5">
+                                <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">No slides available</h4>
+                                <p class="text-muted">This story doesn't have any slides yet.</p>
+                            </div>
+                        }
+                    </div>
             </div>
         </div>
 
-        <div class="story-navigation">
-            <button id="prev-btn" class="nav-btn">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <button id="next-btn" class="nav-btn">
-                <i class="fas fa-chevron-right"></i>
+            <!-- Story Actions -->
+            <div class="story-actions text-center py-4">
+                <div class="btn-group" role="group">
+                    <a href="/stories/viewer/@Model.Slug" class="btn btn-primary btn-lg">
+                        <i class="fas fa-play me-2"></i>View as Story
+                    </a>
+                    <a href="/stories/@Model.Slug/edit" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-edit me-2"></i>Edit Story
+                    </a>
+                    <button class="btn btn-outline-secondary btn-lg" onclick="shareStory()">
+                        <i class="fas fa-share-alt me-2"></i>Share
             </button>
         </div>
     </div>
 
-    <!-- Story Info Panel -->
-    <div class="story-info-panel">
-        <div class="story-meta">
-            <h1 class="story-title">@Model.Title</h1>
-            @if (!string.IsNullOrEmpty(Model.Description))
-            {
-                <p class="story-description">@Model.Description</p>
-            }
-            <div class="story-stats">
-                <span class="stat">
-                    <i class="fas fa-eye"></i> @Model.ViewCount views
-                </span>
-                <span class="stat">
-                    <i class="fas fa-images"></i> @Model.SlideCount slides
-                </span>
-                <span class="stat">
-                    <i class="fas fa-clock"></i> @TimeSpan.FromMilliseconds(Model.TotalDuration).ToString(@"mm\:ss")
-                </span>
+            <!-- Related Stories -->
+            <div class="related-stories mt-5">
+                <div class="container">
+                    <h3 class="text-center mb-4">More Stories</h3>
+                    <div class="row">
+                        <!-- This would be populated with related stories -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-plus fa-2x text-muted mb-3"></i>
+                                    <h5>Create Your Own Story</h5>
+                                    <p class="text-muted">Start creating engaging visual stories today</p>
+                                    <a href="/stories/create" class="btn btn-primary">Get Started</a>
+                                </div>
             </div>
         </div>
-
-        <!-- AdSense Ad Unit -->
-        <div class="ad-container">
-            <div class="ad-unit">
-                <!-- Google AdSense Ad -->
-                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
-                        crossorigin="anonymous"></script>
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-5934633595595089"
-                     data-ad-slot="1234567891"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
-                <script>
-                    (adsbygoogle = window.adsbygoogle || []).push({});
-                </script>
             </div>
         </div>
-
-        <!-- Related Stories -->
-        <div class="related-stories">
-            <h3>More Stories</h3>
-            <div id="related-stories-list">
-                <!-- Related stories will be loaded here -->
             </div>
         </div>
     </div>
 </div>
 
-<!-- Story Data (Hidden) -->
-<script type="application/json" id="story-data">
-@Html.Raw(Json.Serialize(new {
-    storyId = Model.StoryId,
-    title = Model.Title,
-    slug = Model.Slug,
-    description = Model.Description,
-    totalDuration = Model.TotalDuration,
-    slideCount = Model.SlideCount,
-    slides = Model.Slides.OrderBy(s => s.OrderIndex).Select(s => new {
-        storySlideId = s.StorySlideId,
-        caption = s.Caption,
-        headline = s.Headline,
-        text = s.Text,
-        duration = s.Duration,
-        slideType = s.SlideType,
-        backgroundColor = s.BackgroundColor,
-        textColor = s.TextColor,
-        fontSize = s.FontSize,
-        alignment = s.Alignment,
-        media = s.Media != null ? new {
-            url = s.Media.Url,
-            thumbnailUrl = s.Media.ThumbnailUrl,
-            mediaType = s.Media.MediaType,
-            width = s.Media.Width,
-            height = s.Media.Height
-        } : null
-    })
-}))
-</script>
-
 <style>
-.story-viewer-container {
-    display: flex;
-    min-height: 100vh;
-    background: #000;
+.story-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 2rem;
 }
 
-.story-viewer {
-    flex: 1;
-    position: relative;
-    background: #000;
+.story-slide-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.story-slide-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.slide-content {
+    padding: 2rem;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.slide-headline {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.slide-text {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.slide-caption {
+    font-size: 1rem;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.slide-media {
+    width: 100%;
+    height: 300px;
     overflow: hidden;
 }
 
-.story-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
-    padding: 20px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
-}
-
-.story-progress {
-    width: 100%;
-    height: 3px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 2px;
-    margin-bottom: 20px;
-}
-
-.progress-bar {
-    height: 100%;
-    background: #fff;
-    border-radius: 2px;
-    width: 0%;
-    transition: width 0.1s linear;
-}
-
-.story-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.control-btn {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.control-btn:hover {
-    background: rgba(255,255,255,0.3);
-}
-
-.story-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.story-slides {
-    position: relative;
+.slide-video,
+.slide-image {
     width: 100%;
     height: 100%;
+    object-fit: cover;
 }
 
-.story-slide {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.story-slide.active {
-    opacity: 1;
-}
-
-.story-slide img,
-.story-slide video {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-.story-slide-content {
-    text-align: center;
-    color: white;
-    padding: 20px;
-    max-width: 80%;
-}
-
-.story-slide h2 {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-}
-
-.story-slide p {
-    font-size: 1.2rem;
-    line-height: 1.5;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-}
-
-.story-navigation {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    transform: translateY(-50%);
-    display: flex;
-    justify-content: space-between;
-    padding: 0 20px;
-    pointer-events: none;
-}
-
-.nav-btn {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    padding: 12px 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background 0.2s;
-    pointer-events: auto;
-}
-
-.nav-btn:hover {
-    background: rgba(255,255,255,0.3);
-}
-
-.story-info-panel {
-    width: 350px;
-    background: #fff;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.story-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.story-description {
-    color: #666;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-}
-
-.story-stats {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.stat {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #666;
-    font-size: 0.9rem;
-}
-
-.ad-container {
-    margin: 20px 0;
-    padding: 20px;
+.story-actions {
     background: #f8f9fa;
-    border-radius: 8px;
-    text-align: center;
+    border-radius: 15px;
+    margin: 2rem 0;
 }
 
-.ad-unit {
-    min-height: 250px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    transition: all 0.3s ease;
 }
 
-.related-stories h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    color: #333;
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
+<style>
 @@media (max-width: 768px) {
-    .story-viewer-container {
-        flex-direction: column;
+    .story-header h1 {
+        font-size: 2rem;
     }
     
-    .story-info-panel {
-        width: 100%;
-        order: -1;
+    .slide-content {
+        padding: 1.5rem;
     }
     
-    .story-viewer {
-        height: 60vh;
+    .slide-headline {
+    font-size: 1.5rem;
+    }
+    
+    .slide-text {
+        font-size: 1rem;
     }
 }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const storyData = JSON.parse(document.getElementById('story-data').textContent);
-    const viewer = document.getElementById('story-viewer');
-    const slidesContainer = document.getElementById('story-slides');
-    const progressBar = document.getElementById('progress-bar');
-    const pauseBtn = document.getElementById('pause-btn');
-    const closeBtn = document.getElementById('close-btn');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    
-    let currentSlide = 0;
-    let isPlaying = true;
-    let progressInterval;
-    let slideTimeout;
-    
-    // Initialize story
-    function initStory() {
-        // Create slides
-        storyData.slides.forEach((slide, index) => {
-            const slideElement = document.createElement('div');
-            slideElement.className = 'story-slide';
-            slideElement.dataset.index = index;
-            
-            if (slide.media) {
-                if (slide.media.mediaType === 'video') {
-                    const video = document.createElement('video');
-                    video.src = slide.media.url;
-                    video.autoplay = false;
-                    video.muted = true;
-                    video.loop = false;
-                    slideElement.appendChild(video);
-                } else {
-                    const img = document.createElement('img');
-                    img.src = slide.media.url;
-                    img.alt = slide.caption || '';
-                    slideElement.appendChild(img);
-                }
-            }
-            
-            if (slide.headline || slide.text) {
-                const content = document.createElement('div');
-                content.className = 'story-slide-content';
-                content.style.backgroundColor = slide.backgroundColor || 'transparent';
-                content.style.color = slide.textColor || 'white';
-                content.style.fontSize = slide.fontSize || '1rem';
-                content.style.textAlign = slide.alignment || 'center';
-                
-                if (slide.headline) {
-                    const h2 = document.createElement('h2');
-                    h2.textContent = slide.headline;
-                    content.appendChild(h2);
-                }
-                
-                if (slide.text) {
-                    const p = document.createElement('p');
-                    p.textContent = slide.text;
-                    content.appendChild(p);
-                }
-                
-                slideElement.appendChild(content);
-            }
-            
-            slidesContainer.appendChild(slideElement);
+function shareStory() {
+    if (navigator.share) {
+        navigator.share({
+            title: '@Model.Title',
+            text: '@Model.Description',
+            url: window.location.href
         });
-        
-        showSlide(0);
-        startProgress();
-    }
-    
-    function showSlide(index) {
-        const slides = document.querySelectorAll('.story-slide');
-        slides.forEach(slide => slide.classList.remove('active'));
-        
-        if (slides[index]) {
-            slides[index].classList.add('active');
-        }
-    }
-    
-    function nextSlide() {
-        if (currentSlide < storyData.slides.length - 1) {
-            currentSlide++;
-            showSlide(currentSlide);
-            startProgress();
-        } else {
-            // Story ended
-            pauseStory();
-        }
-    }
-    
-    function prevSlide() {
-        if (currentSlide > 0) {
-            currentSlide--;
-            showSlide(currentSlide);
-            startProgress();
-        }
-    }
-    
-    function startProgress() {
-        clearInterval(progressInterval);
-        clearTimeout(slideTimeout);
-        
-        if (!isPlaying) return;
-        
-        const slide = storyData.slides[currentSlide];
-        const duration = slide.duration || 5000;
-        const progressStep = 100 / (duration / 100);
-        let progress = 0;
-        
-        progressInterval = setInterval(() => {
-            if (!isPlaying) return;
-            
-            progress += progressStep;
-            progressBar.style.width = progress + '%';
-            
-            if (progress >= 100) {
-                clearInterval(progressInterval);
-                nextSlide();
-            }
-        }, 100);
-        
-        slideTimeout = setTimeout(() => {
-            if (isPlaying) {
-                nextSlide();
-            }
-        }, duration);
-    }
-    
-    function pauseStory() {
-        isPlaying = false;
-        clearInterval(progressInterval);
-        clearTimeout(slideTimeout);
-        pauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-    }
-    
-    function playStory() {
-        isPlaying = true;
-        pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        startProgress();
-    }
-    
-    // Event listeners
-    pauseBtn.addEventListener('click', () => {
-        if (isPlaying) {
-            pauseStory();
-        } else {
-            playStory();
-        }
-    });
-    
-    closeBtn.addEventListener('click', () => {
-        window.location.href = '/stories';
-    });
-    
-    prevBtn.addEventListener('click', () => {
-        prevSlide();
-    });
-    
-    nextBtn.addEventListener('click', () => {
-        nextSlide();
-    });
-    
-    // Touch/swipe support
-    let startX = 0;
-    let startY = 0;
-    
-    viewer.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-    });
-    
-    viewer.addEventListener('touchend', (e) => {
-        const endX = e.changedTouches[0].clientX;
-        const endY = e.changedTouches[0].clientY;
-        const diffX = startX - endX;
-        const diffY = startY - endY;
-        
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            if (diffX > 50) {
-                nextSlide();
-            } else if (diffX < -50) {
-                prevSlide();
-            }
-        }
-    });
-    
-    // Keyboard support
-    document.addEventListener('keydown', (e) => {
-        switch(e.key) {
-            case 'ArrowLeft':
-                prevSlide();
-                break;
-            case 'ArrowRight':
-                nextSlide();
-                break;
-            case ' ':
-                e.preventDefault();
-                if (isPlaying) {
-                    pauseStory();
                 } else {
-                    playStory();
-                }
-                break;
-        }
-    });
-    
-    // Initialize
-    initStory();
-});
+        // Fallback to copying URL
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            alert('Story URL copied to clipboard!');
+        });
+    }
+}
+</style>
 </script>
+
+@functions {
+    private bool IsVideoFile(string url)
+    {
+        var videoExtensions = new[] { ".mp4", ".webm", ".ogg", ".avi", ".mov" };
+        return videoExtensions.Any(ext => url.ToLower().EndsWith(ext));
+    }
+}

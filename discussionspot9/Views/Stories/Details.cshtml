@@ -1,0 +1,143 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.StoryDetailViewModel
+
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid" style="max-width: 1200px; padding: 20px;">
+    <div class="row">
+        <div class="col-12">
+            <!-- Story Header -->
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h1>@Model.Title</h1>
+                    <p class="text-muted">@Model.Description</p>
+                    <div class="d-flex gap-3 align-items-center">
+                        <span class="badge bg-@(Model.Status == "published" ? "success" : "warning")">@Model.Status</span>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Created @Model.CreatedAt.ToString("MMM dd, yyyy 'at' h:mm tt")
+                        </small>
+                        <small class="text-muted">
+                            <i class="fas fa-images me-1"></i>
+                            @Model.Slides.Count slides
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/stories/@Model.Slug/edit" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-1"></i>Edit Story
+                    </a>
+                    <form method="post" action="/stories/@Model.Slug/regenerate" class="d-inline">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="fas fa-sync me-1"></i>Regenerate
+                        </button>
+                    </form>
+                    <form method="post" action="/stories/@Model.Slug/delete" class="d-inline" 
+                          onsubmit="return confirm('Are you sure you want to delete this story?')">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Source Post Info -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-link me-2"></i>Source Post
+                    </h6>
+                    <p class="card-text">
+                        <a href="/r/@Model.CommunitySlug/posts/@Model.PostSlug" class="text-decoration-none">
+                            @Model.PostTitle
+                        </a>
+                    </p>
+                    <small class="text-muted">
+                        <i class="fas fa-users me-1"></i>
+                        r/@Model.CommunityName
+                    </small>
+                </div>
+            </div>
+
+            <!-- Story Slides -->
+            <div class="story-slides">
+                @foreach (var slide in Model.Slides)
+                {
+                    <div class="card mb-4 story-slide">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">@slide.Title</h5>
+                            <span class="badge bg-info">@slide.SlideType</span>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(slide.ImageUrl))
+                            {
+                                <div class="mb-3">
+                                    <img src="@slide.ImageUrl" alt="@slide.Title" class="img-fluid rounded" style="max-height: 300px; object-fit: cover;">
+                                </div>
+                            }
+                            <div class="slide-content">
+                                @Html.Raw(slide.Content)
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (!Model.Slides.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Slides Yet</h4>
+                    <p class="text-muted">This story doesn't have any slides yet. Try regenerating it.</p>
+                    <form method="post" action="/stories/@Model.Slug/regenerate" class="d-inline">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sync me-1"></i>Regenerate Story
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .story-slide {
+        border-left: 4px solid #007bff;
+    }
+    
+    .slide-content {
+        line-height: 1.6;
+    }
+    
+    .slide-content h1, .slide-content h2, .slide-content h3 {
+        color: #333;
+        margin-bottom: 1rem;
+    }
+    
+    .slide-content p {
+        margin-bottom: 1rem;
+    }
+    
+    .slide-content ul, .slide-content ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+</style>

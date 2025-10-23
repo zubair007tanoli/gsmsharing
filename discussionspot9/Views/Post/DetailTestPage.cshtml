@@ -120,6 +120,26 @@
         [data-theme="light"] .detail-test-page {
             background-color: var(--bg-secondary);
         }
+
+        /* Link preview improvements */
+        .link-preview-card {
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+        .link-preview-image-wrapper {
+            background: #f8f9fa;
+        }
+        .link-preview-img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+        .clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 }
 
@@ -218,19 +238,27 @@
                         @* Render Link Preview if link data is present *@
                         @if (!string.IsNullOrWhiteSpace(Model.Post.Url) && !string.IsNullOrWhiteSpace(Model.Post.Url))
                         {
-                            <a href="@Model.Post.Url" target="_blank" rel="noopener noreferrer" class="link-preview">
-                                <div class="link-thumbnail">
-                                    <img src="@(Model.Post.LinkModel.ThumbnailUrl ?? "https://placehold.co/150x150/cccccc/333333?text=Link")" alt="Link Thumbnail">
-                                </div>
-                                <div class="link-content">
-                                    <div class="link-title">@Model.Post.LinkModel.Title</div> @* Assuming title is populated via link preview or similar *@
-                                    <div class="link-description">@Model.Post.LinkModel.Description</div>
-                                    <div class="link-url">
-                                        <i class="fas fa-link"></i>
-                                        <span>@Model.Post.LinkModel.Url</span>
+                            <div class="card link-preview-card mb-4">
+                                <a href="@Model.Post.Url" class="text-decoration-none text-reset" target="_blank" rel="noopener noreferrer">
+                                    <div class="row g-0">
+                                        <div class="col-md-4">
+                                            <div class="ratio ratio-16x9 link-preview-image-wrapper">
+                                                <img src="@(Model.Post.LinkModel.ThumbnailUrl ?? "https://placehold.co/800x450/cccccc/333333?text=Link+Preview")" class="img-fluid rounded-start link-preview-img" alt="Link Thumbnail">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-truncate">@Model.Post.LinkModel.Title</h5>
+                                                <p class="card-text text-muted mb-2 clamp-2">@Model.Post.LinkModel.Description</p>
+                                                <div class="small text-muted text-truncate">
+                                                    <i class="fas fa-link me-1"></i>
+                                                    <span>@Model.Post.LinkModel.Url</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </a>
+                                </a>
+                            </div>
                         }
 
                         <!-- DetailTestPage.cshtml -->
@@ -515,6 +543,78 @@
             
             // NOTE: Poll voting is handled by Post_Script_Real_Time_Fix.js via SignalR
             // The castPollVote method in that script handles all poll interactions
+            
+            // Handle save button click
+            const saveBtn = document.getElementById('saveBtn-@Model.Post.PostId');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async function() {
+                    const postId = this.getAttribute('data-post-id');
+                    const isCurrentlySaved = this.getAttribute('data-issaved') === 'true';
+                    
+                    try {
+                        const response = await fetch('/Post/ToggleSave', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                            },
+                            body: JSON.stringify({ postId: parseInt(postId) })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            // Update button state
+                            const icon = this.querySelector('i');
+                            const text = this.querySelector('span');
+                            
+                            if (result.isSaved) {
+                                icon.classList.add('text-primary');
+                                text.textContent = 'Saved';
+                                this.setAttribute('data-issaved', 'true');
+                            } else {
+                                icon.classList.remove('text-primary');
+                                text.textContent = 'Save';
+                                this.setAttribute('data-issaved', 'false');
+                            }
+                            
+                            // Show success message
+                            showToast('success', result.isSaved ? 'Post saved!' : 'Post unsaved!');
+                        } else {
+                            showToast('error', result.message || 'Failed to save post');
+                        }
+                    } catch (error) {
+                        console.error('Error saving post:', error);
+                        showToast('error', 'An error occurred while saving the post');
+                    }
+                });
+            }
+            
+            // Toast notification function
+            function showToast(type, message) {
+                const toastContainer = document.getElementById('toast-container');
+                if (!toastContainer) return;
+                
+                const toast = document.createElement('div');
+                toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+                toast.setAttribute('role', 'alert');
+                toast.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.show();
+                
+                // Remove toast element after it's hidden
+                toast.addEventListener('hidden.bs.toast', () => {
+                    toast.remove();
+                });
+            }
         });
 
         // ============================================

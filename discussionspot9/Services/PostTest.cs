@@ -13,12 +13,14 @@ namespace discussionspot9.Services
         private readonly ApplicationDbContext _context;
         private readonly IFileStorageService _fileStorageService;
         private readonly ILogger<PostTest> _logger;
+        private readonly IStoryGenerationService _storyGenerationService;
 
-        public PostTest(ApplicationDbContext context, IFileStorageService fileStorageService, ILogger<PostTest> logger)
+        public PostTest(ApplicationDbContext context, IFileStorageService fileStorageService, ILogger<PostTest> logger, IStoryGenerationService storyGenerationService)
         {
             _context = context;
             _fileStorageService = fileStorageService;
             _logger = logger;
+            _storyGenerationService = storyGenerationService;
         }
 
         public async Task<CreatePostResult> CreatePostUpdatedAsync(CreatePostViewModel model)
@@ -93,7 +95,115 @@ namespace discussionspot9.Services
                 await _context.SaveChangesAsync();
             }
 
+            // Queue story generation for the new post with optimized settings
+            try
+            {
+                var storyOptions = new StoryGenerationOptions
+                {
+                    AutoGenerate = true,
+                    UseAI = true,
+                    Style = DetermineOptimalStyle(model.PostType, model.Content),
+                    Length = DetermineOptimalLength(model.PostType, model.Content),
+                    Keywords = ExtractKeywords(model.Title, model.Content, model.TagsInput)
+                };
+                
+                await _storyGenerationService.QueueStoryGenerationAsync(post.PostId, storyOptions);
+                _logger.LogInformation("Queued story generation for post {PostId} with style: {Style}, length: {Length}", 
+                    post.PostId, storyOptions.Style, storyOptions.Length);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to queue story generation for post {PostId}", post.PostId);
+                // Don't fail the post creation if story generation fails
+            }
+
             return new CreatePostResult { Success = true, PostSlug = slug };
+        }
+
+        private string DetermineOptimalStyle(string postType, string? content)
+        {
+            if (string.IsNullOrEmpty(content)) return "informative";
+            
+            var contentLower = content.ToLower();
+            
+            return postType switch
+            {
+                "poll" => "engaging",
+                "image" => "visual",
+                "video" => "dynamic",
+                "link" => "informative",
+                _ when contentLower.Contains("question") || contentLower.Contains("?") => "engaging",
+                _ when contentLower.Contains("tutorial") || contentLower.Contains("how to") => "educational",
+                _ when contentLower.Contains("news") || contentLower.Contains("update") => "informative",
+                _ when contentLower.Contains("funny") || contentLower.Contains("joke") => "entertaining",
+                _ => "informative"
+            };
+        }
+
+        private string DetermineOptimalLength(string postType, string? content)
+        {
+            if (string.IsNullOrEmpty(content)) return "medium";
+            
+            var wordCount = content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            
+            return postType switch
+            {
+                "poll" => "short",
+                "image" => wordCount > 200 ? "medium" : "short",
+                "video" => "medium",
+                "link" => wordCount > 300 ? "long" : "medium",
+                _ when wordCount < 100 => "short",
+                _ when wordCount > 500 => "long",
+                _ => "medium"
+            };
+        }
+
+        private string? ExtractKeywords(string title, string? content, string? tagsInput)
+        {
+            var keywords = new List<string>();
+            
+            // Add title words (excluding common words)
+            var titleWords = title.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length > 3 && !IsCommonWord(w))
+                .Take(3);
+            keywords.AddRange(titleWords);
+            
+            // Add tags if provided
+            if (!string.IsNullOrEmpty(tagsInput))
+            {
+                var tags = tagsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(t => t.Trim())
+                    .Where(t => !string.IsNullOrEmpty(t))
+                    .Take(5);
+                keywords.AddRange(tags);
+            }
+            
+            // Extract key phrases from content
+            if (!string.IsNullOrEmpty(content))
+            {
+                var contentWords = content.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Where(w => w.Length > 4 && !IsCommonWord(w))
+                    .GroupBy(w => w.ToLower())
+                    .OrderByDescending(g => g.Count())
+                    .Take(3)
+                    .Select(g => g.Key);
+                keywords.AddRange(contentWords);
+            }
+            
+            return keywords.Any() ? string.Join(", ", keywords.Distinct().Take(8)) : null;
+        }
+
+        private bool IsCommonWord(string word)
+        {
+            var commonWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+                "this", "that", "these", "those", "is", "are", "was", "were", "be", "been",
+                "have", "has", "had", "do", "does", "did", "will", "would", "could", "should",
+                "can", "may", "might", "must", "shall", "a", "an", "as", "if", "when", "where",
+                "why", "how", "what", "which", "who", "whom", "whose", "about", "above", "below"
+            };
+            return commonWords.Contains(word.ToLower());
         }
 
         private async Task ProcessTagsAsync(int postId, CreatePostViewModel model)
@@ -153,6 +263,12 @@ namespace discussionspot9.Services
                     // Save the actual file to disk
                     _logger.LogInformation("Saving {MediaType} file for post {PostId}: {FileName}", mediaType, postId, file.FileName);
                     var fileUrl = await _fileStorageService.SaveFileAsync(file, $"posts/{mediaType}s");
+                    
+                    // Ensure the URL is properly formatted for web access
+                    if (!fileUrl.StartsWith("/") && !fileUrl.StartsWith("http"))
+                    {
+                        fileUrl = "/" + fileUrl.TrimStart('/');
+                    }
 
                     var media = new Media
                     {
@@ -190,10 +306,17 @@ namespace discussionspot9.Services
 
             foreach (var url in model.MediaUrls)
             {
+                // Ensure URL is properly formatted
+                var processedUrl = url;
+                if (!processedUrl.StartsWith("http") && !processedUrl.StartsWith("/"))
+                {
+                    processedUrl = "/" + processedUrl.TrimStart('/');
+                }
+
                 var media = new Media
                 {
                     PostId = postId,
-                    Url = url,
+                    Url = processedUrl,
                     MediaType = "image", // Default to image, consider URL analysis
                     UploadedAt = DateTime.UtcNow,
                     UserId = model.UserId

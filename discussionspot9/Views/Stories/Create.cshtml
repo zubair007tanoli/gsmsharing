@@ -1,776 +1,240 @@
-@model discussionspot9.Models.ViewModels.CreateStoryViewModel
+@model discussionspot9.Models.ViewModels.CreativeViewModels.CreateStoryViewModel
 @{
-    ViewData["Title"] = "Create Web Story - DiscussionSpot";
-    ViewData["Description"] = "Create engaging web stories on DiscussionSpot. Share your stories with the community.";
+    ViewData["Title"] = "Create New Story - DiscussionSpot";
+    ViewData["Description"] = "Create engaging web stories with our advanced story creation tools.";
 }
 
-<div class="container">
+<div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2 mb-0">Create Web Story</h1>
-                <a href="/stories" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Stories
-                </a>
+            <!-- Header -->
+            <div class="story-create-header text-center py-4 mb-4">
+                <h1 class="display-5 fw-bold text-primary mb-3">
+                    <i class="fas fa-book-open me-3"></i>Create New Story
+                </h1>
+                <p class="lead text-muted">Transform your content into engaging visual stories</p>
             </div>
 
-            <form asp-action="Create" method="post" enctype="multipart/form-data" id="create-story-form" novalidate>
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Story Details</h5>
-                            </div>
-                            <div class="card-body">
-                                        <div class="mb-3">
-                                            <label asp-for="Title" class="form-label">Story Title *</label>
-                                            <input asp-for="Title" class="form-control" placeholder="Enter your story title" required maxlength="300">
-                                            <div class="form-text">
-                                                <span id="title-counter">0</span>/300 characters
-                                            </div>
+            <!-- Create Form -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-6">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-body p-4">
+                            <form asp-action="Create" method="post" id="create-story-form">
+                                <div class="mb-4">
+                                    <label asp-for="Title" class="form-label fw-bold">
+                                        <i class="fas fa-heading me-2 text-primary"></i>Story Title
+                                    </label>
+                                    <input asp-for="Title" class="form-control form-control-lg" 
+                                           placeholder="Enter your story title..." required>
                                             <span asp-validation-for="Title" class="text-danger"></span>
+                                    <div class="form-text">Choose a compelling title that captures your audience's attention</div>
                                         </div>
 
-                                <div class="mb-3">
-                                    <label asp-for="Description" class="form-label">Description</label>
-                                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Brief description of your story" maxlength="500"></textarea>
-                                    <div class="form-text">
-                                        <span id="description-counter">0</span>/500 characters
-                                    </div>
+                                <div class="mb-4">
+                                    <label asp-for="Description" class="form-label fw-bold">
+                                        <i class="fas fa-align-left me-2 text-primary"></i>Story Description
+                                    </label>
+                                    <textarea asp-for="Description" class="form-control" rows="4" 
+                                              placeholder="Describe what your story is about..."></textarea>
                                     <span asp-validation-for="Description" class="text-danger"></span>
+                                    <div class="form-text">Provide a brief description of your story content</div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label asp-for="MetaDescription" class="form-label">SEO Description</label>
-                                    <textarea asp-for="MetaDescription" class="form-control" rows="2" placeholder="SEO description for search engines"></textarea>
-                                    <small class="form-text text-muted">Keep it under 160 characters for best SEO results.</small>
-                                    <span asp-validation-for="MetaDescription" class="text-danger"></span>
+                                <!-- AI Settings -->
+                                <div class="ai-settings-section mb-4">
+                                    <h5 class="fw-bold text-primary mb-3">
+                                        <i class="fas fa-robot me-2"></i>AI Enhancement Settings
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Style" class="form-label fw-bold">Story Style</label>
+                                            <select asp-for="Style" class="form-select">
+                                                <option value="informative">Informative</option>
+                                                <option value="engaging">Engaging</option>
+                                                <option value="visual">Visual</option>
+                                                <option value="dynamic">Dynamic</option>
+                                                <option value="educational">Educational</option>
+                                                <option value="entertaining">Entertaining</option>
+                                            </select>
+                                            <div class="form-text">Choose the style that best fits your content</div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label asp-for="MetaKeywords" class="form-label">Keywords</label>
-                                    <input asp-for="MetaKeywords" class="form-control" placeholder="keyword1, keyword2, keyword3">
-                                    <small class="form-text text-muted">Comma-separated keywords for SEO.</small>
-                                    <span asp-validation-for="MetaKeywords" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label asp-for="PublisherName" class="form-label">Publisher Name</label>
-                                    <input asp-for="PublisherName" class="form-control" placeholder="Your name or organization">
-                                    <span asp-validation-for="PublisherName" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label asp-for="PosterImageUrl" class="form-label">Poster Image</label>
-                                    <div class="input-group">
-                                        <input asp-for="PosterImageUrl" class="form-control" placeholder="https://example.com/poster.jpg" id="poster-image-url">
-                                        <button type="button" class="btn btn-outline-secondary" id="upload-poster-btn">
-                                            <i class="fas fa-upload"></i> Upload
-                                        </button>
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Length" class="form-label fw-bold">Story Length</label>
+                                            <select asp-for="Length" class="form-select">
+                                                <option value="short">Short (3-5 slides)</option>
+                                                <option value="medium">Medium (6-10 slides)</option>
+                                                <option value="long">Long (11+ slides)</option>
+                                            </select>
+                                            <div class="form-text">Select the desired length for your story</div>
                                     </div>
-                                    <input type="file" id="poster-image-file" accept="image/*" style="display: none;">
-                                    <small class="form-text text-muted">This image will be shown as the story thumbnail.</small>
-                                    <span asp-validation-for="PosterImageUrl" class="text-danger"></span>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label asp-for="PublisherLogo" class="form-label">Publisher Logo URL</label>
-                                    <input asp-for="PublisherLogo" class="form-control" placeholder="https://example.com/logo.png">
-                                    <span asp-validation-for="PublisherLogo" class="text-danger"></span>
-                                </div>
-                            </div>
+                                        <label asp-for="Keywords" class="form-label fw-bold">Keywords (Optional)</label>
+                                        <input asp-for="Keywords" class="form-control" 
+                                               placeholder="Enter keywords separated by commas...">
+                                        <div class="form-text">Add relevant keywords to help with SEO and discovery</div>
                         </div>
 
-                        <!-- Story Slides Section -->
-                        <div class="card mt-4">
-                            <div class="card-header">
-                                <h5 class="mb-0">Story Slides</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="slides-container">
-                                    @for (int i = 0; i < Model.Slides.Count; i++)
-                                    {
-                                        <div class="slide-item border rounded p-3 mb-3">
                                             <div class="row">
                                                 <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Slide Type</label>
-                                                        <select asp-for="Slides[i].SlideType" class="form-select slide-type">
-                                                            <option value="media">Media (Image/Video)</option>
-                                                            <option value="text">Text Only</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Media</label>
-                                                        <div class="media-upload-options">
-                                                            <!-- Upload from Computer -->
-                                                            <div class="upload-option">
-                                                                <label class="upload-label">
-                                                                    <input type="file" class="media-file-input" accept="image/*,video/*" style="display: none;">
-                                                                    <div class="upload-box">
-                                                                        <i class="fas fa-upload fa-2x text-primary mb-2"></i>
-                                                                        <div class="upload-text">Upload from Computer</div>
-                                                                        <small class="text-muted">JPG, PNG, GIF, MP4, WebM</small>
-                                                                    </div>
+                                            <div class="form-check form-switch">
+                                                <input asp-for="UseAI" class="form-check-input" type="checkbox" checked>
+                                                <label asp-for="UseAI" class="form-check-label fw-bold">
+                                                    Use AI Enhancement
                                                                 </label>
-                                                            </div>
-                                                            
-                                                            <!-- OR Divider -->
-                                                            <div class="upload-divider">
-                                                                <span>OR</span>
-                                                            </div>
-                                                            
-                                                            <!-- Web URL -->
-                                                            <div class="url-option">
-                                                                <div class="input-group">
-                                                                    <span class="input-group-text">
-                                                                        <i class="fas fa-link"></i>
-                                                                    </span>
-                                                                    <input asp-for="Slides[i].MediaUrl" type="url" class="form-control media-url" placeholder="https://example.com/image.jpg">
-                                                                </div>
-                                                                <small class="form-text text-muted">Enter a direct URL to an image or video</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Headline</label>
-                                                        <input asp-for="Slides[i].Headline" type="text" class="form-control" placeholder="Slide headline">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Text</label>
-                                                        <textarea asp-for="Slides[i].Text" class="form-control" rows="3" placeholder="Slide text content"></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Caption</label>
-                                                        <input asp-for="Slides[i].Caption" type="text" class="form-control" placeholder="Image/video caption">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Duration (ms)</label>
-                                                        <input asp-for="Slides[i].Duration" type="number" class="form-control" min="1000" max="30000">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Background Color</label>
-                                                        <input asp-for="Slides[i].BackgroundColor" type="color" class="form-control">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Text Color</label>
-                                                        <input asp-for="Slides[i].TextColor" type="color" class="form-control">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Text Alignment</label>
-                                                        <select asp-for="Slides[i].Alignment" class="form-select">
-                                                            <option value="center">Center</option>
-                                                            <option value="left">Left</option>
-                                                            <option value="right">Right</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted">Slide @(i + 1)</span>
-                                                <button type="button" class="btn btn-outline-danger btn-sm remove-slide">
-                                                    <i class="fas fa-trash"></i> Remove
-                                                </button>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-
-                                <button type="button" class="btn btn-outline-primary" id="add-slide">
-                                    <i class="fas fa-plus"></i> Add Slide
-                                </button>
-                            </div>
+                                                <div class="form-text">Let AI optimize your story content</div>
                         </div>
                     </div>
 
-                    <div class="col-lg-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Publishing Options</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <label asp-for="Status" class="form-label">Status</label>
-                                    <select asp-for="Status" class="form-select">
-                                        <option value="draft">Draft</option>
-                                        <option value="published">Published</option>
-                                    </select>
-                                    <span asp-validation-for="Status" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input asp-for="IsAmpEnabled" class="form-check-input" type="checkbox" checked>
-                                        <label asp-for="IsAmpEnabled" class="form-check-label">
-                                            Enable AMP
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <input asp-for="AutoGenerate" class="form-check-input" type="checkbox" checked>
+                                                <label asp-for="AutoGenerate" class="form-check-label fw-bold">
+                                                    Auto-Generate Slides
                                         </label>
-                                    </div>
-                                    <small class="form-text text-muted">Enable AMP for better SEO and mobile performance.</small>
+                                                <div class="form-text">Automatically create slides from your content</div>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label asp-for="CanonicalUrl" class="form-label">Canonical URL</label>
-                                    <input asp-for="CanonicalUrl" class="form-control" placeholder="https://yoursite.com/story-url">
-                                    <span asp-validation-for="CanonicalUrl" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">SEO Tips</h5>
+                                <!-- Action Buttons -->
+                                <div class="d-flex gap-3 justify-content-center">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                                        <i class="fas fa-magic me-2"></i>Create Story
+                                    </button>
+                                    <a href="/stories" class="btn btn-outline-secondary btn-lg px-4">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Stories
+                                    </a>
                             </div>
-                            <div class="card-body">
-                                <ul class="list-unstyled mb-0">
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success"></i>
-                                        Use descriptive titles
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success"></i>
-                                        Add relevant keywords
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success"></i>
-                                        Use high-quality images
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-check text-success"></i>
-                                        Keep slides engaging
-                                    </li>
-                                    <li class="mb-0">
-                                        <i class="fas fa-check text-success"></i>
-                                        Enable AMP for better performance
-                                    </li>
-                                </ul>
+                            </form>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="d-flex justify-content-between">
-                            <a href="/stories" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Create Story
-                            </button>
+            <!-- Features Section -->
+            <div class="features-preview mt-5">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="feature-card text-center h-100">
+                            <div class="feature-icon mb-3">
+                                <i class="fas fa-mobile-alt fa-3x text-primary"></i>
+                            </div>
+                            <h5>Mobile Optimized</h5>
+                            <p class="text-muted">Your stories will look perfect on all devices</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-4">
+                        <div class="feature-card text-center h-100">
+                            <div class="feature-icon mb-3">
+                                <i class="fas fa-robot fa-3x text-success"></i>
+                            </div>
+                            <h5>AI Powered</h5>
+                            <p class="text-muted">Our AI helps create engaging content automatically</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-4">
+                        <div class="feature-card text-center h-100">
+                            <div class="feature-icon mb-3">
+                                <i class="fas fa-share-alt fa-3x text-warning"></i>
+                            </div>
+                            <h5>Easy Sharing</h5>
+                            <p class="text-muted">Share your stories across social media platforms</p>
+                        </div>
                         </div>
                     </div>
                 </div>
-            </form>
         </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    let slideIndex = @Model.Slides.Count;
-    
-    // Add slide functionality
-    document.getElementById('add-slide').addEventListener('click', function() {
-        const container = document.getElementById('slides-container');
-        const slideTemplate = container.querySelector('.slide-item').cloneNode(true);
-        
-        // Update slide number
-        slideTemplate.querySelector('.text-muted').textContent = `Slide ${slideIndex + 1}`;
-        
-        // Update form field names and IDs
-        const inputs = slideTemplate.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            const name = input.getAttribute('name');
-            const id = input.getAttribute('id');
-            if (name) {
-                input.setAttribute('name', name.replace(/\[\d+\]/, `[${slideIndex}]`));
-            }
-            if (id) {
-                input.setAttribute('id', id.replace(/\[\d+\]/, `[${slideIndex}]`));
-            }
-        });
-        
-        // Clear values
-        inputs.forEach(input => {
-            if (input.type === 'text' || input.type === 'url' || input.type === 'textarea') {
-                input.value = '';
-            } else if (input.type === 'number') {
-                input.value = '5000';
-            } else if (input.type === 'color') {
-                if (input.name.includes('BackgroundColor')) {
-                    input.value = '#000000';
-                } else if (input.name.includes('TextColor')) {
-                    input.value = '#ffffff';
-                }
-            } else if (input.type === 'select-one') {
-                input.selectedIndex = 0;
-            }
-        });
-        
-        container.appendChild(slideTemplate);
-        slideIndex++;
-    });
-    
-    // Remove slide functionality
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-slide')) {
-            const slideItem = e.target.closest('.slide-item');
-            if (document.querySelectorAll('.slide-item').length > 1) {
-                slideItem.remove();
-                // Renumber remaining slides
-                const slides = document.querySelectorAll('.slide-item');
-                slides.forEach((slide, index) => {
-                    slide.querySelector('.text-muted').textContent = `Slide ${index + 1}`;
-                });
-            } else {
-                alert('You must have at least one slide.');
-            }
-        }
-    });
-    
-    // Slide type change
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('slide-type')) {
-            const slideItem = e.target.closest('.slide-item');
-            const mediaUrlInput = slideItem.querySelector('.media-url');
-            
-            if (e.target.value === 'text') {
-                mediaUrlInput.required = false;
-                mediaUrlInput.placeholder = 'Optional media URL';
-            } else {
-                mediaUrlInput.required = true;
-                mediaUrlInput.placeholder = 'https://example.com/image.jpg';
-            }
-        }
-    });
-    
-    // Media upload functionality
-    document.getElementById('upload-poster-btn').addEventListener('click', function() {
-        document.getElementById('poster-image-file').click();
-    });
-    
-    document.getElementById('poster-image-file').addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-            uploadFile(e.target.files[0], 'poster-image-url');
-        }
-    });
-    
-    // Media upload for slides
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.upload-media-btn')) {
-            const slideItem = e.target.closest('.slide-item');
-            const fileInput = slideItem.querySelector('.media-file-input');
-            fileInput.click();
-        }
-    });
-    
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('media-file-input') && e.target.files.length > 0) {
-            const slideItem = e.target.closest('.slide-item');
-            const mediaUrlInput = slideItem.querySelector('.media-url');
-            uploadFile(e.target.files[0], mediaUrlInput);
-        }
-    });
-    
-    function uploadFile(file, targetInput) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('category', 'stories');
-        
-        // Show loading state
-        const originalValue = targetInput.value;
-        targetInput.value = 'Uploading...';
-        targetInput.disabled = true;
-        
-        fetch('/api/media/upload', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                targetInput.value = data.filePath;
-                showNotification('File uploaded successfully!', 'success');
-            } else {
-                targetInput.value = originalValue;
-                showNotification('Upload failed: ' + data.errorMessage, 'error');
-            }
-        })
-        .catch(error => {
-            targetInput.value = originalValue;
-            showNotification('Upload failed: ' + error.message, 'error');
-        })
-        .finally(() => {
-            targetInput.disabled = false;
-        });
-    }
-    
-    function showNotification(message, type) {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
-    }
-    
-    // Form validation
-    document.getElementById('create-story-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (validateForm()) {
-            this.submit();
-        }
-    });
-    
-    function validateForm() {
-        let isValid = true;
-        const errors = [];
-        
-        // Validate title
-        const title = document.querySelector('input[name="Title"]');
-        if (!title.value.trim()) {
-            showFieldError(title, 'Title is required');
-            errors.push('Title is required');
-            isValid = false;
-        } else if (title.value.length > 300) {
-            showFieldError(title, 'Title cannot exceed 300 characters');
-            errors.push('Title cannot exceed 300 characters');
-            isValid = false;
-        } else {
-            clearFieldError(title);
-        }
-        
-        // Validate slides
-        const slides = document.querySelectorAll('.slide-item');
-        if (slides.length === 0) {
-            showNotification('At least one slide is required', 'error');
-            isValid = false;
-        }
-        
-        slides.forEach((slide, index) => {
-            const slideType = slide.querySelector('.slide-type').value;
-            const mediaUrl = slide.querySelector('.media-url').value;
-            const headline = slide.querySelector('input[name*="Headline"]').value;
-            const text = slide.querySelector('textarea[name*="Text"]').value;
-            
-            // Validate media URL for media slides
-            if (slideType === 'media' && !mediaUrl.trim()) {
-                showFieldError(slide.querySelector('.media-url'), 'Media URL is required for media slides');
-                errors.push(`Slide ${index + 1}: Media URL is required`);
-                isValid = false;
-            } else if (mediaUrl && !isValidUrl(mediaUrl)) {
-                showFieldError(slide.querySelector('.media-url'), 'Please enter a valid URL');
-                errors.push(`Slide ${index + 1}: Invalid media URL`);
-                isValid = false;
-            } else {
-                clearFieldError(slide.querySelector('.media-url'));
-            }
-            
-            // Validate headline
-            if (headline && headline.length > 200) {
-                showFieldError(slide.querySelector('input[name*="Headline"]'), 'Headline cannot exceed 200 characters');
-                errors.push(`Slide ${index + 1}: Headline too long`);
-                isValid = false;
-            } else {
-                clearFieldError(slide.querySelector('input[name*="Headline"]'));
-            }
-            
-            // Validate text
-            if (text && text.length > 2000) {
-                showFieldError(slide.querySelector('textarea[name*="Text"]'), 'Text cannot exceed 2000 characters');
-                errors.push(`Slide ${index + 1}: Text too long`);
-                isValid = false;
-            } else {
-                clearFieldError(slide.querySelector('textarea[name*="Text"]'));
-            }
-            
-            // Validate duration
-            const duration = slide.querySelector('input[name*="Duration"]').value;
-            if (duration && (parseInt(duration) < 1000 || parseInt(duration) > 30000)) {
-                showFieldError(slide.querySelector('input[name*="Duration"]'), 'Duration must be between 1000 and 30000 milliseconds');
-                errors.push(`Slide ${index + 1}: Invalid duration`);
-                isValid = false;
-            } else {
-                clearFieldError(slide.querySelector('input[name*="Duration"]'));
-            }
-        });
-        
-        // Show validation summary
-        if (!isValid) {
-            showNotification('Please fix the validation errors before submitting', 'error');
-        }
-        
-        return isValid;
-    }
-    
-    function showFieldError(field, message) {
-        clearFieldError(field);
-        field.classList.add('is-invalid');
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'invalid-feedback';
-        errorDiv.textContent = message;
-        field.parentNode.appendChild(errorDiv);
-    }
-    
-    function clearFieldError(field) {
-        field.classList.remove('is-invalid');
-        const errorDiv = field.parentNode.querySelector('.invalid-feedback');
-        if (errorDiv) {
-            errorDiv.remove();
-        }
-    }
-    
-    function isValidUrl(string) {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }
-    
-    // Real-time validation
-    document.addEventListener('input', function(e) {
-        if (e.target.matches('input[name="Title"]')) {
-            const title = e.target;
-            if (title.value.length > 300) {
-                showFieldError(title, 'Title cannot exceed 300 characters');
-            } else {
-                clearFieldError(title);
-            }
-        }
-        
-        if (e.target.matches('input[name*="Headline"]')) {
-            const headline = e.target;
-            if (headline.value.length > 200) {
-                showFieldError(headline, 'Headline cannot exceed 200 characters');
-            } else {
-                clearFieldError(headline);
-            }
-        }
-        
-        if (e.target.matches('textarea[name*="Text"]')) {
-            const text = e.target;
-            if (text.value.length > 2000) {
-                showFieldError(text, 'Text cannot exceed 2000 characters');
-            } else {
-                clearFieldError(text);
-            }
-        }
-        
-        if (e.target.matches('input[name*="Duration"]')) {
-            const duration = e.target;
-            const value = parseInt(duration.value);
-            if (value && (value < 1000 || value > 30000)) {
-                showFieldError(duration, 'Duration must be between 1000 and 30000 milliseconds');
-            } else {
-                clearFieldError(duration);
-            }
-        }
-    });
-});
+<style>
+.story-create-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
 
-// Enhanced Media Upload Options
-document.addEventListener('DOMContentLoaded', function() {
-    // Character counters
-    const titleInput = document.querySelector('input[name="Title"]');
-    const descriptionInput = document.querySelector('textarea[name="Description"]');
-    const titleCounter = document.getElementById('title-counter');
-    const descriptionCounter = document.getElementById('description-counter');
-    
-    if (titleInput && titleCounter) {
-        titleInput.addEventListener('input', function() {
-            titleCounter.textContent = this.value.length;
-            if (this.value.length > 250) {
-                titleCounter.parentElement.classList.add('text-warning');
-            } else {
-                titleCounter.parentElement.classList.remove('text-warning');
-            }
-        });
-    }
-    
-    if (descriptionInput && descriptionCounter) {
-        descriptionInput.addEventListener('input', function() {
-            descriptionCounter.textContent = this.value.length;
-            if (this.value.length > 450) {
-                descriptionCounter.parentElement.classList.add('text-warning');
-            } else {
-                descriptionCounter.parentElement.classList.remove('text-warning');
-            }
-        });
-    }
-    
-    // Media upload options styling
-    const mediaUploadOptions = document.querySelectorAll('.media-upload-options');
-    
-    mediaUploadOptions.forEach(option => {
-        const fileInput = option.querySelector('.media-file-input');
-        const uploadBox = option.querySelector('.upload-box');
-        const urlInput = option.querySelector('.media-url');
-        
-        // File upload handling
-        if (fileInput && uploadBox) {
-            fileInput.addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    const file = e.target.files[0];
-                    uploadBox.innerHTML = `
-                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                        <div class="upload-text">${file.name}</div>
-                        <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                    `;
-                    uploadBox.classList.add('uploaded');
-                    
-                    // Upload the file
-                    uploadFile(file, urlInput);
-                }
-            });
-            
-            // Drag and drop
-            uploadBox.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadBox.classList.add('drag-over');
-            });
-            
-            uploadBox.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                uploadBox.classList.remove('drag-over');
-            });
-            
-            uploadBox.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadBox.classList.remove('drag-over');
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    fileInput.files = files;
-                    fileInput.dispatchEvent(new Event('change'));
-                }
-            });
-        }
-    });
-});
-</script>
+.feature-card {
+    padding: 2rem;
+    border-radius: 15px;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.ai-settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
 
 <style>
-.media-upload-options {
-    border: 2px dashed #dee2e6;
-    border-radius: 8px;
-    padding: 1.5rem;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
-}
-
-.media-upload-options:hover {
-    border-color: #007bff;
-    background: #f0f8ff;
-}
-
-.upload-option {
-    margin-bottom: 1rem;
-}
-
-.upload-label {
-    cursor: pointer;
-    display: block;
-}
-
-.upload-box {
-    text-align: center;
-    padding: 2rem;
-    border: 2px dashed #dee2e6;
-    border-radius: 8px;
-    background: white;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.upload-box:hover {
-    border-color: #007bff;
-    background: #f0f8ff;
-}
-
-.upload-box.drag-over {
-    border-color: #007bff;
-    background: #e3f2fd;
-    transform: scale(1.02);
-}
-
-.upload-box.uploaded {
-    border-color: #28a745;
-    background: #f8fff9;
-}
-
-.upload-text {
-    font-weight: 500;
-    color: #495057;
-    margin-bottom: 0.5rem;
-}
-
-.upload-divider {
-    text-align: center;
-    margin: 1rem 0;
-    position: relative;
-}
-
-.upload-divider::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: #dee2e6;
-}
-
-.upload-divider span {
-    background: #f8f9fa;
-    padding: 0 1rem;
-    color: #6c757d;
-    font-weight: 500;
-}
-
-.url-option {
-    margin-top: 1rem;
-}
-
-.url-option .input-group-text {
-    background: #e9ecef;
-    border-color: #ced4da;
-}
-
-.url-option .form-control {
-    border-left: none;
-}
-
-.url-option .form-control:focus {
-    border-color: #ced4da;
-    box-shadow: none;
-}
-
-/* Responsive Design */
 @@media (max-width: 768px) {
-    .media-upload-options {
-        padding: 1rem;
+    .story-create-header h1 {
+        font-size: 2rem;
     }
     
-    .upload-box {
+    .feature-card {
         padding: 1.5rem;
     }
 }
 </style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+            // Auto-generate description based on title
+    const titleInput = document.querySelector('input[name="Title"]');
+    const descriptionInput = document.querySelector('textarea[name="Description"]');
+    
+        titleInput.addEventListener('input', function() {
+                if (!descriptionInput.value.trim()) {
+                    descriptionInput.placeholder = `A story about ${this.value}...`;
+                }
+            });
+
+            // Form validation
+            const form = document.getElementById('create-story-form');
+            form.addEventListener('submit', function(e) {
+                const title = titleInput.value.trim();
+                if (!title) {
+                e.preventDefault();
+                    titleInput.focus();
+                    titleInput.classList.add('is-invalid');
+                    return false;
+        }
+    });
+});
+</script>
+}

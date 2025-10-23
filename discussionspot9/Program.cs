@@ -171,6 +171,7 @@ builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 
 // Story Generation Services
+builder.Services.AddScoped<PythonStoryEnhancerService>();
 builder.Services.AddScoped<IStoryGenerationService, StoryGenerationService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();

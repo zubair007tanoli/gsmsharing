@@ -7,9 +7,10 @@
 
 <!-- Story Viewer Container -->
 <div id="story-viewer" class="story-viewer-container">
-    <!-- Progress Bar -->
+    <!-- Enhanced Progress Bar -->
     <div class="story-progress">
         <div class="progress-bar" id="progress-bar"></div>
+        <div class="progress-indicators" id="progress-indicators"></div>
     </div>
 
     <!-- Story Content -->
@@ -55,43 +56,76 @@
         }
     </div>
 
-    <!-- Navigation Controls -->
+    <!-- Enhanced Navigation Controls -->
     <div class="story-controls">
-        <button class="control-btn prev-btn" id="prev-btn">
+        <button class="control-btn prev-btn" id="prev-btn" title="Previous Slide">
             <i class="fas fa-chevron-left"></i>
         </button>
         
         <div class="control-center">
-            <button class="control-btn play-pause-btn" id="play-pause-btn">
+            <button class="control-btn play-pause-btn" id="play-pause-btn" title="Play/Pause">
                 <i class="fas fa-play"></i>
             </button>
             <div class="slide-counter">
                 <span id="current-slide">1</span> / <span id="total-slides">@(Model.Slides?.Count ?? 0)</span>
             </div>
+            <div class="slide-timer">
+                <span id="slide-timer">0</span>s
+            </div>
         </div>
         
-        <button class="control-btn next-btn" id="next-btn">
+        <button class="control-btn next-btn" id="next-btn" title="Next Slide">
             <i class="fas fa-chevron-right"></i>
         </button>
     </div>
 
-    <!-- Story Info -->
+    <!-- Enhanced Story Info -->
     <div class="story-info">
         <div class="story-meta">
-            <h2 class="story-title">@Model.Title</h2>
+            <div class="story-header">
+                <h2 class="story-title">@Model.Title</h2>
+                <div class="story-actions">
+                    <button class="action-btn" id="share-btn" title="Share Story">
+                        <i class="fas fa-share"></i>
+                    </button>
+                    <button class="action-btn" id="like-btn" title="Like Story">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button class="action-btn" id="bookmark-btn" title="Bookmark Story">
+                        <i class="fas fa-bookmark"></i>
+                    </button>
+                </div>
+            </div>
             @if (!string.IsNullOrEmpty(Model.Description))
             {
                 <p class="story-description">@Model.Description</p>
             }
             <div class="story-author">
-                <span>By @(Model.User?.UserName ?? "Unknown")</span>
-                <span class="story-date">@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                <div class="author-info">
+                    <div class="author-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="author-details">
+                        <span class="author-name">@(Model.User?.UserName ?? "Unknown")</span>
+                        <span class="story-date">@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                    </div>
+                </div>
+                <div class="story-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-eye"></i>
+                        <span id="view-count">0</span>
+                    </span>
+                    <span class="stat-item">
+                        <i class="fas fa-heart"></i>
+                        <span id="like-count">0</span>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Close Button -->
-    <button class="close-btn" id="close-btn">
+    <!-- Enhanced Close Button -->
+    <button class="close-btn" id="close-btn" title="Close Story">
         <i class="fas fa-times"></i>
     </button>
 </div>
@@ -116,16 +150,41 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.3);
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
     z-index: 10000;
+    backdrop-filter: blur(10px);
 }
 
 .progress-bar {
     height: 100%;
-    background: #007bff;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     width: 0%;
     transition: width 0.1s linear;
+    border-radius: 0 3px 3px 0;
+}
+
+.progress-indicators {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10001;
+}
+
+.progress-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+.progress-indicator.active {
+    background: white;
+    transform: scale(1.2);
 }
 
 .story-content {
@@ -204,22 +263,33 @@
     align-items: center;
     gap: 2rem;
     z-index: 10000;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .control-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
     padding: 1rem;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .control-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
     transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .control-center {
@@ -232,9 +302,19 @@
 .slide-counter {
     color: white;
     font-size: 0.9rem;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     padding: 0.5rem 1rem;
     border-radius: 20px;
+    font-weight: 600;
+}
+
+.slide-timer {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    margin-top: 0.25rem;
 }
 
 .story-info {
@@ -244,24 +324,107 @@
     right: 2rem;
     z-index: 10000;
     color: white;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 1rem;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1.5rem;
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.story-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
 }
 
 .story-title {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin: 0;
+    flex: 1;
+}
+
+.story-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
 }
 
 .story-description {
     font-size: 1rem;
     opacity: 0.9;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
 }
 
 .story-author {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.author-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.author-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.author-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.story-date {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.story-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
     font-size: 0.9rem;
     opacity: 0.8;
 }
@@ -270,19 +433,26 @@
     position: absolute;
     top: 2rem;
     right: 2rem;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
     padding: 1rem;
     border-radius: 50%;
     cursor: pointer;
     z-index: 10000;
     transition: all 0.3s ease;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
 }
 
 .close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
     transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Mobile Responsive */
@@ -322,9 +492,20 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSlideIndex = 0;
     let isPlaying = true;
     let slideTimer = null;
+    let slideStartTime = null;
     let totalSlides = slides.length;
+    let viewCount = 0;
+    let likeCount = 0;
+    let isLiked = false;
+    let isBookmarked = false;
     
     totalSlidesSpan.textContent = totalSlides;
+    
+    // Initialize progress indicators
+    initializeProgressIndicators();
+    
+    // Initialize stats
+    updateStats();
     
     // Initialize
     showSlide(0);
@@ -345,6 +526,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update progress bar
             const progress = ((index + 1) / totalSlides) * 100;
             progressBar.style.width = progress + '%';
+            
+            // Update progress indicators
+            updateProgressIndicators();
+            
+            // Reset slide timer
+            slideStartTime = Date.now();
+            document.getElementById('slide-timer').textContent = '0';
+            
+            // Increment view count on first view
+            if (index === 0 && viewCount === 0) {
+                viewCount++;
+                updateStats();
+            }
         }
     }
     
@@ -483,6 +677,112 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize controls visibility
     showControls();
+    
+    // Initialize action buttons
+    initializeActionButtons();
+    
+    // Helper functions
+    function initializeProgressIndicators() {
+        const indicatorsContainer = document.getElementById('progress-indicators');
+        if (!indicatorsContainer) return;
+        
+        indicatorsContainer.innerHTML = '';
+        for (let i = 0; i < totalSlides; i++) {
+            const indicator = document.createElement('div');
+            indicator.className = 'progress-indicator';
+            if (i === 0) indicator.classList.add('active');
+            indicatorsContainer.appendChild(indicator);
+        }
+    }
+    
+    function updateProgressIndicators() {
+        const indicators = document.querySelectorAll('.progress-indicator');
+        indicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === currentSlideIndex);
+        });
+    }
+    
+    function updateStats() {
+        document.getElementById('view-count').textContent = viewCount;
+        document.getElementById('like-count').textContent = likeCount;
+    }
+    
+    function initializeActionButtons() {
+        // Share button
+        document.getElementById('share-btn')?.addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: document.querySelector('.story-title').textContent,
+                    text: document.querySelector('.story-description')?.textContent || '',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback to copying URL
+                navigator.clipboard.writeText(window.location.href);
+                showNotification('Link copied to clipboard!');
+            }
+        });
+        
+        // Like button
+        document.getElementById('like-btn')?.addEventListener('click', () => {
+            isLiked = !isLiked;
+            likeCount += isLiked ? 1 : -1;
+            updateStats();
+            
+            const likeBtn = document.getElementById('like-btn');
+            likeBtn.style.color = isLiked ? '#ff6b6b' : 'white';
+            likeBtn.style.transform = isLiked ? 'scale(1.2)' : 'scale(1)';
+            
+            showNotification(isLiked ? 'Story liked!' : 'Story unliked!');
+        });
+        
+        // Bookmark button
+        document.getElementById('bookmark-btn')?.addEventListener('click', () => {
+            isBookmarked = !isBookmarked;
+            
+            const bookmarkBtn = document.getElementById('bookmark-btn');
+            bookmarkBtn.style.color = isBookmarked ? '#ffd700' : 'white';
+            bookmarkBtn.style.transform = isBookmarked ? 'scale(1.2)' : 'scale(1)';
+            
+            showNotification(isBookmarked ? 'Story bookmarked!' : 'Story unbookmarked!');
+        });
+    }
+    
+    function showNotification(message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            z-index: 10001;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+    
+    function updateSlideTimer() {
+        if (slideStartTime) {
+            const elapsed = Math.floor((Date.now() - slideStartTime) / 1000);
+            document.getElementById('slide-timer').textContent = elapsed;
+        }
+    }
+    
+    // Update timer every second
+    setInterval(updateSlideTimer, 1000);
 });
 </script>
 

@@ -16,15 +16,18 @@ namespace discussionspot9.Services
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly ILogger<StoryGenerationService> _logger;
         private readonly IBackgroundTaskQueue _taskQueue;
+        private readonly PythonStoryEnhancerService _pythonEnhancer;
 
         public StoryGenerationService(
             IDbContextFactory<ApplicationDbContext> contextFactory,
             ILogger<StoryGenerationService> logger,
-            IBackgroundTaskQueue taskQueue)
+            IBackgroundTaskQueue taskQueue,
+            PythonStoryEnhancerService pythonEnhancer)
         {
             _contextFactory = contextFactory;
             _logger = logger;
             _taskQueue = taskQueue;
+            _pythonEnhancer = pythonEnhancer;
         }
 
         public async Task QueueStoryGenerationAsync(int postId, StoryGenerationOptions options)
@@ -72,10 +75,10 @@ namespace discussionspot9.Services
                 {
                     _logger.LogInformation($"Story created successfully for post {postId} with ID {story.StoryId}");
                     
-                    // Try to enhance with AI if enabled
+                    // Try to enhance with Python AI if enabled
                     if (options.UseAI)
                     {
-                        await EnhanceStoryWithAIAsync(story, post, options, context);
+                        await EnhanceStoryWithPythonAIAsync(story, post, options, context);
                     }
                 }
             }
@@ -367,64 +370,186 @@ namespace discussionspot9.Services
             };
         }
 
-        private async Task EnhanceStoryWithAIAsync(Story story, Post post, StoryGenerationOptions options, ApplicationDbContext context)
+        private async Task EnhanceStoryWithPythonAIAsync(Story story, Post post, StoryGenerationOptions options, ApplicationDbContext context)
         {
             try
             {
-                _logger.LogInformation($"Enhancing story {story.StoryId} with AI");
-
-                // Prepare request data for Python script
-                var requestData = new
-                {
-                    post_id = post.PostId,
-                    title = post.Title,
-                    content = post.Content ?? "",
-                    post_type = post.PostType,
-                    style = options.Style,
-                    length = options.Length,
-                    keywords = options.Keywords,
-                    media_urls = post.Media?.Select(m => m.Url).ToList() ?? new List<string>()
-                };
-
-                // Call Python script
-                var pythonScript = Path.Combine(Directory.GetCurrentDirectory(), "Scripts", "story_generator.py");
-                var requestJson = System.Text.Json.JsonSerializer.Serialize(requestData);
+                _logger.LogInformation($"Enhancing story {story.StoryId} with Python AI");
                 
-                var processInfo = new System.Diagnostics.ProcessStartInfo
+                // Check if Python is available
+                if (!await _pythonEnhancer.IsPythonAvailableAsync())
                 {
-                    FileName = "python",
-                    Arguments = $"\"{pythonScript}\" \"{requestJson}\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
+                    _logger.LogWarning("Python is not available, falling back to basic enhancement");
+                    await EnhanceStoryWithBasicAIAsync(story, post, options, context);
+                    return;
+                }
+
+                if (!await _pythonEnhancer.IsScriptAvailableAsync())
+                {
+                    _logger.LogWarning("Python script is not available, falling back to basic enhancement");
+                    await EnhanceStoryWithBasicAIAsync(story, post, options, context);
+                    return;
+                }
+
+                // Prepare content for Python enhancement
+                var contentInput = new StoryContentInput
+                {
+                    Title = post.Title,
+                    Content = post.Content ?? "",
+                    PostType = post.PostType,
+                    Tags = post.PostTags?.Select(pt => pt.Tag?.Name).Where(t => !string.IsNullOrEmpty(t)).ToList() ?? new List<string>(),
+                    MediaUrls = post.Media?.Select(m => m.Url).ToList() ?? new List<string>(),
+                    CommunityName = post.Community?.Title ?? "",
+                    AuthorName = post.UserProfile?.DisplayName ?? post.User?.UserName ?? "Unknown"
                 };
 
-                using var process = System.Diagnostics.Process.Start(processInfo);
-                if (process != null)
+                var optionsInput = new StoryOptionsInput
                 {
-                    var output = await process.StandardOutput.ReadToEndAsync();
-                    var error = await process.StandardError.ReadToEndAsync();
-                    await process.WaitForExitAsync();
+                    Style = options.Style,
+                    Length = options.Length,
+                    UseAI = options.UseAI,
+                    Keywords = options.Keywords,
+                    AutoGenerate = options.AutoGenerate
+                };
 
-                    if (process.ExitCode == 0)
+                // Get enhanced slides from Python
+                var enhancedSlides = await _pythonEnhancer.EnhanceStoryAsync(contentInput, optionsInput);
+
+                // Clear existing slides
+                var existingSlides = await context.StorySlides
+                    .Where(s => s.StoryId == story.StoryId)
+                    .ToListAsync();
+                context.StorySlides.RemoveRange(existingSlides);
+
+                // Add enhanced slides
+                foreach (var slideData in enhancedSlides)
+                {
+                    var slide = new StorySlide
                     {
-                        var response = System.Text.Json.JsonSerializer.Deserialize<AIStoryResponse>(output);
-                        if (response?.Success == true && response.Slides?.Any() == true)
-                        {
-                            await UpdateStoryWithAIContentAsync(story, response.Slides, context);
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"Python script failed: {error}");
-                    }
+                        StoryId = story.StoryId,
+                        OrderIndex = slideData.OrderIndex,
+                        SlideType = slideData.SlideType,
+                        Headline = slideData.Headline,
+                        Text = slideData.Text,
+                        Caption = slideData.Caption,
+                        BackgroundColor = slideData.BackgroundColor,
+                        TextColor = slideData.TextColor,
+                        Alignment = slideData.Alignment,
+                        FontSize = slideData.FontSize,
+                        Duration = slideData.Duration,
+                        MediaUrl = slideData.MediaUrl,
+                        MediaType = slideData.MediaType
+                    };
+                    context.StorySlides.Add(slide);
                 }
+
+                await context.SaveChangesAsync();
+                _logger.LogInformation($"Python AI enhancement completed for story {story.StoryId} with {enhancedSlides.Count} slides");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error enhancing story {story.StoryId} with AI");
+                _logger.LogError(ex, $"Error enhancing story {story.StoryId} with Python AI, falling back to basic enhancement");
+                await EnhanceStoryWithBasicAIAsync(story, post, options, context);
             }
+        }
+
+        private async Task EnhanceStoryWithBasicAIAsync(Story story, Post post, StoryGenerationOptions options, ApplicationDbContext context)
+        {
+            try
+            {
+                _logger.LogInformation($"Enhancing story {story.StoryId} with basic AI");
+                
+                // Get existing slides
+                var existingSlides = await context.StorySlides
+                    .Where(s => s.StoryId == story.StoryId)
+                    .OrderBy(s => s.OrderIndex)
+                    .ToListAsync();
+
+                if (!existingSlides.Any())
+                {
+                    _logger.LogWarning($"No slides found for story {story.StoryId}");
+                    return;
+                }
+
+                // Basic AI enhancement logic
+                foreach (var slide in existingSlides)
+                {
+                    // Enhance headline
+                    slide.Headline = EnhanceHeadline(slide.Headline, options.Style);
+                    
+                    // Enhance text
+                    slide.Text = EnhanceText(slide.Text, options.Style);
+                    
+                    // Optimize colors
+                    OptimizeColors(slide, options.Style);
+                    
+                    // Adjust duration based on content
+                    slide.Duration = CalculateOptimalDuration(slide.Text, slide.Duration);
+                }
+
+                await context.SaveChangesAsync();
+                _logger.LogInformation($"Basic AI enhancement completed for story {story.StoryId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error enhancing story {story.StoryId} with basic AI");
+            }
+        }
+
+        private string EnhanceHeadline(string headline, string style)
+        {
+            if (string.IsNullOrEmpty(headline)) return headline;
+            
+            return style switch
+            {
+                "engaging" => headline.StartsWith("Did you know") ? headline : $"Did you know: {headline}",
+                "educational" => headline.StartsWith("Learn") ? headline : $"Learn: {headline}",
+                "entertaining" => headline.Contains("🎉") ? headline : $"🎉 {headline}",
+                _ => headline
+            };
+        }
+
+        private string EnhanceText(string text, string style)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            
+            // Simple text enhancement based on style
+            return style switch
+            {
+                "engaging" => text.EndsWith("?") ? text : $"{text}?",
+                "educational" => text.StartsWith("Step") ? text : $"Step: {text}",
+                _ => text
+            };
+        }
+
+        private void OptimizeColors(StorySlide slide, string style)
+        {
+            // Basic color optimization
+            if (string.IsNullOrEmpty(slide.BackgroundColor))
+            {
+                slide.BackgroundColor = style switch
+                {
+                    "engaging" => "#ff6b6b",
+                    "educational" => "#4ecdc4",
+                    "entertaining" => "#ff9a9e",
+                    _ => "#667eea"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(slide.TextColor))
+            {
+                slide.TextColor = "#ffffff";
+            }
+        }
+
+        private int CalculateOptimalDuration(string text, int currentDuration)
+        {
+            if (string.IsNullOrEmpty(text)) return currentDuration;
+            
+            var wordCount = text.Split(' ').Length;
+            // Base duration: 3 seconds + 0.1 seconds per word, max 8 seconds
+            var optimalDuration = Math.Max(3000, Math.Min(8000, 3000 + wordCount * 100));
+            return optimalDuration;
         }
 
         private async Task UpdateStoryWithAIContentAsync(Story story, List<AISlide> aiSlides, ApplicationDbContext context)

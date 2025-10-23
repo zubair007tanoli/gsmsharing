@@ -1075,6 +1075,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         initializeEventListeners();
         loadCommunityData();
+        loadPersistedCommunitySelection();
     });
 
     function initializeEventListeners() {
@@ -1155,6 +1156,32 @@
          window.allCommunities = [...userCommunities];
     }
 
+    function loadPersistedCommunitySelection() {
+        try {
+            const stored = localStorage.getItem('selectedCommunity');
+            if (stored) {
+                const community = JSON.parse(stored);
+                selectedCommunity = community;
+                
+                // Update form fields
+                document.getElementById('communityId').value = community.id;
+                document.getElementById('communityName').value = community.name;
+                document.getElementById('communitySlug').value = community.slug;
+                document.getElementById('communitySearch').value = `r/${community.title}`;
+                
+                // Update page title
+                const pageTitle = document.querySelector('.card-header h1');
+                if (pageTitle) {
+                    pageTitle.textContent = `Create a Post in r/${community.title}`;
+                }
+                
+                console.log('Restored community selection:', community.title);
+            }
+        } catch (ex) {
+            console.warn('Failed to load persisted community selection:', ex);
+        }
+    }
+
     function loadCommunityDropdown() {
         const dropdown = document.getElementById('communityDropdown');
         const searchTerm = document.getElementById('communitySearch').value.toLowerCase();
@@ -1210,11 +1237,21 @@
             title: communityTitle
         };
 
+        // Update all form fields
         document.getElementById('communityId').value = communityId;
         document.getElementById('communityName').value = communityName;
         document.getElementById('communitySlug').value = communitySlug;
         document.getElementById('communitySearch').value = `r/${communityTitle}`;
         document.getElementById('communityDropdown').style.display = 'none';
+
+        // Update the page title to show selected community
+        const pageTitle = document.querySelector('.card-header h1');
+        if (pageTitle) {
+            pageTitle.textContent = `Create a Post in r/${communityTitle}`;
+        }
+
+        // Store in localStorage for persistence
+        localStorage.setItem('selectedCommunity', JSON.stringify(selectedCommunity));
 
         showStatus('success', `Selected ${communityTitle}`);
     }
