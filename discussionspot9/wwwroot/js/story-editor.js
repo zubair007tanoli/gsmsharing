@@ -26,8 +26,55 @@
         init() {
             console.log('Initializing Story Editor...');
             this.bindAllEvents();
-            this.addInitialSlide();
+            
+            // Load existing story data if available
+            const storyDataElement = document.getElementById('story-data');
+            if (storyDataElement && storyDataElement.textContent) {
+                try {
+                    const storyData = JSON.parse(storyDataElement.textContent);
+                    if (storyData && storyData.Slides && storyData.Slides.length > 0) {
+                        console.log('Loading existing story with', storyData.Slides.length, 'slides');
+                        this.loadExistingStory(storyData);
+                    } else {
+                        this.addInitialSlide();
+                    }
+                } catch (e) {
+                    console.error('Error parsing story data:', e);
+                    this.addInitialSlide();
+                }
+            } else {
+                this.addInitialSlide();
+            }
+            
             console.log('Story Editor Initialized Successfully');
+        }
+        
+        loadExistingStory(storyData) {
+            // Populate title
+            if (storyData.Title) {
+                const titleInput = document.getElementById('story-title');
+                if (titleInput) titleInput.value = storyData.Title;
+            }
+            
+            // Convert slides to editor format
+            this.slides = storyData.Slides.map((slide, index) => ({
+                id: 'slide-' + slide.StorySlideId,
+                backgroundColor: slide.BackgroundColor || '#667eea',
+                backgroundType: 'color',
+                duration: slide.Duration / 1000 || 5,
+                transition: 'fade',
+                elements: [],
+                // Store original data for reference
+                originalData: slide
+            }));
+            
+            if (this.slides.length > 0) {
+                this.currentSlideIndex = 0;
+                this.selectedSlide = this.slides[0];
+                this.updateUI();
+            } else {
+                this.addInitialSlide();
+            }
         }
         
         bindAllEvents() {
@@ -48,6 +95,17 @@
             document.getElementById('duplicate-slide-btn')?.addEventListener('click', () => this.duplicateSlide());
             document.getElementById('delete-slide-btn')?.addEventListener('click', () => this.deleteSlide());
             
+            // AI Suggestions
+            document.getElementById('ai-suggest-btn')?.addEventListener('click', () => this.getAISuggestions());
+            
+            // Templates
+            document.querySelectorAll('.template-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const template = e.currentTarget.dataset.template;
+                    this.applyTemplate(template);
+                });
+            });
+            
             // Add element buttons
             document.getElementById('add-text-btn')?.addEventListener('click', () => {
                 console.log('Add text clicked');
@@ -57,6 +115,8 @@
             document.getElementById('add-image-btn')?.addEventListener('click', () => this.addImageElement());
             document.getElementById('add-shape-btn')?.addEventListener('click', () => this.addShapeElement());
             document.getElementById('add-sticker-btn')?.addEventListener('click', () => this.addStickerElement());
+            document.getElementById('add-poll-btn')?.addEventListener('click', () => this.addPollElement());
+            document.getElementById('add-quote-btn')?.addEventListener('click', () => this.addQuoteElement());
             
             // Background controls
             const bgType = document.getElementById('bg-type');
@@ -779,6 +839,174 @@
             
             console.log('Publishing story:', storyData);
             alert('Story published successfully! (Server integration pending)');
+        }
+
+        // AI Suggestions
+        async getAISuggestions() {
+            const suggestionsContainer = document.getElementById('ai-suggestions');
+            if (!suggestionsContainer) return;
+            
+            // Show loading
+            suggestionsContainer.innerHTML = '<div class="text-center text-muted small">Loading AI suggestions...</div>';
+            
+            // Simulate AI suggestions (replace with actual API call)
+            setTimeout(() => {
+                const suggestions = [
+                    { text: 'Add a compelling headline', type: 'heading' },
+                    { text: 'Include a call-to-action', type: 'text' },
+                    { text: 'Use gradient background', type: 'background' },
+                    { text: 'Add animated elements', type: 'effect' }
+                ];
+                
+                suggestionsContainer.innerHTML = suggestions.map(s => 
+                    `<div class="ai-suggestion-item" data-type="${s.type}">
+                        <i class="fas fa-lightbulb me-2"></i>${s.text}
+                    </div>`
+                ).join('');
+                
+                // Add click handlers
+                suggestionsContainer.querySelectorAll('.ai-suggestion-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        this.applyAISuggestion(item.dataset.type);
+                    });
+                });
+            }, 500);
+        }
+
+        applyAISuggestion(type) {
+            switch(type) {
+                case 'heading':
+                    this.addHeadingElement();
+                    break;
+                case 'text':
+                    this.addTextElement();
+                    break;
+                case 'background':
+                    if (this.selectedSlide) {
+                        this.selectedSlide.backgroundColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        this.selectedSlide.backgroundType = 'gradient';
+                        this.updateCanvas();
+                    }
+                    break;
+                case 'effect':
+                    alert('Animation effects coming soon!');
+                    break;
+            }
+        }
+
+        // Templates
+        applyTemplate(templateName) {
+            if (!this.selectedSlide) return;
+            
+            const templates = {
+                minimal: {
+                    backgroundColor: '#ffffff',
+                    backgroundType: 'color',
+                    elements: []
+                },
+                bold: {
+                    backgroundColor: '#000000',
+                    backgroundType: 'color',
+                    elements: [{
+                        id: 'element-' + (++this.elementIdCounter),
+                        type: 'text',
+                        text: 'BOLD STATEMENT',
+                        x: 20,
+                        y: 250,
+                        width: 320,
+                        height: 60,
+                        fontSize: '42px',
+                        fontFamily: 'Impact, sans-serif',
+                        fontWeight: '900',
+                        color: '#ffffff',
+                        textAlign: 'center',
+                        zIndex: 1
+                    }]
+                },
+                gradient: {
+                    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundType: 'gradient',
+                    elements: []
+                },
+                modern: {
+                    backgroundColor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    backgroundType: 'gradient',
+                    elements: [{
+                        id: 'element-' + (++this.elementIdCounter),
+                        type: 'text',
+                        text: 'Modern Design',
+                        x: 20,
+                        y: 280,
+                        width: 320,
+                        height: 60,
+                        fontSize: '36px',
+                        fontFamily: 'Arial, sans-serif',
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        textAlign: 'center',
+                        textShadow: '2px 2px 8px rgba(0,0,0,0.5)',
+                        zIndex: 1
+                    }]
+                }
+            };
+            
+            const template = templates[templateName];
+            if (template) {
+                this.selectedSlide.backgroundColor = template.backgroundColor;
+                this.selectedSlide.backgroundType = template.backgroundType;
+                this.selectedSlide.elements = template.elements.map(el => ({...el}));
+                this.updateCanvas();
+                this.saveHistory();
+            }
+        }
+
+        // New element types
+        addPollElement() {
+            if (!this.selectedSlide) return;
+            
+            const element = {
+                id: 'element-' + (++this.elementIdCounter),
+                type: 'poll',
+                question: 'What do you think?',
+                options: ['Option 1', 'Option 2'],
+                x: 30,
+                y: 200,
+                width: 300,
+                height: 150,
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                opacity: 1,
+                zIndex: this.selectedSlide.elements.length
+            };
+            
+            this.selectedSlide.elements.push(element);
+            this.updateCanvas();
+            this.saveHistory();
+        }
+
+        addQuoteElement() {
+            if (!this.selectedSlide) return;
+            
+            const element = {
+                id: 'element-' + (++this.elementIdCounter),
+                type: 'text',
+                text: '"Your inspirational quote here"',
+                x: 40,
+                y: 220,
+                width: 280,
+                height: 100,
+                fontSize: '24px',
+                fontFamily: 'Georgia, serif',
+                fontWeight: '400',
+                fontStyle: 'italic',
+                color: '#ffffff',
+                textAlign: 'center',
+                opacity: 1,
+                zIndex: this.selectedSlide.elements.length
+            };
+            
+            this.selectedSlide.elements.push(element);
+            this.updateCanvas();
+            this.saveHistory();
         }
     }
     

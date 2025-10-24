@@ -1,0 +1,128 @@
+@if (User.IsInRole("Admin"))
+{
+<style>
+    .admin-navbar {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-bottom: 3px solid #0f3460;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .admin-navbar .navbar-brand {
+        color: #00d4ff !important;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+    
+    .admin-navbar .nav-link {
+        color: #e0e0e0 !important;
+        padding: 0.75rem 1rem !important;
+        transition: all 0.3s ease;
+        border-radius: 6px;
+        margin: 0 0.25rem;
+    }
+    
+    .admin-navbar .nav-link:hover {
+        background: rgba(0, 212, 255, 0.1);
+        color: #00d4ff !important;
+        transform: translateY(-2px);
+    }
+    
+    .admin-navbar .nav-link.active {
+        background: rgba(0, 212, 255, 0.2);
+        color: #00d4ff !important;
+        border-bottom: 2px solid #00d4ff;
+    }
+    
+    .admin-navbar .badge {
+        background: #ff6b6b;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    @@media (max-width: 768px) {
+        .admin-navbar .nav-link {
+            padding: 0.5rem !important;
+            font-size: 0.9rem;
+        }
+        
+        .admin-navbar .nav-link span {
+            display: none;
+        }
+    }
+</style>
+
+<nav class="navbar navbar-expand-lg admin-navbar sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/admin">
+            <i class="fas fa-shield-alt me-2"></i>Admin Dashboard
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="adminNavbarContent">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "SeoAdmin" && ViewContext.RouteData.Values["Action"]?.ToString() == "Dashboard" ? "active" : "")" href="/admin">
+                        <i class="fas fa-chart-line me-1"></i><span>SEO Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminManagement" && ViewContext.RouteData.Values["Action"]?.ToString() == "Users" ? "active" : "")" href="/admin/manage/users">
+                        <i class="fas fa-users me-1"></i><span>Users</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "AdminManagement" && ViewContext.RouteData.Values["Action"]?.ToString() == "Posts" ? "active" : "")" href="/admin/manage/posts">
+                        <i class="fas fa-newspaper me-1"></i><span>Posts</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "SeoAdmin" && ViewContext.RouteData.Values["Action"]?.ToString() == "Revenue" ? "active" : "")" href="/admin/revenue">
+                        <i class="fas fa-dollar-sign me-1"></i><span>Revenue</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "SeoAdmin" && ViewContext.RouteData.Values["Action"]?.ToString() == "OptimizationQueue" ? "active" : "")" href="/admin/optimization-queue">
+                        <i class="fas fa-tasks me-1"></i><span>SEO Queue</span>
+                        <span class="badge rounded-pill ms-1">5</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "SeoAdmin" && ViewContext.RouteData.Values["Action"]?.ToString() == "TrendingQueries" ? "active" : "")" href="/admin/trending-queries">
+                        <i class="fas fa-trending-up me-1"></i><span>Trending</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "SeoAdmin" && ViewContext.RouteData.Values["Action"]?.ToString() == "ImageSeo" ? "active" : "")" href="/admin/image-seo">
+                        <i class="fas fa-images me-1"></i><span>Image SEO</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="d-flex align-items-center">
+                <a href="/" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fas fa-home me-1"></i><span>Home</span>
+                </a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-shield me-1"></i>Admin
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/admin"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>
+                        <li><a class="dropdown-item" href="/admin/settings"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/"><i class="fas fa-arrow-left me-2"></i>Back to Site</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+}
+

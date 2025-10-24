@@ -48,14 +48,14 @@ namespace discussionspot9.Controllers
                 .Select(s => new StoryViewModel
                 {
                     StoryId = s.StoryId,
-                    Title = s.Title,
-                    Slug = s.Slug,
-                    Description = s.Description,
-                    Status = s.Status,
+                    Title = s.Title ?? "",
+                    Slug = s.Slug ?? "",
+                    Description = s.Description ?? "",
+                    Status = s.Status ?? "",
                     CreatedAt = s.CreatedAt,
                     UpdatedAt = s.UpdatedAt,
-                    PostTitle = s.Title,
-                    PostSlug = s.Slug,
+                    PostTitle = s.Title ?? "",
+                    PostSlug = s.Slug ?? "",
                     CommunityName = s.Community != null ? s.Community.Title : "",
                     CommunitySlug = s.Community != null ? s.Community.Slug : "",
                     SlideCount = s.Slides.Count
@@ -78,7 +78,7 @@ namespace discussionspot9.Controllers
         }
 
         [HttpGet]
-        [Route("stories/{storySlug}")]
+        [Route("stories/details/{storySlug}")]
         public async Task<IActionResult> Details(string storySlug)
         {
             var story = await _context.Stories
@@ -100,14 +100,14 @@ namespace discussionspot9.Controllers
             var model = new StoryDetailViewModel
             {
                 StoryId = story.StoryId,
-                Title = story.Title,
-                Slug = story.Slug,
-                Description = story.Description,
-                Status = story.Status,
+                Title = story.Title ?? "",
+                Slug = story.Slug ?? "",
+                Description = story.Description ?? "",
+                Status = story.Status ?? "",
                 CreatedAt = story.CreatedAt,
                 UpdatedAt = story.UpdatedAt,
-                PostTitle = story.Title,
-                PostSlug = story.Slug,
+                PostTitle = story.Title ?? "",
+                PostSlug = story.Slug ?? "",
                 CommunityName = story.Community?.Title ?? "",
                 CommunitySlug = story.Community?.Slug ?? "",
                 Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideViewModel
@@ -117,7 +117,7 @@ namespace discussionspot9.Controllers
                     Content = s.Text ?? "",
                     ImageUrl = s.MediaUrl ?? "",
                     SlideOrder = s.OrderIndex,
-                    SlideType = s.SlideType
+                    SlideType = s.SlideType ?? ""
                 }).ToList()
             };
 
@@ -146,9 +146,9 @@ namespace discussionspot9.Controllers
             var model = new StoryEditViewModel
             {
                 StoryId = story.StoryId,
-                Title = story.Title,
-                Description = story.Description,
-                Status = story.Status,
+                Title = story.Title ?? "",
+                Description = story.Description ?? "",
+                Status = story.Status ?? "",
                 Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideEditViewModel
                 {
                     SlideId = s.StorySlideId,
@@ -156,7 +156,7 @@ namespace discussionspot9.Controllers
                     Content = s.Text ?? "",
                     ImageUrl = s.MediaUrl ?? "",
                     SlideOrder = s.OrderIndex,
-                    SlideType = s.SlideType
+                    SlideType = s.SlideType ?? ""
                 }).ToList()
             };
 
@@ -354,21 +354,55 @@ namespace discussionspot9.Controllers
         }
 
         [HttpGet]
-        [Route("stories/editor")]
-        public IActionResult Editor(int? id = null)
+        [Route("stories/editor/{id?}")]
+        public async Task<IActionResult> Editor(int? id = null)
         {
-            var model = new CreateStoryViewModel();
             if (id.HasValue)
             {
                 // Load existing story if ID provided
-                var story = _context.Stories.Find(id.Value);
-                if (story != null)
+                var story = await _context.Stories
+                    .Include(s => s.Slides)
+                    .Include(s => s.Community)
+                    .FirstOrDefaultAsync(s => s.StoryId == id.Value);
+                
+                if (story == null)
                 {
-                    model.Title = story.Title;
-                    model.Description = story.Description;
+                    return NotFound();
                 }
+
+                var editModel = new StoryEditViewModel
+                {
+                    StoryId = story.StoryId,
+                    Title = story.Title ?? "",
+                    Description = story.Description ?? "",
+                    Status = story.Status ?? "",
+                    Slides = story.Slides.Select(s => new StorySlideEditViewModel
+                    {
+                        StorySlideId = s.StorySlideId,
+                        Headline = s.Headline ?? "",
+                        Text = s.Text ?? "",
+                        MediaUrl = s.MediaUrl ?? "",
+                        MediaType = s.MediaType ?? "",
+                        OrderIndex = s.OrderIndex,
+                        BackgroundColor = s.BackgroundColor ?? "#000000",
+                        TextColor = s.TextColor ?? "#FFFFFF",
+                        Duration = s.Duration
+                    }).OrderBy(s => s.OrderIndex).ToList()
+                };
+
+                return View("Editor", editModel);
             }
-            return View(model);
+
+            // No ID provided, return empty editor for new story
+            var model = new StoryEditViewModel
+            {
+                StoryId = 0,
+                Title = "",
+                Description = "",
+                Status = "draft",
+                Slides = new List<StorySlideEditViewModel>()
+            };
+            return View("Editor", model);
         }
 
         [HttpGet]
@@ -412,21 +446,6 @@ namespace discussionspot9.Controllers
             return View(story);
         }
 
-        [HttpGet]
-        [Route("stories/{slug}")]
-        public async Task<IActionResult> ViewStory(string slug)
-        {
-            var story = await _context.Stories
-                .Include(s => s.Slides)
-                .Include(s => s.User)
-                .FirstOrDefaultAsync(s => s.Slug == slug);
-
-            if (story == null)
-            {
-                return NotFound();
-            }
-
-            return View(story);
-        }
+        // ViewStory removed - using Viewer action instead to avoid duplicate routes
     }
 }

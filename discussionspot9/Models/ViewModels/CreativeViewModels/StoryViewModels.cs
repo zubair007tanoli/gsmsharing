@@ -53,12 +53,21 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
 
     public class StorySlideEditViewModel
     {
+        public int StorySlideId { get; set; }
         public int SlideId { get; set; }
+        public string Headline { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }
+        public int OrderIndex { get; set; }
+        public int SlideOrder { get; set; }
+        public string SlideType { get; set; } = string.Empty;
+        public string? BackgroundColor { get; set; }
+        public string? TextColor { get; set; }
+        public int Duration { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
-        public int SlideOrder { get; set; }
-        public string SlideType { get; set; } = string.Empty;
     }
 
     public class StoriesIndexViewModel

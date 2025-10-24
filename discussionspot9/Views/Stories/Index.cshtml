@@ -11,7 +11,7 @@
             <div class="col-12">
                 <div class="stories-header">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div class="header-content">
+        <div class="header-content">
                             <h1 class="display-5 fw-bold text-primary">
                                 <i class="fas fa-book-open me-3"></i>My Stories
                             </h1>
@@ -25,16 +25,16 @@
                             <a href="/stories/create" class="btn btn-primary btn-lg">
                                 <i class="fas fa-plus me-2"></i>Create Story
                             </a>
-                        </div>
-                    </div>
-                </div>
+        </div>
+    </div>
+</div>
 
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     @TempData["SuccessMessage"]
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+    </div>
             }
 
             @if (TempData["ErrorMessage"] != null)
@@ -42,8 +42,8 @@
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     @TempData["ErrorMessage"]
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
+                            </div>
+                        }
 
             @if (Model.Stories.Any())
             {
@@ -61,25 +61,25 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="story-overlay">
+                        <div class="story-overlay">
                                         <div class="story-actions">
                                             <a href="/stories/viewer/@story.Slug" class="btn btn-light btn-sm play-btn">
-                                                <i class="fas fa-play"></i>
+                                <i class="fas fa-play"></i>
                                             </a>
-                                            <a href="/stories/@story.Slug" class="btn btn-outline-light btn-sm">
+                                            <a href="/stories/details/@story.Slug" class="btn btn-outline-light btn-sm">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </div>
                                         <div class="story-status">
                                             <span class="badge bg-@(story.Status == "published" ? "success" : "warning")">@story.Status</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
+                    </div>
                                 
-                                <div class="story-content">
+                    <div class="story-content">
                                     <div class="story-header">
                                         <h5 class="story-title">@story.Title</h5>
-                                        <div class="story-meta">
+                        <div class="story-meta">
                                             <span class="meta-item">
                                                 <i class="fas fa-images"></i>
                                                 @story.SlideCount slides
@@ -88,8 +88,8 @@
                                                 <i class="fas fa-clock"></i>
                                                 @story.CreatedAt.ToString("MMM dd, yyyy")
                                             </span>
-                                        </div>
-                                    </div>
+                                </div>
+                            </div>
                                     
                                     <p class="story-description">@(story.Description ?? "No description available")</p>
                                     
@@ -97,6 +97,9 @@
                                         <div class="story-actions-full">
                                             <a href="/stories/viewer/@story.Slug" class="btn btn-primary btn-sm">
                                                 <i class="fas fa-play me-1"></i>View Story
+                                            </a>
+                                            <a href="/stories/editor/@story.StoryId" class="btn btn-success btn-sm">
+                                                <i class="fas fa-palette me-1"></i>Visual Editor
                                             </a>
                                             <a href="/stories/edit/@story.StoryId" class="btn btn-outline-secondary btn-sm">
                                                 <i class="fas fa-edit me-1"></i>Edit
@@ -106,7 +109,7 @@
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="/stories/@story.Slug"><i class="fas fa-info-circle me-2"></i>Details</a></li>
+                                                    <li><a class="dropdown-item" href="/stories/details/@story.Slug"><i class="fas fa-info-circle me-2"></i>Details</a></li>
                                                     <li><a class="dropdown-item" href="/stories/amp/@story.Slug"><i class="fas fa-mobile-alt me-2"></i>AMP Version</a></li>
                                                     <li><hr class="dropdown-divider"></li>
                                                     <li>
@@ -118,12 +121,12 @@
                                                         </form>
                                                     </li>
                                                 </ul>
-                                            </div>
-                                        </div>
-                                    </div>
+                                </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
                     }
                 </div>
 
@@ -154,10 +157,10 @@
                             }
                         </ul>
                     </nav>
-                }
             }
-            else
-            {
+        }
+        else
+        {
                 <div class="empty-state">
                     <div class="empty-state-content">
                         <div class="empty-state-icon">
@@ -177,8 +180,8 @@
                             </a>
                         </div>
                     </div>
-                </div>
-            }
+            </div>
+        }
         </div>
     </div>
 </div>
@@ -226,28 +229,35 @@
 
     .story-card-wrapper {
         perspective: 1000px;
-    }
+}
 
-    .story-card {
-        background: white;
+.story-card {
+    background: white;
         border-radius: 20px;
-        overflow: hidden;
+    overflow: hidden;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
         height: 100%;
         display: flex;
         flex-direction: column;
+}
+
+.story-card:hover {
+        transform: translateY(-15px) scale(1.02);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        animation: cardFloat 0.6s ease-out;
     }
 
-    .story-card:hover {
-        transform: translateY(-10px) rotateX(5deg);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    @@keyframes cardFloat {
+        0% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-10px) scale(1.02); }
+        100% { transform: translateY(-15px) scale(1.02); }
     }
 
     .story-thumbnail {
-        position: relative;
-        height: 200px;
-        overflow: hidden;
+    position: relative;
+    height: 200px;
+    overflow: hidden;
     }
 
     .story-preview {
@@ -257,8 +267,8 @@
     }
 
     .preview-slide {
-        width: 100%;
-        height: 100%;
+    width: 100%;
+    height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -283,25 +293,25 @@
         font-size: 0.9rem;
         opacity: 0.9;
         margin: 0;
-    }
+}
 
-    .story-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+.story-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
         background: rgba(0,0,0,0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
         opacity: 0;
         transition: opacity 0.3s ease;
-    }
+}
 
-    .story-card:hover .story-overlay {
-        opacity: 1;
-    }
+.story-card:hover .story-overlay {
+    opacity: 1;
+}
 
     .story-actions {
         display: flex;
@@ -309,22 +319,22 @@
     }
 
     .play-btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
         font-size: 1.2rem;
     }
 
     .story-status {
-        position: absolute;
+    position: absolute;
         top: 1rem;
         right: 1rem;
-    }
+}
 
-    .story-content {
+.story-content {
         padding: 1.5rem;
         flex: 1;
         display: flex;
@@ -333,33 +343,49 @@
 
     .story-header {
         margin-bottom: 1rem;
-    }
+}
 
-    .story-title {
+.story-title {
         font-size: 1.3rem;
         font-weight: bold;
         margin-bottom: 0.5rem;
-        color: #333;
+    color: #333;
+        transition: color 0.3s ease;
+        cursor: pointer;
     }
 
-    .story-meta {
-        display: flex;
+    .story-card:hover .story-title {
+        color: #667eea;
+}
+
+.story-meta {
+    display: flex;
         gap: 1rem;
         font-size: 0.9rem;
         color: #666;
     }
 
     .meta-item {
-        display: flex;
-        align-items: center;
+    display: flex;
+    align-items: center;
         gap: 0.25rem;
     }
 
     .story-description {
         color: #666;
-        line-height: 1.5;
+        line-height: 1.6;
         margin-bottom: 1rem;
         flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color 0.3s ease;
+    }
+
+    .story-card:hover .story-description {
+        color: #555;
     }
 
     .story-footer {
@@ -370,11 +396,50 @@
         display: flex;
         gap: 0.5rem;
         align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .story-actions-full .btn {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .story-actions-full .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+    border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .story-actions-full .btn:hover::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .story-actions-full .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .story-actions-full .btn-success {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+
+    .story-actions-full .btn-success:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
     }
 
     .empty-state {
-        display: flex;
-        align-items: center;
+    display: flex;
+    align-items: center;
         justify-content: center;
         min-height: 400px;
         background: white;
@@ -416,16 +481,16 @@
 
     /* Responsive Design */
     @@media (max-width: 768px) {
-        .stories-grid {
-            grid-template-columns: 1fr;
+    .stories-grid {
+        grid-template-columns: 1fr;
             gap: 1rem;
         }
         
         .stories-header {
             padding: 1rem;
-        }
-        
-        .header-content h1 {
+    }
+
+    .header-content h1 {
             font-size: 1.5rem;
         }
         
@@ -433,5 +498,5 @@
             flex-direction: column;
             align-items: center;
         }
-    }
+}
 </style>

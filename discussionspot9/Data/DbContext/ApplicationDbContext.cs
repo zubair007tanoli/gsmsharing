@@ -795,6 +795,8 @@ namespace discussionspot9.Data.DbContext
                 entity.Property(e => e.TextColor).HasMaxLength(20);
                 entity.Property(e => e.FontSize).HasMaxLength(20);
                 entity.Property(e => e.Alignment).HasMaxLength(20).HasDefaultValue("center");
+                entity.Property(e => e.MediaUrl).HasMaxLength(500);
+                entity.Property(e => e.MediaType).HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
 

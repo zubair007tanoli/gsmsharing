@@ -210,6 +210,57 @@
             font-size: 0.8rem;
         }
     }
+    
+    /* Mobile responsiveness improvements */
+    @@media (max-width: 576px) {
+        .navbar-right {
+            flex-direction: column;
+            width: 100%;
+            align-items: stretch;
+        }
+        
+        .nav-actions {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0;
+        }
+        
+        .action-icon {
+            margin: 0;
+            flex: 1;
+            max-width: 60px;
+        }
+        
+        .user-dropdown {
+            flex: 1;
+            max-width: 60px;
+        }
+        
+        .auth-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        
+        .auth-btns .btn {
+            width: 100%;
+        }
+        
+        .search-bar {
+            padding: 0.5rem 0;
+        }
+        
+        .search-bar form {
+            margin-bottom: 0.5rem;
+        }
+        
+        .search-bar .text-end {
+            text-align: center !important;
+        }
+    }
 </style>
 
 <!-- Live Bar -->
@@ -376,6 +427,11 @@
                                     <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
                                     <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                     <li><a class="dropdown-item" href="bookmarks.html"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/admin"><i class="fas fa-shield-alt me-2"></i>Admin Dashboard</a></li>
+                                    }
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                                 </ul>

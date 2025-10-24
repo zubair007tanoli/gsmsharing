@@ -168,6 +168,24 @@ namespace discussionspot9.Services
                         break;
                 }
 
+                // Add final CTA slide with link back to post
+                slides.Add(new StorySlide
+                {
+                    StoryId = story.StoryId,
+                    Caption = "Read more on DiscussionSpot",
+                    Headline = "💬 Join the Discussion",
+                    Text = $"View full post and comments",
+                    Duration = 4,
+                    OrderIndex = slides.Count,
+                    SlideType = "cta",
+                    BackgroundColor = "#007bff",
+                    TextColor = "#ffffff",
+                    FontSize = "18",
+                    Alignment = "center",
+                    MediaUrl = $"/post/{post.Community?.Slug}/{post.Slug}",
+                    MediaType = "internal_link"
+                });
+
                 // Add slides to database
                 context.StorySlides.AddRange(slides);
                 await context.SaveChangesAsync();
@@ -217,18 +235,37 @@ namespace discussionspot9.Services
         {
             if (string.IsNullOrEmpty(post.Url)) return;
 
+            // Add URL slide with clickable link
             slides.Add(new StorySlide
             {
                 StoryId = slides[0].StoryId,
                 Caption = "Check out this link",
-                Headline = "External Link",
-                Text = post.Url,
-                Duration = 3,
+                Headline = "📎 External Link",
+                Text = $"Visit: {post.Url}",
+                Duration = 5,
                 OrderIndex = 1,
                 SlideType = "link",
                 BackgroundColor = "#28a745",
                 TextColor = "#ffffff",
                 FontSize = "20",
+                Alignment = "center",
+                MediaUrl = post.Url,
+                MediaType = "external_link"
+            });
+
+            // Add CTA slide to visit the link
+            slides.Add(new StorySlide
+            {
+                StoryId = slides[0].StoryId,
+                Caption = "Click to explore",
+                Headline = "🔗 Tap to Visit",
+                Text = "Swipe up to open the link in browser",
+                Duration = 3,
+                OrderIndex = 2,
+                SlideType = "cta",
+                BackgroundColor = "#007bff",
+                TextColor = "#ffffff",
+                FontSize = "18",
                 Alignment = "center"
             });
         }
