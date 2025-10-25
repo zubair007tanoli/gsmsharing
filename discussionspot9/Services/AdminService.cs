@@ -128,6 +128,15 @@ namespace discussionspot9.Services
                               r.IsActive);
         }
         
+        public async Task<List<string>> GetAllAdminUserIdsAsync()
+        {
+            return await _context.SiteRoles
+                .Where(r => r.RoleName == "SiteAdmin" && r.IsActive)
+                .Select(r => r.UserId)
+                .Distinct()
+                .ToListAsync();
+        }
+        
         #endregion
         
         #region User Ban Management

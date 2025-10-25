@@ -251,6 +251,37 @@ namespace discussionspot9.Controllers
             return RedirectToAction(nameof(Dashboard));
         }
 
+        [HttpPost("populate-queue")]
+        public async Task<IActionResult> PopulateQueue(int maxPosts = 20)
+        {
+            try
+            {
+                _logger.LogInformation("📋 Manually populating SEO queue with {MaxPosts} posts...", maxPosts);
+
+                // Step 1: Select posts for optimization
+                var candidates = await _selectorService.SelectPostsForOptimizationAsync(maxPosts);
+
+                if (!candidates.Any())
+                {
+                    TempData["InfoMessage"] = "No posts need optimization at this time. All posts are either recently optimized or don't meet the criteria.";
+                    return RedirectToAction(nameof(OptimizationQueue));
+                }
+
+                // Step 2: Queue them
+                await _selectorService.QueuePostsForOptimizationAsync(candidates);
+
+                TempData["SuccessMessage"] = $"Successfully queued {candidates.Count} posts for SEO optimization!";
+                _logger.LogInformation("✅ Successfully queued {Count} posts", candidates.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error populating SEO queue");
+                TempData["ErrorMessage"] = $"Failed to populate queue: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(OptimizationQueue));
+        }
+
         [HttpGet("trending-queries")]
         public async Task<IActionResult> TrendingQueries()
         {

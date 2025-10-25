@@ -50,6 +50,83 @@
                 <i class="fas fa-reply"></i>
                 <span>Reply</span>
             </button>
+            
+            @* Comment Actions Dropdown *@
+            <div class="dropdown d-inline-block ms-2">
+                <button class="btn btn-sm btn-link text-muted p-0 dropdown-toggle comment-actions-toggle" 
+                        type="button" 
+                        data-bs-toggle="dropdown" 
+                        aria-expanded="false"
+                        style="font-size: 0.875rem;">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 180px;">
+                    @if (Model.Comment.IsPinned)
+                    {
+                        <li>
+                            <span class="dropdown-item-text text-success">
+                                <i class="fas fa-thumbtack me-2"></i> Pinned Comment
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                    }
+                    
+                    @* Show Edit/Delete to comment author *@
+                    @if (User.Identity?.IsAuthenticated == true && User.Identity.Name == Model.Comment.AuthorDisplayName)
+                    {
+                        <li>
+                            <a class="dropdown-item edit-comment-btn" 
+                               href="#" 
+                               data-comment-id="@Model.Comment.CommentId"
+                               onclick="editComment(@Model.Comment.CommentId); return false;">
+                                <i class="fas fa-edit me-2"></i> Edit
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger delete-comment-btn" 
+                               href="#" 
+                               data-comment-id="@Model.Comment.CommentId"
+                               onclick="deleteComment(@Model.Comment.CommentId); return false;">
+                                <i class="fas fa-trash me-2"></i> Delete
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                    }
+                    
+                    @* Show Pin/Unpin to post author (passed via ViewData) *@
+                    @if (ViewData["IsPostAuthor"] != null && (bool)ViewData["IsPostAuthor"])
+                    {
+                        <li>
+                            <a class="dropdown-item pin-comment-btn" 
+                               href="#" 
+                               data-comment-id="@Model.Comment.CommentId"
+                               data-is-pinned="@Model.Comment.IsPinned.ToString().ToLower()"
+                               onclick="togglePinComment(@Model.Comment.CommentId, @Model.Comment.IsPinned.ToString().ToLower()); return false;">
+                                <i class="fas fa-thumbtack me-2"></i> @(Model.Comment.IsPinned ? "Unpin" : "Pin") Comment
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                    }
+                    
+                    @* Report option for all authenticated users *@
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="return false;">
+                                <i class="fas fa-flag me-2"></i> Report
+                            </a>
+                        </li>
+                    }
+                    
+                    <li>
+                        <a class="dropdown-item" 
+                           href="#" 
+                           onclick="copyCommentLink(@Model.Comment.CommentId); return false;">
+                            <i class="fas fa-link me-2"></i> Copy Link
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
         <!-- Reply Form -->
         <div class="reply-form d-none" id="replyForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
@@ -72,6 +149,31 @@
                 </button>
                 <button class="btn btn-sm btn-primary reply-submit-btn" data-comment-id="@Model.Comment.CommentId">
                     <i class="fas fa-paper-plane me-1"></i>Reply
+                </button>
+            </div>
+        </div>
+        
+        <!-- Edit Form -->
+        <div class="edit-form d-none" id="editForm@(Model.Comment.CommentId)" data-comment-id="@Model.Comment.CommentId">
+            <div class="d-flex gap-2 align-items-start">
+                <div class="user-avatar small" style="background-color: @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToAvatarColor() : "gray")">
+                    @(User.Identity?.IsAuthenticated == true ? User.Identity.Name.ToInitials() : "U")
+                </div>
+                <div class="flex-grow-1">
+                    <!-- Edit Editor Container -->
+                    <div class="edit-editor-container">
+                        <div id="editEditor@(Model.Comment.CommentId)"></div>
+                    </div>
+                    <!-- Hidden textarea for content storage -->
+                    <textarea class="edit-content-storage" id="editContent@(Model.Comment.CommentId)" style="display: none;" data-comment-id="@Model.Comment.CommentId"></textarea>
+                </div>
+            </div>
+            <div class="edit-form-actions d-flex justify-content-end gap-2 mt-2">
+                <button class="btn btn-sm btn-secondary edit-cancel-btn" data-comment-id="@Model.Comment.CommentId">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button class="btn btn-sm btn-primary edit-submit-btn" data-comment-id="@Model.Comment.CommentId">
+                    <i class="fas fa-save me-1"></i>Save
                 </button>
             </div>
         </div>

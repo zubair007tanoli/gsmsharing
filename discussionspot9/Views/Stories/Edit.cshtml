@@ -1,0 +1,1182 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.StoryEditViewModel
+@{
+    ViewData["Title"] = "Edit Story - " + Model.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4" style="max-width: 1200px;">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="edit-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="display-6 fw-bold text-primary">
+                            <i class="fas fa-edit me-3"></i>Edit Story
+                        </h1>
+                        <p class="text-muted">Make changes to your story content</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/stories/editor/@Model.StoryId" class="btn btn-outline-primary">
+                            <i class="fas fa-palette me-2"></i>Switch to Visual Editor
+                        </a>
+                        <a href="/stories" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Stories
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Edit Form -->
+            <form asp-action="Edit" asp-route-storySlug="@Model.Slug" method="post" id="edit-story-form">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Story Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label asp-for="Title" class="form-label fw-bold">
+                                        <i class="fas fa-heading me-2 text-primary"></i>Story Title
+                                    </label>
+                                    <input asp-for="Title" class="form-control form-control-lg" required>
+                                    <span asp-validation-for="Title" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Description" class="form-label fw-bold">
+                                        <i class="fas fa-align-left me-2 text-primary"></i>Description
+                                    </label>
+                                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Status" class="form-label fw-bold">
+                                        <i class="fas fa-flag me-2 text-primary"></i>Status
+                                    </label>
+                                    <select asp-for="Status" class="form-select">
+                                        <option value="draft">Draft</option>
+                                        <option value="published">Published</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slides Section -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-images me-2"></i>Story Slides</h5>
+                                <button type="button" class="btn btn-sm btn-primary" id="add-slide-btn">
+                                    <i class="fas fa-plus me-1"></i>Add Slide
+                                </button>
+                            </div>
+                            <div class="card-body" id="slides-container">
+                                @if (Model.Slides != null && Model.Slides.Any())
+                                {
+                                    @for (int i = 0; i < Model.Slides.Count; i++)
+                                    {
+                                        var slide = Model.Slides[i];
+                                        <div class="slide-item mb-3 p-3 border rounded" data-slide-index="@i">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="mb-0">
+                                                    <span class="badge bg-primary me-2">Slide @(i + 1)</span>
+                                                </h6>
+                                                <div class="btn-group btn-group-sm">
+                                                    @if (i > 0)
+                                                    {
+                                                        <button type="button" class="btn btn-outline-secondary move-slide-up">
+                                                            <i class="fas fa-arrow-up"></i>
+                                                        </button>
+                                                    }
+                                                    @if (i < Model.Slides.Count - 1)
+                                                    {
+                                                        <button type="button" class="btn btn-outline-secondary move-slide-down">
+                                                            <i class="fas fa-arrow-down"></i>
+                                                        </button>
+                                                    }
+                                                    <button type="button" class="btn btn-outline-danger delete-slide">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <input type="hidden" name="Slides[@i].SlideId" value="@slide.SlideId" />
+                                            <input type="hidden" name="Slides[@i].SlideOrder" value="@slide.SlideOrder" class="slide-order" />
+
+                                            <div class="mb-2">
+                                                <label class="form-label fw-bold small">Slide Title</label>
+                                                <input type="text" name="Slides[@i].Title" value="@slide.Title" class="form-control" placeholder="Slide title...">
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label fw-bold small">Slide Content</label>
+                                                <textarea name="Slides[@i].Content" class="form-control" rows="3" placeholder="Slide content...">@slide.Content</textarea>
+                                            </div>
+
+                                            <!-- Media Upload Section -->
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold small">
+                                                    <i class="fas fa-image me-1"></i>Slide Media
+                                                </label>
+                                                <div class="input-group mb-2">
+                                                    <input type="text" name="Slides[@i].ImageUrl" value="@slide.ImageUrl" class="form-control slide-media-url" placeholder="Media URL or upload below..." data-slide-index="@i">
+                                                    <button type="button" class="btn btn-outline-primary upload-media-btn" data-slide-index="@i">
+                                                        <i class="fas fa-upload"></i> Upload
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary clear-media-btn" data-slide-index="@i">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(slide.ImageUrl))
+                                                {
+                                                    <div class="media-preview mb-2">
+                                                        <img src="@slide.ImageUrl" alt="Slide media" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            <!-- Link/URL Section -->
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold small">
+                                                    <i class="fas fa-link me-1"></i>Slide Link (Optional)
+                                                </label>
+                                                <input type="url" name="Slides[@i].LinkUrl" value="@slide.Content" class="form-control" placeholder="https://example.com">
+                                                <small class="text-muted">Add a clickable link to this slide</small>
+                                            </div>
+
+                                            <!-- Background Settings -->
+                                            <div class="mb-3 border rounded p-3 bg-white">
+                                                <label class="form-label fw-bold">
+                                                    <i class="fas fa-fill-drip me-2 text-primary"></i>Slide Background
+                                                </label>
+                                                
+                                                <!-- Background Type Selector -->
+                                                <div class="btn-group w-100 mb-3" role="group">
+                                                    <input type="radio" class="btn-check" name="bgType@(i)" id="bgColor@(i)" checked>
+                                                    <label class="btn btn-outline-primary" for="bgColor@(i)">
+                                                        <i class="fas fa-palette"></i> Color
+                                                    </label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="bgType@(i)" id="bgImage@(i)">
+                                                    <label class="btn btn-outline-primary" for="bgImage@(i)">
+                                                        <i class="fas fa-image"></i> Image
+                                                    </label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="bgType@(i)" id="bgGradient@(i)">
+                                                    <label class="btn btn-outline-primary" for="bgGradient@(i)">
+                                                        <i class="fas fa-fill"></i> Gradient
+                                                    </label>
+                                                </div>
+                                                
+                                                <!-- Color Background -->
+                                                <div class="bg-option bg-color-option" id="colorSection@(i)">
+                                                    <label class="form-label small">Background Color</label>
+                                                    <div class="d-flex gap-2 align-items-center">
+                                                        <input type="color" name="Slides[@i].BackgroundColor" value="@(slide.BackgroundColor ?? "#667eea")" class="form-control form-control-color" style="width: 80px;">
+                                                        <input type="text" name="Slides[@i].BackgroundColorHex" value="@(slide.BackgroundColor ?? "#667eea")" class="form-control form-control-sm" placeholder="#667eea">
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Image Background -->
+                                                <div class="bg-option bg-image-option" id="imageSection@(i)" style="display: none;">
+                                                    <label class="form-label small">Background Image</label>
+                                                    <div class="bg-image-upload-zone" data-slide-index="@i">
+                                                        <input type="hidden" name="Slides[@i].BackgroundImageUrl" value="" class="bg-image-url">
+                                                        <div class="upload-placeholder">
+                                                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                                            <p class="mb-2">Click to upload or drag image here</p>
+                                                            <button type="button" class="btn btn-sm btn-primary upload-bg-image-btn" data-slide-index="@i">
+                                                                <i class="fas fa-upload me-1"></i>Choose Background Image
+                                                            </button>
+                                                        </div>
+                                                        <div class="bg-preview" style="display: none;">
+                                                            <img src="" alt="Background" class="img-fluid rounded">
+                                                            <button type="button" class="btn btn-sm btn-danger mt-2 remove-bg-btn">
+                                                                <i class="fas fa-trash me-1"></i>Remove Background
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Image Adjustment Options -->
+                                            <div class="mb-3 border rounded p-3 bg-light">
+                                                <label class="form-label fw-bold">
+                                                    <i class="fas fa-sliders-h me-2 text-warning"></i>Image Adjustments
+                                                </label>
+                                                
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Width (%)</label>
+                                                        <input type="range" name="Slides[@i].ImageWidth" class="form-range" min="20" max="100" value="100" onchange="this.nextElementSibling.textContent = this.value + '%'">
+                                                        <div class="text-center small text-muted">100%</div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Height (%)</label>
+                                                        <input type="range" name="Slides[@i].ImageHeight" class="form-range" min="20" max="100" value="100" onchange="this.nextElementSibling.textContent = this.value + '%'">
+                                                        <div class="text-center small text-muted">100%</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row g-2 mt-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Position</label>
+                                                        <select name="Slides[@i].ImagePosition" class="form-select form-select-sm">
+                                                            <option value="center">Center</option>
+                                                            <option value="top">Top</option>
+                                                            <option value="bottom">Bottom</option>
+                                                            <option value="left">Left</option>
+                                                            <option value="right">Right</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Fit</label>
+                                                        <select name="Slides[@i].ImageFit" class="form-select form-select-sm">
+                                                            <option value="cover">Cover</option>
+                                                            <option value="contain">Contain</option>
+                                                            <option value="fill">Fill</option>
+                                                            <option value="none">Original</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mt-2">
+                                                    <label class="form-label small">Opacity</label>
+                                                    <input type="range" name="Slides[@i].ImageOpacity" class="form-range" min="0" max="100" value="100" onchange="this.nextElementSibling.textContent = this.value + '%'">
+                                                    <div class="text-center small text-muted">100%</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-12 mb-2">
+                                                    <label class="form-label fw-bold small">Slide Type</label>
+                                                    <select name="Slides[@i].SlideType" class="form-select">
+                                                        <option value="text" selected="@(slide.SlideType == "text")">Text</option>
+                                                        <option value="image" selected="@(slide.SlideType == "image")">Image</option>
+                                                        <option value="video" selected="@(slide.SlideType == "video")">Video</option>
+                                                        <option value="quote" selected="@(slide.SlideType == "quote")">Quote</option>
+                                                        <option value="link" selected="@(slide.SlideType == "link")">Link</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-images fa-3x mb-3 d-block"></i>
+                                        <p>No slides yet. Click "Add Slide" to create your first slide.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm mb-4 sticky-top" style="top: 20px;">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Actions</h6>
+                            </div>
+                            <div class="card-body">
+                                <button type="submit" class="btn btn-primary w-100 mb-3">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                                
+                                <a href="/stories/viewer/@Model.Slug" class="btn btn-outline-info w-100 mb-3" target="_blank">
+                                    <i class="fas fa-eye me-2"></i>Preview Story
+                                </a>
+
+                                <a href="/stories/details/@Model.Slug" class="btn btn-outline-secondary w-100 mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>View Details
+                                </a>
+
+                                <hr>
+
+                                <div class="d-grid gap-2">
+                                    <a href="/stories" class="btn btn-outline-secondary mb-2">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </a>
+                                    
+                                    <button type="button" class="btn btn-danger" onclick="deleteStory('@Model.Slug')">
+                                        <i class="fas fa-trash me-2"></i>Delete Story
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Story Stats -->
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Story Stats</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-item mb-2">
+                                    <small class="text-muted">Total Slides:</small>
+                                    <strong class="float-end" id="slide-count">@(Model.Slides?.Count ?? 0)</strong>
+                                </div>
+                                <div class="stat-item mb-2">
+                                    <small class="text-muted">Status:</small>
+                                    <strong class="float-end">
+                                        <span class="badge bg-@(Model.Status == "published" ? "success" : "warning")">@Model.Status</span>
+                                    </strong>
+                                </div>
+                                <div class="stat-item">
+                                    <small class="text-muted">Last Updated:</small>
+                                    <strong class="float-end"><small>@Model.UpdatedAt.ToString("MMM dd, yyyy")</small></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.edit-header {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.slide-item {
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+}
+
+.slide-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.slide-item.dragging {
+    opacity: 0.5;
+    border: 2px dashed #0066cc;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+/* Media Upload Enhancements */
+.upload-media-btn {
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.upload-media-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.upload-bg-btn:hover {
+    background: #0066cc;
+    border-color: #0066cc;
+    color: white;
+}
+
+.clear-media-btn:hover {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.media-preview {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.media-preview img,
+.media-preview video {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Link input styling */
+input[name*="LinkUrl"] {
+    border-left: 3px solid #0066cc;
+}
+
+/* Background color picker */
+.form-control-color {
+    height: 42px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-control-color:hover {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Upload progress styling */
+.spinner-border {
+    border-width: 4px;
+}
+
+/* Enhanced slide cards with background */
+.slide-item[style*="background-image"] {
+    position: relative;
+    color: white;
+}
+
+.slide-item[style*="background-image"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    z-index: 0;
+}
+
+.slide-item[style*="background-image"] > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Icon styling */
+.fa-image, .fa-link, .fa-fill-drip {
+    color: #0066cc;
+}
+
+/* Small text enhancements */
+small.text-muted {
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* Background Upload Zone */
+.bg-image-upload-zone {
+    border: 2px dashed #0066cc;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.bg-image-upload-zone:hover {
+    background: #e3f2fd;
+    border-color: #0052a3;
+}
+
+.bg-image-upload-zone.drag-over {
+    background: #bbdefb;
+    border-color: #0052a3;
+    transform: scale(1.02);
+}
+
+.upload-placeholder {
+    color: #666;
+}
+
+.upload-placeholder i {
+    color: #0066cc;
+}
+
+.bg-preview img {
+    max-height: 200px;
+    border: 2px solid #dee2e6;
+}
+
+.remove-bg-btn {
+    width: 100%;
+}
+
+/* Background Type Selector */
+.btn-group .btn-check:checked + .btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+}
+
+/* Image Adjustments Section */
+.bg-light {
+    background: linear-gradient(135deg, #fff8f0 0%, #fff 100%) !important;
+}
+
+.form-range {
+    cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #0066cc;
+    cursor: pointer;
+}
+
+.form-range::-moz-range-thumb {
+    background: #0066cc;
+    cursor: pointer;
+}
+
+/* Background Options */
+.bg-option {
+    animation: fadeIn 0.3s ease;
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Delete Button Enhancement */
+.btn-danger {
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    border-color: #bd2130;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Enhanced sections with borders */
+.border.rounded.p-3 {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.border.rounded.p-3:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Radio button group enhancements */
+.btn-group .btn-outline-primary {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    let slideCounter = @(Model.Slides?.Count ?? 0);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add Slide
+        document.getElementById('add-slide-btn').addEventListener('click', function() {
+            slideCounter++;
+            const slidesContainer = document.getElementById('slides-container');
+            
+            const slideHtml = `
+                <div class="slide-item mb-3 p-3 border rounded" data-slide-index="${slideCounter}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">
+                            <span class="badge bg-primary me-2">Slide ${slideCounter + 1}</span>
+                        </h6>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-secondary move-slide-up">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary move-slide-down">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger delete-slide">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="Slides[${slideCounter}].SlideId" value="0" />
+                    <input type="hidden" name="Slides[${slideCounter}].SlideOrder" value="${slideCounter}" class="slide-order" />
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Slide Title</label>
+                        <input type="text" name="Slides[${slideCounter}].Title" class="form-control" placeholder="Slide title...">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Slide Content</label>
+                        <textarea name="Slides[${slideCounter}].Content" class="form-control" rows="3" placeholder="Slide content..."></textarea>
+                    </div>
+
+                    <!-- Media Upload Section -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">
+                            <i class="fas fa-image me-1"></i>Slide Media
+                        </label>
+                        <div class="input-group mb-2">
+                            <input type="text" name="Slides[${slideCounter}].ImageUrl" class="form-control slide-media-url" placeholder="Media URL or upload below..." data-slide-index="${slideCounter}">
+                            <button type="button" class="btn btn-outline-primary upload-media-btn" data-slide-index="${slideCounter}">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary clear-media-btn" data-slide-index="${slideCounter}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Link/URL Section -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">
+                            <i class="fas fa-link me-1"></i>Slide Link (Optional)
+                        </label>
+                        <input type="url" name="Slides[${slideCounter}].LinkUrl" class="form-control" placeholder="https://example.com">
+                        <small class="text-muted">Add a clickable link to this slide</small>
+                    </div>
+
+                    <!-- Background Settings -->
+                    <div class="mb-3 border rounded p-3 bg-white">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-fill-drip me-2 text-primary"></i>Slide Background
+                        </label>
+                        
+                        <!-- Background Type Selector -->
+                        <div class="btn-group w-100 mb-3" role="group">
+                            <input type="radio" class="btn-check" name="bgType${slideCounter}" id="bgColor${slideCounter}" checked>
+                            <label class="btn btn-outline-primary" for="bgColor${slideCounter}">
+                                <i class="fas fa-palette"></i> Color
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="bgType${slideCounter}" id="bgImage${slideCounter}">
+                            <label class="btn btn-outline-primary" for="bgImage${slideCounter}">
+                                <i class="fas fa-image"></i> Image
+                            </label>
+                        </div>
+                        
+                        <!-- Color Background -->
+                        <div class="bg-option bg-color-option" id="colorSection${slideCounter}">
+                            <label class="form-label small">Background Color</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="color" name="Slides[${slideCounter}].BackgroundColor" value="#667eea" class="form-control form-control-color" style="width: 80px;">
+                                <input type="text" name="Slides[${slideCounter}].BackgroundColorHex" value="#667eea" class="form-control form-control-sm" placeholder="#667eea">
+                            </div>
+                        </div>
+                        
+                        <!-- Image Background -->
+                        <div class="bg-option bg-image-option" id="imageSection${slideCounter}" style="display: none;">
+                            <label class="form-label small">Background Image</label>
+                            <div class="bg-image-upload-zone" data-slide-index="${slideCounter}">
+                                <input type="hidden" name="Slides[${slideCounter}].BackgroundImageUrl" value="" class="bg-image-url">
+                                <div class="upload-placeholder">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                    <p class="mb-2">Click to upload or drag image here</p>
+                                    <button type="button" class="btn btn-sm btn-primary upload-bg-image-btn" data-slide-index="${slideCounter}">
+                                        <i class="fas fa-upload me-1"></i>Choose Background Image
+                                    </button>
+                                </div>
+                                <div class="bg-preview" style="display: none;">
+                                    <img src="" alt="Background" class="img-fluid rounded">
+                                    <button type="button" class="btn btn-sm btn-danger mt-2 remove-bg-btn">
+                                        <i class="fas fa-trash me-1"></i>Remove Background
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Adjustment Options -->
+                    <div class="mb-3 border rounded p-3 bg-light">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-sliders-h me-2 text-warning"></i>Image Adjustments
+                        </label>
+                        
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small">Width (%)</label>
+                                <input type="range" name="Slides[${slideCounter}].ImageWidth" class="form-range" min="20" max="100" value="100" onchange="this.nextElementSibling.textContent = this.value + '%'">
+                                <div class="text-center small text-muted">100%</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Height (%)</label>
+                                <input type="range" name="Slides[${slideCounter}].ImageHeight" class="form-range" min="20" max="100" value="100" onchange="this.nextElementSibling.textContent = this.value + '%'">
+                                <div class="text-center small text-muted">100%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <label class="form-label small">Position</label>
+                                <select name="Slides[${slideCounter}].ImagePosition" class="form-select form-select-sm">
+                                    <option value="center">Center</option>
+                                    <option value="top">Top</option>
+                                    <option value="bottom">Bottom</option>
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Fit</label>
+                                <select name="Slides[${slideCounter}].ImageFit" class="form-select form-select-sm">
+                                    <option value="cover">Cover</option>
+                                    <option value="contain">Contain</option>
+                                    <option value="fill">Fill</option>
+                                    <option value="none">Original</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-2">
+                            <label class="form-label small">Opacity</label>
+                            <input type="range" name="Slides[${slideCounter}].ImageOpacity" class="form-range" min="0" max="100" value="100" onchange="this.nextElementSibling.textContent = this.value + '%'">
+                            <div class="text-center small text-muted">100%</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label fw-bold small">Slide Type</label>
+                            <select name="Slides[${slideCounter}].SlideType" class="form-select">
+                                <option value="text">Text</option>
+                                <option value="image">Image</option>
+                                <option value="video">Video</option>
+                                <option value="quote">Quote</option>
+                                <option value="link">Link</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            slidesContainer.insertAdjacentHTML('beforeend', slideHtml);
+            updateSlideCount();
+            attachSlideEventListeners();
+            attachUploadHandlers();
+            attachBackgroundHandlers();
+        });
+
+        // Delete Slide
+        function attachSlideEventListeners() {
+            document.querySelectorAll('.delete-slide').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to delete this slide?')) {
+                        this.closest('.slide-item').remove();
+                        updateSlideCount();
+                        reindexSlides();
+                    }
+                });
+            });
+
+            // Move Slide Up
+            document.querySelectorAll('.move-slide-up').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const slideItem = this.closest('.slide-item');
+                    const prevSlide = slideItem.previousElementSibling;
+                    if (prevSlide && prevSlide.classList.contains('slide-item')) {
+                        slideItem.parentNode.insertBefore(slideItem, prevSlide);
+                        reindexSlides();
+                    }
+                });
+            });
+
+            // Move Slide Down
+            document.querySelectorAll('.move-slide-down').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const slideItem = this.closest('.slide-item');
+                    const nextSlide = slideItem.nextElementSibling;
+                    if (nextSlide && nextSlide.classList.contains('slide-item')) {
+                        slideItem.parentNode.insertBefore(nextSlide, slideItem);
+                        reindexSlides();
+                    }
+                });
+            });
+        }
+
+        function updateSlideCount() {
+            const count = document.querySelectorAll('.slide-item').length;
+            document.getElementById('slide-count').textContent = count;
+        }
+
+        function reindexSlides() {
+            const slides = document.querySelectorAll('.slide-item');
+            slides.forEach((slide, index) => {
+                slide.querySelector('.badge').textContent = `Slide ${index + 1}`;
+                slide.querySelector('.slide-order').value = index;
+            });
+        }
+
+        attachSlideEventListeners();
+        attachUploadHandlers();
+        attachBackgroundHandlers();
+    });
+
+    // ==================== DELETE STORY FUNCTIONALITY ====================
+    
+    function deleteStory(slug) {
+        if (confirm('⚠️ Are you sure you want to delete this story? This action cannot be undone!')) {
+            showUploadProgress(true);
+            
+            fetch(`/stories/${slug}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    showNotification('✅ Story deleted successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/stories';
+                    }, 1500);
+                } else {
+                    throw new Error('Delete failed');
+                }
+            })
+            .catch(error => {
+                showUploadProgress(false);
+                showNotification('❌ Failed to delete story: ' + error.message, 'danger');
+            });
+        }
+    }
+
+    // ==================== BACKGROUND IMAGE HANDLERS ====================
+    
+    function attachBackgroundHandlers() {
+        // Background type switching
+        document.querySelectorAll('input[name^="bgType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const slideIndex = this.id.replace('bgColor', '').replace('bgImage', '').replace('bgGradient', '');
+                const colorSection = document.getElementById(`colorSection${slideIndex}`);
+                const imageSection = document.getElementById(`imageSection${slideIndex}`);
+                
+                if (colorSection) colorSection.style.display = 'none';
+                if (imageSection) imageSection.style.display = 'none';
+                
+                if (this.id.includes('Color')) {
+                    if (colorSection) colorSection.style.display = 'block';
+                } else if (this.id.includes('Image')) {
+                    if (imageSection) imageSection.style.display = 'block';
+                }
+            });
+        });
+        
+        // Background image upload
+        document.querySelectorAll('.upload-bg-image-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const slideIndex = this.dataset.slideIndex;
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        showUploadProgress(true);
+                        const filePath = await uploadFile(file, 'backgrounds');
+                        showUploadProgress(false);
+                        
+                        if (filePath) {
+                            const zone = this.closest('.bg-image-upload-zone');
+                            const urlInput = zone.querySelector('.bg-image-url');
+                            const placeholder = zone.querySelector('.upload-placeholder');
+                            const preview = zone.querySelector('.bg-preview');
+                            const previewImg = preview.querySelector('img');
+                            
+                            urlInput.value = filePath;
+                            previewImg.src = filePath;
+                            placeholder.style.display = 'none';
+                            preview.style.display = 'block';
+                            
+                            // Update slide visual background
+                            const slideItem = this.closest('.slide-item');
+                            slideItem.style.backgroundImage = `url(${filePath})`;
+                            slideItem.style.backgroundSize = 'cover';
+                            slideItem.style.backgroundPosition = 'center';
+                        }
+                    }
+                };
+                
+                input.click();
+            });
+        });
+        
+        // Remove background image
+        document.querySelectorAll('.remove-bg-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const zone = this.closest('.bg-image-upload-zone');
+                const urlInput = zone.querySelector('.bg-image-url');
+                const placeholder = zone.querySelector('.upload-placeholder');
+                const preview = zone.querySelector('.bg-preview');
+                
+                urlInput.value = '';
+                placeholder.style.display = 'block';
+                preview.style.display = 'none';
+                
+                // Remove visual background
+                const slideItem = this.closest('.slide-item');
+                slideItem.style.backgroundImage = '';
+            });
+        });
+        
+        // Drag & drop for background upload zones
+        document.querySelectorAll('.bg-image-upload-zone').forEach(zone => {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+                zone.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            
+            ['dragenter', 'dragover'].forEach(evt => {
+                zone.addEventListener(evt, () => {
+                    zone.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(evt => {
+                zone.addEventListener(evt, () => {
+                    zone.classList.remove('drag-over');
+                });
+            });
+            
+            zone.addEventListener('drop', async (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                        const btn = zone.querySelector('.upload-bg-image-btn');
+                        if (btn) {
+                            showUploadProgress(true);
+                            const filePath = await uploadFile(file, 'backgrounds');
+                            showUploadProgress(false);
+                            
+                            if (filePath) {
+                                const urlInput = zone.querySelector('.bg-image-url');
+                                const placeholder = zone.querySelector('.upload-placeholder');
+                                const preview = zone.querySelector('.bg-preview');
+                                const previewImg = preview.querySelector('img');
+                                
+                                urlInput.value = filePath;
+                                previewImg.src = filePath;
+                                placeholder.style.display = 'none';
+                                preview.style.display = 'block';
+                                
+                                // Update slide visual background
+                                const slideItem = zone.closest('.slide-item');
+                                slideItem.style.backgroundImage = `url(${filePath})`;
+                                slideItem.style.backgroundSize = 'cover';
+                                slideItem.style.backgroundPosition = 'center';
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    // ==================== UPLOAD FUNCTIONALITY ====================
+    
+    async function uploadFile(file, category = 'stories') {
+        if (!file) return null;
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', category);
+        
+        try {
+            const response = await fetch('/api/media/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification('✅ File uploaded successfully!', 'success');
+                return result.filePath;
+            } else {
+                throw new Error(result.errorMessage || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showNotification('❌ Upload failed: ' + error.message, 'danger');
+            return null;
+        }
+    }
+
+    function attachUploadHandlers() {
+        // Upload media for slides
+        document.querySelectorAll('.upload-media-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const slideIndex = this.dataset.slideIndex;
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*,video/*';
+                
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        showUploadProgress(true);
+                        const filePath = await uploadFile(file, 'stories');
+                        showUploadProgress(false);
+                        
+                        if (filePath) {
+                            const urlInput = document.querySelector(`input[name="Slides[${slideIndex}].ImageUrl"]`);
+                            if (urlInput) {
+                                urlInput.value = filePath;
+                                
+                                // Show preview
+                                const slideItem = urlInput.closest('.slide-item');
+                                let preview = slideItem.querySelector('.media-preview');
+                                if (!preview) {
+                                    preview = document.createElement('div');
+                                    preview.className = 'media-preview mb-2';
+                                    urlInput.closest('.mb-3').appendChild(preview);
+                                }
+                                
+                                if (file.type.startsWith('image/')) {
+                                    preview.innerHTML = `<img src="${filePath}" alt="Slide media" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                                } else if (file.type.startsWith('video/')) {
+                                    preview.innerHTML = `<video src="${filePath}" controls style="max-width: 100%; max-height: 150px; border-radius: 8px;"></video>`;
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                input.click();
+            });
+        });
+
+        // Clear media
+        document.querySelectorAll('.clear-media-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const slideIndex = this.dataset.slideIndex;
+                const urlInput = document.querySelector(`input[name="Slides[${slideIndex}].ImageUrl"]`);
+                if (urlInput) {
+                    urlInput.value = '';
+                    const preview = urlInput.closest('.slide-item').querySelector('.media-preview');
+                    if (preview) preview.remove();
+                }
+            });
+        });
+
+        // Upload background images
+        document.querySelectorAll('.upload-bg-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const slideIndex = this.dataset.slideIndex;
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        showUploadProgress(true);
+                        const filePath = await uploadFile(file, 'backgrounds');
+                        showUploadProgress(false);
+                        
+                        if (filePath) {
+                            // Update background (you might want to add a hidden field for this)
+                            const slideItem = this.closest('.slide-item');
+                            slideItem.style.backgroundImage = `url(${filePath})`;
+                            slideItem.style.backgroundSize = 'cover';
+                            slideItem.style.backgroundPosition = 'center';
+                            
+                            showNotification('✅ Background updated! (Note: Will be saved on form submit)', 'info');
+                        }
+                    }
+                };
+                
+                input.click();
+            });
+        });
+    }
+
+    function showUploadProgress(show) {
+        let overlay = document.getElementById('upload-overlay');
+        
+        if (show && !overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'upload-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            `;
+            overlay.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 12px; text-align: center;">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <p class="mb-0">Uploading...</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        } else if (!show && overlay) {
+            overlay.remove();
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+    </script>
+}
+
+

@@ -1,3 +1,0 @@
-Changed database context to 'DiscussionspotADO'.
-
-Sqlcmd: Warning: The last operation was terminated because the user pressed CTRL+C.

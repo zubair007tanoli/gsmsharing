@@ -4,40 +4,40 @@ using System.ComponentModel.DataAnnotations;
 namespace discussionspot9.Models.Domain
 {
     /// <summary>
-    /// Site-wide roles for users (Admin, Moderator, etc.)
-    /// Separate from ASP.NET Identity roles for flexibility
+    /// Represents a site-wide role assigned to a user (SiteAdmin, Moderator, etc.)
     /// </summary>
     public class SiteRole
     {
         [Key]
-        public int SiteRoleId { get; set; }
+        public int RoleId { get; set; }
         
         public string UserId { get; set; } = null!;
         
         /// <summary>
-        /// Role name: "SiteAdmin", "Moderator", "Verified", "VIP"
+        /// Role name: "SiteAdmin", "Moderator", etc.
         /// </summary>
         public string RoleName { get; set; } = null!;
         
         public DateTime AssignedAt { get; set; }
         
-        public string? AssignedByUserId { get; set; }
-        
-        /// <summary>
-        /// If null, role is permanent. Otherwise, role expires
-        /// </summary>
-        public DateTime? ExpiresAt { get; set; }
+        public string AssignedByUserId { get; set; } = null!;
         
         public bool IsActive { get; set; } = true;
         
         /// <summary>
-        /// Additional permissions in JSON format
+        /// Optional notes about why this role was assigned
         /// </summary>
-        public string? Permissions { get; set; }
+        public string? Notes { get; set; }
+        
+        /// <summary>
+        /// If role was removed
+        /// </summary>
+        public DateTime? RemovedAt { get; set; }
+        public string? RemovedByUserId { get; set; }
         
         // Navigation properties
         public virtual IdentityUser User { get; set; } = null!;
-        public virtual IdentityUser? AssignedByUser { get; set; }
+        public virtual IdentityUser AssignedBy { get; set; } = null!;
+        public virtual IdentityUser? RemovedBy { get; set; }
     }
 }
-

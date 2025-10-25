@@ -5,7 +5,10 @@
         <i class="far fa-comment"></i>
         <span>@Model.FormattedCommentCount Comments</span>
     </a>
-    <button class="post-action me-2 share-btn" data-post-id="@Model.PostId">
+    <button class="post-action me-2 share-btn" 
+            data-post-id="@Model.PostId"
+            data-post-url="@($"{Context.Request.Scheme}://{Context.Request.Host}{Model.PostUrl}")"
+            data-post-title="@Model.Title">
         <i class="fas fa-share"></i>
         <span>Share</span>
     </button>

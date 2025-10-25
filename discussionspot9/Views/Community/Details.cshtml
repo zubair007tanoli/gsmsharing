@@ -17,7 +17,7 @@
     <!-- Left Sidebar -->
     <aside class="sidebar">
         <!-- Your Communities -->
-        @if (User.Identity.IsAuthenticated)
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
             <div class="sidebar-section">
                 <div class="sidebar-header">
@@ -142,17 +142,6 @@
                         </a>
                     }
                     
-<!-- Share Buttons -->
-       @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
-           { "ShareTitle", Model.Community.Title },
-           { "ShareDescription", Model.Community.ShortDescription ?? Model.Community.Title },
-           { "ShareUrl", $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Community.Slug}" },
-           { "ShareImage", Model.Community.IconUrl ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png" },
-           { "ShareType", "community" },
-           { "ContentId", Model.Community.CommunityId.ToString() },
-           { "ShareVariant", "simple" }
-       })
-                    
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="fas fa-ellipsis-h"></i>
@@ -259,6 +248,60 @@
                                                 }
                                             </div>
                                         }
+                                    </div>
+                                    <div class="post-actions mt-2">
+                                        <div class="dropdown d-inline-block">
+                                            <button class="btn btn-sm btn-link text-muted p-0 dropdown-toggle" 
+                                                    type="button" 
+                                                    data-bs-toggle="dropdown" 
+                                                    aria-expanded="false"
+                                                    style="font-size: 0.875rem;">
+                                                <i class="fas fa-ellipsis-h"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-start shadow-sm" style="min-width: 200px;">
+                                                <li>
+                                                    <a class="dropdown-item share-post-item" 
+                                                       href="#" 
+                                                       data-share-url="@($"{Context.Request.Scheme}://{Context.Request.Host}{post.PostUrl}")"
+                                                       data-share-title="@post.Title"
+                                                       data-content-type="post"
+                                                       data-content-id="@post.PostId"
+                                                       onclick="sharePostFromDropdown(this); return false;">
+                                                        <i class="fas fa-share me-2"></i> Share
+                                                    </a>
+                                                </li>
+                                                @if (User.Identity?.IsAuthenticated == true)
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item save-post-item" 
+                                                           href="#" 
+                                                           data-post-id="@post.PostId"
+                                                           onclick="savePostFromDropdown(this); return false;">
+                                                            <i class="far fa-bookmark me-2"></i> Save
+                                                        </a>
+                                                    </li>
+                                                }
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#" onclick="return false;">
+                                                        <i class="fas fa-flag me-2"></i> Report
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#" onclick="return false;">
+                                                        <i class="fas fa-eye-slash me-2"></i> Hide
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item" 
+                                                       href="#" 
+                                                       onclick="copyPostLink('@($"{Context.Request.Scheme}://{Context.Request.Host}{post.PostUrl}")'); return false;">
+                                                        <i class="fas fa-link me-2"></i> Copy Link
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -893,11 +936,247 @@
 
         // Share community functionality
         function shareCommunity() {
-            // This will be handled by the share buttons partial
-            const shareBtn = document.querySelector('.share-btn');
-            if (shareBtn) {
-                shareBtn.click();
+            const shareUrl = '@($"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Community.Slug}")';
+            const shareTitle = '@Html.Raw(Model.Community.Title)';
+            const shareDescription = '@Html.Raw(Model.Community.ShortDescription ?? Model.Community.Title)';
+            
+            // Try native share API first (mobile devices)
+            if (navigator.share) {
+                navigator.share({
+                    title: shareTitle,
+                    text: shareDescription,
+                    url: shareUrl
+                }).catch(err => {
+                    if (err.name !== 'AbortError') {
+                        console.log('Error sharing:', err);
+                        showShareModal(shareUrl, shareTitle);
+                    }
+                });
+            } else {
+                // Fallback: Show share modal
+                showShareModal(shareUrl, shareTitle);
             }
+        }
+        
+        function showShareModal(url, title) {
+            const encodedUrl = encodeURIComponent(url);
+            const encodedTitle = encodeURIComponent(title);
+            
+            const modalHTML = `
+                <div class="modal fade" id="communityShareModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="fas fa-share"></i> Share Community</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="share-options-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                                    <a href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener" class="share-option text-center text-decoration-none" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fab fa-facebook-f fa-2x mb-2" style="color: #1877f2;"></i>
+                                        <div class="small">Facebook</div>
+                                    </a>
+                                    <a href="https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}" target="_blank" rel="noopener" class="share-option text-center text-decoration-none" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fab fa-twitter fa-2x mb-2" style="color: #1da1f2;"></i>
+                                        <div class="small">Twitter</div>
+                                    </a>
+                                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener" class="share-option text-center text-decoration-none" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fab fa-linkedin-in fa-2x mb-2" style="color: #0077b5;"></i>
+                                        <div class="small">LinkedIn</div>
+                                    </a>
+                                    <a href="https://reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}" target="_blank" rel="noopener" class="share-option text-center text-decoration-none" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fab fa-reddit-alien fa-2x mb-2" style="color: #ff4500;"></i>
+                                        <div class="small">Reddit</div>
+                                    </a>
+                                    <a href="https://wa.me/?text=${encodedTitle}%20${encodedUrl}" target="_blank" rel="noopener" class="share-option text-center text-decoration-none" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fab fa-whatsapp fa-2x mb-2" style="color: #25d366;"></i>
+                                        <div class="small">WhatsApp</div>
+                                    </a>
+                                    <a href="mailto:?subject=${encodedTitle}&body=${encodedUrl}" class="share-option text-center text-decoration-none" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fas fa-envelope fa-2x mb-2" style="color: #6c757d;"></i>
+                                        <div class="small">Email</div>
+                                    </a>
+                                </div>
+                                <hr class="my-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="shareLinkInput" value="${url}" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyCommunityLink()">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('communityShareModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('communityShareModal'));
+            modal.show();
+            
+            // Clean up modal after hiding
+            document.getElementById('communityShareModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+            
+            // Add hover effects
+            document.querySelectorAll('.share-option').forEach(option => {
+                option.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px)';
+                    this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                });
+                option.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                });
+            });
+        }
+        
+        function copyCommunityLink() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                button.classList.add('btn-success');
+                button.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy link to clipboard');
+            });
+        }
+        
+        // Post share from dropdown
+        function sharePostFromDropdown(element) {
+            const shareUrl = element.getAttribute('data-share-url');
+            const shareTitle = element.getAttribute('data-share-title');
+            const contentType = element.getAttribute('data-content-type');
+            const contentId = element.getAttribute('data-content-id');
+            
+            console.log('Sharing post from dropdown:', { shareUrl, shareTitle, contentType, contentId });
+            
+            // Validate URL
+            if (!shareUrl) {
+                console.error('Share URL is missing');
+                alert('Unable to share: URL not found');
+                return;
+            }
+            
+            // Use the global showShareModal function
+            if (typeof showShareModal === 'function') {
+                showShareModal(shareUrl, shareTitle, contentType, contentId);
+            } else {
+                console.error('showShareModal function not found');
+                alert('Share functionality not available');
+            }
+        }
+        
+        // Save post from dropdown
+        async function savePostFromDropdown(element) {
+            const postId = element.getAttribute('data-post-id');
+            
+            if (!postId) {
+                console.error('Post ID is missing');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/Post/ToggleSave', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ postId: parseInt(postId) })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update the icon
+                    const icon = element.querySelector('i');
+                    if (result.isSaved) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        element.querySelector('i').nextSibling.textContent = ' Saved';
+                        showToast('success', 'Post saved!');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        element.querySelector('i').nextSibling.textContent = ' Save';
+                        showToast('success', 'Post unsaved!');
+                    }
+                } else {
+                    showToast('error', result.message || 'Failed to save post');
+                }
+            } catch (error) {
+                console.error('Error saving post:', error);
+                showToast('error', 'An error occurred while saving the post');
+            }
+        }
+        
+        // Copy post link
+        function copyPostLink(url) {
+            if (!url) {
+                console.error('URL is missing');
+                return;
+            }
+            
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('success', 'Link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy link to clipboard');
+            });
+        }
+        
+        // Toast notification function
+        function showToast(type, message) {
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+            
+            const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+            bsToast.show();
+            
+            // Remove toast container after it's hidden
+            toast.addEventListener('hidden.bs.toast', () => {
+                toastContainer.remove();
+            });
         }
     </script>
 }

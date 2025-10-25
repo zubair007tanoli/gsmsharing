@@ -3,10 +3,22 @@ namespace discussionspot9.Interfaces
 {
     public interface INotificationService
     {
+        // Award notifications
         Task CreateAwardNotificationAsync(int postId, int awardId, string fromUserId);
-        Task CreateNotificationAsync(object userId, string v1, int postId, string v2);
-        Task<CancellationToken> GetUnreadCountAsync(string? userId);
+        
+        // Generic notification
+        Task CreateNotificationAsync(string userId, string title, string message, string entityType, string entityId, string type);
+        
+        // Comment notifications
+        Task NotifyPostCommentAsync(int postId, int commentId, string commenterUserId, string commenterName);
+        Task NotifyCommentReplyAsync(int parentCommentId, int replyCommentId, string replierUserId, string replierName);
+        
+        // Vote notifications
+        Task NotifyPostVoteAsync(int postId, string voterUserId, string voterName, int voteType);
+        Task NotifyCommentVoteAsync(int commentId, string voterUserId, string voterName, int voteType);
+        
+        // Utility methods
+        Task<int> GetUnreadCountAsync(string userId);
         Task MarkAsReadAsync(int notificationId, string? userId);
-
     }
 }

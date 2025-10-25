@@ -1081,6 +1081,24 @@ namespace discussionspot9.Services
             // Detach the entity to ensure GetPostByIdAsync gets fresh data
             _context.Entry(post).State = EntityState.Detached;
 
+                // Create notification for upvotes only
+                if (voteType == 1)
+                {
+                    try
+                    {
+                        var voterProfile = await _context.UserProfiles.FindAsync(userId);
+                        var voterName = voterProfile?.DisplayName ?? "Someone";
+                        
+                        await _notificationService.NotifyPostVoteAsync(postId, userId, voterName, 1);
+                        _logger.LogInformation($"📬 Notification sent for post upvote");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Error creating vote notification for post {postId}");
+                        // Don't fail the vote if notification fails
+                    }
+                }
+
                 return new VoteResult { Success = true, UserVote = voteType == 0 ? null : voteType };
             }
             catch (Exception ex)

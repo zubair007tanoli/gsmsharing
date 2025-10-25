@@ -1,0 +1,267 @@
+@model List<discussionspot9.Models.ViewModels.CreativeViewModels.PostReportViewModel>
+@{
+    ViewData["Title"] = "Post Reports - Admin Dashboard";
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var pendingCount = ViewBag.PendingCount as int? ?? 0;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-flag me-2"></i> Post Reports
+                    @if (pendingCount > 0)
+                    {
+                        <span class="badge bg-danger ms-2">@pendingCount Pending</span>
+                    }
+                </h2>
+                <div>
+                    <a href="/admin/manage/posts" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Posts
+                    </a>
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="/admin/manage/reports?status=all" 
+                           class="btn btn-@(currentStatus == "all" ? "primary" : "outline-primary")">
+                            All Reports
+                        </a>
+                        <a href="/admin/manage/reports?status=pending" 
+                           class="btn btn-@(currentStatus == "pending" ? "warning" : "outline-warning")">
+                            Pending (@pendingCount)
+                        </a>
+                        <a href="/admin/manage/reports?status=reviewed" 
+                           class="btn btn-@(currentStatus == "reviewed" ? "info" : "outline-info")">
+                            Reviewed
+                        </a>
+                        <a href="/admin/manage/reports?status=resolved" 
+                           class="btn btn-@(currentStatus == "resolved" ? "success" : "outline-success")">
+                            Resolved
+                        </a>
+                        <a href="/admin/manage/reports?status=dismissed" 
+                           class="btn btn-@(currentStatus == "dismissed" ? "secondary" : "outline-secondary")">
+                            Dismissed
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports List -->
+            @if (Model != null && Model.Any())
+            {
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Post</th>
+                                    <th>Reporter</th>
+                                    <th>Reason</th>
+                                    <th>Details</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var report in Model)
+                                {
+                                    <tr class="report-row" data-report-id="@report.ReportId">
+                                        <td class="fw-bold">#@report.ReportId</td>
+                                        <td>
+                                            <a href="@report.PostUrl" target="_blank" class="text-decoration-none">
+                                                @report.PostTitle
+                                                <i class="fas fa-external-link-alt ms-1 small"></i>
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">Post ID: @report.PostId</small>
+                                        </td>
+                                        <td>
+                                            <small>@report.ReporterName</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@report.Reason</span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(report.Details))
+                                            {
+                                                <small>@(report.Details.Length > 50 ? report.Details.Substring(0, 50) + "..." : report.Details)</small>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">No details</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @{
+                                                var statusClass = report.Status switch
+                                                {
+                                                    "pending" => "warning",
+                                                    "reviewed" => "info",
+                                                    "resolved" => "success",
+                                                    "dismissed" => "secondary",
+                                                    _ => "secondary"
+                                                };
+                                            }
+                                            <span class="badge bg-@statusClass">@report.Status</span>
+                                        </td>
+                                        <td>
+                                            <small>@report.TimeAgo</small>
+                                        </td>
+                                        <td>
+                                            @if (report.Status == "pending")
+                                            {
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-success btn-sm resolve-btn" 
+                                                            data-report-id="@report.ReportId"
+                                                            onclick="resolveReport(@report.ReportId)">
+                                                        <i class="fas fa-check"></i> Resolve
+                                                    </button>
+                                                    <button class="btn btn-secondary btn-sm dismiss-btn" 
+                                                            data-report-id="@report.ReportId"
+                                                            onclick="dismissReport(@report.ReportId)">
+                                                        <i class="fas fa-times"></i> Dismiss
+                                                    </button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">
+                                                    @if (!string.IsNullOrEmpty(report.ReviewedByName))
+                                                    {
+                                                        @:By @report.ReviewedByName
+                                                    }
+                                                </small>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    @if (currentStatus == "pending")
+                    {
+                        <text><strong>No pending reports!</strong> Great job keeping the community clean.</text>
+                    }
+                    else
+                    {
+                        <text><strong>No reports found</strong> with status "@currentStatus".</text>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function resolveReport(reportId) {
+            if (!confirm('Mark this report as resolved?')) return;
+            
+            const action = prompt('Action taken (optional):');
+            
+            try {
+                const response = await fetch('/admin/manage/reports/resolve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `reportId=${reportId}&action=${encodeURIComponent(action || '')}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('success', 'Report resolved successfully');
+                    location.reload();
+                } else {
+                    showToast('error', result.message || 'Failed to resolve report');
+                }
+            } catch (error) {
+                console.error('Error resolving report:', error);
+                showToast('error', 'An error occurred');
+            }
+        }
+        
+        async function dismissReport(reportId) {
+            if (!confirm('Dismiss this report? This will mark it as invalid.')) return;
+            
+            try {
+                const response = await fetch('/admin/manage/reports/dismiss', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `reportId=${reportId}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('success', 'Report dismissed');
+                    location.reload();
+                } else {
+                    showToast('error', result.message || 'Failed to dismiss report');
+                }
+            } catch (error) {
+                console.error('Error dismissing report:', error);
+                showToast('error', 'An error occurred');
+            }
+        }
+        
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed top-0 end-0 p-3';
+            toast.style.zIndex = '9999';
+            
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            toast.appendChild(toastEl);
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            bsToast.show();
+            
+            toastEl.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+        
+        // Auto-refresh pending count every 30 seconds
+        setInterval(async function() {
+            try {
+                const response = await fetch('/admin/manage/reports/pending-count');
+                const data = await response.json();
+                if (data.success && data.count > 0) {
+                    const badge = document.querySelector('.badge.bg-danger');
+                    if (badge) {
+                        badge.textContent = `${data.count} Pending`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching pending count:', error);
+            }
+        }, 30000);
+    </script>
+}
+

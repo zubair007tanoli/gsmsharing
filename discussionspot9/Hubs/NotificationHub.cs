@@ -79,10 +79,57 @@ public class NotificationHub : Hub
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"notifications-{userId}");
+            
+            // Auto-join admin group if user is admin
+            var isAdmin = await _context.SiteRoles
+                .AnyAsync(r => r.UserId == userId && r.RoleName == "SiteAdmin" && r.IsActive);
+            
+            if (isAdmin)
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, "admin-notifications");
+                _logger.LogInformation($"Admin user {userId} joined admin-notifications group");
+            }
+            
             //var count = await _notificationService.GetUnreadCountAsync(userId);
             await Clients.Caller.SendAsync("UnreadNotificationCount", 1);
         }
         await base.OnConnectedAsync();
+    }
+    
+    /// <summary>
+    /// Manually join admin notification group
+    /// </summary>
+    public async Task JoinAdminGroup()
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId)) return;
+
+        var isAdmin = await _context.SiteRoles
+            .AnyAsync(r => r.UserId == userId && r.RoleName == "SiteAdmin" && r.IsActive);
+
+        if (isAdmin)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "admin-notifications");
+            _logger.LogInformation($"User {userId} joined admin-notifications group");
+        }
+    }
+    
+    /// <summary>
+    /// Send notification to all admins
+    /// </summary>
+    public async Task SendAdminNotification(string title, string message, string type, string? url = null)
+    {
+        var userId = GetUserId();
+        _logger.LogInformation($"Admin notification sent by {userId}: {title}");
+        
+        await Clients.Group("admin-notifications").SendAsync("ReceiveAdminNotification", new
+        {
+            title = title,
+            message = message,
+            type = type,
+            url = url,
+            timestamp = DateTime.UtcNow
+        });
     }
 
     private string? GetUserId() =>

@@ -34,11 +34,13 @@ builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     
-    // Add performance optimizations
+    // Add performance optimizations with remote server resilience
     options.UseSqlServer(connectionString, sqlOptions =>
     {
-        sqlOptions.CommandTimeout(30); // Reduce command timeout
-        // REMOVED: EnableRetryOnFailure(3) - conflicts with manual transactions in CastPollVoteAsync
+        sqlOptions.CommandTimeout(120); // Increased for remote server
+        // Don't use EnableRetryOnFailure - conflicts with manual transactions
+        // Instead, rely on connection string retry settings and pooling
+        sqlOptions.MigrationsAssembly("discussionspot9");
     });
     
     // CRITICAL FIX: Changed from NoTracking to TrackAll
@@ -167,6 +169,7 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 

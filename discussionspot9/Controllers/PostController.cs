@@ -27,6 +27,7 @@ namespace discussionspot9.Controllers
         private readonly ApplicationDbContext _context;
         private readonly discussionspot9.Services.GoogleSearchSeoService _googleSeoService;
         private readonly IStoryGenerationService _storyGenerationService;
+        private readonly IReportService _reportService;
         
         public PostController(
             IPostService postService,
@@ -40,7 +41,8 @@ namespace discussionspot9.Controllers
             ISeoAnalyzerService seoAnalyzerService,
             IBackgroundSeoService backgroundSeoService,
             discussionspot9.Services.GoogleSearchSeoService googleSeoService,
-            IStoryGenerationService storyGenerationService)
+            IStoryGenerationService storyGenerationService,
+            IReportService reportService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -54,6 +56,7 @@ namespace discussionspot9.Controllers
             _backgroundSeoService = backgroundSeoService;
             _googleSeoService = googleSeoService;
             _storyGenerationService = storyGenerationService;
+            _reportService = reportService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -89,6 +92,9 @@ namespace discussionspot9.Controllers
                 //RelatedPosts = relatedPostsTask.Result
             };
             ViewBag.PostId = model.Post.PostId;
+            
+            // Set IsPostAuthor for comment pin functionality
+            ViewData["IsPostAuthor"] = userId != null && postDetails.UserId == userId;
             if (model.Post.PostType == "link")
             {
                 var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
@@ -374,17 +380,22 @@ namespace discussionspot9.Controllers
         // Add new action for saving posts
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> ToggleSave(int postId)
+        public async Task<IActionResult> ToggleSave([FromBody] ToggleSaveRequest request)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
                 {
+                    _logger.LogWarning("ToggleSave called by unauthenticated user");
                     return Json(new { success = false, message = "User not authenticated" });
                 }
 
-                var result = await _postService.ToggleSavePostAsync(postId, userId);
+                _logger.LogInformation($"ToggleSave called: PostId={request.PostId}, UserId={userId}");
+
+                var result = await _postService.ToggleSavePostAsync(request.PostId, userId);
+
+                _logger.LogInformation($"ToggleSave result: Success={result.Success}, IsSaved={result.IsSaved}, Message={result.Message}");
 
                 return Json(new
                 {
@@ -395,10 +406,66 @@ namespace discussionspot9.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling save status");
-                return Json(new { success = false, message = "An error occurred" });
+                _logger.LogError(ex, $"Error toggling save status for post {request.PostId}");
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
             }
         }
+        
+        public class ToggleSaveRequest
+        {
+            public int PostId { get; set; }
+        }
+        
+        /// <summary>
+        /// Report a post
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Report([FromBody] SubmitReportRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    _logger.LogWarning("Report called by unauthenticated user");
+                    return Json(new { success = false, message = "You must be logged in to report a post" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Reason))
+                {
+                    return Json(new { success = false, message = "Please select a reason for reporting" });
+                }
+
+                _logger.LogInformation($"Report submission: PostId={request.PostId}, UserId={userId}, Reason={request.Reason}");
+
+                var result = await _reportService.CreateReportAsync(
+                    request.PostId,
+                    userId,
+                    request.Reason,
+                    request.Details
+                );
+
+                if (result.Success)
+                {
+                    _logger.LogInformation($"Report created successfully for post {request.PostId}");
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Thank you for your report. Our moderation team will review it shortly."
+                    });
+                }
+
+                _logger.LogWarning($"Failed to create report: {result.ErrorMessage}");
+                return Json(new { success = false, message = result.ErrorMessage });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error submitting report for post {request.PostId}");
+                return Json(new { success = false, message = "An error occurred while submitting your report. Please try again." });
+            }
+        }
+        
         /// <summary>
         /// Display single post with comments
         /// </summary>

@@ -147,16 +147,22 @@ namespace discussionspot9.Controllers
             {
                 StoryId = story.StoryId,
                 Title = story.Title ?? "",
+                Slug = story.Slug ?? "",
                 Description = story.Description ?? "",
                 Status = story.Status ?? "",
+                UpdatedAt = story.UpdatedAt,
                 Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideEditViewModel
                 {
+                    StorySlideId = s.StorySlideId,
                     SlideId = s.StorySlideId,
                     Title = s.Headline ?? "",
                     Content = s.Text ?? "",
                     ImageUrl = s.MediaUrl ?? "",
                     SlideOrder = s.OrderIndex,
-                    SlideType = s.SlideType ?? ""
+                    SlideType = s.SlideType ?? "",
+                    BackgroundColor = s.BackgroundColor ?? "#667eea",
+                    BackgroundImageUrl = s.MediaUrl ?? "",
+                    LinkUrl = s.Text ?? ""
                 }).ToList()
             };
 
@@ -447,5 +453,113 @@ namespace discussionspot9.Controllers
         }
 
         // ViewStory removed - using Viewer action instead to avoid duplicate routes
+
+        // ===== STORY EDITOR API ENDPOINTS =====
+
+        [HttpPost]
+        [Route("api/stories/save-draft")]
+        public async Task<IActionResult> SaveDraft([FromBody] SaveDraftRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { success = false, message = "User not authenticated" });
+                }
+
+                Story story;
+
+                if (request.StoryId > 0)
+                {
+                    // Update existing story
+                    story = await _context.Stories
+                        .Include(s => s.Slides)
+                        .FirstOrDefaultAsync(s => s.StoryId == request.StoryId && s.UserId == userId);
+
+                    if (story == null)
+                    {
+                        return NotFound(new { success = false, message = "Story not found" });
+                    }
+
+                    story.Title = request.Title;
+                    story.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    // Create new story
+                    story = new Story
+                    {
+                        Title = request.Title,
+                        Slug = request.Title.ToSlug(),
+                        Status = "draft",
+                        UserId = userId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    _context.Stories.Add(story);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, storyId = story.StoryId, message = "Draft saved successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving story draft");
+                return StatusCode(500, new { success = false, message = "Error saving draft" });
+            }
+        }
+
+        [HttpPost]
+        [Route("api/stories/{id}/publish")]
+        public async Task<IActionResult> PublishStoryApi(int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { success = false, message = "User not authenticated" });
+                }
+
+                var story = await _context.Stories.FirstOrDefaultAsync(s => s.StoryId == id && s.UserId == userId);
+
+                if (story == null)
+                {
+                    return NotFound(new { success = false, message = "Story not found" });
+                }
+
+                story.Status = "published";
+                story.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, slug = story.Slug, message = "Story published successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error publishing story {StoryId}", id);
+                return StatusCode(500, new { success = false, message = "Error publishing story" });
+            }
+        }
+    }
+
+    public class SaveDraftRequest
+    {
+        public int StoryId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public List<SlideData> Slides { get; set; } = new();
+    }
+
+    public class SlideData
+    {
+        public string Id { get; set; } = string.Empty;
+        public string BackgroundColor { get; set; } = string.Empty;
+        public string BackgroundType { get; set; } = string.Empty;
+        public string BackgroundImage { get; set; } = string.Empty;
+        public int Duration { get; set; }
+        public string Transition { get; set; } = string.Empty;
     }
 }

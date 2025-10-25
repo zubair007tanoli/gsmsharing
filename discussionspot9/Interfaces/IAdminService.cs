@@ -27,6 +27,7 @@ namespace discussionspot9.Interfaces
         Task<List<UserManagementViewModel>> GetAllUsersAsync(int page = 1, int pageSize = 50);
         Task<List<UserManagementViewModel>> SearchUsersAsync(string searchTerm);
         Task<UserDetailViewModel?> GetUserDetailAsync(string userId);
+        Task<List<string>> GetAllAdminUserIdsAsync();
         
         // Moderation Logs
         Task LogModerationActionAsync(string moderatorId, string targetUserId, string actionType, string reason, string? entityId = null, int? communityId = null);

@@ -16,6 +16,8 @@ namespace discussionspot9.Models.Domain
         public int Score { get; set; }
         public bool IsEdited { get; set; }
         public bool IsDeleted { get; set; }
+        public bool IsPinned { get; set; }
+        public DateTime? EditedAt { get; set; }
         public int TreeLevel { get; set; }
 
         // Navigation properties

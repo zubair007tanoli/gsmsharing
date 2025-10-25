@@ -10,6 +10,11 @@
             <p class="text-muted">Posts waiting for SEO optimization</p>
         </div>
         <div class="col-auto">
+            <form asp-action="PopulateQueue" method="post" class="d-inline me-2" onsubmit="return confirm('This will analyze your posts and add eligible ones to the queue. Continue?');">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-magic"></i> Populate Queue
+                </button>
+            </form>
             <a href="@Url.Action("Dashboard")" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
@@ -24,10 +29,25 @@
         </div>
     }
 
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show">
+            <i class="fas fa-info-circle"></i> @TempData["InfoMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> No posts in queue. The system is running smoothly!
+            <i class="fas fa-info-circle"></i> No posts in queue.
+            <hr class="my-2">
+            <p class="mb-2"><strong>How to populate the queue:</strong></p>
+            <ul class="mb-2">
+                <li><strong>Automatic:</strong> The system automatically selects posts every Sunday at 2 AM</li>
+                <li><strong>Manual:</strong> Click the "Populate Queue" button above to populate now</li>
+            </ul>
+            <p class="mb-0 small text-muted"><strong>Note:</strong> Only posts older than 14 days that haven't been optimized recently will be selected.</p>
         </div>
     }
     else

@@ -124,6 +124,11 @@
 
             if (targetContainer) {
                 targetContainer.insertAdjacentHTML('beforeend', htmlContent);
+                
+                // Update comment count only for top-level comments
+                if (!parentCommentId) {
+                    this.updateCommentCount(1);
+                }
             } else {
                 console.error(`Could not find container for comment. ParentID: ${parentCommentId || 'none'}`);
             }
@@ -833,6 +838,36 @@
         if (el) {
             el.style.opacity = '0';
             setTimeout(() => el.remove(), 300);
+        }
+    }
+    
+    updateCommentCount(change) {
+        // Update the comment count in the header
+        const commentCountEl = document.querySelector('.comment-count');
+        if (commentCountEl) {
+            const currentText = commentCountEl.textContent;
+            const match = currentText.match(/(\d+)/);
+            if (match) {
+                const currentCount = parseInt(match[0]);
+                const newCount = Math.max(0, currentCount + change);
+                commentCountEl.textContent = `${newCount} Comment${newCount !== 1 ? 's' : ''}`;
+            }
+        }
+        
+        // Update the comment button/display count in post actions
+        const commentBtn = document.querySelector('.action-btn .fa-comment')?.parentElement || 
+                          document.querySelector('.action-btn-display .fa-comment')?.parentElement ||
+                          document.querySelector('#postCommentCount')?.parentElement;
+        if (commentBtn) {
+            const span = commentBtn.querySelector('span') || document.getElementById('postCommentCount');
+            if (span) {
+                const match = span.textContent.match(/(\d+)/);
+                if (match) {
+                    const currentCount = parseInt(match[0]);
+                    const newCount = Math.max(0, currentCount + change);
+                    span.textContent = `Comments (${newCount})`;
+                }
+            }
         }
     }
 

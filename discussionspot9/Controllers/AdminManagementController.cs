@@ -14,15 +14,18 @@ namespace discussionspot9.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AdminManagementController> _logger;
         private readonly IAdminService _adminService;
+        private readonly IReportService _reportService;
 
         public AdminManagementController(
             ApplicationDbContext context,
             ILogger<AdminManagementController> logger,
-            IAdminService adminService)
+            IAdminService adminService,
+            IReportService reportService)
         {
             _context = context;
             _logger = logger;
             _adminService = adminService;
+            _reportService = reportService;
         }
         
         private async Task<bool> IsCurrentUserAdmin()
@@ -388,6 +391,98 @@ namespace discussionspot9.Controllers
             ViewBag.CurrentPage = page;
             
             return View(logs);
+        }
+        
+        // ===============================================
+        // REPORT MANAGEMENT (NEW)
+        // ===============================================
+        
+        /// <summary>
+        /// View all post reports
+        /// </summary>
+        [HttpGet("reports")]
+        public async Task<IActionResult> Reports(string status = "all", int page = 1)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Forbid();
+            }
+            
+            var reports = await _reportService.GetAllReportsAsync(status, page, 20);
+            var pendingCount = await _reportService.GetPendingReportCountAsync();
+            
+            ViewBag.CurrentStatus = status;
+            ViewBag.CurrentPage = page;
+            ViewBag.PendingCount = pendingCount;
+            
+            return View(reports);
+        }
+        
+        /// <summary>
+        /// Get pending reports count (AJAX)
+        /// </summary>
+        [HttpGet("reports/pending-count")]
+        public async Task<IActionResult> GetPendingReportCount()
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+            
+            var count = await _reportService.GetPendingReportCountAsync();
+            return Json(new { success = true, count = count });
+        }
+        
+        /// <summary>
+        /// Resolve a report
+        /// </summary>
+        [HttpPost("reports/resolve")]
+        public async Task<IActionResult> ResolveReport(int reportId, string? action = null)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+            
+            var adminUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(adminUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            var result = await _reportService.ResolveReportAsync(reportId, adminUserId, action);
+            
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Success ? "Report resolved successfully" : result.ErrorMessage
+            });
+        }
+        
+        /// <summary>
+        /// Dismiss a report
+        /// </summary>
+        [HttpPost("reports/dismiss")]
+        public async Task<IActionResult> DismissReport(int reportId)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+            
+            var adminUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(adminUserId))
+            {
+                return Json(new { success = false, message = "Not authenticated" });
+            }
+            
+            var result = await _reportService.DismissReportAsync(reportId, adminUserId);
+            
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Success ? "Report dismissed" : result.ErrorMessage
+            });
         }
     }
 }

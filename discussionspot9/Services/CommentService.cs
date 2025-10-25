@@ -13,12 +13,18 @@ namespace discussionspot9.Services
         private readonly IDbContextFactory<ApplicationDbContext> _context;
         private readonly ILogger<CommentService> _logger;
         private readonly ILinkMetadataService _linkMetadataService;
+        private readonly INotificationService _notificationService;
 
-        public CommentService(IDbContextFactory<ApplicationDbContext> context, ILogger<CommentService> logger, ILinkMetadataService linkMetadataService)
+        public CommentService(
+            IDbContextFactory<ApplicationDbContext> context, 
+            ILogger<CommentService> logger, 
+            ILinkMetadataService linkMetadataService,
+            INotificationService notificationService)
         {
             _context = context;
             _logger = logger;
             _linkMetadataService = linkMetadataService;
+            _notificationService = notificationService;
         }
 
         public async Task<CreateCommentResult> CreateCommentAsync(CreateCommentViewModel model)
@@ -56,6 +62,39 @@ namespace discussionspot9.Services
             }
 
             await dbContext.SaveChangesAsync();
+            
+            // Get commenter name for notifications
+            var commenterProfile = await dbContext.UserProfiles.FindAsync(model.UserId);
+            var commenterName = commenterProfile?.DisplayName ?? "Someone";
+            
+            // Create notifications
+            try
+            {
+                if (model.ParentCommentId.HasValue)
+                {
+                    // This is a reply to a comment
+                    await _notificationService.NotifyCommentReplyAsync(
+                        model.ParentCommentId.Value,
+                        comment.CommentId,
+                        model.UserId,
+                        commenterName);
+                }
+                else
+                {
+                    // This is a new comment on a post
+                    await _notificationService.NotifyPostCommentAsync(
+                        model.PostId,
+                        comment.CommentId,
+                        model.UserId,
+                        commenterName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error creating notification for comment {comment.CommentId}");
+                // Don't fail the comment creation if notification fails
+            }
+            
             return new CreateCommentResult { Success = true, CommentId = comment.CommentId };
         }
 
@@ -167,6 +206,24 @@ namespace discussionspot9.Services
                 // Detach the entity to ensure GetCommentByIdAsync gets fresh data
                 dbContext.Entry(comment).State = EntityState.Detached;
 
+                // Create notification for upvotes only
+                if (voteType == 1)
+                {
+                    try
+                    {
+                        var voterProfile = await dbContext.UserProfiles.FindAsync(userId);
+                        var voterName = voterProfile?.DisplayName ?? "Someone";
+                        
+                        await _notificationService.NotifyCommentVoteAsync(commentId, userId, voterName, 1);
+                        _logger.LogInformation($"📬 Notification sent for comment upvote");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Error creating vote notification for comment {commentId}");
+                        // Don't fail the vote if notification fails
+                    }
+                }
+
                 return new VoteResult
                 {
                     Success = true,
@@ -261,8 +318,12 @@ namespace discussionspot9.Services
             comment.Content = content;
             comment.UpdatedAt = DateTime.UtcNow;
             comment.IsEdited = true;
+            comment.EditedAt = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync();
+            
+            _logger.LogInformation($"Comment {commentId} edited by user {userId}");
+            
             return ServiceResult.SuccessResult();
         }
 
@@ -288,6 +349,61 @@ namespace discussionspot9.Services
             return ServiceResult.SuccessResult();
         }
 
+        public async Task<PinCommentResponse> TogglePinCommentAsync(int commentId, string userId)
+        {
+            using var dbContext = _context.CreateDbContext();
+            
+            var comment = await dbContext.Comments
+                .Include(c => c.Post)
+                .FirstOrDefaultAsync(c => c.CommentId == commentId);
+                
+            if (comment == null)
+            {
+                return new PinCommentResponse 
+                { 
+                    Success = false, 
+                    ErrorMessage = "Comment not found." 
+                };
+            }
+
+            // Verify user is the post author
+            if (comment.Post.UserId != userId)
+            {
+                return new PinCommentResponse 
+                { 
+                    Success = false, 
+                    ErrorMessage = "Only the post author can pin comments." 
+                };
+            }
+
+            // If pinning this comment, unpin all other comments on this post
+            if (!comment.IsPinned)
+            {
+                var otherPinnedComments = await dbContext.Comments
+                    .Where(c => c.PostId == comment.PostId && c.IsPinned && c.CommentId != commentId)
+                    .ToListAsync();
+                    
+                foreach (var pinnedComment in otherPinnedComments)
+                {
+                    pinnedComment.IsPinned = false;
+                }
+            }
+
+            // Toggle pin status
+            comment.IsPinned = !comment.IsPinned;
+            comment.UpdatedAt = DateTime.UtcNow;
+
+            await dbContext.SaveChangesAsync();
+            
+            _logger.LogInformation($"Comment {commentId} pin toggled to {comment.IsPinned} by user {userId}");
+            
+            return new PinCommentResponse 
+            { 
+                Success = true, 
+                IsPinned = comment.IsPinned 
+            };
+        }
+
         public async Task<List<CommentTreeViewModel>> GetPostCommentsAsync(int postId, string sort = "best", int page = 1)
         {
             const int pageSize = 20;
@@ -309,14 +425,18 @@ namespace discussionspot9.Services
                 .Where(c => c.ParentCommentId == null)
                 .AsQueryable();
 
-            // Apply sorting
+            // Apply sorting - ALWAYS put pinned comments first
             topLevelComments = sort switch
             {
-                "new" => topLevelComments.OrderByDescending(c => c.CreatedAt),
-                "top" => topLevelComments.OrderByDescending(c => c.UpvoteCount - c.DownvoteCount),
-                "controversial" => topLevelComments.OrderByDescending(c => c.UpvoteCount + c.DownvoteCount)
+                "new" => topLevelComments.OrderByDescending(c => c.IsPinned)
+                    .ThenByDescending(c => c.CreatedAt),
+                "top" => topLevelComments.OrderByDescending(c => c.IsPinned)
+                    .ThenByDescending(c => c.UpvoteCount - c.DownvoteCount),
+                "controversial" => topLevelComments.OrderByDescending(c => c.IsPinned)
+                    .ThenByDescending(c => c.UpvoteCount + c.DownvoteCount)
                     .ThenBy(c => Math.Abs(c.UpvoteCount - c.DownvoteCount)),
-                _ => topLevelComments.OrderByDescending(c => c.UpvoteCount - c.DownvoteCount)
+                _ => topLevelComments.OrderByDescending(c => c.IsPinned)
+                    .ThenByDescending(c => c.UpvoteCount - c.DownvoteCount)
                     .ThenByDescending(c => c.CreatedAt)
             };
 
@@ -499,6 +619,8 @@ namespace discussionspot9.Services
                 DownvoteCount = comment.DownvoteCount,
                 IsEdited = comment.IsEdited,
                 IsDeleted = comment.IsDeleted,
+                IsPinned = comment.IsPinned,
+                EditedAt = comment.EditedAt,
                 TreeLevel = comment.TreeLevel,
                 UserId = comment.UserId,
                 AuthorDisplayName = userProfile?.DisplayName ?? "Unknown",

@@ -36,8 +36,10 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
     {
         public int StoryId { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public DateTime UpdatedAt { get; set; }
         public List<StorySlideEditViewModel> Slides { get; set; } = new();
     }
 
@@ -63,11 +65,13 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public int SlideOrder { get; set; }
         public string SlideType { get; set; } = string.Empty;
         public string? BackgroundColor { get; set; }
+        public string? BackgroundImageUrl { get; set; }
         public string? TextColor { get; set; }
         public int Duration { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public string? LinkUrl { get; set; }
     }
 
     public class StoriesIndexViewModel

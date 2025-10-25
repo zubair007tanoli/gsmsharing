@@ -140,6 +140,24 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        
+        /* Comment count display (non-clickable) */
+        .action-btn-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--text-secondary, #6c757d);
+            border: none;
+            font-size: 0.95rem;
+            cursor: default;
+            pointer-events: none;
+        }
+        
+        .action-btn-display i {
+            font-size: 1.1rem;
+        }
     </style>
 }
 
@@ -319,10 +337,10 @@
                             </button>
                         </div> *@
                         <div class="action-buttons ms-auto">
-                            <button class="action-btn">
+                            <div class="action-btn-display">
                                 <i class="fas fa-comment"></i>
-                                <span>Comments (@Model.Post.CommentCount)</span>
-                            </button>
+                                <span id="postCommentCount">Comments (@Model.Post.CommentCount)</span>
+                            </div>
                             @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
                                 { "ShareTitle", Model.Post.Title },
                                 { "ShareDescription", excerpt },
@@ -336,7 +354,7 @@
                                 <i class="fas fa-bookmark @(Model.Post.IsSavedByUser ? "text-primary" : "")"></i>
                                 <span>@(Model.Post.IsSavedByUser ? "Saved" : "Save")</span>
                             </button>
-                            <button class="action-btn">
+                            <button class="action-btn" id="reportBtn-@Model.Post.PostId" data-post-id="@Model.Post.PostId" onclick="reportPost(@Model.Post.PostId)">
                                 <i class="fas fa-flag"></i>
                                 <span>Report</span>
                             </button>
@@ -401,6 +419,8 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <!-- Quill Mention JS for @@ mentions -->
     <script src="https://cdn.jsdelivr.net/npm/quill-mention@4.0.0/dist/quill.mention.min.js"></script>
+    <!-- Comment Actions -->
+    <script src="~/js/CustomJs/comment-actions.js"></script>
     <script src="~/js/SignalR_Script/Post_Script_Real_Time_Fix.js"></script>
     
     <script>
@@ -616,6 +636,180 @@
                 });
             }
         });
+        
+        // Feature Verification and Fixes
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== FEATURE VERIFICATION ===');
+            
+            // 1. Comment Count Verification
+            const commentCountInHeader = document.querySelector('.comment-count');
+            const commentCountInButton = document.querySelector('.action-btn .fa-comment')?.closest('button')?.querySelector('span');
+            
+            console.log('📊 Comment Count in Header:', commentCountInHeader?.textContent || 'NOT FOUND');
+            console.log('📊 Comment Count in Button:', commentCountInButton?.textContent || 'NOT FOUND');
+            
+            if (commentCountInButton && !commentCountInButton.textContent.includes('(')) {
+                // Fix format if needed
+                const count = '@Model.Post.CommentCount';
+                commentCountInButton.textContent = `Comments (${count})`;
+            }
+            
+            // 2. Share Count - Hide loading stats if backend not ready
+            const shareStats = document.querySelectorAll('.share-stats, [id^="share-count-display"]');
+            if (shareStats.length > 0) {
+                console.log('📤 Share Stats Elements:', shareStats.length);
+                shareStats.forEach(el => {
+                    // Hide share count until backend is implemented
+                    el.style.display = 'none';
+                });
+            }
+            
+            // 3. Save Button Verification
+            const saveBtn = document.getElementById('saveBtn-@Model.Post.PostId');
+            console.log('🔖 Save Button:', saveBtn ? 'FOUND ✅' : 'NOT FOUND ❌');
+            console.log('🔖 Is Saved:', saveBtn?.getAttribute('data-issaved'));
+            
+            // 4. Report Button Verification
+            const reportBtn = document.getElementById('reportBtn-@Model.Post.PostId');
+            console.log('🚩 Report Button:', reportBtn ? 'FOUND ✅' : 'NOT FOUND ❌');
+            console.log('🚩 Report Function:', typeof reportPost !== 'undefined' ? 'FOUND ✅' : 'NOT FOUND ❌');
+            
+            // 5. SignalR Connection Verification
+            setTimeout(() => {
+                if (window.signalRManager) {
+                    console.log('🔌 SignalR State:', window.signalRManager.postConnection?.state || 'NOT CONNECTED');
+                    console.log('🔌 Post ID:', window.signalRManager.pagePostId || 'NOT SET');
+                } else {
+                    console.log('🔌 SignalR Manager:', 'NOT INITIALIZED ❌');
+                }
+            }, 2000);
+            
+            console.log('=== END VERIFICATION ===');
+        });
+        
+        // Report Post Function
+        function reportPost(postId) {
+            // Show report modal
+            const reportModalHTML = `
+                <div class="modal fade" id="reportPostModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-flag me-2"></i> Report Post
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-3">Why are you reporting this post?</p>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="reportReason" id="reasonSpam" value="spam" checked>
+                                    <label class="form-check-label" for="reasonSpam">
+                                        <i class="fas fa-bullhorn me-2"></i> Spam or misleading
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="reportReason" id="reasonAbuse" value="abuse">
+                                    <label class="form-check-label" for="reasonAbuse">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> Harassment or hate speech
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="reportReason" id="reasonInappropriate" value="inappropriate">
+                                    <label class="form-check-label" for="reasonInappropriate">
+                                        <i class="fas fa-ban me-2"></i> Inappropriate content
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="reportReason" id="reasonViolation" value="violation">
+                                    <label class="form-check-label" for="reasonViolation">
+                                        <i class="fas fa-gavel me-2"></i> Violates community rules
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="reportReason" id="reasonOther" value="other">
+                                    <label class="form-check-label" for="reasonOther">
+                                        <i class="fas fa-ellipsis-h me-2"></i> Other
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="reportDetails" class="form-label">Additional details (optional):</label>
+                                    <textarea class="form-control" id="reportDetails" rows="3" placeholder="Provide more context..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="submitReport(${postId})">
+                                    <i class="fas fa-flag me-1"></i> Submit Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('reportPostModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', reportModalHTML);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('reportPostModal'));
+            modal.show();
+            
+            // Clean up modal after hiding
+            document.getElementById('reportPostModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+        
+        // Submit Report Function
+        async function submitReport(postId) {
+            const reason = document.querySelector('input[name="reportReason"]:checked')?.value;
+            const details = document.getElementById('reportDetails')?.value;
+            
+            if (!reason) {
+                alert('Please select a reason for reporting');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/Post/Report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({
+                        postId: postId,
+                        reason: reason,
+                        details: details || ''
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reportPostModal'));
+                    if (modal) modal.hide();
+                    
+                    // Show success message
+                    showToast('success', 'Report submitted successfully. Thank you for helping keep our community safe.');
+                } else {
+                    showToast('error', result.message || 'Failed to submit report');
+                }
+            } catch (error) {
+                console.error('Error submitting report:', error);
+                showToast('error', 'An error occurred while submitting the report');
+            }
+        }
 
         // ============================================
         // COMMENT SORTING

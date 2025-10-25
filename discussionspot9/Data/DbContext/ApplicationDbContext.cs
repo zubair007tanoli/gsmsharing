@@ -60,6 +60,7 @@ namespace discussionspot9.Data.DbContext
         public DbSet<UserBan> UserBans { get; set; }
         public DbSet<ModerationLog> ModerationLogs { get; set; }
         public DbSet<SiteRole> SiteRoles { get; set; }
+        public DbSet<PostReport> PostReports { get; set; }
         
         // Web Stories tables
         public DbSet<Story> Stories { get; set; }
@@ -605,6 +606,81 @@ namespace discussionspot9.Data.DbContext
                     .WithMany()
                     .HasForeignKey(e => e.PostId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+            #endregion
+            
+            #region PostReport Configuration
+            builder.Entity<PostReport>(entity =>
+            {
+                entity.HasKey(e => e.ReportId);
+                entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.Reason).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Details).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.Status).HasMaxLength(50).HasDefaultValue("pending");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.ReviewedByUserId).HasMaxLength(450);
+                entity.Property(e => e.AdminNotes).HasColumnType("NVARCHAR(MAX)");
+
+                entity.HasIndex(e => new { e.Status, e.CreatedAt });
+                entity.HasIndex(e => e.PostId);
+                entity.HasIndex(e => e.UserId);
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.ReviewedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.ReviewedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_PostReport_Status", "Status IN ('pending', 'reviewed', 'resolved', 'dismissed')");
+                });
+            });
+            #endregion
+            
+            #region SiteRole Configuration
+            builder.Entity<SiteRole>(entity =>
+            {
+                entity.HasKey(e => e.RoleId);
+                entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.RoleName).HasMaxLength(50).IsRequired();
+                entity.Property(e => e.AssignedByUserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.Notes).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.RemovedByUserId).HasMaxLength(450);
+
+                entity.HasIndex(e => new { e.UserId, e.RoleName, e.IsActive });
+                entity.HasIndex(e => e.RoleName);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.AssignedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.AssignedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.RemovedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.RemovedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_SiteRole_RoleName", "RoleName IN ('SiteAdmin', 'Moderator', 'Verified', 'Partner')");
+                });
             });
             #endregion
 

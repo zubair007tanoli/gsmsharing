@@ -544,3 +544,106 @@
     animation: successPulse 0.3s ease;
 }
 
+/* Universal Share Modal Styles */
+#universalShareModal .modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+#universalShareModal .modal-header {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 20px 24px;
+}
+
+#universalShareModal .modal-title {
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+#universalShareModal .modal-body {
+    padding: 24px;
+}
+
+#universalShareModal .share-option-card {
+    border: 1px solid #e9ecef !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    color: #2c3e50;
+}
+
+#universalShareModal .share-option-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+    text-decoration: none;
+    color: #2c3e50;
+}
+
+#universalShareModal .share-option-card i {
+    transition: transform 0.2s ease;
+}
+
+#universalShareModal .share-option-card:hover i {
+    transform: scale(1.1);
+}
+
+#universalShareModal .input-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#universalShareModal .form-control {
+    border-right: none;
+    background: #f8f9fa;
+    font-family: 'Courier New', monospace;
+}
+
+#universalShareModal .form-control:focus {
+    background: #f8f9fa;
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+#universalShareModal .btn-primary {
+    transition: all 0.2s ease;
+}
+
+#universalShareModal .btn-success {
+    background: #28a745;
+    border-color: #28a745;
+}
+
+/* Community Share Modal (from Community Details page) */
+#communityShareModal .modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+#communityShareModal .modal-header {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 20px 24px;
+}
+
+#communityShareModal .share-option {
+    border: 1px solid #e9ecef;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+#communityShareModal .share-option:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    text-decoration: none;
+}
+
+/* Toast Notifications for Share */
+#shareToast {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+#shareToast .toast-body {
+    font-weight: 500;
+}
+

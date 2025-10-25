@@ -137,10 +137,9 @@ namespace discussionspot9.Controllers
         /// Edit comment (AJAX)
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int commentId, string content)
+        public async Task<IActionResult> Edit([FromBody] EditCommentRequest request)
         {
-            if (string.IsNullOrWhiteSpace(content))
+            if (request == null || string.IsNullOrWhiteSpace(request.Content))
             {
                 return Json(new { success = false, message = "Comment content cannot be empty." });
             }
@@ -155,20 +154,20 @@ namespace discussionspot9.Controllers
                 }
 
                 // Verify user owns this comment
-                var comment = await _commentService.GetCommentByIdAsync(commentId);
+                var comment = await _commentService.GetCommentByIdAsync(request.CommentId);
                 if (comment == null || comment.UserId != userId)
                 {
                     return Json(new { success = false, message = "Unauthorized" });
                 }
 
-                var result = await _commentService.EditCommentAsync(commentId, content, userId);
+                var result = await _commentService.EditCommentAsync(request.CommentId, request.Content, userId);
 
                 if (result.Success)
                 {
                     return Json(new
                     {
                         success = true,
-                        content = content,
+                        content = request.Content,
                         editedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                         message = "Comment updated successfully!"
                     });
@@ -187,8 +186,7 @@ namespace discussionspot9.Controllers
         /// Delete comment (AJAX)
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int commentId)
+        public async Task<IActionResult> Delete([FromBody] DeleteCommentRequest request)
         {
             try
             {
@@ -199,7 +197,7 @@ namespace discussionspot9.Controllers
                     return Json(new { success = false, message = "User is not authenticated." });
                 }
 
-                var result = await _commentService.DeleteCommentAsync(commentId, userId);
+                var result = await _commentService.DeleteCommentAsync(request.CommentId, userId);
 
                 if (result.Success)
                 {
@@ -216,6 +214,42 @@ namespace discussionspot9.Controllers
             {
                 _logger.LogError(ex, "Error deleting comment");
                 return Json(new { success = false, message = "An error occurred while deleting your comment." });
+            }
+        }
+        
+        /// <summary>
+        /// Toggle pin comment (AJAX) - Only post authors can pin comments
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> TogglePin([FromBody] PinCommentRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User is not authenticated." });
+                }
+
+                var result = await _commentService.TogglePinCommentAsync(request.CommentId, userId);
+
+                if (result.Success)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        isPinned = result.IsPinned,
+                        message = result.IsPinned ? "Comment pinned!" : "Comment unpinned!"
+                    });
+                }
+
+                return Json(new { success = false, message = result.ErrorMessage });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling pin on comment");
+                return Json(new { success = false, message = "An error occurred while pinning the comment." });
             }
         }
 
