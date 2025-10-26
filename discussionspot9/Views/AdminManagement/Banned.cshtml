@@ -1,0 +1,148 @@
+@model List<dynamic>
+@{
+    ViewData["Title"] = "Banned Users";
+    ViewData["PageTitle"] = "Banned Users";
+    ViewData["PageDescription"] = "Manage banned users and their restrictions";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <i class="fas fa-user-slash"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-label">Banned Users</div>
+                <div class="stat-value">@Model.Count</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Reason</th>
+                            <th>Banned Date</th>
+                            <th>Expires</th>
+                            <th>Banned By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var banned in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        @if (!string.IsNullOrEmpty(banned.UserProfile.AvatarUrl))
+                                        {
+                                            <img src="@banned.UserProfile.AvatarUrl" alt="@banned.UserProfile.DisplayName" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle me-2" style="width: 40px; height: 40px; background: linear-gradient(135deg, #fa709a, #fee140); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                                @banned.UserProfile.DisplayName[0]
+                                            </div>
+                                        }
+                                        <div>
+                                            <strong>@banned.UserProfile.DisplayName</strong>
+                                            <br>
+                                            <small class="text-muted">@banned.UserProfile.UserId.Substring(0, 8)...</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">@banned.Ban.Reason</span>
+                                    @if (!string.IsNullOrEmpty(banned.Ban.Notes))
+                                    {
+                                        <br>
+                                        <small class="text-muted">@banned.Ban.Notes</small>
+                                    }
+                                </td>
+                                <td>
+                                    <small>@banned.Ban.BannedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                </td>
+                                <td>
+                                    @if (banned.Ban.ExpiresAt.HasValue)
+                                    {
+                                        if (banned.Ban.ExpiresAt.Value > DateTime.UtcNow)
+                                        {
+                                            <span class="badge bg-warning">@banned.Ban.ExpiresAt.Value.ToString("MMM dd, yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Expired</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-dark">Permanent</span>
+                                    }
+                                </td>
+                                <td>
+                                    <small class="text-muted">Admin</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/u/@banned.UserProfile.DisplayName" class="btn btn-outline-primary" title="View Profile" target="_blank">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        <button class="btn btn-outline-success" onclick="unbanUser('@banned.Ban.BanId', '@banned.UserProfile.DisplayName')" title="Unban User">
+                                            <i class="fas fa-user-check"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-user-check fa-3x text-success mb-3"></i>
+            <h4>No Banned Users</h4>
+            <p class="text-muted">All users are in good standing</p>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function unbanUser(banId, displayName) {
+            if (!confirm(`Unban ${displayName}? They will be able to access the site again.`)) return;
+            
+            fetch(`/admin/manage/banned/unban/${banId}`, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to unban user');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+    </script>
+}
+

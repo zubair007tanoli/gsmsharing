@@ -1,4 +1,8 @@
 ﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.HeaderViewModel
+
+@* Modern Navbar Styles *@
+<link href="~/css/modern-navbar.css" rel="stylesheet" />
+
 <header class="main-header sticky-top">
     <div class="container">
         <nav class="navbar navbar-expand-lg">
@@ -12,7 +16,7 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto d-flex flex-row">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" asp-action="Index" asp-controller="Home">
                             <i class="fas fa-home"></i> <span>Home</span>
@@ -30,47 +34,36 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" asp-action="All" asp-controller="Post">
-                            <i class="fas fa-newspaper"></i> <span>All Posts</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/categories">
-                            <i class="fas fa-th-large"></i> <span>Categories</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-action="Index" asp-controller="Stories">
-                            <i class="fas fa-book-open"></i> <span>Stories</span>
+                            <i class="fas fa-newspaper"></i> <span>Posts</span>
                         </a>
                     </li>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <li class="nav-item">
                             <a class="nav-link" href="/create" style="color: #ff4500; font-weight: 600;">
-                                <i class="fas fa-plus-circle"></i> <span>Create Post</span>
+                                <i class="fas fa-plus-circle"></i> <span>Create</span>
                             </a>
                         </li>
                     }
-                    @if (User.IsInRole("Admin") || Model.Email == "zubair007tanoli@gmail.com")
-                    {
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-crown"></i> <span>Admin</span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="/admin/seo/dashboard"><i class="fas fa-dollar-sign me-2"></i>Revenue Dashboard</a></li>
-                                <li><a class="dropdown-item" href="/admin/seo/queue"><i class="fas fa-tasks me-2"></i>SEO Queue</a></li>
-                                <li><a class="dropdown-item" href="/admin/manage/users"><i class="fas fa-users me-2"></i>Users</a></li>
-                                <li><a class="dropdown-item" href="/admin/manage/posts"><i class="fas fa-file-alt me-2"></i>Posts</a></li>
-                                <li><a class="dropdown-item" href="/admin/manage/reports" id="adminReportsLink">
-                                    <i class="fas fa-flag me-2"></i>Reports
-                                    <span class="badge bg-danger ms-2 admin-reports-badge" id="adminReportsBadge" style="display: none;">0</span>
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="/admin/manage/analytics"><i class="fas fa-chart-bar me-2"></i>Analytics</a></li>
-                            </ul>
-                        </li>
-                    }
+                    
+                    @* More Dropdown *@
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-h"></i> <span>More</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" asp-action="Index" asp-controller="Category">
+                                    <i class="fas fa-layer-group me-2"></i>Categories
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" asp-action="Index" asp-controller="Stories">
+                                    <i class="fas fa-book-open me-2"></i>Stories
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
 
                 <!-- Combined right-side elements into one container -->
@@ -170,6 +163,18 @@
                                     <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i>Profile</a></li>
                                     <li><a class="dropdown-item" href="/profile/edit"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                     <li><a class="dropdown-item" href="/notifications"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
+                                    
+                                    @* Admin Link - Moved here from main navbar *@
+                                    @if (User.IsInRole("Admin") || Model.Email == "zubair007tanoli@gmail.com")
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-warning fw-bold" href="/admin/dashboard">
+                                                <i class="fas fa-crown me-2"></i>Admin Dashboard
+                                            </a>
+                                        </li>
+                                    }
+                                    
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form asp-action="Logout" asp-controller="Account" method="post" class="d-inline">
@@ -186,7 +191,8 @@
                             <!-- Authentication buttons - show when logged out -->
                             <div class="auth-btns">
                                 <a asp-action="Auth" asp-controller="Account" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-sign-in-alt"></i> <span>Login</span> / <i class="fas fa-user-plus"></i> <span>Register</span>
+                                    <i class="fas fa-user"></i>
+                                    <span>Login / Register</span>
                                 </a>
                             </div>
                         }

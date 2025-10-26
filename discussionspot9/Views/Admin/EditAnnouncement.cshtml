@@ -1,0 +1,231 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.AnnouncementViewModel
+@{
+    ViewData["Title"] = "Edit Announcement";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="admin-page-header">
+    <div>
+        <h1><i class="fas fa-edit me-2"></i>Edit Announcement</h1>
+        <p class="text-muted">Update announcement details</p>
+    </div>
+    <a href="/admin/announcements" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="EditAnnouncement" asp-route-id="@Model.AnnouncementId" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="AnnouncementId" />
+                    
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control" placeholder="e.g., New Feature Launched" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Message" class="form-label">Message <span class="text-danger">*</span></label>
+                        <textarea asp-for="Message" class="form-control" rows="3" placeholder="Your announcement message"></textarea>
+                        <span asp-validation-for="Message" class="text-danger"></span>
+                        <small class="text-muted">Maximum 500 characters</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Type" class="form-label">Type <span class="text-danger">*</span></label>
+                            <select asp-for="Type" class="form-select" id="typeSelect">
+                                <option value="info">Info (Blue)</option>
+                                <option value="success">Success (Green)</option>
+                                <option value="warning">Warning (Yellow)</option>
+                                <option value="danger">Danger (Red)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Icon" class="form-label">Icon</label>
+                            <select asp-for="Icon" class="form-select" id="iconSelect">
+                                <option value="fa-info-circle">Info Circle</option>
+                                <option value="fa-bullhorn">Bullhorn</option>
+                                <option value="fa-check-circle">Check Circle</option>
+                                <option value="fa-exclamation-triangle">Warning Triangle</option>
+                                <option value="fa-fire">Fire</option>
+                                <option value="fa-star">Star</option>
+                                <option value="fa-rocket">Rocket</option>
+                                <option value="fa-gift">Gift</option>
+                                <option value="fa-bell">Bell</option>
+                            </select>
+                            <small class="text-muted">
+                                <i class="fas" id="iconPreview"></i> Preview
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LinkUrl" class="form-label">Link URL (Optional)</label>
+                            <input asp-for="LinkUrl" class="form-control" placeholder="https://example.com" />
+                            <span asp-validation-for="LinkUrl" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LinkText" class="form-label">Link Text</label>
+                            <input asp-for="LinkText" class="form-control" placeholder="Learn More" />
+                            <span asp-validation-for="LinkText" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Priority" class="form-label">Priority</label>
+                            <input asp-for="Priority" type="number" class="form-control" min="0" max="100" />
+                            <span asp-validation-for="Priority" class="text-danger"></span>
+                            <small class="text-muted">Higher = shown first</small>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="StartDate" class="form-label">Start Date (Optional)</label>
+                            <input asp-for="StartDate" type="datetime-local" class="form-control" />
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="EndDate" class="form-label">End Date (Optional)</label>
+                            <input asp-for="EndDate" type="datetime-local" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsActive" class="form-check-label">
+                                Active (Show immediately)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsDismissible" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsDismissible" class="form-check-label">
+                                Dismissible (Users can close it)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Announcement
+                        </button>
+                        <a href="/admin/announcements" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="announcementPreview" class="announcement-preview-container">
+                    <!-- Preview will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li>Keep messages concise and clear</li>
+                    <li>Use priority to control display order</li>
+                    <li>Schedule announcements for specific dates</li>
+                    <li>Choose appropriate types for visibility</li>
+                    <li>Make important announcements non-dismissible</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    
+    <script>
+        // Icon preview
+        const iconSelect = document.getElementById('iconSelect');
+        const iconPreview = document.getElementById('iconPreview');
+        
+        function updateIconPreview() {
+            iconPreview.className = 'fas ' + iconSelect.value;
+        }
+        
+        iconSelect.addEventListener('change', updateIconPreview);
+        updateIconPreview();
+
+        // Live preview
+        function updatePreview() {
+            const title = document.getElementById('Title')?.value || 'Your Title';
+            const message = document.getElementById('Message')?.value || 'Your message will appear here';
+            const type = document.getElementById('typeSelect')?.value || 'info';
+            const icon = document.getElementById('iconSelect')?.value || 'fa-info-circle';
+            const linkUrl = document.getElementById('LinkUrl')?.value;
+            const linkText = document.getElementById('LinkText')?.value;
+            
+            const typeColors = {
+                'info': 'linear-gradient(135deg, #0079d3 0%, #0056b3 100%)',
+                'success': 'linear-gradient(135deg, #28a745 0%, #218838 100%)',
+                'warning': 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
+                'danger': 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)'
+            };
+            
+            const textColors = {
+                'warning': '#000',
+                'default': '#fff'
+            };
+            
+            const textColor = type === 'warning' ? textColors.warning : textColors.default;
+            
+            let previewHtml = `
+                <div style="background: ${typeColors[type]}; color: ${textColor}; padding: 0.75rem; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="font-size: 1.5rem;">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <strong>${title}:</strong> ${message}
+            `;
+            
+            if (linkUrl && linkText) {
+                previewHtml += `<a href="${linkUrl}" style="color: inherit; text-decoration: underline; margin-left: 0.5rem;">${linkText} <i class="fas fa-arrow-right ms-1"></i></a>`;
+            }
+            
+            previewHtml += `
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('announcementPreview').innerHTML = previewHtml;
+        }
+        
+        // Update preview on input
+        document.querySelectorAll('input, select, textarea').forEach(element => {
+            element.addEventListener('input', updatePreview);
+            element.addEventListener('change', updatePreview);
+        });
+        
+        // Initial preview
+        updatePreview();
+    </script>
+}
+

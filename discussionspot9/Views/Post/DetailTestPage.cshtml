@@ -253,30 +253,257 @@
                             }
                         }
 
-                        @* Render Link Preview if link data is present *@
-                        @if (!string.IsNullOrWhiteSpace(Model.Post.Url) && !string.IsNullOrWhiteSpace(Model.Post.Url))
+                        @* Render Link Preview - Professional & Eye-Catching Design *@
+                        @* FIXED: Show link preview if URL exists, regardless of PostType! *@
+                        @if (!string.IsNullOrWhiteSpace(Model.Post.Url))
                         {
-                            <div class="card link-preview-card mb-4">
-                                <a href="@Model.Post.Url" class="text-decoration-none text-reset" target="_blank" rel="noopener noreferrer">
-                                    <div class="row g-0">
-                                        <div class="col-md-4">
-                                            <div class="ratio ratio-16x9 link-preview-image-wrapper">
-                                                <img src="@(Model.Post.LinkModel.ThumbnailUrl ?? "https://placehold.co/800x450/cccccc/333333?text=Link+Preview")" class="img-fluid rounded-start link-preview-img" alt="Link Thumbnail">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <div class="card-body">
-                                                <h5 class="card-title text-truncate">@Model.Post.LinkModel.Title</h5>
-                                                <p class="card-text text-muted mb-2 clamp-2">@Model.Post.LinkModel.Description</p>
-                                                <div class="small text-muted text-truncate">
-                                                    <i class="fas fa-link me-1"></i>
-                                                    <span>@Model.Post.LinkModel.Url</span>
+                            <div class="professional-link-preview mb-4">
+                                <a href="@Model.Post.Url" class="preview-link-wrapper" target="_blank" rel="noopener noreferrer">
+                                    <div class="preview-container">
+                                        @if (!string.IsNullOrWhiteSpace(Model.Post.LinkModel.ThumbnailUrl))
+                                        {
+                                            <div class="preview-image-section">
+                                                <img src="@Model.Post.LinkModel.ThumbnailUrl" 
+                                                     class="preview-image" 
+                                                     alt="@(Model.Post.LinkModel.Title ?? "Link Preview")"
+                                                     onerror="this.parentElement.style.display='none'">
+                                                <div class="image-overlay">
+                                                    <i class="fas fa-external-link-alt"></i>
                                                 </div>
                                             </div>
-                                        </div>
+                                            <div class="preview-content-section">
+                                                <div class="preview-header">
+                                                    @if (!string.IsNullOrWhiteSpace(Model.Post.LinkModel.FaviconUrl))
+                                                    {
+                                                        <img src="@Model.Post.LinkModel.FaviconUrl" 
+                                                             class="preview-favicon" 
+                                                             alt="favicon"
+                                                             onerror="this.style.display='none'">
+                                                    }
+                                                    <span class="preview-domain">@Model.Post.LinkModel.Domain</span>
+                                                </div>
+                                                <h3 class="preview-title">@Model.Post.LinkModel.Title</h3>
+                                                <p class="preview-description">@Model.Post.LinkModel.Description</p>
+                                                <div class="preview-cta">
+                                                    <span class="cta-button">
+                                                        <i class="fas fa-arrow-right me-2"></i>Visit Link
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="preview-content-section preview-content-full">
+                                                <div class="preview-header">
+                                                    @if (!string.IsNullOrWhiteSpace(Model.Post.LinkModel.FaviconUrl))
+                                                    {
+                                                        <img src="@Model.Post.LinkModel.FaviconUrl" 
+                                                             class="preview-favicon" 
+                                                             alt="favicon"
+                                                             onerror="this.style.display='none'">
+                                                    }
+                                                    <span class="preview-domain">@Model.Post.LinkModel.Domain</span>
+                                                </div>
+                                                <h3 class="preview-title">@Model.Post.LinkModel.Title</h3>
+                                                @if (!string.IsNullOrWhiteSpace(Model.Post.LinkModel.Description))
+                                                {
+                                                    <p class="preview-description">@Model.Post.LinkModel.Description</p>
+                                                }
+                                                <div class="preview-cta">
+                                                    <span class="cta-button">
+                                                        <i class="fas fa-arrow-right me-2"></i>Visit Link
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </a>
                             </div>
+                            
+                            <style>
+                                /* Professional Link Preview Styles */
+                                .professional-link-preview {
+                                    max-width: 800px;
+                                    margin: 2rem auto;
+                                    padding: 0 1rem; /* Added padding to prevent edge touching */
+                                }
+                                
+                                .preview-link-wrapper {
+                                    display: block;
+                                    text-decoration: none;
+                                    color: inherit;
+                                }
+                                
+                                .preview-container {
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    border-radius: 16px;
+                                    overflow: hidden;
+                                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+                                    transition: all 0.3s ease;
+                                    display: grid;
+                                    grid-template-columns: 300px 1fr;
+                                    gap: 0;
+                                }
+                                
+                                .preview-container:hover {
+                                    transform: translateY(-5px);
+                                    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+                                }
+                                
+                                .preview-image-section {
+                                    position: relative;
+                                    overflow: hidden;
+                                    background: #000;
+                                }
+                                
+                                .preview-image {
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                    transition: transform 0.3s ease;
+                                }
+                                
+                                .preview-container:hover .preview-image {
+                                    transform: scale(1.05);
+                                }
+                                
+                                .image-overlay {
+                                    position: absolute;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background: rgba(0, 0, 0, 0.3);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    opacity: 0;
+                                    transition: opacity 0.3s ease;
+                                }
+                                
+                                .preview-container:hover .image-overlay {
+                                    opacity: 1;
+                                }
+                                
+                                .image-overlay i {
+                                    font-size: 3rem;
+                                    color: white;
+                                }
+                                
+                                .preview-content-section {
+                                    padding: 2rem;
+                                    background: white;
+                                    display: flex;
+                                    flex-direction: column;
+                                    justify-content: space-between;
+                                }
+                                
+                                .preview-content-full {
+                                    grid-column: 1 / -1;
+                                }
+                                
+                                .preview-header {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                    margin-bottom: 1rem;
+                                }
+                                
+                                .preview-favicon {
+                                    width: 20px;
+                                    height: 20px;
+                                    border-radius: 4px;
+                                }
+                                
+                                .preview-domain {
+                                    font-size: 0.85rem;
+                                    color: #667eea;
+                                    font-weight: 600;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5px;
+                                }
+                                
+                                .preview-title {
+                                    font-size: 1.5rem;
+                                    font-weight: 700;
+                                    color: #1a1a1a;
+                                    margin-bottom: 1rem;
+                                    line-height: 1.3;
+                                    display: -webkit-box;
+                                    -webkit-line-clamp: 2;
+                                    -webkit-box-orient: vertical;
+                                    overflow: hidden;
+                                }
+                                
+                                .preview-description {
+                                    font-size: 1rem;
+                                    color: #4a5568;
+                                    line-height: 1.6;
+                                    margin-bottom: 1.5rem;
+                                    display: -webkit-box;
+                                    -webkit-line-clamp: 3;
+                                    -webkit-box-orient: vertical;
+                                    overflow: hidden;
+                                }
+                                
+                                .preview-cta {
+                                    margin-top: auto;
+                                }
+                                
+                                .cta-button {
+                                    display: inline-flex;
+                                    align-items: center;
+                                    padding: 12px 24px;
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    border-radius: 8px;
+                                    font-weight: 600;
+                                    font-size: 0.95rem;
+                                    transition: all 0.3s ease;
+                                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                                }
+                                
+                                .preview-container:hover .cta-button {
+                                    transform: translateX(5px);
+                                    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+                                }
+                                
+                                /* Responsive Design */
+                                @@media (max-width: 768px) {
+                                    .preview-container {
+                                        grid-template-columns: 1fr;
+                                    }
+                                    
+                                    .preview-image-section {
+                                        min-height: 200px;
+                                    }
+                                    
+                                    .preview-content-section {
+                                        padding: 1.5rem;
+                                    }
+                                    
+                                    .preview-title {
+                                        font-size: 1.25rem;
+                                    }
+                                    
+                                    .preview-description {
+                                        font-size: 0.95rem;
+                                    }
+                                }
+                                
+                                /* Dark Theme Support */
+                                [data-theme="dark"] .preview-content-section {
+                                    background: #2d3748;
+                                }
+                                
+                                [data-theme="dark"] .preview-title {
+                                    color: #f7fafc;
+                                }
+                                
+                                [data-theme="dark"] .preview-description {
+                                    color: #cbd5e0;
+                                }
+                            </style>
                         }
 
                         <!-- DetailTestPage.cshtml -->
@@ -894,6 +1121,163 @@
                 console.log(`✅ Comments sorted by ${sortType}`);
             }
         });
+        
+        // ======================================================
+        // REAL-TIME POLL VOTING (No Page Refresh Needed!)
+        // ======================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle all poll vote buttons
+            document.querySelectorAll('.poll-vote-btn, [data-poll-vote]').forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    await castPollVote(this);
+                });
+            });
+        });
+        
+        async function castPollVote(button) {
+            const postId = button.getAttribute('data-post-id') || document.getElementById('pagePostId')?.value;
+            const optionId = button.getAttribute('data-option-id');
+            
+            if (!postId || !optionId) {
+                console.error('Missing postId or optionId');
+                return;
+            }
+            
+            // Disable button during vote
+            const originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Voting...';
+            
+            try {
+                const response = await fetch('/Post/VotePoll', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({
+                        postId: parseInt(postId),
+                        optionIds: [parseInt(optionId)]
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update poll results WITHOUT page refresh!
+                    updatePollResults(result.pollResults, result.totalVotes);
+                    showToast('✅ Vote recorded successfully!', 'success');
+                    
+                    // Mark poll as voted
+                    const pollContainer = button.closest('.poll-container, [data-poll-id]');
+                    if (pollContainer) {
+                        pollContainer.setAttribute('data-user-voted', 'true');
+                        
+                        // Disable all vote buttons in this poll
+                        pollContainer.querySelectorAll('.poll-vote-btn, [data-poll-vote]').forEach(btn => {
+                            btn.disabled = true;
+                            btn.classList.add('voted');
+                        });
+                    }
+                } else {
+                    showToast('❌ ' + result.message, 'error');
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            } catch (error) {
+                console.error('Error voting:', error);
+                showToast('❌ An error occurred while voting', 'error');
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }
+        }
+        
+        function updatePollResults(pollResults, totalVotes) {
+            console.log('📊 Updating poll results:', pollResults);
+            
+            pollResults.forEach(option => {
+                // Update vote count
+                const voteCountEl = document.querySelector(`[data-vote-count="${option.optionId}"]`);
+                if (voteCountEl) {
+                    voteCountEl.textContent = option.voteCount;
+                }
+                
+                // Update percentage
+                const percentageEl = document.querySelector(`[data-percentage="${option.optionId}"]`);
+                if (percentageEl) {
+                    percentageEl.textContent = Math.round(option.percentage) + '%';
+                }
+                
+                // Update progress bar
+                const progressBar = document.querySelector(`[data-progress-bar="${option.optionId}"]`);
+                if (progressBar) {
+                    progressBar.style.width = option.percentage + '%';
+                    
+                    // Add smooth animation
+                    progressBar.style.transition = 'width 0.5s ease-in-out';
+                }
+                
+                // Alternative selectors (if poll uses different structure)
+                const optionContainer = document.querySelector(`[data-option-id="${option.optionId}"]`);
+                if (optionContainer) {
+                    const voteEl = optionContainer.querySelector('.vote-count, .poll-vote-count');
+                    const percEl = optionContainer.querySelector('.percentage, .poll-percentage');
+                    const progEl = optionContainer.querySelector('.progress-bar, .poll-progress-bar');
+                    
+                    if (voteEl) voteEl.textContent = option.voteCount;
+                    if (percEl) percEl.textContent = Math.round(option.percentage) + '%';
+                    if (progEl) {
+                        progEl.style.width = option.percentage + '%';
+                        progEl.style.transition = 'width 0.5s ease-in-out';
+                    }
+                }
+            });
+            
+            // Update total votes
+            const totalVotesEl = document.querySelector('[data-total-votes], .total-votes, .poll-total-votes');
+            if (totalVotesEl) {
+                totalVotesEl.textContent = totalVotes + ' ' + (totalVotes === 1 ? 'vote' : 'votes');
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease;';
+            toast.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between">
+                    <span>${message}</span>
+                    <button type="button" class="btn-close btn-close-white ms-3" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Add CSS animation
+        if (!document.getElementById('toast-animations')) {
+            const style = document.createElement('style');
+            style.id = 'toast-animations';
+            style.textContent = `
+                @@keyframes slideIn {
+                    from { transform: translateX(400px); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @@keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(400px); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     </script>
     @* <script src="~/js/SignalR_Script/Working/Post_Script_Real_Time_Fix_Claude.js"></script> *@
     @* <script src="~/js/SignalR_Script/poll-vote-handler.js"></script> *@

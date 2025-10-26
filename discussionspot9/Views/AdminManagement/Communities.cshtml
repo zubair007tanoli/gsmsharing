@@ -1,0 +1,138 @@
+@model List<discussionspot9.Models.Domain.Community>
+@{
+    ViewData["Title"] = "Community Management";
+    ViewData["PageTitle"] = "Communities";
+    ViewData["PageDescription"] = "Manage all communities on the platform";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Total Communities: @Model.Count</h5>
+            </div>
+            <a href="/create-community" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Community
+            </a>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="row g-4">
+        @foreach (var community in Model)
+        {
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100">
+                    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(community.IconUrl))
+                            {
+                                <img src="@community.IconUrl" alt="@community.Name" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid white;">
+                            }
+                            else
+                            {
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; margin-right: 0.75rem; font-weight: 700;">
+                                    @community.Name[0]
+                                </div>
+                            }
+                            <div class="flex-grow-1">
+                                <h5 class="mb-0">r/@community.Name</h5>
+                                <small>@community.CommunityType</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">@community.ShortDescription</p>
+                        
+                        <div class="d-flex gap-3 mb-3">
+                            <div>
+                                <i class="fas fa-users text-primary me-1"></i>
+                                <strong>@community.MemberCount</strong>
+                                <small class="text-muted">members</small>
+                            </div>
+                            <div>
+                                <i class="fas fa-newspaper text-success me-1"></i>
+                                <strong>@community.PostCount</strong>
+                                <small class="text-muted">posts</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <span class="badge bg-info">@(community.Category?.Name ?? "Uncategorized")</span>
+                            @if (community.IsNSFW)
+                            {
+                                <span class="badge bg-danger">NSFW</span>
+                            }
+                            @if (community.CommunityType == "private")
+                            {
+                                <span class="badge bg-warning">Private</span>
+                            }
+                        </div>
+                        
+                        <div class="small text-muted">
+                            <i class="far fa-clock me-1"></i>Created @community.CreatedAt.ToString("MMM dd, yyyy")
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <div class="d-flex gap-2">
+                            <a href="/r/@community.Slug" class="btn btn-sm btn-outline-primary flex-grow-1" target="_blank">
+                                <i class="fas fa-external-link-alt me-1"></i>View
+                            </a>
+                            <a href="/r/@community.Slug/settings" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-cog"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCommunity(@community.CommunityId, '@community.Name')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h4>No Communities Yet</h4>
+            <p class="text-muted">Create your first community to get started</p>
+            <a href="/create-community" class="btn btn-primary mt-3">
+                <i class="fas fa-plus me-2"></i>Create Community
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function deleteCommunity(id, name) {
+            if (confirm(`Are you sure you want to delete the community "${name}"? This action cannot be undone.`)) {
+                fetch(`/admin/manage/communities/delete/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Failed to delete community');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred');
+                });
+            }
+        }
+    </script>
+}
+

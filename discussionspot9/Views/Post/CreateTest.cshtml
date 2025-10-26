@@ -856,9 +856,27 @@
 
                         <div class="content-section" id="imageContent">
                             <div class="form-group">
-                                <label class="form-label" asp-for="MediaFiles">Upload Media *</label>
+                                <label class="form-label" asp-for="MediaFiles">Upload Media Files</label>
                                 <input asp-for="MediaFiles" id="mediaUpload" multiple accept="image/*,video/*" type="file" class="form-input">
                                 <span asp-validation-for="MediaFiles" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Upload images or videos from your device (max 10MB per file)
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Or Add Image URLs</label>
+                                <div id="mediaUrlsContainer">
+                                    <input type="text" class="form-input mb-2" id="mediaUrlInput" placeholder="https://example.com/image.jpg">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="addMediaUrl()">
+                                        <i class="fas fa-plus"></i> Add URL
+                                    </button>
+                                </div>
+                                <div id="addedMediaUrls" class="mt-2"></div>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Add images from external URLs (one at a time, press "Add URL" button)
+                                </small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" asp-for="MediaCaption">Caption</label>
@@ -871,6 +889,10 @@
                                 <label class="form-label" asp-for="Url">URL *</label>
                                 <input asp-for="Url" class="form-input" id="linkUrl" placeholder="https://example.com">
                                 <span asp-validation-for="Url" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Add a URL to create link preview card (works with any post type!)
+                                </small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Description (Optional)</label>
@@ -1371,7 +1393,7 @@
     function handleFormSubmit(isDraft) {
         console.log('🚀 === FORM SUBMIT STARTED ===');
         console.log('Draft mode:', isDraft);
-        console.log('Post type:', currentPostType);
+        console.log('Current tab:', currentPostType);
         
         // CRITICAL: ALWAYS sync Quill content FIRST (even if on poll/image/link tab!)
         if (typeof contentQuill !== 'undefined' && contentQuill !== null) {
@@ -1420,6 +1442,8 @@
 
         // Set status
         document.getElementById('status').value = isDraft ? 'draft' : 'published';
+        
+        // URL field has asp-for="Url" so it submits automatically - no sync needed!
 
         // Update content based on post type
         if (currentPostType === 'link') {
@@ -1430,11 +1454,20 @@
             }
         }
         
+        // AUTO-DETECT ACTUAL POST TYPE based on what content is present
+        const actualPostType = determineActualPostType();
+        console.log('🤖 Auto-detected PostType:', actualPostType, '(was:', currentPostType, ')');
+        document.getElementById('postType').value = actualPostType;
+        
         // FINAL DEBUG: Log all form data before submit
         console.log('=== FINAL FORM DATA ===');
         console.log('Title:', title);
         console.log('Content (textarea):', document.getElementById('contentTextarea').value.substring(0, 150));
-        console.log('PostType:', document.getElementById('postType').value);
+        console.log('PostType (final):', document.getElementById('postType').value);
+        console.log('URL field value:', document.getElementById('linkUrl')?.value || 'NONE');
+        console.log('Poll Options:', getPollOptionValues());
+        console.log('Media Files:', document.getElementById('mediaUpload')?.files?.length || 0);
+        console.log('Media URLs:', mediaUrls.length);
         console.log('Community ID:', document.getElementById('communityId').value);
         console.log('Tags:', document.getElementById('tagsInputHidden').value);
         console.log('Status:', document.getElementById('status').value);
@@ -1479,6 +1512,152 @@
             statusMessage.style.display = 'none';
         }, 3000);
     }
+
+    // ======================================================
+    // MEDIA URL MANAGEMENT
+    // ======================================================
+    let mediaUrls = [];
+
+    function addMediaUrl() {
+        const input = document.getElementById('mediaUrlInput');
+        const url = input.value.trim();
+        
+        if (!url) {
+            showStatus('error', 'Please enter a URL');
+            return;
+        }
+        
+        // Basic URL validation
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            showStatus('error', 'URL must start with http:// or https://');
+            return;
+        }
+        
+        // Check if already added
+        if (mediaUrls.includes(url)) {
+            showStatus('warning', 'This URL has already been added');
+            return;
+        }
+        
+        // Add to array
+        mediaUrls.push(url);
+        
+        // Create hidden input for form submission
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'MediaUrls';
+        hiddenInput.value = url;
+        hiddenInput.id = `mediaUrl_${mediaUrls.length}`;
+        document.getElementById('postForm').appendChild(hiddenInput);
+        
+        // Display the added URL
+        const urlDisplay = document.createElement('div');
+        urlDisplay.className = 'alert alert-info d-flex justify-content-between align-items-center mb-2';
+        urlDisplay.innerHTML = `
+            <span><i class="fas fa-link"></i> ${url}</span>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeMediaUrl('${url}', ${mediaUrls.length})">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        document.getElementById('addedMediaUrls').appendChild(urlDisplay);
+        
+        // Clear input
+        input.value = '';
+        
+        showStatus('success', 'Image URL added successfully');
+        console.log('✅ Media URL added:', url);
+    }
+
+    function removeMediaUrl(url, index) {
+        // Remove from array
+        mediaUrls = mediaUrls.filter(u => u !== url);
+        
+        // Remove hidden input
+        const hiddenInput = document.getElementById(`mediaUrl_${index}`);
+        if (hiddenInput) {
+            hiddenInput.remove();
+        }
+        
+        // Re-render the display
+        const container = document.getElementById('addedMediaUrls');
+        container.innerHTML = '';
+        
+        mediaUrls.forEach((u, i) => {
+            const urlDisplay = document.createElement('div');
+            urlDisplay.className = 'alert alert-info d-flex justify-content-between align-items-center mb-2';
+            urlDisplay.innerHTML = `
+                <span><i class="fas fa-link"></i> ${u}</span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeMediaUrl('${u}', ${i + 1})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(urlDisplay);
+        });
+        
+        showStatus('info', 'Image URL removed');
+    }
+
+    // Allow Enter key to add URL
+    document.addEventListener('DOMContentLoaded', function() {
+        const mediaUrlInput = document.getElementById('mediaUrlInput');
+        if (mediaUrlInput) {
+            mediaUrlInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addMediaUrl();
+                }
+            });
+        }
+    });
+
+    // ======================================================
+    // AUTO-DETECT POST TYPE based on actual content
+    // ======================================================
+    function determineActualPostType() {
+        // Check what content is actually present
+        const hasContent = document.getElementById('contentTextarea')?.value?.trim().length > 0;
+        
+        // Check if URL field has a value
+        const hasUrl = document.getElementById('linkUrl')?.value?.trim().length > 0;
+        
+        const hasPollOptions = getPollOptionValues().filter(o => o.trim()).length >= 2;
+        const hasMediaFiles = document.getElementById('mediaUpload')?.files?.length > 0;
+        const hasMediaUrls = mediaUrls.length > 0;
+        
+        console.log('📊 Content Detection:');
+        console.log('  - Content:', hasContent);
+        console.log('  - URL:', hasUrl);
+        console.log('  - Poll:', hasPollOptions);
+        console.log('  - Media Files:', hasMediaFiles);
+        console.log('  - Media URLs:', hasMediaUrls);
+        
+        // Priority: Poll > Image/Video > Link > Text
+        // This matches user intent based on what they added
+        if (hasPollOptions) {
+            console.log('  → Detected as POLL post');
+            return 'poll';
+        }
+        
+        if (hasMediaFiles || hasMediaUrls) {
+            console.log('  → Detected as IMAGE post');
+            return 'image';
+        }
+        
+        if (hasUrl) {
+            console.log('  → Detected as LINK post');
+            return 'link';
+        }
+        
+        console.log('  → Detected as TEXT post');
+        return 'text';
+    }
+    
+    function getPollOptionValues() {
+        const pollInputs = document.querySelectorAll('input[name="PollOptions"]');
+        return Array.from(pollInputs).map(input => input.value || '');
+    }
+    
+    // URL field now uses asp-for="Url" directly - no syncing needed!
 
     // ======================================================
     // AI CONTENT GENERATOR - KEYWORD-FIRST APPROACH

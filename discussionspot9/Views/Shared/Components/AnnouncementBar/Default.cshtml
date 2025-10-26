@@ -1,0 +1,459 @@
+@model IEnumerable<discussionspot9.Models.Domain.Announcement>
+
+@if (Model != null && Model.Any())
+{
+    <div class="announcement-bar-container" id="announcementBarContainer">
+        <div class="announcement-bar">
+            <div class="container">
+                <div class="announcement-content">
+                    @foreach (var announcement in Model)
+                    {
+                        <div class="announcement-item @announcement.Type" 
+                             data-announcement-id="@announcement.AnnouncementId"
+                             data-dismissible="@announcement.IsDismissible.ToString().ToLower()"
+                             style="display: none;">
+                            <div class="announcement-inner">
+                                <div class="announcement-icon">
+                                    <i class="fas @announcement.Icon"></i>
+                                </div>
+                                <div class="announcement-text">
+                                    <strong>@announcement.Title:</strong> @announcement.Message
+                                    @if (!string.IsNullOrEmpty(announcement.LinkUrl) && !string.IsNullOrEmpty(announcement.LinkText))
+                                    {
+                                        <a href="@announcement.LinkUrl" class="announcement-link">
+                                            @announcement.LinkText 
+                                            <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    }
+                                </div>
+                                @if (announcement.IsDismissible)
+                                {
+                                    <button class="announcement-close" onclick="dismissAnnouncement(@announcement.AnnouncementId)" aria-label="Close announcement">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                }
+                            </div>
+                            <div class="announcement-progress"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .announcement-bar-container {
+            position: sticky;
+            top: 60px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            max-width: 100vw;
+            z-index: 1019;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .announcement-bar {
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+
+        .announcement-content {
+            position: relative;
+            overflow: hidden;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .announcement-item {
+            width: 100%;
+            max-width: 100vw;
+            padding: 1rem 0;
+            margin: 0;
+            animation: slideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .announcement-item .container {
+            max-width: 1320px;
+            width: 100%;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Shimmer animation removed to prevent width issues */
+
+        .announcement-item.info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .announcement-item.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .announcement-item.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .announcement-item.danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .announcement-inner {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            max-width: 100%;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .announcement-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+            animation: pulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .announcement-text {
+            flex: 1;
+            font-size: 1rem;
+            line-height: 1.6;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .announcement-text strong {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .announcement-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            margin-left: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .announcement-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .announcement-link i {
+            transition: transform 0.3s ease;
+        }
+
+        .announcement-link:hover i {
+            transform: translateX(3px);
+        }
+
+        .announcement-close {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .announcement-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+                max-height: 100px;
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-100%);
+                max-height: 0;
+            }
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Shimmer keyframes removed */
+
+        .announcement-item.dismissing {
+            animation: slideUp 0.3s ease forwards;
+        }
+
+        /* Progress bar for rotation */
+        .announcement-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            animation: progress 5s linear;
+        }
+
+        @@keyframes progress {
+            from {
+                width: 0%;
+            }
+            to {
+                width: 100%;
+            }
+        }
+
+        /* Mobile responsive */
+        @@media (max-width: 768px) {
+            .announcement-bar-container {
+                top: 60px;
+            }
+
+            .announcement-item {
+                padding: 0.85rem 0;
+            }
+
+            .announcement-item .container {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .announcement-inner {
+                gap: 0.75rem;
+            }
+
+            .announcement-icon {
+                font-size: 1.3rem;
+            }
+
+            .announcement-text {
+                font-size: 0.85rem;
+            }
+
+            .announcement-text strong {
+                font-size: 0.9rem;
+            }
+
+            .announcement-link {
+                display: block;
+                margin-top: 0.5rem;
+                margin-left: 0;
+                text-align: center;
+                font-size: 0.85rem;
+                padding: 0.35rem 0.85rem;
+            }
+
+            .announcement-close {
+                width: 30px;
+                height: 30px;
+            }
+        }
+
+        /* Small mobile devices */
+        @@media (max-width: 576px) {
+            .announcement-bar-container {
+                top: 56px;
+            }
+
+            .announcement-item .container {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+
+            .announcement-icon {
+                font-size: 1.2rem;
+            }
+
+            .announcement-text {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+
+    <script>
+        // Announcement rotation and dismissal logic
+        let currentAnnouncementIndex = 0;
+        let announcementItems = [];
+        let rotationInterval;
+        const ROTATION_INTERVAL = 5000; // 5 seconds
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAnnouncements();
+        });
+
+        function initializeAnnouncements() {
+            announcementItems = Array.from(document.querySelectorAll('.announcement-item'));
+            
+            // Filter out dismissed announcements
+            const dismissedAnnouncements = getDismissedAnnouncements();
+            announcementItems = announcementItems.filter(item => {
+                const id = parseInt(item.dataset.announcementId);
+                return !dismissedAnnouncements.includes(id);
+            });
+
+            if (announcementItems.length === 0) {
+                document.getElementById('announcementBarContainer')?.remove();
+                return;
+            }
+
+            // Show first announcement
+            showAnnouncement(0);
+
+            // Start rotation if multiple announcements
+            if (announcementItems.length > 1) {
+                startRotation();
+            }
+        }
+
+        function showAnnouncement(index) {
+            // Hide all
+            announcementItems.forEach(item => {
+                item.style.display = 'none';
+                // Reset progress bar
+                const progressBar = item.querySelector('.announcement-progress');
+                if (progressBar) {
+                    progressBar.style.animation = 'none';
+                }
+            });
+            
+            // Show current
+            if (announcementItems[index]) {
+                announcementItems[index].style.display = 'block';
+                currentAnnouncementIndex = index;
+                
+                // Start progress bar animation
+                const progressBar = announcementItems[index].querySelector('.announcement-progress');
+                if (progressBar && announcementItems.length > 1) {
+                    // Force reflow to restart animation
+                    void progressBar.offsetWidth;
+                    progressBar.style.animation = 'progress 5s linear';
+                }
+            }
+        }
+
+        function startRotation() {
+            rotationInterval = setInterval(() => {
+                const nextIndex = (currentAnnouncementIndex + 1) % announcementItems.length;
+                showAnnouncement(nextIndex);
+            }, ROTATION_INTERVAL);
+        }
+
+        function stopRotation() {
+            if (rotationInterval) {
+                clearInterval(rotationInterval);
+            }
+        }
+
+        function dismissAnnouncement(announcementId) {
+            const item = document.querySelector(`[data-announcement-id="${announcementId}"]`);
+            if (!item) return;
+
+            // Add dismissing animation
+            item.classList.add('dismissing');
+
+            // Save to localStorage
+            saveDismissedAnnouncement(announcementId);
+
+            // Remove from rotation array
+            const index = announcementItems.findIndex(el => 
+                parseInt(el.dataset.announcementId) === announcementId
+            );
+            if (index > -1) {
+                announcementItems.splice(index, 1);
+            }
+
+            // Wait for animation to complete
+            setTimeout(() => {
+                item.remove();
+
+                // If no more announcements, remove the whole bar
+                if (announcementItems.length === 0) {
+                    stopRotation();
+                    document.getElementById('announcementBarContainer')?.remove();
+                } else {
+                    // Show next announcement
+                    if (currentAnnouncementIndex >= announcementItems.length) {
+                        currentAnnouncementIndex = 0;
+                    }
+                    showAnnouncement(currentAnnouncementIndex);
+                }
+            }, 300);
+        }
+
+        function getDismissedAnnouncements() {
+            const dismissed = localStorage.getItem('dismissedAnnouncements');
+            return dismissed ? JSON.parse(dismissed) : [];
+        }
+
+        function saveDismissedAnnouncement(announcementId) {
+            const dismissed = getDismissedAnnouncements();
+            if (!dismissed.includes(announcementId)) {
+                dismissed.push(announcementId);
+                localStorage.setItem('dismissedAnnouncements', JSON.stringify(dismissed));
+            }
+        }
+
+        // Pause rotation on hover
+        document.querySelector('.announcement-bar')?.addEventListener('mouseenter', stopRotation);
+        document.querySelector('.announcement-bar')?.addEventListener('mouseleave', function() {
+            if (announcementItems.length > 1) {
+                startRotation();
+            }
+        });
+    </script>
+}
+

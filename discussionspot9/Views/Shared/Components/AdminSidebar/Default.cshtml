@@ -1,0 +1,145 @@
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+
+@{
+    var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+    
+    bool IsActive(string controller, string action = null)
+    {
+        if (action == null)
+            return currentController == controller;
+        return currentController == controller && currentAction == action;
+    }
+}
+
+<div class="sidebar-header">
+    <div class="sidebar-brand">
+        <i class="fas fa-crown"></i>
+        <span>Admin Panel</span>
+    </div>
+</div>
+
+<div class="sidebar-menu">
+    <!-- Dashboard -->
+    <div class="menu-section">
+        <a href="/admin/dashboard" class="menu-item @(IsActive("Admin", "Dashboard") || IsActive("SeoAdmin", "Dashboard") ? "active" : "")">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+    </div>
+    
+    <!-- Users Section -->
+    <div class="menu-section">
+        <div class="menu-title">User Management</div>
+        <a href="/admin/manage/users" class="menu-item @(IsActive("AdminManagement", "Users") ? "active" : "")">
+            <i class="fas fa-users"></i>
+            <span>All Users</span>
+        </a>
+        <a href="/admin/manage/moderators" class="menu-item @(IsActive("AdminManagement", "Moderators") ? "active" : "")">
+            <i class="fas fa-user-shield"></i>
+            <span>Moderators</span>
+        </a>
+        <a href="/admin/manage/banned" class="menu-item @(IsActive("AdminManagement", "Banned") ? "active" : "")">
+            <i class="fas fa-user-slash"></i>
+            <span>Banned Users</span>
+        </a>
+    </div>
+    
+    <!-- Content Management -->
+    <div class="menu-section">
+        <div class="menu-title">Content</div>
+        <a href="/admin/manage/posts" class="menu-item @(IsActive("AdminManagement", "Posts") ? "active" : "")">
+            <i class="fas fa-newspaper"></i>
+            <span>All Posts</span>
+        </a>
+        <a href="/admin/announcements" class="menu-item @(IsActive("Admin", "Announcements") || IsActive("Admin", "CreateAnnouncement") || IsActive("Admin", "EditAnnouncement") ? "active" : "")">
+            <i class="fas fa-bullhorn"></i>
+            <span>Announcements</span>
+        </a>
+        <a href="/admin/manage/pending" class="menu-item @(IsActive("AdminManagement", "Pending") ? "active" : "")">
+            <i class="fas fa-clock"></i>
+            <span>Pending Review</span>
+        </a>
+        <a href="/admin/manage/reports" class="menu-item @(IsActive("AdminManagement", "Reports") ? "active" : "")">
+            <i class="fas fa-flag"></i>
+            <span>Reported Posts</span>
+            <span class="badge bg-danger" id="sidebarReportsBadge">0</span>
+        </a>
+    </div>
+    
+    <!-- Communities -->
+    <div class="menu-section">
+        <div class="menu-title">Communities</div>
+        <a href="/admin/communities" class="menu-item @(IsActive("AdminManagement", "Communities") ? "active" : "")">
+            <i class="fas fa-users-cog"></i>
+            <span>All Communities</span>
+        </a>
+        <a href="/admin/communities/create" class="menu-item @(IsActive("AdminManagement", "CreateCommunity") ? "active" : "")">
+            <i class="fas fa-plus-circle"></i>
+            <span>Create New</span>
+        </a>
+    </div>
+    
+    <!-- Revenue & SEO -->
+    <div class="menu-section">
+        <div class="menu-title">Revenue & SEO</div>
+        <a href="/admin/seo/revenue" class="menu-item @(IsActive("SeoAdmin", "Revenue") ? "active" : "")">
+            <i class="fas fa-dollar-sign"></i>
+            <span>Revenue Dashboard</span>
+        </a>
+        <a href="/admin/seo/queue" class="menu-item @(IsActive("SeoAdmin", "OptimizationQueue") ? "active" : "")">
+            <i class="fas fa-tasks"></i>
+            <span>SEO Queue</span>
+            <span class="badge bg-warning" id="sidebarSeoQueueBadge">5</span>
+        </a>
+        <a href="/admin/seo/keywords" class="menu-item @(IsActive("SeoAdmin", "Keywords") ? "active" : "")">
+            <i class="fas fa-key"></i>
+            <span>Keywords</span>
+        </a>
+        <a href="/admin/seo/trending" class="menu-item @(IsActive("SeoAdmin", "TrendingQueries") ? "active" : "")">
+            <i class="fas fa-trending-up"></i>
+            <span>Trending</span>
+        </a>
+    </div>
+    
+    <!-- Analytics -->
+    <div class="menu-section">
+        <div class="menu-title">Analytics</div>
+        <a href="/admin/manage/analytics" class="menu-item @(IsActive("AdminManagement", "Analytics") ? "active" : "")">
+            <i class="fas fa-chart-line"></i>
+            <span>Traffic Stats</span>
+        </a>
+        <a href="/admin/analytics/engagement" class="menu-item @(IsActive("AdminManagement", "Engagement") ? "active" : "")">
+            <i class="fas fa-chart-bar"></i>
+            <span>Engagement</span>
+        </a>
+        <a href="/admin/analytics/reports" class="menu-item @(IsActive("AdminManagement", "AnalyticsReports") ? "active" : "")">
+            <i class="fas fa-file-chart"></i>
+            <span>Reports</span>
+        </a>
+    </div>
+    
+    <!-- Settings -->
+    <div class="menu-section">
+        <div class="menu-title">System</div>
+        <a href="/admin/settings" class="menu-item @(IsActive("AdminManagement", "Settings") ? "active" : "")">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+        <a href="/admin/logs" class="menu-item @(IsActive("AdminManagement", "Logs") ? "active" : "")">
+            <i class="fas fa-file-alt"></i>
+            <span>Logs</span>
+        </a>
+        <a href="/admin/database" class="menu-item @(IsActive("AdminManagement", "Database") ? "active" : "")">
+            <i class="fas fa-database"></i>
+            <span>Database</span>
+        </a>
+    </div>
+</div>
+
+<div class="sidebar-footer">
+    <a href="/" class="btn btn-outline-light btn-sm w-100">
+        <i class="fas fa-arrow-left me-2"></i>Back to Site
+    </a>
+</div>
+

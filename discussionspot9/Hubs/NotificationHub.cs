@@ -30,25 +30,6 @@ public class NotificationHub : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, $"notifications-{userId}");
     }
-    public async Task CreateNotificationAsync(
-        string userId,
-        string message,
-        int postId,
-        string type)
-    {
-        _context.Notifications.Add(new Notification
-        {
-            UserId = userId,
-            Title = "New Activity",
-            Message = message,
-            EntityType = "post",
-            EntityId = postId.ToString(),
-            Type = type,
-            CreatedAt = DateTime.UtcNow
-        });
-
-        await _context.SaveChangesAsync();
-    }
 
     public async Task MarkNotificationAsRead(int notificationId)
     {

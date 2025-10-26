@@ -1,6 +1,9 @@
 @model List<discussionspot9.Models.Domain.UserProfile>
 @{
     ViewData["Title"] = "User Management";
+    ViewData["PageTitle"] = "User Management";
+    ViewData["PageDescription"] = "Manage and monitor all users on the platform";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     var activities = ViewBag.UserActivities as Dictionary<string, int>;
 }
 

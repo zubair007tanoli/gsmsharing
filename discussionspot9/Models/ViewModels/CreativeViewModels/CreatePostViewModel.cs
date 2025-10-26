@@ -105,60 +105,36 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         [Display(Name = "Story Keywords")]
         public string? StoryKeywords { get; set; }
         
-        // Sanitize data based on post type to prevent saving irrelevant fields
+        // FIXED: Don't clear any content - users can add multiple content types in one post!
+        // Only trim and clean up data, but preserve everything the user provides
         public void SanitizeDataByPostType()
         {
-            switch (PostType?.ToLower())
-            {
-                case "text":
-                    // Clear non-text fields
-                    Url = null;
-                    PollQuestion = null;
-                    PollDescription = null;
-                    PollOptions.Clear();
-                    PollEndDate = null;
-                    break;
-                    
-                case "link":
-                    // Clear non-link fields
-                    Content = null;
-                    PollQuestion = null;
-                    PollDescription = null;
-                    PollOptions.Clear();
-                    PollEndDate = null;
-                    break;
-                    
-                case "image":
-                    // Clear non-image fields
-                    Url = null;
-                    PollQuestion = null;
-                    PollDescription = null;
-                    PollOptions.Clear();
-                    PollEndDate = null;
-                    break;
-                    
-                case "poll":
-                    // Clear non-poll fields
-                    Url = null;
-                    Content = null;
-                    // Filter out empty poll options
-                    PollOptions = PollOptions
-                        .Where(o => !string.IsNullOrWhiteSpace(o))
-                        .Select(o => o.Trim())
-                        .ToList();
-                    break;
-            }
-            
-            // Always trim strings and convert empty to null
+            // Just trim strings and convert empty to null - DON'T clear based on PostType
             Title = Title?.Trim();
             Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim();
             Url = string.IsNullOrWhiteSpace(Url) ? null : Url.Trim();
             TagsInput = string.IsNullOrWhiteSpace(TagsInput) ? null : TagsInput.Trim();
             PollQuestion = string.IsNullOrWhiteSpace(PollQuestion) ? null : PollQuestion.Trim();
             PollDescription = string.IsNullOrWhiteSpace(PollDescription) ? null : PollDescription.Trim();
+            
+            // Only clean up poll options (remove empty ones)
+            if (PollOptions != null && PollOptions.Any())
+            {
+                PollOptions = PollOptions
+                    .Where(o => !string.IsNullOrWhiteSpace(o))
+                    .Select(o => o.Trim())
+                    .ToList();
+            }
+            
+            // NOTE: We no longer clear Content, Url, or other fields based on PostType
+            // Users should be able to create posts with multiple content types:
+            // - Link post with content (commentary about the link)
+            // - Image post with URL (product link + image)
+            // - Poll with content (explanation of the poll)
+            // The PostType is just a "primary type" indicator for display purposes
         }
         
-        // Validation
+        // Validation - RELAXED to allow multi-content posts
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (string.IsNullOrEmpty(Title))
@@ -171,27 +147,29 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
                 yield return new ValidationResult("Please select a community", new[] { nameof(CommunityId) });
             }
 
-            // Type-specific validation
-            switch (PostType?.ToLower())
+            // CHANGED: Don't validate based on PostType anymore
+            // Users can add any combination of content
+            
+            // If URL is provided, validate it's a proper URL (but it's not required)
+            if (!string.IsNullOrWhiteSpace(Url))
             {
-                case "link":
-                    if (string.IsNullOrWhiteSpace(Url))
+                if (!Uri.IsWellFormedUriString(Url, UriKind.Absolute))
+                {
+                    yield return new ValidationResult("Please enter a valid URL", new[] { nameof(Url) });
+                }
+            }
+            
+            // If poll options are provided, validate them (but they're not required)
+            var validOptions = PollOptions?.Where(o => !string.IsNullOrWhiteSpace(o)).Count() ?? 0;
+            if (validOptions > 0)
+            {
+                // Only validate if user actually added poll options
+                if (!string.IsNullOrEmpty(PollQuestion))
+                {
+                    // User is trying to create a poll
+                    if (validOptions < 2)
                     {
-                        yield return new ValidationResult("URL is required for link posts", new[] { nameof(Url) });
-                    }
-                    break;
-                    
-                case "poll":
-                    if (string.IsNullOrEmpty(PollQuestion))
-                    {
-                        yield return new ValidationResult("Poll question is required for poll posts", new[] { nameof(PollQuestion) });
-                    }
-
-                    var validOptions = PollOptions.Where(o => !string.IsNullOrWhiteSpace(o)).Count();
-                    
-                    if (validOptions < MinOptions)
-                    {
-                        yield return new ValidationResult($"At least {MinOptions} poll options are required", new[] { nameof(PollOptions) });
+                        yield return new ValidationResult("At least 2 poll options are required for polls", new[] { nameof(PollOptions) });
                     }
 
                     if (validOptions > MaxOptions)
@@ -203,8 +181,13 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
                     {
                         yield return new ValidationResult("Poll end date must be in the future", new[] { nameof(PollEndDate) });
                     }
-                    break;
+                }
             }
+            
+            // NOTE: We removed PostType-based validation
+            // This allows users to create posts with multiple content types:
+            // - Content + URL + Images + Poll all together
+            // The PostType field is just a hint for display priority
         }
     }
 }

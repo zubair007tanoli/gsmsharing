@@ -1,0 +1,652 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["PageTitle"] = "Admin Dashboard";
+    ViewData["PageDescription"] = "Overview of your platform's key metrics and recent activity";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Stats Cards Row -->
+<div class="row g-4 mb-4">
+    <!-- Total Users Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="totalUsers">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                </div>
+                <div class="stat-change" id="userGrowth">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>--</span>
+                    <small>vs last month</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Posts Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-newspaper"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-label">Total Posts</div>
+                <div class="stat-value" id="totalPosts">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                </div>
+                <div class="stat-change" id="postGrowth">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>--</span>
+                    <small>vs last month</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Revenue Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-label">Monthly Revenue</div>
+                <div class="stat-value" id="monthlyRevenue">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                </div>
+                <div class="stat-change" id="revenueGrowth">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>--</span>
+                    <small>vs last month</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Reports Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <i class="fas fa-flag"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-label">Pending Reports</div>
+                <div class="stat-value text-danger" id="pendingReports">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                </div>
+                <div class="stat-change">
+                    <a href="/admin/manage/reports" class="btn btn-sm btn-outline-danger">Review Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Revenue Chart -->
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Revenue Trend (Last 30 Days)</h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary active">30 Days</button>
+                    <button type="button" class="btn btn-outline-primary">90 Days</button>
+                    <button type="button" class="btn btn-outline-primary">1 Year</button>
+                </div>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="revenueChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Post Types Distribution -->
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Post Types</h5>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="postTypesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Online Users and Stats Row -->
+<div class="row g-4 mb-4">
+    <!-- Online Users -->
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5><i class="fas fa-circle text-success me-2"></i>Online Now</h5>
+                <span class="badge bg-success" id="onlineCount">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                </span>
+            </div>
+            <div class="chart-card-body" id="onlineUsersList" style="max-height: 400px; overflow-y: auto;">
+                <div class="text-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Types Distribution -->
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Post Types</h5>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="postTypesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Communities Chart -->
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5><i class="fas fa-users me-2"></i>Communities</h5>
+            </div>
+            <div class="chart-card-body">
+                <div class="stat-value text-center mb-3" id="totalCommunities">
+                    <div class="spinner-border" role="status"></div>
+                </div>
+                <div class="text-center small text-muted">
+                    Active communities on the platform
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity and Quick Actions Row -->
+<div class="row g-4 mb-4">
+    <!-- Recent Activity -->
+    <div class="col-lg-8">
+        <div class="activity-card">
+            <div class="activity-header">
+                <h5><i class="fas fa-stream me-2"></i>Recent Activity</h5>
+                <a href="/admin/logs" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="activity-list" id="recentActivity">
+                <div class="text-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="quick-actions-card">
+            <div class="quick-actions-header">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="quick-actions-list">
+                <a href="/admin/manage/reports" class="quick-action-item">
+                    <div class="quick-action-icon" style="background: #fa709a;">
+                        <i class="fas fa-flag"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <div class="quick-action-title">Review Reports</div>
+                        <div class="quick-action-meta"><span class="badge bg-danger" id="quickPendingReports">0</span> pending</div>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                
+                <a href="/admin/seo/queue" class="quick-action-item">
+                    <div class="quick-action-icon" style="background: #fee140;">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <div class="quick-action-title">SEO Queue</div>
+                        <div class="quick-action-meta"><span class="badge bg-warning" id="quickSeoQueue">0</span> pending</div>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                
+                <a href="/admin/manage/users" class="quick-action-item">
+                    <div class="quick-action-icon" style="background: #667eea;">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <div class="quick-action-title">Add New User</div>
+                        <div class="quick-action-meta">Create admin account</div>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                
+                <a href="/create" class="quick-action-item">
+                    <div class="quick-action-icon" style="background: #ff4500;">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <div class="quick-action-title">Create Post</div>
+                        <div class="quick-action-meta">As administrator</div>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                
+                <a href="/admin/database" class="quick-action-item">
+                    <div class="quick-action-icon" style="background: #4facfe;">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="quick-action-content">
+                        <div class="quick-action-title">Database Backup</div>
+                        <div class="quick-action-meta">Last: 2 days ago</div>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="system-status-card">
+            <div class="system-status-header">
+                <h5><i class="fas fa-server me-2"></i>System Status</h5>
+                <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>All Systems Operational</span>
+            </div>
+            <div class="row g-3 mt-2">
+                <div class="col-md-3">
+                    <div class="system-metric">
+                        <i class="fas fa-database text-primary"></i>
+                        <div>
+                            <div class="metric-label">Database</div>
+                            <div class="metric-value text-success">Healthy</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="system-metric">
+                        <i class="fas fa-memory text-info"></i>
+                        <div>
+                            <div class="metric-label">Cache</div>
+                            <div class="metric-value text-success">Active</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="system-metric">
+                        <i class="fas fa-robot text-warning"></i>
+                        <div>
+                            <div class="metric-label">AI Service</div>
+                            <div class="metric-value text-success">Online</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="system-metric">
+                        <i class="fas fa-cloud text-success"></i>
+                        <div>
+                            <div class="metric-label">Server</div>
+                            <div class="metric-value text-success">Normal</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- SignalR -->
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@7.0.0/dist/browser/signalr.min.js"></script>
+    
+    <script>
+        let presenceConnection = null;
+        
+        // Load Dashboard Data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardStats();
+            loadOnlineUsers();
+            loadRecentActivity();
+            
+            // Connect to PresenceHub for real-time online users
+            connectToPresenceHub();
+            
+            // Refresh stats periodically (as backup to SignalR)
+            setInterval(loadOnlineUsers, 30000);
+            setInterval(loadRecentActivity, 60000);
+        });
+        
+        async function loadDashboardStats() {
+            try {
+                console.log('Fetching dashboard stats...');
+                const response = await fetch('/admin/stats');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Dashboard stats loaded:', data);
+                
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    showError('Failed to load stats: ' + data.error);
+                    return;
+                }
+                
+                // Update stat cards
+                document.getElementById('totalUsers').textContent = (data.totalUsers || 0).toLocaleString();
+                document.getElementById('totalPosts').textContent = (data.totalPosts || 0).toLocaleString();
+                document.getElementById('monthlyRevenue').textContent = '$' + (data.monthlyRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                document.getElementById('pendingReports').textContent = data.pendingReports || 0;
+                document.getElementById('totalCommunities').textContent = data.totalCommunities || 0;
+                
+                // Update quick actions badges
+                document.getElementById('quickPendingReports').textContent = data.pendingReports || 0;
+                document.getElementById('quickSeoQueue').textContent = data.seoQueueCount || 0;
+                
+                // Update growth indicators
+                updateGrowthIndicator('userGrowth', data.userGrowth || 0);
+                updateGrowthIndicator('postGrowth', data.postGrowth || 0);
+                updateGrowthIndicator('revenueGrowth', data.revenueGrowth || 0);
+                
+                // Initialize charts with real data
+                initializeCharts(data);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                showError('Failed to load dashboard stats. Check console for details.');
+            }
+        }
+        
+        function showError(message) {
+            const statCards = document.querySelectorAll('.stat-value');
+            statCards.forEach(card => {
+                if (card.querySelector('.spinner-border')) {
+                    card.innerHTML = '<span class="text-danger">Error</span>';
+                }
+            });
+        }
+        
+        function updateGrowthIndicator(elementId, value) {
+            const element = document.getElementById(elementId);
+            const span = element.querySelector('span');
+            const icon = element.querySelector('i');
+            
+            if (value > 0) {
+                element.classList.add('positive');
+                element.classList.remove('negative');
+                icon.className = 'fas fa-arrow-up';
+                span.textContent = '+' + value + '%';
+            } else if (value < 0) {
+                element.classList.add('negative');
+                element.classList.remove('positive');
+                icon.className = 'fas fa-arrow-down';
+                span.textContent = value + '%';
+            } else {
+                element.classList.remove('positive', 'negative');
+                icon.className = 'fas fa-minus';
+                span.textContent = '0%';
+            }
+        }
+        
+        async function loadOnlineUsers() {
+            try {
+                const response = await fetch('/admin/online-users');
+                const data = await response.json();
+                
+                if (!data.success) return;
+                
+                document.getElementById('onlineCount').textContent = data.count;
+                
+                const usersList = document.getElementById('onlineUsersList');
+                if (data.users.length === 0) {
+                    usersList.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-user-slash me-2"></i>No users currently online</div>';
+                    return;
+                }
+                
+                usersList.innerHTML = data.users.map(user => `
+                    <div class="online-user-item">
+                        <div class="online-user-avatar">
+                            ${user.avatarUrl 
+                                ? `<img src="${user.avatarUrl}" alt="${user.displayName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">` 
+                                : `<div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">${user.displayName[0]}</div>`
+                            }
+                            <span class="online-status-dot"></span>
+                        </div>
+                        <div class="online-user-info">
+                            <div class="online-user-name">${user.displayName}</div>
+                            <div class="online-user-page">${user.currentPage || 'Browsing...'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading online users:', error);
+            }
+        }
+        
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch('/admin/recent-activity');
+                const data = await response.json();
+                
+                if (!data.success) return;
+                
+                const activityList = document.getElementById('recentActivity');
+                if (data.activities.length === 0) {
+                    activityList.innerHTML = '<div class="text-center py-4 text-muted">No recent activity</div>';
+                    return;
+                }
+                
+                activityList.innerHTML = data.activities.map(activity => `
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: ${activity.color};">
+                            <i class="fas ${activity.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">${activity.title}</div>
+                            <div class="activity-meta">${activity.meta}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+        
+        function initializeCharts(data) {
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js is not loaded');
+                return;
+            }
+            
+            // Revenue Trend Chart
+            const revenueTrend = data.revenueTrend || [];
+            const labels = revenueTrend.map(item => new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            const revenueData = revenueTrend.map(item => item.revenue);
+            
+            const revenueCanvas = document.getElementById('revenueChart');
+            if (!revenueCanvas) return;
+            const revenueCtx = revenueCanvas.getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No Data'],
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: revenueData.length > 0 ? revenueData : [0],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Post Types Distribution Chart
+            const postTypeDistribution = data.postTypeDistribution || [];
+            const postTypeLabels = postTypeDistribution.map(pt => {
+                const typeNames = { 'text': 'Text Posts', 'link': 'Link Posts', 'image': 'Image Posts', 'video': 'Video Posts', 'poll': 'Poll Posts' };
+                return typeNames[pt.type] || pt.type;
+            });
+            const postTypeData = postTypeDistribution.map(pt => pt.percentage);
+            
+            const postTypesCanvas = document.getElementById('postTypesChart');
+            if (!postTypesCanvas) return;
+            const postTypesCtx = postTypesCanvas.getContext('2d');
+            new Chart(postTypesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: postTypeLabels.length > 0 ? postTypeLabels : ['No Posts'],
+                    datasets: [{
+                        data: postTypeData.length > 0 ? postTypeData : [100],
+                        backgroundColor: [
+                            '#667eea',
+                            '#f5576c',
+                            '#4facfe',
+                            '#fa709a'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: { size: 12 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ========================================
+        // PHASE 4: SignalR Real-Time Features
+        // ========================================
+        
+        async function connectToPresenceHub() {
+            try {
+                presenceConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/presenceHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                // Listen for user status changes
+                presenceConnection.on("UserStatusChanged", (userId, status) => {
+                    console.log(`User ${userId} status changed to: ${status}`);
+                    
+                    // Refresh online users list
+                    if (status === "online") {
+                        loadOnlineUsers();
+                        
+                        // Show toast notification
+                        showToast('New User Online', 'success');
+                    } else if (status === "offline") {
+                        loadOnlineUsers();
+                    }
+                });
+
+                // Start connection
+                await presenceConnection.start();
+                console.log("Connected to PresenceHub for real-time updates!");
+                
+            } catch (err) {
+                console.error("Error connecting to PresenceHub:", err);
+                // Fall back to polling if SignalR fails
+            }
+        }
+
+        // Toast notification for real-time events
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                <i class="fas fa-circle text-success me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', async () => {
+            if (presenceConnection) {
+                await presenceConnection.stop();
+            }
+        });
+    </script>
+}
+

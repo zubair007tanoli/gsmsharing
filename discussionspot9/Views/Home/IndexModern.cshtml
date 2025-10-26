@@ -22,42 +22,6 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* Minimal Top Bar */
-    .top-info-bar {
-        background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
-        color: white;
-        padding: 0.75rem 0;
-        margin-bottom: 1rem;
-    }
-
-    .top-info-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .site-tagline {
-        font-size: 1rem;
-        font-weight: 600;
-    }
-
-    .quick-stats {
-        display: flex;
-        gap: 1.5rem;
-        font-size: 0.85rem;
-    }
-
-    .quick-stat {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-    }
-
-    .quick-stat i {
-        opacity: 0.9;
-    }
 
     /* Ad Spaces */
     .ad-space {
@@ -414,6 +378,105 @@
         padding: 1rem;
     }
 
+    .sidebar-footer {
+        padding: 1rem;
+        border-top: 1px solid var(--border-color);
+        background: var(--hover-bg);
+    }
+
+    /* Sticky Sidebar Card */
+    .sidebar-card-sticky {
+        position: sticky;
+        top: 80px;
+        z-index: 10;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border: 2px solid #667eea;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-card-sticky:hover {
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .sidebar-card-sticky .sidebar-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+    }
+
+    .sidebar-card-sticky .sidebar-header .badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+        font-weight: 600;
+    }
+
+    /* Enhanced new member item */
+    .new-member-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid transparent;
+    }
+
+    .new-member-item:hover {
+        background: #f8f9ff;
+        border-color: #667eea;
+        transform: translateX(4px);
+    }
+
+    .new-member-item .author-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .new-member-item .member-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .new-member-item .member-name a {
+        color: var(--text-dark);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .new-member-item .member-name a:hover {
+        color: #667eea;
+    }
+
+    .new-member-item .member-joined {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    /* Responsive sticky behavior */
+    @@media (max-width: 991px) {
+        .sidebar-card-sticky {
+            position: relative;
+            top: 0;
+        }
+    }
+
     .online-users-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
@@ -552,33 +615,6 @@
         background: #0056b3;
     }
 
-    /* Create Post Button in Top Bar */
-    .btn-create-post-top {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1.25rem;
-        background: linear-gradient(135deg, var(--accent-orange), #ff6a33);
-        color: white;
-        border-radius: 25px;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 0.9rem;
-        box-shadow: 0 2px 8px rgba(255, 69, 0, 0.3);
-        transition: all 0.2s ease;
-        white-space: nowrap;
-    }
-
-    .btn-create-post-top:hover {
-        background: linear-gradient(135deg, #ff6a33, var(--accent-orange));
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(255, 69, 0, 0.4);
-        color: white;
-    }
-
-    .btn-create-post-top i {
-        font-size: 1.1rem;
-    }
 
     /* Enhanced Online Members */
     .online-members-enhanced {
@@ -677,40 +713,6 @@
         transform: scale(1.1);
     }
 </style>
-
-<!-- Minimal Top Info Bar with Create Button -->
-<div class="top-info-bar">
-    <div class="container">
-        <div class="top-info-content">
-            <div class="site-tagline">
-                <i class="fas fa-fire me-2"></i>Trending Discussions • Live Now
-            </div>
-            @if (Model?.Sidebar?.HasForumStats == true)
-            {
-                <div class="quick-stats">
-                    <div class="quick-stat">
-                        <i class="fas fa-users"></i>
-                        <span>@Model.Sidebar.ForumStats.TotalMembers members</span>
-                    </div>
-                    <div class="quick-stat">
-                        <i class="fas fa-circle text-success" style="font-size: 0.5rem;"></i>
-                        <span>@(Model.Sidebar.OnlineUsers?.TotalOnline ?? 0) online</span>
-                    </div>
-                    <div class="quick-stat">
-                        <i class="fas fa-comments"></i>
-                        <span>@Model.Sidebar.ForumStats.TotalPosts posts</span>
-                    </div>
-                </div>
-            }
-            <div>
-                <a href="/create" class="btn-create-post-top">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Create Post</span>
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="container">
     <div class="row">
@@ -976,8 +978,8 @@
                 </div>
             }
 
-            <!-- Ad Space - Sidebar Middle (Another Sticky Position) -->
-            <div class="ad-space" style="position: sticky; top: 400px;">
+            <!-- Ad Space - Sidebar Middle -->
+            <div class="ad-space">
                 <div class="w-100">
                     <p class="ad-label text-center">Advertisement</p>
                     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
@@ -994,19 +996,22 @@
                 </div>
             </div>
 
-            <!-- New Members -->
+            <!-- New Members - Sticky Card -->
             @if (Model?.Sidebar?.HasNewMembers == true)
             {
-                <div class="sidebar-card">
+                <div class="sidebar-card sidebar-card-sticky">
                     <div class="sidebar-header">
                         <i class="fas fa-user-plus me-2"></i>Welcome New Members
+                        <span class="badge bg-primary">@Model.Sidebar.NewMembers.Count()</span>
                     </div>
                     <div class="sidebar-content">
-                        @foreach (var member in Model.Sidebar.NewMembers.Take(5))
+                        @foreach (var member in Model.Sidebar.NewMembers.Take(6))
                         {
                             <div class="new-member-item">
-                                <div class="author-avatar">@member.Initials</div>
-                                <div>
+                                <div class="author-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                    @member.Initials
+                                </div>
+                                <div class="flex-grow-1">
                                     <div class="member-name">
                                         <a href="@member.ProfileUrl">@member.DisplayName</a>
                                         @if (member.IsVerified)
@@ -1014,16 +1019,26 @@
                                             <i class="fas fa-check-circle text-primary ms-1"></i>
                                         }
                                     </div>
-                                    <div class="member-joined">Joined @member.JoinDateAgo</div>
+                                    <div class="member-joined">
+                                        <i class="far fa-clock me-1"></i>@member.JoinDateAgo
+                                    </div>
                                 </div>
+                                <a href="@member.ProfileUrl" class="btn btn-sm btn-outline-primary" style="border-radius: 20px;">
+                                    <i class="fas fa-user"></i>
+                                </a>
                             </div>
                         }
+                    </div>
+                    <div class="sidebar-footer">
+                        <a href="/members/new" class="btn btn-primary btn-sm w-100">
+                            View All New Members <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
                     </div>
                 </div>
             }
 
-            <!-- Ad Space - Sidebar Bottom (Sticky) -->
-            <div class="ad-space" style="position: sticky; top: 700px; margin-bottom: 2rem;">
+            <!-- Ad Space - Sidebar Bottom -->
+            <div class="ad-space">
                 <div class="w-100">
                     <p class="ad-label text-center">Advertisement</p>
                     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"

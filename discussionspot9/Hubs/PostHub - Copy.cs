@@ -281,7 +281,12 @@ namespace discussionspot9.Hubs
             try
             {
                 await _notificationService.CreateNotificationAsync(
-                    userId, message, postId, type);
+                    userId, 
+                    "New Activity",  // title
+                    message, 
+                    "post",          // entityType
+                    postId.ToString(), // entityId
+                    type);
 
                 await Clients.User(userId).SendAsync("ReceiveNotification", new
                 {

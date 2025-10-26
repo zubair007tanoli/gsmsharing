@@ -1,0 +1,130 @@
+@model List<dynamic>
+@{
+    ViewData["Title"] = "Moderator Management";
+    ViewData["PageTitle"] = "Moderators";
+    ViewData["PageDescription"] = "Manage site moderators and their permissions";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-label">Total Moderators</div>
+                <div class="stat-value">@Model.Count</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Assigned Date</th>
+                            <th>Assigned By</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var mod in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        @if (!string.IsNullOrEmpty(mod.UserProfile.AvatarUrl))
+                                        {
+                                            <img src="@mod.UserProfile.AvatarUrl" alt="@mod.UserProfile.DisplayName" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle me-2" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                                @mod.UserProfile.DisplayName[0]
+                                            </div>
+                                        }
+                                        <div>
+                                            <strong>@mod.UserProfile.DisplayName</strong>
+                                            <br>
+                                            <small class="text-muted">@mod.UserProfile.Bio?.Substring(0, Math.Min(50, mod.UserProfile.Bio?.Length ?? 0))</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>@mod.SiteRole.AssignedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">Admin</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Active
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/u/@mod.UserProfile.DisplayName" class="btn btn-outline-primary" title="View Profile" target="_blank">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger" onclick="removeModerator('@mod.UserProfile.UserId', '@mod.UserProfile.DisplayName')" title="Remove Moderator">
+                                            <i class="fas fa-user-minus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-user-shield fa-3x text-muted mb-3"></i>
+            <h4>No Moderators Assigned</h4>
+            <p class="text-muted">Assign moderators to help manage your platform</p>
+            <a href="/admin/manage/users" class="btn btn-primary mt-3">
+                <i class="fas fa-user-plus me-2"></i>Assign from Users
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function removeModerator(userId, displayName) {
+            if (!confirm(`Remove moderator role from ${displayName}?`)) return;
+            
+            fetch(`/admin/manage/moderators/remove/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to remove moderator');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+    </script>
+}
+

@@ -245,12 +245,20 @@ namespace discussionspot9.Services
         private async Task ProcessMediaFilesAsync(int postId, CreatePostViewModel model)
         {
             if (model.MediaFiles == null || model.MediaFiles.Count == 0)
+            {
+                _logger.LogInformation("No media files to process for post {PostId}", postId);
                 return;
+            }
+
+            _logger.LogInformation("Processing {Count} media files for post {PostId}", model.MediaFiles.Count, postId);
 
             foreach (var file in model.MediaFiles)
             {
                 try
                 {
+                    _logger.LogInformation("Processing file: {FileName}, Size: {Size}, ContentType: {ContentType}", 
+                        file.FileName, file.Length, file.ContentType);
+
                     // Determine media type based on content type
                     var mediaType = file.ContentType switch
                     {
@@ -264,10 +272,13 @@ namespace discussionspot9.Services
                     _logger.LogInformation("Saving {MediaType} file for post {PostId}: {FileName}", mediaType, postId, file.FileName);
                     var fileUrl = await _fileStorageService.SaveFileAsync(file, $"posts/{mediaType}s");
                     
+                    _logger.LogInformation("File saved to: {FileUrl}", fileUrl);
+                    
                     // Ensure the URL is properly formatted for web access
                     if (!fileUrl.StartsWith("/") && !fileUrl.StartsWith("http"))
                     {
                         fileUrl = "/" + fileUrl.TrimStart('/');
+                        _logger.LogInformation("URL adjusted to: {FileUrl}", fileUrl);
                     }
 
                     var media = new Media
@@ -287,30 +298,46 @@ namespace discussionspot9.Services
                     };
 
                     _context.Media.Add(media);
-                    _logger.LogInformation("Media file saved successfully: {Url}", fileUrl);
+                    _logger.LogInformation("✅ Media record created: PostId={PostId}, Url={Url}, Type={Type}", 
+                        postId, fileUrl, mediaType);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing media file: {FileName}", file.FileName);
+                    _logger.LogError(ex, "❌ Error processing media file: {FileName}", file.FileName);
                     // Continue with other files even if one fails
                 }
             }
             
             await _context.SaveChangesAsync();
+            _logger.LogInformation("✅ All media files processed and saved to database for post {PostId}", postId);
         }
 
         private async Task ProcessMediaUrlsAsync(int postId, CreatePostViewModel model)
         {
             if (model.MediaUrls == null || model.MediaUrls.Count == 0)
+            {
+                _logger.LogInformation("No media URLs to process for post {PostId}", postId);
                 return;
+            }
+
+            _logger.LogInformation("Processing {Count} media URLs for post {PostId}", model.MediaUrls.Count, postId);
 
             foreach (var url in model.MediaUrls)
             {
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    _logger.LogWarning("Skipping empty URL for post {PostId}", postId);
+                    continue;
+                }
+
+                _logger.LogInformation("Processing URL: {Url}", url);
+
                 // Ensure URL is properly formatted
-                var processedUrl = url;
+                var processedUrl = url.Trim();
                 if (!processedUrl.StartsWith("http") && !processedUrl.StartsWith("/"))
                 {
                     processedUrl = "/" + processedUrl.TrimStart('/');
+                    _logger.LogInformation("URL adjusted to: {ProcessedUrl}", processedUrl);
                 }
 
                 var media = new Media
@@ -319,11 +346,15 @@ namespace discussionspot9.Services
                     Url = processedUrl,
                     MediaType = "image", // Default to image, consider URL analysis
                     UploadedAt = DateTime.UtcNow,
-                    UserId = model.UserId
+                    UserId = model.UserId,
+                    StorageProvider = "external",
+                    IsProcessed = true
                 };
                 _context.Media.Add(media);
+                _logger.LogInformation("✅ Media URL record created: PostId={PostId}, Url={Url}", postId, processedUrl);
             }
             await _context.SaveChangesAsync();
+            _logger.LogInformation("✅ All media URLs processed and saved to database for post {PostId}", postId);
         }
 
         private async Task ProcessPollAsync(int postId, CreatePostViewModel model, List<string> validPollOptions)

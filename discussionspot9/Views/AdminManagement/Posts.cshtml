@@ -1,6 +1,9 @@
 @model List<discussionspot9.Models.Domain.Post>
 @{
     ViewData["Title"] = "Post Management";
+    ViewData["PageTitle"] = "Post Management";
+    ViewData["PageDescription"] = "Manage all posts across communities";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     var metrics = ViewBag.PostMetrics as Dictionary<int, (int Views, decimal Revenue)>;
 }
 

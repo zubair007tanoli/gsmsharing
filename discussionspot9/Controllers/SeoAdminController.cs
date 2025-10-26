@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace discussionspot9.Controllers
 {
-    [Authorize] // Add role check if needed
+    [Authorize] // Require authentication, check admin in actions
     [Route("admin/seo")]
     public class SeoAdminController : Controller
     {
@@ -46,9 +46,22 @@ namespace discussionspot9.Controllers
             _logger = logger;
         }
 
+        private bool IsCurrentUserAdmin()
+        {
+            var userEmail = User.Identity?.Name;
+            return User.IsInRole("Admin") || userEmail == "zubair007tanoli@gmail.com";
+        }
+
         [HttpGet("dashboard")]
+        [HttpGet("")]
         public async Task<IActionResult> Dashboard()
         {
+            if (!IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
             var endDate = DateTime.UtcNow.Date;
             var startDate = endDate.AddDays(-30);
 

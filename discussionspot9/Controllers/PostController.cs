@@ -546,10 +546,41 @@ namespace discussionspot9.Controllers
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
-                    return Json(new { success = false, message = "User not authenticated" });
+                {
+                    _logger.LogWarning("VotePoll called by unauthenticated user");
+                    return Json(new { success = false, message = "Please log in to vote" });
+                }
+
+                _logger.LogInformation("User {UserId} voting on poll {PostId} with options: {OptionIds}", 
+                    userId, postId, string.Join(", ", optionIds));
 
                 var result = await _postService.VotePollAsync(postId, userId, optionIds);
-                return Json(result);
+                
+                if (result.Success)
+                {
+                    // Get updated poll results for real-time update
+                    var pollDetails = await _postService.GetPollDetailsAsync(postId, userId);
+                    
+                    var pollResults = pollDetails.Options.Select(opt => new
+                    {
+                        optionId = opt.PollOptionId,
+                        voteCount = opt.VoteCount,
+                        percentage = opt.VotePercentage
+                    }).ToList();
+                    
+                    _logger.LogInformation("Vote successful. Returning updated results for poll {PostId}", postId);
+                    
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Vote recorded successfully!",
+                        pollResults = pollResults,
+                        totalVotes = pollDetails.TotalVotes
+                    });
+                }
+                
+                _logger.LogWarning("Vote failed for poll {PostId}: {Message}", postId, result.Message);
+                return Json(new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {
@@ -704,7 +735,23 @@ namespace discussionspot9.Controllers
             _logger.LogInformation("Content preview: {Preview}", model.Content?.Substring(0, Math.Min(200, model.Content?.Length ?? 0)) ?? "NULL");
             _logger.LogInformation("Has Content: {HasContent}", !string.IsNullOrWhiteSpace(model.Content));
             _logger.LogInformation("MediaFiles: {Count}", model.MediaFiles?.Count ?? 0);
+            if (model.MediaFiles != null && model.MediaFiles.Count > 0)
+            {
+                foreach (var file in model.MediaFiles)
+                {
+                    _logger.LogInformation("  📁 File: {Name}, Size: {Size} bytes, Type: {Type}", 
+                        file.FileName, file.Length, file.ContentType);
+                }
+            }
             _logger.LogInformation("MediaUrls: {Count}", model.MediaUrls?.Count ?? 0);
+            if (model.MediaUrls != null && model.MediaUrls.Count > 0)
+            {
+                foreach (var url in model.MediaUrls)
+                {
+                    _logger.LogInformation("  🔗 URL: {Url}", url);
+                }
+            }
+            _logger.LogInformation("URL field: {Url}", model.Url);
             _logger.LogInformation("PollOptions: {Count}", model.PollOptions?.Count ?? 0);
             _logger.LogInformation("Tags: {Tags}", model.TagsInput);
             _logger.LogInformation("Meta Keywords: {Keywords}", model.Keywords);

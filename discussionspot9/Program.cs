@@ -245,6 +245,11 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 // =============================================
 builder.Services.AddScoped<IAdminService, AdminService>();
 
+// =============================================
+// ANNOUNCEMENT SYSTEM
+// =============================================
+builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

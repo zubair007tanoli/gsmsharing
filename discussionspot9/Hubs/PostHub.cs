@@ -518,7 +518,13 @@ namespace discussionspot9.Hubs // Ensure this namespace matches your project str
             try
             {
                 // Persist notification to database
-                await _notificationService.CreateNotificationAsync(userId, message, postId, type);
+                await _notificationService.CreateNotificationAsync(
+                    userId, 
+                    "New Activity",  // title
+                    message, 
+                    "post",          // entityType
+                    postId.ToString(), // entityId
+                    type);
 
                 // Send real-time notification to the target user's group
                 await Clients.User(userId).SendAsync("ReceiveNotification", new

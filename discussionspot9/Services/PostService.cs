@@ -210,6 +210,28 @@ namespace discussionspot9.Services
             var authorProfile = await _context.UserProfiles
                 .FirstOrDefaultAsync(up => up.UserId == post.UserId);
 
+            // Create LinkModel if URL exists (regardless of PostType)
+            var linkModel = new LinkPreviewViewModel();
+            if (!string.IsNullOrEmpty(post.Url))
+            {
+                try
+                {
+                    var uri = new Uri(post.Url);
+                    linkModel.Title = post.Title;
+                    linkModel.Description = post.Content ?? $"A link to {uri.Host}.";
+                    linkModel.Url = post.Url;
+                    linkModel.Domain = uri.Host;
+                    linkModel.ThumbnailUrl = null;
+                    linkModel.FaviconUrl = $"{uri.Scheme}://{uri.Host}/favicon.ico";
+                }
+                catch
+                {
+                    linkModel.Title = post.Title;
+                    linkModel.Description = post.Content ?? "An external link.";
+                    linkModel.Url = post.Url;
+                }
+            }
+
             return new PostDetailViewModel
             {
                 PostId = post.PostId,
@@ -238,6 +260,7 @@ namespace discussionspot9.Services
                 CommunityName = post.Community!.Name,
                 CommunitySlug = post.Community.Slug,
                 CommunityIconUrl = post.Community.IconUrl,
+                LinkModel = linkModel,  // Added LinkModel!
                 Tags = post.PostTags.Select(pt => pt.Tag.Name).ToList(),
                 Media = post.Media.Select(m => new MediaViewModel
                 {
@@ -704,21 +727,35 @@ namespace discussionspot9.Services
             var pollViewModel = await GetPollDetailsAsync(post.PostId, currentUserId);
 
             var linkModel = new LinkPreviewViewModel();
-            if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
+            // FIXED: Show link preview if URL exists, REGARDLESS of PostType!
+            // Users can have URL + Content + Poll + Images together
+            if (!string.IsNullOrEmpty(post.Url))
             {
                 try
                 {
+                    // TODO: Fetch rich metadata using LinkMetadataService
+                    // For now, using basic metadata
                     var uri = new Uri(post.Url);
                     linkModel.Title = post.Title;
-                    linkModel.Description = $"A link to {uri.Host}.";
-                    linkModel.Url = uri.Host;
+                    linkModel.Description = post.Content ?? $"A link to {uri.Host}.";
+                    linkModel.Url = post.Url;  // Full URL, not just host
+                    linkModel.Domain = uri.Host;
+                    linkModel.ThumbnailUrl = null; // Will be added when we integrate LinkMetadataService
+                    linkModel.FaviconUrl = $"{uri.Scheme}://{uri.Host}/favicon.ico";
+                    
+                    _logger.LogInformation("Link preview created for post {PostId}: {Url}", post.PostId, post.Url);
                 }
-                catch (UriFormatException)
+                catch (UriFormatException ex)
                 {
+                    _logger.LogWarning(ex, "Invalid URL format for post {PostId}: {Url}", post.PostId, post.Url);
                     linkModel.Title = post.Title;
-                    linkModel.Description = "An external link.";
-                    linkModel.Url = "invalid.url";
+                    linkModel.Description = post.Content ?? "An external link.";
+                    linkModel.Url = post.Url;
                 }
+            }
+            else
+            {
+                _logger.LogInformation("No URL for post {PostId}, link preview not created", post.PostId);
             }
 
             return new PostDetailViewModel

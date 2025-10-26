@@ -1,6 +1,9 @@
 @model List<discussionspot9.Models.ViewModels.CreativeViewModels.PostReportViewModel>
 @{
-    ViewData["Title"] = "Post Reports - Admin Dashboard";
+    ViewData["Title"] = "Post Reports";
+    ViewData["PageTitle"] = "Post Reports";
+    ViewData["PageDescription"] = "Review and manage reported content";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     var currentStatus = ViewBag.CurrentStatus as string ?? "all";
     var pendingCount = ViewBag.PendingCount as int? ?? 0;
 }

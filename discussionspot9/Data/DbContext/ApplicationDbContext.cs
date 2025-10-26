@@ -65,6 +65,9 @@ namespace discussionspot9.Data.DbContext
         // Web Stories tables
         public DbSet<Story> Stories { get; set; }
         public DbSet<StorySlide> StorySlides { get; set; }
+        
+        // Announcements table
+        public DbSet<Announcement> Announcements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -892,6 +895,33 @@ namespace discussionspot9.Data.DbContext
                 entity.ToTable(t =>
                 {
                     t.HasCheckConstraint("CK_StorySlide_Type", "SlideType IN ('media', 'text', 'video', 'image')");
+                });
+            });
+            #endregion
+
+            #region Announcement Configuration
+            builder.Entity<Announcement>(entity =>
+            {
+                entity.HasKey(e => e.AnnouncementId);
+                entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Message).HasMaxLength(500).IsRequired();
+                entity.Property(e => e.Type).HasMaxLength(20).HasDefaultValue("info");
+                entity.Property(e => e.Icon).HasMaxLength(50).HasDefaultValue("fa-info-circle");
+                entity.Property(e => e.LinkUrl).HasMaxLength(500);
+                entity.Property(e => e.LinkText).HasMaxLength(100);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.IsDismissible).HasDefaultValue(true);
+                entity.Property(e => e.Priority).HasDefaultValue(0);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.CreatedByUserId).HasMaxLength(450);
+
+                entity.HasIndex(e => new { e.IsActive, e.Priority });
+                entity.HasIndex(e => new { e.StartDate, e.EndDate });
+                
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Announcement_Type", "Type IN ('info', 'success', 'warning', 'danger')");
                 });
             });
             #endregion

@@ -32,6 +32,14 @@ namespace discussionspot9.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId)) return false;
+            
+            // Check hardcoded admin email OR SiteAdmin role
+            var userEmail = User.Identity?.Name;
+            if (userEmail == "zubair007tanoli@gmail.com" || User.IsInRole("Admin"))
+            {
+                return true;
+            }
+            
             return await _adminService.IsUserSiteAdminAsync(userId);
         }
 
@@ -131,12 +139,69 @@ namespace discussionspot9.Controllers
         [HttpGet("communities")]
         public async Task<IActionResult> Communities()
         {
+            if (!await IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
             var communities = await _context.Communities
                 .Include(c => c.Category)
                 .OrderByDescending(c => c.MemberCount)
                 .ToListAsync();
 
             return View(communities);
+        }
+
+        // Moderators Management
+        [HttpGet("moderators")]
+        public async Task<IActionResult> Moderators()
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
+            var moderators = await _context.SiteRoles
+                .Where(r => r.RoleName == "Moderator" && r.IsActive)
+                .Join(_context.UserProfiles,
+                    r => r.UserId,
+                    u => u.UserId,
+                    (r, u) => new
+                    {
+                        UserProfile = u,
+                        SiteRole = r
+                    })
+                .ToListAsync();
+
+            return View(moderators);
+        }
+
+        // Banned Users Management
+        [HttpGet("banned")]
+        public async Task<IActionResult> Banned()
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
+            var bannedUsers = await _context.UserBans
+                .Where(b => b.IsActive)
+                .Join(_context.UserProfiles,
+                    b => b.UserId,
+                    u => u.UserId,
+                    (b, u) => new
+                    {
+                        UserProfile = u,
+                        Ban = b
+                    })
+                .OrderByDescending(x => x.Ban.BannedAt)
+                .ToListAsync();
+
+            return View(bannedUsers);
         }
 
         // Analytics Overview
@@ -405,7 +470,8 @@ namespace discussionspot9.Controllers
         {
             if (!await IsCurrentUserAdmin())
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
             }
             
             var reports = await _reportService.GetAllReportsAsync(status, page, 20);
