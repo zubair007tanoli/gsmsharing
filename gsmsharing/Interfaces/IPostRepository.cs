@@ -7,6 +7,7 @@ namespace gsmsharing.Interfaces
     {
         Task<PostViewModelWithSEO> GetByIdAsync(int id);
         Task<Post> GetBySlugAsync(string slug);
+        Task<PostViewModelWithSEO> GetBySlugAndCommunityAsync(string slug, string communitySlug);
         Task<IEnumerable<PostViewModelDisplay>> GetAllAsync();
         Task<IEnumerable<Post>> GetByCommunityIdAsync(int communityId);
         Task<IEnumerable<Post>> GetByUserIdAsync(string userId);

@@ -47,19 +47,38 @@ builder.Services.AddSingleton<AIContentGenerator>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
+    // Show detailed error pages in development
+    app.UseDeveloperExceptionPage();
+    app.UseMigrationsEndPoint(); // Database error page
+}
+else
+{
+    // Use custom error pages in production
     app.UseExceptionHandler("/Home/Error");
+    app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseMiddleware<RedirectAuthorized>();
 app.UseHttpsRedirection();
-app.UseRouting();
 
+// Serve static files from wwwroot
+app.UseStaticFiles();
+
+app.UseRouting();
+app.UseAuthentication(); // Add authentication middleware
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
+// Custom route for Reddit-style post URLs
+app.MapControllerRoute(
+    name: "postBySlug",
+    pattern: "r/{community}/posts/{slug}",
+    defaults: new { controller = "Posts", action = "Details" });
 
 app.MapControllerRoute(
     name: "default",

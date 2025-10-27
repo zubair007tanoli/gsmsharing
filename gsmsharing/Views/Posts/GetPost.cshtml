@@ -87,6 +87,20 @@
         padding: 12px;
         margin-bottom: 16px;
     }
+
+    .post-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        margin-bottom: 16px;
+    }
+
+    .post-body img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 16px auto;
+    }
 </style>
 
 <div class="post-container">
@@ -102,8 +116,34 @@
             </div>
             <div class="post-content">
                 <h1 class="post-title">@Model.Title</h1>
+                
+                @* Debug: Show what's in FeaturedImage *@
+                @if (ViewContext.HttpContext.Request.Host.Host.Contains("localhost"))
+                {
+                    <div class="alert alert-info">
+                        <strong>Debug:</strong> FeaturedImage = "@Model.FeaturedImage"
+                    </div>
+                }
+                
                 <div class="post-body">
-                    <img src="@Model.FeaturedImage" alt="Post image" class="post-image">
+                    @if (!string.IsNullOrEmpty(Model.FeaturedImage))
+                    {
+                        var imagePath = Model.FeaturedImage;
+                        // If it's a relative path, ensure it starts with /
+                        if (!imagePath.StartsWith("http") && !imagePath.StartsWith("/"))
+                        {
+                            imagePath = "/" + imagePath;
+                        }
+                        <img src="@imagePath" alt="@Model.Title" class="post-image img-fluid mb-3" 
+                             onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
+                    }
+                    else
+                    {
+                        @if (ViewContext.HttpContext.Request.Host.Host.Contains("localhost"))
+                        {
+                            <div class="alert alert-warning">No featured image found for this post.</div>
+                        }
+                    }
                     @Html.Raw(Model.Content)
                 </div>
                 <div class="post-actions">

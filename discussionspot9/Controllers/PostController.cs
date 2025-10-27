@@ -791,36 +791,18 @@ namespace discussionspot9.Controllers
                 {
                     TempData["SuccessMessage"] = "Post created successfully!";
                     
-                    // Get the post ID for background SEO processing
-                    var post = await _context.Posts
-                        .FirstOrDefaultAsync(p => p.Slug == result.PostSlug && p.CommunityId == model.CommunityId);
+                    // FIXED: Store values BEFORE starting background tasks
+                    // Don't query the DbContext after background tasks start!
+                    var postIdForBackground = result.PostId; // Get from result instead of querying DB
+                    var communityIdForBackground = model.CommunityId;
+                    var postSlugForRedirect = result.PostSlug;
+                    var communitySlugForRedirect = model.CommunitySlug;
                     
-                    if (post != null)
-                    {
-                        // AUTO-OPTIMIZATION: Run Google Search + AI SEO in background
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                // Optimize with Google Search API + Python AI
-                                var seoResult = await _googleSeoService.OptimizePostAsync(post.PostId);
-                                
-                                if (seoResult.Success)
-                                {
-                                    _logger.LogInformation(
-                                        "Auto-optimized post {PostId}: SEO Score {Score}/100, Keywords: {Keywords}",
-                                        post.PostId, seoResult.SeoScore, string.Join(", ", seoResult.OptimizedKeywords));
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "Background SEO optimization failed for post {PostId}", post.PostId);
-                            }
-                        });
-                        
-                        // Also run legacy background SEO service
-                        _backgroundSeoService.ProcessPostSeoAsync(post.PostId, model, model.CommunityId);
-                    }
+                    // Queue background tasks WITHOUT accessing _context
+                    // Background service creates its own scoped DbContext
+                    _backgroundSeoService.ProcessPostSeoAsync(postIdForBackground, model, communityIdForBackground);
+                    
+                    _logger.LogInformation("✅ Post {PostId} created successfully, background SEO queued", postIdForBackground);
                     
                     // Redirect to return URL if provided and valid, otherwise go to post details
                     if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -830,8 +812,8 @@ namespace discussionspot9.Controllers
                     
                     return RedirectToAction("Details", new
                     {
-                        communitySlug = model.CommunitySlug,
-                        postSlug = result.PostSlug
+                        communitySlug = communitySlugForRedirect,
+                        postSlug = postSlugForRedirect
                     });
                 }
 

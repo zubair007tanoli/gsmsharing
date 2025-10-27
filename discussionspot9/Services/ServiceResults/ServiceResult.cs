@@ -23,6 +23,7 @@
 
     public class CreatePostResult : ServiceResult
     {
+        public int PostId { get; set; }
         public string? PostSlug { get; set; }
     }
 

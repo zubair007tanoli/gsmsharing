@@ -134,7 +134,9 @@ namespace gsmsharing.Repositories
 
         public string GetFileUrl(string filePath)
         {
-            return $"{_options.BaseUrl.TrimEnd('/')}/{filePath.Replace("\\", "/")}";
+            var fileUrl = $"{_options.BaseUrl.TrimEnd('/')}/{filePath.Replace("\\", "/")}";
+            _logger.LogInformation($"Generated FileUrl: {fileUrl} from FilePath: {filePath}");
+            return fileUrl;
         }
 
         private string GetUniqueFileName(string fileName)

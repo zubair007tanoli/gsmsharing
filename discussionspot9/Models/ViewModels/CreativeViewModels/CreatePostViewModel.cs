@@ -70,7 +70,39 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public IFormFile? FeaturedImage { get; set; }
         public string? MediaCaption { get; set; }
         public string? MediaAltText { get; set; }
-        public List<string> MediaUrls { get; set; } = new();
+        
+        // Property to receive MediaUrls from textarea (newline or comma separated)
+        private List<string> _mediaUrls = new();
+        public List<string> MediaUrls
+        {
+            get => _mediaUrls;
+            set
+            {
+                _mediaUrls = value ?? new List<string>();
+            }
+        }
+        
+        // Helper property for model binding from textarea
+        public string? MediaUrlsInput
+        {
+            get => MediaUrls.Count > 0 ? string.Join("\n", MediaUrls) : null;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    MediaUrls = new List<string>();
+                    return;
+                }
+                
+                // Parse newline-separated or comma-separated URLs
+                var urls = value.Split(new[] { '\n', '\r', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(url => url.Trim())
+                    .Where(url => !string.IsNullOrWhiteSpace(url))
+                    .ToList();
+                    
+                MediaUrls = urls;
+            }
+        }
 
         // SEO-related properties
         public string? MetaTitle { get; set; }

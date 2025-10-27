@@ -645,7 +645,7 @@ namespace discussionspot9.Services
 
             await _context.SaveChangesAsync();
 
-            return new CreatePostResult { Success = true, PostSlug = slug };
+            return new CreatePostResult { Success = true, PostId = post.PostId, PostSlug = slug };
         }
 
         private async Task SavePollDataAsync(Post post, CreatePostViewModel model)
@@ -1012,6 +1012,7 @@ namespace discussionspot9.Services
             return new CreatePostResult
             {
                 Success = true,
+                PostId = post.PostId,
                 PostSlug = slug
             };
         }

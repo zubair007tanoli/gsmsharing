@@ -19,33 +19,55 @@ namespace discussionspot9.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
-            var hasTrailingSlash = path.EndsWith("/") && path.Length > 1;
-            var hasQueryString = context.Request.QueryString.HasValue;
-
-            // Remove trailing slashes (except for root "/")
-            if (hasTrailingSlash)
+            try
             {
-                var newPath = path.TrimEnd('/');
-                var newUrl = newPath + context.Request.QueryString;
+                // Don't process redirects for error pages or static files
+                var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
                 
-                _logger.LogInformation($"Redirecting {path} to {newPath} (removing trailing slash)");
-                context.Response.Redirect(newUrl, permanent: true);
-                return;
-            }
+                if (path.StartsWith("/home/error") || 
+                    path.StartsWith("/error") ||
+                    path.Contains(".css") || 
+                    path.Contains(".js") || 
+                    path.Contains(".ico") ||
+                    context.Response.HasStarted)
+                {
+                    await _next(context);
+                    return;
+                }
 
-            // Enforce HTTPS in production
-            if (!context.Request.IsHttps && 
-                !context.Request.Host.Host.Contains("localhost") &&
-                !context.Request.Host.Host.Contains("127.0.0.1"))
+                var hasTrailingSlash = path.EndsWith("/") && path.Length > 1;
+
+                // Remove trailing slashes (except for root "/")
+                if (hasTrailingSlash && !context.Response.HasStarted)
+                {
+                    var newPath = path.TrimEnd('/');
+                    var newUrl = newPath + context.Request.QueryString;
+                    
+                    _logger.LogInformation($"Redirecting {path} to {newPath} (removing trailing slash)");
+                    context.Response.Redirect(newUrl, permanent: true);
+                    return;
+                }
+
+                // Enforce HTTPS in production
+                if (!context.Request.IsHttps && 
+                    !context.Request.Host.Host.Contains("localhost") &&
+                    !context.Request.Host.Host.Contains("127.0.0.1") &&
+                    !context.Response.HasStarted)
+                {
+                    var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
+                    _logger.LogInformation($"Redirecting HTTP to HTTPS: {httpsUrl}");
+                    context.Response.Redirect(httpsUrl, permanent: true);
+                    return;
+                }
+
+                await _next(context);
+            }
+            catch (Exception ex)
             {
-                var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
-                _logger.LogInformation($"Redirecting HTTP to HTTPS: {httpsUrl}");
-                context.Response.Redirect(httpsUrl, permanent: true);
-                return;
+                // Log the error but don't throw to prevent infinite loops
+                _logger.LogError(ex, "Error in CanonicalUrlMiddleware");
+                await _next(context);
             }
-
-            await _next(context);
         }
     }
 

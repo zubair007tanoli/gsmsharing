@@ -66,7 +66,11 @@
                                 </div>
 
                                 <!-- Post Title -->
-                                <h3 class="post-title mb-2">@item.Title</h3>
+                                <h3 class="post-title mb-2">
+                                    <a href="/r/@item.CommunitySlug/posts/@item.Slug" class="text-decoration-none text-dark">
+                                        @item.Title
+                                    </a>
+                                </h3>
 
                                 <!-- Post Description -->
                                 <p class="post-meta mb-2">@item.Discription</p>

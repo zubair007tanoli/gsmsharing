@@ -104,7 +104,7 @@
                         </li>
                     </ul>
 
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="CommunityId" />
                         <input type="hidden" asp-for="CommunityName" />
@@ -143,9 +143,15 @@
                             <!-- Image Post -->
                             <div class="tab-pane fade" id="imagePost">
                                 <div class="mb-3">
-                                    <label class="form-label">Upload Image</label>
-                                    <input type="file" class="form-control" accept="image/*" />
-                                    <div class="form-text">Supported formats: JPG, PNG, GIF (max 20MB)</div>
+                                    <label class="form-label">Upload Image(s)</label>
+                                    <input type="file" name="MediaFiles" class="form-control" accept="image/*,video/*" multiple id="mediaFilesInput" />
+                                    <div class="form-text">Supported formats: JPG, PNG, GIF, MP4, WebM (max 20MB each). You can select multiple files.</div>
+                                    <div id="selectedFiles" class="mt-2"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Or add Image URL(s)</label>
+                                    <textarea name="MediaUrlsInput" class="form-control" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg" id="mediaUrlsInput"></textarea>
+                                    <div class="form-text">Enter one URL per line for external images</div>
                                 </div>
                             </div>
 
@@ -333,44 +339,64 @@
             
             switch(postType) {
                 case 'text':
-                    // Clear non-text fields
-                    if (urlField) urlField.value = '';
-                    if (pollQuestion) pollQuestion.value = '';
-                    if (pollDescription) pollDescription.value = '';
-                    if (pollEndDate) pollEndDate.value = '';
-                    pollOptions.forEach(option => option.value = '');
-                    if (multipleChoices) multipleChoices.checked = false;
+                    // DON'T CLEAR - Users can add text + other content types
+                    // Just log for debugging
+                    console.log('📝 Text post type selected - keeping all other fields');
                     break;
                     
                 case 'link':
-                    // Clear non-link fields
-                    if (contentField) contentField.value = '';
-                    if (pollQuestion) pollQuestion.value = '';
-                    if (pollDescription) pollDescription.value = '';
-                    if (pollEndDate) pollEndDate.value = '';
-                    pollOptions.forEach(option => option.value = '');
-                    if (multipleChoices) multipleChoices.checked = false;
+                    // DON'T CLEAR - Users can add link + content + images
+                    console.log('🔗 Link post type selected - keeping all other fields');
                     break;
                     
                 case 'image':
-                    // Clear non-image fields
-                    if (urlField) urlField.value = '';
-                    if (contentField) contentField.value = '';
-                    if (pollQuestion) pollQuestion.value = '';
-                    if (pollDescription) pollDescription.value = '';
-                    if (pollEndDate) pollEndDate.value = '';
-                    pollOptions.forEach(option => option.value = '');
-                    if (multipleChoices) multipleChoices.checked = false;
+                    // DON'T CLEAR - Users can add images + URL + content
+                    console.log('📸 Image post type selected - keeping all other fields');
                     break;
                     
                 case 'poll':
-                    // Clear non-poll fields
-                    if (urlField) urlField.value = '';
-                    if (contentField) contentField.value = '';
+                    // DON'T CLEAR - Users can add poll + content + images
+                    console.log('📊 Poll post type selected - keeping all other fields');
                     break;
             }
         }
 
+        // File selection preview
+        const mediaFilesInput = document.getElementById('mediaFilesInput');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        
+        if (mediaFilesInput && selectedFilesDiv) {
+            mediaFilesInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                
+                if (files.length === 0) {
+                    selectedFilesDiv.innerHTML = '';
+                    return;
+                }
+                
+                let html = '<div class="alert alert-info"><strong>📎 Selected Files:</strong><ul class="mb-0 mt-2">';
+                files.forEach((file, index) => {
+                    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    html += `<li><strong>${file.name}</strong> - ${sizeMB} MB (${file.type})</li>`;
+                });
+                html += '</ul></div>';
+                
+                selectedFilesDiv.innerHTML = html;
+                console.log(`✅ ${files.length} file(s) selected for upload`);
+            });
+        }
+        
+        // Media URLs preview
+        const mediaUrlsInput = document.getElementById('mediaUrlsInput');
+        if (mediaUrlsInput) {
+            mediaUrlsInput.addEventListener('blur', function() {
+                const urls = this.value.split('\n').filter(url => url.trim().length > 0);
+                if (urls.length > 0) {
+                    console.log(`✅ ${urls.length} media URL(s) entered`);
+                }
+            });
+        }
+        
         // Add poll option
         let optionCount = 2;
         document.getElementById('addOption')?.addEventListener('click', function() {
@@ -481,10 +507,41 @@
                 });
             }
             
-            // Show preview when form is submitted
+            // Enhanced form submission with debugging
             const form = document.querySelector('form');
             if (form) {
                 form.addEventListener('submit', function(e) {
+                    // Log what's being submitted for debugging
+                    console.log('🚀 === FORM SUBMISSION DEBUG ===');
+                    console.log('Title:', document.querySelector('[name="Title"]')?.value);
+                    console.log('PostType:', document.querySelector('[name="PostType"]')?.value);
+                    console.log('Content:', document.querySelector('[name="Content"]')?.value?.substring(0, 100));
+                    console.log('Url:', document.querySelector('[name="Url"]')?.value);
+                    
+                    // Log media files
+                    const mediaFiles = document.querySelector('[name="MediaFiles"]')?.files;
+                    if (mediaFiles && mediaFiles.length > 0) {
+                        console.log(`📎 Media Files: ${mediaFiles.length} file(s) selected`);
+                        for (let i = 0; i < mediaFiles.length; i++) {
+                            console.log(`  ${i + 1}. ${mediaFiles[i].name} (${(mediaFiles[i].size / 1024).toFixed(2)} KB)`);
+                        }
+                    } else {
+                        console.log('📎 Media Files: None');
+                    }
+                    
+                    // Log media URLs
+                    const mediaUrls = document.querySelector('[name="MediaUrlsInput"]')?.value;
+                    if (mediaUrls && mediaUrls.trim().length > 0) {
+                        const urls = mediaUrls.split('\n').filter(u => u.trim().length > 0);
+                        console.log(`🔗 Media URLs: ${urls.length} URL(s) entered`);
+                        urls.forEach((url, i) => console.log(`  ${i + 1}. ${url.trim()}`));
+                    } else {
+                        console.log('🔗 Media URLs: None');
+                    }
+                    
+                    console.log('===============================');
+                    
+                    // Show story preview if enabled
                     if (autoGenerateCheckbox && autoGenerateCheckbox.checked) {
                         showStoryPreview();
                     }
