@@ -996,42 +996,105 @@
                 </div>
             </div>
 
-            <!-- New Members - Sticky Card -->
+            <!-- New Members - Sticky Card with Karma System -->
             @if (Model?.Sidebar?.HasNewMembers == true)
             {
-                <div class="sidebar-card sidebar-card-sticky">
+                <div class="sidebar-card sidebar-card-sticky new-members-card">
                     <div class="sidebar-header">
                         <i class="fas fa-user-plus me-2"></i>Welcome New Members
-                        <span class="badge bg-primary">@Model.Sidebar.NewMembers.Count()</span>
+                        <span class="badge bg-success">@Model.Sidebar.NewMembers.Count() new</span>
                     </div>
-                    <div class="sidebar-content">
-                        @foreach (var member in Model.Sidebar.NewMembers.Take(6))
+                    <div class="sidebar-content p-0">
+                        @foreach (var member in Model.Sidebar.NewMembers)
                         {
-                            <div class="new-member-item">
-                                <div class="author-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                                    @member.Initials
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="member-name">
-                                        <a href="@member.ProfileUrl">@member.DisplayName</a>
-                                        @if (member.IsVerified)
+                            <div class="new-member-item @member.NewMemberCssClass" title="@member.TooltipText">
+                                <div class="member-content-wrapper">
+                                    <div class="member-avatar-section">
+                                        @if (member.HasAvatar)
                                         {
-                                            <i class="fas fa-check-circle text-primary ms-1"></i>
+                                            <img src="@member.AvatarUrl" alt="@member.DisplayName" class="member-avatar-img" />
+                                        }
+                                        else
+                                        {
+                                            <div class="author-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2); width: 42px; height: 42px; font-size: 14px;">
+                                                @member.Initials
+                                            </div>
+                                        }
+                                        @if (member.IsBrandNew)
+                                        {
+                                            <span class="new-badge pulse">NEW</span>
                                         }
                                     </div>
-                                    <div class="member-joined">
-                                        <i class="far fa-clock me-1"></i>@member.JoinDateAgo
+
+                                    <div class="member-info flex-grow-1">
+                                        <div class="member-name-row">
+                                            <a href="@member.ProfileUrl" class="member-name-link">
+                                                @member.DisplayName
+                                            </a>
+                                            @if (member.IsVerified)
+                                            {
+                                                <i class="fas fa-check-circle text-primary ms-1" title="Verified User"></i>
+                                            }
+                                            @if (member.JoinedToday)
+                                            {
+                                                <span class="badge bg-success badge-sm ms-2">Today</span>
+                                            }
+                                        </div>
+                                        
+                                        <div class="member-stats small text-muted">
+                                            <i class="far fa-clock me-1"></i>@member.JoinDateAgo
+                                        </div>
+
+                                        <!-- Karma and Activity Stats -->
+                                        @if (member.ShowDetailedStats)
+                                        {
+                                            <div class="member-karma-stats mt-2">
+                                                @if (member.KarmaPoints > 0)
+                                                {
+                                                    <span class="karma-badge" title="Karma Points">
+                                                        <i class="fas fa-star text-warning me-1"></i>
+                                                        <strong>@member.KarmaPoints</strong> karma
+                                                    </span>
+                                                }
+                                                @if (member.HasPosts)
+                                                {
+                                                    <span class="post-badge ms-2" title="Total Posts">
+                                                        <i class="fas fa-comment-dots me-1"></i>
+                                                        @member.PostCount post@(member.PostCount != 1 ? "s" : "")
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="member-activity-level mt-2">
+                                                <span class="activity-badge">
+                                                    <i class="fas fa-seedling me-1"></i>@member.ActivityLevel
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="member-action">
+                                        <a href="@member.ProfileUrl" class="btn btn-sm btn-outline-primary rounded-pill" title="View Profile">
+                                            <i class="fas fa-user"></i>
+                                        </a>
                                     </div>
                                 </div>
-                                <a href="@member.ProfileUrl" class="btn btn-sm btn-outline-primary" style="border-radius: 20px;">
-                                    <i class="fas fa-user"></i>
-                                </a>
+                                
+                                <!-- Bio (if available) -->
+                                @if (member.HasBio)
+                                {
+                                    <div class="member-bio">
+                                        <small class="text-muted">@member.ShortBio</small>
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
-                    <div class="sidebar-footer">
-                        <a href="/members/new" class="btn btn-primary btn-sm w-100">
-                            View All New Members <i class="fas fa-arrow-right ms-2"></i>
+                    <div class="sidebar-footer text-center">
+                        <a href="/users" class="view-all-link">
+                            View All Members <i class="fas fa-arrow-right ms-2"></i>
                         </a>
                     </div>
                 </div>
@@ -1092,4 +1155,239 @@
         alert('Chat feature coming soon! Click on ' + displayName);
     }
 </script>
+
+<style>
+/* Enhanced New Members Card Styles with Karma System */
+.new-members-card {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid #e1e8ed;
+}
+
+.new-members-card .sidebar-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 20px;
+    font-weight: 600;
+}
+
+.new-members-card .sidebar-content {
+    max-height: none !important;
+}
+
+.new-member-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f2f5;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.new-member-item:hover {
+    background: #f8f9fa;
+    transform: translateX(4px);
+}
+
+.new-member-item:last-child {
+    border-bottom: none;
+}
+
+.brand-new-member {
+    background: linear-gradient(90deg, #fff8e1 0%, #ffffff 100%);
+    border-left: 3px solid #ffc107;
+}
+
+.member-content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.member-avatar-section {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.member-avatar-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e1e8ed;
+}
+
+.new-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #4caf50;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.new-badge.pulse {
+    animation: pulse 2s infinite;
+}
+
+@@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+.member-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.member-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.member-name-link {
+    font-weight: 600;
+    color: #1a1a1a;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s ease;
+}
+
+.member-name-link:hover {
+    color: #667eea;
+}
+
+.badge-sm {
+    font-size: 9px;
+    padding: 2px 6px;
+}
+
+.member-stats {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #657786;
+}
+
+.member-karma-stats {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.karma-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.karma-badge i {
+    font-size: 10px;
+}
+
+.post-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.activity-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #e7f3ff;
+    color: #004085;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.member-action {
+    flex-shrink: 0;
+}
+
+.member-action .btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.member-action .btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.1);
+}
+
+.member-bio {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e1e8ed;
+    font-size: 12px;
+    color: #657786;
+    font-style: italic;
+}
+
+.sidebar-footer {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e1e8ed;
+}
+
+.view-all-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.view-all-link:hover {
+    color: #764ba2;
+    transform: translateX(4px);
+}
+
+/* Responsive Design */
+@@media (max-width: 768px) {
+    .new-member-item {
+        padding: 12px 16px;
+    }
+    
+    .member-content-wrapper {
+        gap: 8px;
+    }
+    
+    .member-avatar-img,
+    .author-avatar {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 12px !important;
+    }
+    
+    .member-name-link {
+        font-size: 13px;
+    }
+    
+    .member-karma-stats {
+        font-size: 10px;
+    }
+}
+</style>
 

@@ -348,24 +348,40 @@ namespace discussionspot9.Services
         private async Task<List<NewMemberViewModel>> GetNewMembersAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+            
+            // Get new members with all their stats
             var newMembers = await context.UserProfiles
                 .OrderByDescending(u => u.JoinDate)
-                .Take(3)
-                .Select(u => new NewMemberViewModel
+                .Take(8) // Show more members
+                .Select(u => new
                 {
-                    UserId = u.UserId,
-                    DisplayName = u.DisplayName,
-                    JoinDate = u.JoinDate
+                    u.UserId,
+                    u.DisplayName,
+                    u.JoinDate,
+                    u.KarmaPoints,
+                    u.IsVerified,
+                    u.AvatarUrl,
+                    u.Bio,
+                    PostCount = context.Posts.Count(p => p.UserId == u.UserId && p.Status == "published")
                 })
                 .ToListAsync();
 
-            foreach (var member in newMembers)
+            // Map to view model
+            var viewModels = newMembers.Select(m => new NewMemberViewModel
             {
-                member.Initials = GetInitials(member.DisplayName);
-                member.JoinDateAgo = GetTimeAgo(member.JoinDate);
-            }
+                UserId = m.UserId,
+                DisplayName = m.DisplayName,
+                JoinDate = m.JoinDate,
+                KarmaPoints = m.KarmaPoints,
+                IsVerified = m.IsVerified,
+                AvatarUrl = m.AvatarUrl,
+                Bio = m.Bio,
+                PostCount = m.PostCount,
+                Initials = GetInitials(m.DisplayName),
+                JoinDateAgo = GetTimeAgo(m.JoinDate)
+            }).ToList();
 
-            return newMembers;
+            return viewModels;
         }
 
         // Helper methods

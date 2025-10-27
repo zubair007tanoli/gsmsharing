@@ -31,16 +31,31 @@ namespace discussionspot9.Controllers
         private async Task<bool> IsCurrentUserAdmin()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId)) return false;
+            var userEmail = User.Identity?.Name;
+            
+            _logger.LogWarning("🔍 ADMIN CHECK DEBUG:");
+            _logger.LogWarning("  User ID: {UserId}", userId ?? "NULL");
+            _logger.LogWarning("  User Email: {UserEmail}", userEmail ?? "NULL");
+            _logger.LogWarning("  Is In Role Admin: {IsAdmin}", User.IsInRole("Admin"));
+            _logger.LogWarning("  Is Hardcoded Admin: {IsHardcoded}", userEmail == "zubair007tanoli@gmail.com");
+            
+            if (string.IsNullOrEmpty(userId)) 
+            {
+                _logger.LogWarning("  ❌ No User ID found");
+                return false;
+            }
             
             // Check hardcoded admin email OR SiteAdmin role
-            var userEmail = User.Identity?.Name;
             if (userEmail == "zubair007tanoli@gmail.com" || User.IsInRole("Admin"))
             {
+                _logger.LogWarning("  ✅ Admin access granted via hardcoded email or Admin role");
                 return true;
             }
             
-            return await _adminService.IsUserSiteAdminAsync(userId);
+            var isSiteAdmin = await _adminService.IsUserSiteAdminAsync(userId);
+            _logger.LogWarning("  SiteAdmin check result: {IsSiteAdmin}", isSiteAdmin);
+            
+            return isSiteAdmin;
         }
 
         // Users Management
@@ -248,12 +263,19 @@ namespace discussionspot9.Controllers
         [HttpPost("post/toggle-pin/{id}")]
         public async Task<IActionResult> TogglePin(int id)
         {
+            _logger.LogWarning("📌 TOGGLE PIN REQUESTED for Post ID: {PostId}", id);
+            
             var post = await _context.Posts.FindAsync(id);
-            if (post == null) return NotFound();
+            if (post == null)
+            {
+                _logger.LogError("❌ Post ID {PostId} not found for pin toggle", id);
+                return NotFound();
+            }
 
             post.IsPinned = !post.IsPinned;
             await _context.SaveChangesAsync();
 
+            _logger.LogWarning("✅ Post ID {PostId} pin toggled to: {IsPinned}", id, post.IsPinned);
             TempData["SuccessMessage"] = post.IsPinned ? "Post pinned" : "Post unpinned";
             return RedirectToAction(nameof(Posts));
         }
@@ -274,14 +296,175 @@ namespace discussionspot9.Controllers
         [HttpPost("post/delete/{id}")]
         public async Task<IActionResult> DeletePost(int id)
         {
+            if (!await IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to delete posts.";
+                return RedirectToAction(nameof(Posts));
+            }
+
             var post = await _context.Posts.FindAsync(id);
             if (post == null) return NotFound();
 
+            // Soft delete - just mark as deleted
             post.Status = "deleted";
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Post deleted";
+            TempData["SuccessMessage"] = "Post marked as deleted";
             return RedirectToAction(nameof(Posts));
+        }
+
+        [HttpPost("post/hard-delete/{id}")]
+        public async Task<IActionResult> HardDeletePost(int id)
+        {
+            _logger.LogWarning("🔴 HARD DELETE REQUESTED for Post ID: {PostId} by {User}", id, User.Identity?.Name ?? "Unknown");
+
+            if (!await IsCurrentUserAdmin())
+            {
+                _logger.LogError("❌ HARD DELETE DENIED - User {User} is not an admin", User.Identity?.Name ?? "Unknown");
+                TempData["ErrorMessage"] = "❌ You don't have permission to permanently delete posts. Admin access required.";
+                return RedirectToAction(nameof(Posts));
+            }
+
+            _logger.LogInformation("✅ Admin check passed for user {User}", User.Identity?.Name ?? "Unknown");
+
+            var post = await _context.Posts
+                .Include(p => p.Comments)
+                    .ThenInclude(c => c.Votes)
+                .Include(p => p.Comments)
+                    .ThenInclude(c => c.ChildComments)
+                .Include(p => p.Votes)
+                .Include(p => p.Media)
+                .Include(p => p.PostTags)
+                .Include(p => p.Awards)
+                .Include(p => p.PollOptions)
+                    .ThenInclude(po => po.Votes)
+                .Include(p => p.PollConfiguration)
+                .FirstOrDefaultAsync(p => p.PostId == id);
+
+            if (post == null)
+            {
+                _logger.LogError("❌ Post ID {PostId} not found for deletion", id);
+                TempData["ErrorMessage"] = $"❌ Post ID {id} not found in database.";
+                return RedirectToAction(nameof(Posts));
+            }
+
+            _logger.LogInformation("📝 Post found: ID={PostId}, Title={Title}, Community={Community}", 
+                post.PostId, post.Title, post.Community?.Name);
+
+            try
+            {
+                _logger.LogWarning("Starting HARD DELETE of Post ID: {PostId} - Title: {Title}", post.PostId, post.Title);
+
+                // Use direct SQL to delete - this handles missing tables gracefully
+                var deletedCount = await ExecuteSafeSqlAsync($@"
+                    -- Disable FK constraints
+                    EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';
+                    
+                    -- Delete related data (only from tables that exist)
+                    IF OBJECT_ID('CommentVotes', 'U') IS NOT NULL
+                        DELETE FROM CommentVotes WHERE CommentId IN (SELECT CommentId FROM Comments WHERE PostId = {id});
+                    
+                    IF OBJECT_ID('ChildComments', 'U') IS NOT NULL
+                        DELETE FROM ChildComments WHERE CommentId IN (SELECT CommentId FROM Comments WHERE PostId = {id});
+                    
+                    IF OBJECT_ID('Comments', 'U') IS NOT NULL
+                        DELETE FROM Comments WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostVotes', 'U') IS NOT NULL
+                        DELETE FROM PostVotes WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostTags', 'U') IS NOT NULL
+                        DELETE FROM PostTags WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('Media', 'U') IS NOT NULL
+                        DELETE FROM Media WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PollVotes', 'U') IS NOT NULL
+                        DELETE FROM PollVotes WHERE PollOptionId IN (SELECT PollOptionId FROM PollOptions WHERE PostId = {id});
+                    
+                    IF OBJECT_ID('PollOptions', 'U') IS NOT NULL
+                        DELETE FROM PollOptions WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PollConfiguration', 'U') IS NOT NULL
+                        DELETE FROM PollConfiguration WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostAwards', 'U') IS NOT NULL
+                        DELETE FROM PostAwards WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('SavedPosts', 'U') IS NOT NULL
+                        DELETE FROM SavedPosts WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostReports', 'U') IS NOT NULL
+                        DELETE FROM PostReports WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostKeywords', 'U') IS NOT NULL
+                        DELETE FROM PostKeywords WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('ContentRecommendations', 'U') IS NOT NULL
+                        DELETE FROM ContentRecommendations WHERE RelatedPostId = {id};
+                    
+                    IF OBJECT_ID('UserActivities', 'U') IS NOT NULL
+                        DELETE FROM UserActivities WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('AdSenseRevenues', 'U') IS NOT NULL
+                        DELETE FROM AdSenseRevenues WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostSeoQueues', 'U') IS NOT NULL
+                        DELETE FROM PostSeoQueues WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('SeoOptimizationLogs', 'U') IS NOT NULL
+                        DELETE FROM SeoOptimizationLogs WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('PostPerformanceMetrics', 'U') IS NOT NULL
+                        DELETE FROM PostPerformanceMetrics WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('EnhancedSeoMetadata', 'U') IS NOT NULL
+                        DELETE FROM EnhancedSeoMetadata WHERE PostId = {id};
+                    
+                    IF OBJECT_ID('Notifications', 'U') IS NOT NULL
+                        DELETE FROM Notifications WHERE EntityType = 'Post' AND EntityId = CAST({id} AS NVARCHAR(50));
+                    
+                    -- Finally delete the post
+                    DELETE FROM Posts WHERE PostId = {id};
+                    
+                    -- Re-enable FK constraints
+                    EXEC sp_MSforeachtable 'ALTER TABLE ? CHECK CONSTRAINT ALL';
+                ");
+
+                _logger.LogWarning("✅ HARD DELETE COMPLETED for Post ID: {PostId}", id);
+                TempData["SuccessMessage"] = $"✅ Post and all its related data have been permanently deleted!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error permanently deleting post {PostId}: {Message}", id, ex.Message);
+                
+                // Try to re-enable constraints
+                try
+                {
+                    await _context.Database.ExecuteSqlRawAsync("EXEC sp_MSforeachtable 'ALTER TABLE ? CHECK CONSTRAINT ALL'");
+                }
+                catch { }
+                
+                TempData["ErrorMessage"] = $"❌ Error deleting post: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Posts));
+        }
+
+        /// <summary>
+        /// Execute SQL safely, ignoring errors from missing tables/columns
+        /// </summary>
+        private async Task<int> ExecuteSafeSqlAsync(string sql)
+        {
+            try
+            {
+                return await _context.Database.ExecuteSqlRawAsync(sql);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("SQL execution warning: {Message}", ex.Message);
+                return 0;
+            }
         }
         
         // ===============================================

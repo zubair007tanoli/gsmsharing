@@ -95,17 +95,47 @@ namespace discussionspot9.Controllers
             
             // Set IsPostAuthor for comment pin functionality
             ViewData["IsPostAuthor"] = userId != null && postDetails.UserId == userId;
-            if (model.Post.PostType == "link")
+            
+            // FIXED: Fetch link metadata whenever URL exists, regardless of PostType
+            // This supports mixed content: posts can have URL + content + media + poll together
+            if (!string.IsNullOrWhiteSpace(model.Post.Url))
             {
-                var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
-                model.Post.LinkModel = new LinkPreviewViewModel
+                try
                 {
-                    Title = metadata.Title,
-                    Description = metadata.Description,
-                    ThumbnailUrl = metadata.ThumbnailUrl,
-                    Domain = metadata.Domain
-                };
-
+                    // Validate that URL is external (not pointing to localhost or the same site)
+                    var uri = new Uri(model.Post.Url);
+                    var requestHost = Request.Host.Host.ToLower();
+                    var urlHost = uri.Host.ToLower();
+                    
+                    // Only fetch metadata if URL is external (not localhost or same domain)
+                    if (urlHost != requestHost && 
+                        urlHost != "localhost" && 
+                        urlHost != "127.0.0.1" &&
+                        !urlHost.StartsWith("localhost:") &&
+                        !urlHost.StartsWith("127.0.0.1:"))
+                    {
+                        var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
+                        model.Post.LinkModel = new LinkPreviewViewModel
+                        {
+                            Title = metadata.Title,
+                            Description = metadata.Description,
+                            ThumbnailUrl = metadata.ThumbnailUrl,
+                            Domain = metadata.Domain,
+                            Url = metadata.Url,
+                            FaviconUrl = metadata.FaviconUrl
+                        };
+                        _logger.LogInformation("External link metadata fetched for post {PostId}: {Url}", model.Post.PostId, model.Post.Url);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Skipping metadata fetch for internal/localhost URL: {Url}", model.Post.Url);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching link metadata for post {PostId}: {Url}", model.Post.PostId, model.Post.Url);
+                    // Continue without link preview on error
+                }
             }
 
             if (postDetails.PostType == "poll" && postDetails.HasPoll)
@@ -163,16 +193,46 @@ namespace discussionspot9.Controllers
 
             ViewBag.PostId = model.Post.PostId;
 
-            if (model.Post.PostType == "link")
+            // FIXED: Fetch link metadata whenever URL exists, regardless of PostType
+            // This supports mixed content: posts can have URL + content + media + poll together
+            if (!string.IsNullOrWhiteSpace(model.Post.Url))
             {
-                var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
-                model.Post.LinkModel = new LinkPreviewViewModel
+                try
                 {
-                    Title = metadata.Title,
-                    Description = metadata.Description,
-                    ThumbnailUrl = metadata.ThumbnailUrl,
-                    Domain = metadata.Domain
-                };
+                    // Validate that URL is external (not pointing to localhost or the same site)
+                    var uri = new Uri(model.Post.Url);
+                    var requestHost = Request.Host.Host.ToLower();
+                    var urlHost = uri.Host.ToLower();
+                    
+                    // Only fetch metadata if URL is external (not localhost or same domain)
+                    if (urlHost != requestHost && 
+                        urlHost != "localhost" && 
+                        urlHost != "127.0.0.1" &&
+                        !urlHost.StartsWith("localhost:") &&
+                        !urlHost.StartsWith("127.0.0.1:"))
+                    {
+                        var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
+                        model.Post.LinkModel = new LinkPreviewViewModel
+                        {
+                            Title = metadata.Title,
+                            Description = metadata.Description,
+                            ThumbnailUrl = metadata.ThumbnailUrl,
+                            Domain = metadata.Domain,
+                            Url = metadata.Url,
+                            FaviconUrl = metadata.FaviconUrl
+                        };
+                        _logger.LogInformation("External link metadata fetched for post {PostId}: {Url}", model.Post.PostId, model.Post.Url);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Skipping metadata fetch for internal/localhost URL: {Url}", model.Post.Url);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching link metadata for post {PostId}: {Url}", model.Post.PostId, model.Post.Url);
+                    // Continue without link preview on error
+                }
             }
 
             if (postDetails.PostType == "poll" && postDetails.HasPoll)
@@ -302,24 +362,9 @@ namespace discussionspot9.Controllers
                         post.CurrentUserVote = await _postService.GetUserVoteAsync(post.PostId, userId);
                     }
 
-                    // Set media URL and link URL based on post type
-                    if (post.PostType == "image" || post.PostType == "video")
-                    {
-                        post.MediaUrl = post.Url;
-                    }
-                    else if (post.PostType == "link" && !string.IsNullOrEmpty(post.Url))
-                    {
-                        post.LinkUrl = post.Url;
-                        try
-                        {
-                            var uri = new Uri(post.Url);
-                            post.LinkDomain = uri.Host;
-                        }
-                        catch
-                        {
-                            post.LinkDomain = "External Link";
-                        }
-                    }
+                    // NOTE: MediaUrl, LinkUrl, and LinkDomain are already set by MapToPostCardViewModel
+                    // in PostService which now supports mixed content properly.
+                    // No need to override here - the service layer handles it correctly.
                 }
 
                 // Get trending topics for sidebar

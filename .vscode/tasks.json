@@ -7,9 +7,9 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/gsmsharing.sln",
+                "${workspaceFolder}/discussionspot9/discussionspot9.csproj",
                 "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+                "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
         },
@@ -19,9 +19,9 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/gsmsharing.sln",
+                "${workspaceFolder}/discussionspot9/discussionspot9.csproj",
                 "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+                "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
         },
@@ -33,7 +33,17 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/gsmsharing.sln"
+                "${workspaceFolder}/discussionspot9/discussionspot9.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "clean",
+                "${workspaceFolder}/discussionspot9/discussionspot9.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

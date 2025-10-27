@@ -131,6 +131,20 @@
                                                 <i class="fas fa-lock"></i> @(post.IsLocked ? "Unlock" : "Lock")
                                             </button>
                                         </form>
+                                        @if (post.Status != "deleted")
+                                        {
+                                            <form asp-controller="AdminManagement" asp-action="DeletePost" asp-route-id="@post.PostId" method="post" class="d-inline" onsubmit="return confirm('Mark this post as deleted? (Soft delete - can be recovered)');">
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                                    <i class="fas fa-trash-alt"></i> Soft Delete
+                                                </button>
+                                            </form>
+                                        }
+                                        <form asp-controller="AdminManagement" asp-action="HardDeletePost" asp-route-id="@post.PostId" method="post" class="d-inline" 
+                                              onsubmit="return confirmHardDelete('@post.PostId', '@Html.Raw(post.Title.Replace("'", "\\'"))');">
+                                            <button type="submit" class="btn btn-danger btn-sm w-100">
+                                                <i class="fas fa-bomb"></i> HARD DELETE
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -161,3 +175,44 @@
     </div>
 </div>
 
+<script>
+function confirmHardDelete(postId, postTitle) {
+    // First confirmation
+    const confirmed = confirm(
+        '⚠️⚠️⚠️ PERMANENT DELETION WARNING ⚠️⚠️⚠️\n\n' +
+        'You are about to PERMANENTLY DELETE:\n' +
+        'Post ID: ' + postId + '\n' +
+        'Title: "' + postTitle + '"\n\n' +
+        'This will IRREVERSIBLY delete:\n' +
+        '❌ The post itself\n' +
+        '❌ All comments and replies\n' +
+        '❌ All votes and reactions\n' +
+        '❌ All media files\n' +
+        '❌ Poll data and votes\n' +
+        '❌ SEO and analytics data\n' +
+        '❌ Revenue tracking data\n' +
+        '❌ ALL related data\n\n' +
+        '🚨 THIS CANNOT BE UNDONE! 🚨\n\n' +
+        'Click OK to proceed to final confirmation...'
+    );
+    
+    if (!confirmed) {
+        return false;
+    }
+    
+    // Second confirmation - must type DELETE
+    const userInput = prompt(
+        '⚠️ FINAL CONFIRMATION REQUIRED ⚠️\n\n' +
+        'Type the word DELETE (in capitals) to confirm permanent deletion:\n\n' +
+        'Post: "' + postTitle + '"'
+    );
+    
+    if (userInput === 'DELETE') {
+        console.log('🔴 HARD DELETE confirmed for Post ID:', postId);
+        return true;
+    } else {
+        alert('❌ Deletion cancelled. You must type DELETE exactly to confirm.');
+        return false;
+    }
+}
+</script>

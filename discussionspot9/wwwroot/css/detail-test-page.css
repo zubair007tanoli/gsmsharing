@@ -1411,14 +1411,13 @@
 /* === SIDEBAR STYLES === */
 .detail-test-page .left-sidebar,
 .detail-test-page .right-sidebar {
-    position: sticky;
-    top: 80px;
+    position: sticky; 
     max-height: calc(100vh - 100px);
-    overflow-y: auto;
-    overflow-x: hidden;
+    /*overflow-y: auto;*/
+    /*overflow-x: hidden;
     padding-right: 0.5rem;
     scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
+    scrollbar-color: var(--border-color) transparent;*/
 }
 
 .detail-test-page .right-sidebar {

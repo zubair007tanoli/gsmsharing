@@ -1213,26 +1213,29 @@ namespace discussionspot9.Services
                 IsSavedByUser = false
             };
 
-            if (p.PostType == "image" || p.PostType == "video")
+            // FIXED: Support mixed content - posts can have multiple types of content
+            // Check for media (images/videos) regardless of PostType
+            if (p.Media?.Any() == true)
             {
-                viewModel.MediaUrl = p.Media?.FirstOrDefault()?.Url ?? p.Url;
+                viewModel.MediaUrl = p.Media.FirstOrDefault()?.Url ?? p.Url;
             }
-            else if (p.PostType == "link")
+            
+            // Check for URL (external links) regardless of PostType
+            if (!string.IsNullOrEmpty(p.Url))
             {
                 viewModel.LinkUrl = p.Url;
-                if (!string.IsNullOrEmpty(p.Url))
+                try
                 {
-                    try
-                    {
-                        viewModel.LinkDomain = new Uri(p.Url).Host;
-                    }
-                    catch
-                    {
-                        viewModel.LinkDomain = "External Link";
-                    }
+                    viewModel.LinkDomain = new Uri(p.Url).Host;
+                }
+                catch
+                {
+                    viewModel.LinkDomain = "External Link";
                 }
             }
-            else if (p.PostType == "poll" && p.PollOptions?.Any() == true)
+            
+            // Check for poll data regardless of PostType
+            if (p.PollOptions?.Any() == true)
             {
                 viewModel.PollVoteCount = p.PollOptions.Sum(po => po.Votes?.Count ?? 0);
                 viewModel.PollEndsAt = p.PollExpiresAt;

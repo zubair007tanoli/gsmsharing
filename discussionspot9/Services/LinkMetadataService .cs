@@ -69,7 +69,7 @@ namespace discussionspot9.Services
                     "//link[@rel='image_src']/@href",
                     "//img[@id='main-image']/@src",
                     "//img[contains(@class, 'hero')]/@src"
-                });
+                }) ?? string.Empty;
 
                 if (string.IsNullOrEmpty(metadata.ThumbnailUrl))
                 {
@@ -88,9 +88,13 @@ namespace discussionspot9.Services
 
                 metadata.FaviconUrl = ExtractFavicon(doc, uri);
 
-                // Clean up and validate URLs
-                metadata.ThumbnailUrl = CleanUrl(metadata.ThumbnailUrl, uri);
-                metadata.FaviconUrl = CleanUrl(metadata.FaviconUrl, uri);
+                // Clean up and validate URLs - handle potential null values
+                metadata.ThumbnailUrl = !string.IsNullOrEmpty(metadata.ThumbnailUrl) 
+                    ? CleanUrl(metadata.ThumbnailUrl, uri) 
+                    : string.Empty;
+                metadata.FaviconUrl = !string.IsNullOrEmpty(metadata.FaviconUrl) 
+                    ? CleanUrl(metadata.FaviconUrl, uri) 
+                    : string.Empty;
 
                 // Trim metadata
                 metadata.Title = TrimMetadata(metadata.Title, 200);
