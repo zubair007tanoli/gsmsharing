@@ -1,0 +1,42 @@
+<div class="actor-info">
+    <div class="actor-avatar">
+        <img src="{{ACTOR_AVATAR}}" alt="{{ACTOR_NAME}}" onerror="this.src='{{BASE_URL}}/images/default-avatar.png'">
+    </div>
+    <div class="actor-content">
+        <div class="actor-name">{{ACTOR_NAME}}</div>
+        <div class="actor-action">replied to your comment</div>
+    </div>
+</div>
+
+<h3 style="color: #787c7e; font-size: 14px; margin: 0 0 10px 0; font-weight: normal;">
+    On post: {{POST_TITLE}}
+</h3>
+
+<h4 style="color: #1a1a1b; font-size: 15px; margin: 0 0 10px 0;">
+    Your comment:
+</h4>
+<div style="background: #f0f2f5; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+    <p style="margin: 0; font-size: 14px; color: #787c7e;">
+        {{YOUR_COMMENT}}
+    </p>
+</div>
+
+<h4 style="color: #1a1a1b; font-size: 15px; margin: 0 0 10px 0;">
+    {{ACTOR_NAME}}'s reply:
+</h4>
+<div class="notification-box">
+    <p style="margin: 0; font-size: 15px; color: #1a1a1b;">
+        {{REPLY_CONTENT}}
+    </p>
+</div>
+
+<a href="{{REPLY_URL}}" class="btn-primary">
+    View Reply & Respond
+</a>
+
+<div class="divider"></div>
+
+<p style="color: #787c7e; font-size: 14px; margin: 0;">
+    💭 Join the conversation! Your insights matter to the community.
+</p>
+

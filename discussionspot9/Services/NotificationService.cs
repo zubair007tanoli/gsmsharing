@@ -11,15 +11,21 @@ namespace discussionspot9.Services
         private readonly ApplicationDbContext _context;
         private readonly IHubContext<NotificationHub> _notificationHub;
         private readonly ILogger<NotificationService> _logger;
+        private readonly IEmailService? _emailService;
+        private readonly INotificationPreferenceService? _preferenceService;
 
         public NotificationService(
             ApplicationDbContext context,
             IHubContext<NotificationHub> notificationHub,
-            ILogger<NotificationService> logger)
+            ILogger<NotificationService> logger,
+            IEmailService? emailService = null,
+            INotificationPreferenceService? preferenceService = null)
         {
             _context = context;
             _notificationHub = notificationHub;
             _logger = logger;
+            _emailService = emailService;
+            _preferenceService = preferenceService;
         }
 
         #region Generic Notification Methods
@@ -53,6 +59,9 @@ namespace discussionspot9.Services
 
                 // Send real-time notification via SignalR
                 await SendRealtimeNotification(userId, notification);
+
+                // Queue email for offline users
+                await QueueEmailNotificationIfOfflineAsync(notification);
             }
             catch (Exception ex)
             {
@@ -92,6 +101,8 @@ namespace discussionspot9.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
+                notification.Url = $"/r/{post.Community.Slug}/posts/{post.Slug}#{commentId}";
+                
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
@@ -100,6 +111,9 @@ namespace discussionspot9.Services
                 // Send real-time notification
                 await SendRealtimeNotification(post.UserId, notification, 
                     url: $"/r/{post.Community.Slug}/posts/{post.Slug}#{commentId}");
+
+                // Queue email for offline users
+                await QueueEmailNotificationIfOfflineAsync(notification);
             }
             catch (Exception ex)
             {
@@ -136,6 +150,8 @@ namespace discussionspot9.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
+                notification.Url = $"/r/{parentComment.Post.Community.Slug}/posts/{parentComment.Post.Slug}#{replyCommentId}";
+                
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
@@ -144,6 +160,9 @@ namespace discussionspot9.Services
                 // Send real-time notification
                 await SendRealtimeNotification(parentComment.UserId, notification,
                     url: $"/r/{parentComment.Post.Community.Slug}/posts/{parentComment.Post.Slug}#{replyCommentId}");
+
+                // Queue email for offline users
+                await QueueEmailNotificationIfOfflineAsync(notification);
             }
             catch (Exception ex)
             {
@@ -272,6 +291,81 @@ namespace discussionspot9.Services
 
         #endregion
 
+        #region Mention Notifications
+
+        /// <summary>
+        /// Notify users when they are mentioned in content
+        /// </summary>
+        public async Task NotifyMentionsAsync(string content, string actorUserId, string actorName, string entityType, int entityId, string entityUrl)
+        {
+            try
+            {
+                // Extract all mentions from content
+                var mentions = Helpers.MentionHelper.ExtractMentions(content);
+                
+                if (!mentions.Any())
+                    return;
+
+                // Get actor profile for avatar
+                var actorProfile = await _context.UserProfiles.FindAsync(actorUserId);
+                var actorAvatar = actorProfile?.AvatarUrl;
+
+                foreach (var username in mentions)
+                {
+                    try
+                    {
+                        // Find mentioned user by display name
+                        var mentionedUser = await _context.UserProfiles
+                            .FirstOrDefaultAsync(up => up.DisplayName.ToLower() == username.ToLower());
+
+                        if (mentionedUser == null)
+                            continue;
+
+                        // Don't notify if mentioning yourself
+                        if (mentionedUser.UserId == actorUserId)
+                            continue;
+
+                        var notification = new Notification
+                        {
+                            UserId = mentionedUser.UserId,
+                            Title = "You Were Mentioned",
+                            Message = $"{actorName} mentioned you in {entityType}",
+                            EntityType = entityType,
+                            EntityId = entityId.ToString(),
+                            Type = "mention",
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow,
+                            ActorUserId = actorUserId,
+                            ActorDisplayName = actorName,
+                            ActorAvatarUrl = actorAvatar,
+                            Url = entityUrl
+                        };
+
+                        _context.Notifications.Add(notification);
+                        await _context.SaveChangesAsync();
+
+                        _logger.LogInformation($"Mention notification created: {actorName} mentioned {username} in {entityType}");
+
+                        // Send real-time notification
+                        await SendRealtimeNotification(mentionedUser.UserId, notification, url: entityUrl);
+
+                        // Queue email for offline users
+                        await QueueEmailNotificationIfOfflineAsync(notification);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Error creating mention notification for {username}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error processing mentions in {entityType}");
+            }
+        }
+
+        #endregion
+
         #region Award Notifications
 
         public async Task CreateAwardNotificationAsync(int postId, int awardId, string fromUserId)
@@ -368,6 +462,260 @@ namespace discussionspot9.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error sending real-time notification to user {userId}");
+            }
+        }
+
+        /// <summary>
+        /// Queue email for offline users
+        /// </summary>
+        private async Task QueueEmailNotificationIfOfflineAsync(Notification notification)
+        {
+            try
+            {
+                if (_emailService == null || _preferenceService == null)
+                {
+                    _logger.LogDebug("Email service not available for notification {NotificationId}", notification.NotificationId);
+                    return;
+                }
+
+                // Check if user wants emails for this notification type
+                if (!await _preferenceService.ShouldNotifyAsync(notification.UserId, notification.Type, "email"))
+                {
+                    _logger.LogInformation("User {UserId} has emails disabled for {Type}", notification.UserId, notification.Type);
+                    return;
+                }
+
+                // Check if user is currently online (has recent UserPresence)
+                var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
+                var isOnline = await _context.UserPresences
+                    .AnyAsync(p => p.UserId == notification.UserId && p.LastSeen > fiveMinutesAgo);
+
+                if (isOnline)
+                {
+                    _logger.LogInformation("User {UserId} is online, skipping email", notification.UserId);
+                    return;
+                }
+
+                // Get additional context for email
+                switch (notification.Type)
+                {
+                    case "comment":
+                        await QueueCommentEmailAsync(notification);
+                        break;
+                    case "reply":
+                        await QueueReplyEmailAsync(notification);
+                        break;
+                    case "follow":
+                        await QueueFollowEmailAsync(notification);
+                        break;
+                    case "mention":
+                        await QueueMentionEmailAsync(notification);
+                        break;
+                    case "message":
+                        await QueueDirectMessageEmailAsync(notification);
+                        break;
+                    case "announcement":
+                        await QueueAnnouncementEmailAsync(notification);
+                        break;
+                    case "vote":
+                    case "upvote":
+                        await QueueUpvoteEmailAsync(notification);
+                        break;
+                    default:
+                        _logger.LogInformation("No email template for notification type: {Type}", notification.Type);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing email for notification {NotificationId}", notification.NotificationId);
+            }
+        }
+
+        private async Task QueueCommentEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (int.TryParse(notification.EntityId, out int postId))
+                {
+                    var post = await _context.Posts.FindAsync(postId);
+                    if (post != null && _emailService != null)
+                    {
+                        await _emailService.SendCommentNotificationEmailAsync(
+                            notification,
+                            post.Title,
+                            notification.Message ?? "",
+                            notification.Url ?? "");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing comment email");
+            }
+        }
+
+        private async Task QueueReplyEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (int.TryParse(notification.EntityId, out int commentId))
+                {
+                    var comment = await _context.Comments
+                        .Include(c => c.Post)
+                        .FirstOrDefaultAsync(c => c.CommentId == commentId);
+
+                    if (comment != null && _emailService != null)
+                    {
+                        await _emailService.SendReplyNotificationEmailAsync(
+                            notification,
+                            comment.Post.Title,
+                            "Your comment",
+                            notification.Message ?? "",
+                            notification.Url ?? "");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing reply email");
+            }
+        }
+
+        private async Task QueueFollowEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(notification.ActorUserId) && _emailService != null)
+                {
+                    var followerProfile = await _context.UserProfiles.FindAsync(notification.ActorUserId);
+                    await _emailService.SendFollowNotificationEmailAsync(
+                        notification,
+                        notification.ActorDisplayName ?? "Someone",
+                        notification.Url ?? "",
+                        followerProfile?.Bio);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing follow email");
+            }
+        }
+
+        private async Task QueueMentionEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (int.TryParse(notification.EntityId, out int postId) && _emailService != null)
+                {
+                    var post = await _context.Posts.FindAsync(postId);
+                    if (post != null)
+                    {
+                        await _emailService.SendMentionNotificationEmailAsync(
+                            notification,
+                            post.Title,
+                            notification.Message ?? "",
+                            notification.Url ?? "");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing mention email");
+            }
+        }
+
+        private async Task QueueDirectMessageEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (_emailService != null)
+                {
+                    var senderName = notification.ActorDisplayName ?? "Someone";
+                    var messagePreview = notification.Message ?? "Sent you a message";
+                    var chatUrl = notification.Url ?? $"/chat/{notification.ActorUserId}";
+
+                    await _emailService.SendDirectMessageEmailAsync(
+                        notification,
+                        senderName,
+                        messagePreview,
+                        chatUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing direct message email");
+            }
+        }
+
+        private async Task QueueAnnouncementEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (_emailService != null)
+                {
+                    var title = notification.Title ?? "New Announcement";
+                    var message = notification.Message ?? "";
+                    var linkUrl = notification.Url;
+                    var linkText = "Learn More";
+
+                    await _emailService.SendAnnouncementEmailAsync(
+                        notification,
+                        title,
+                        message,
+                        linkUrl,
+                        linkText);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing announcement email");
+            }
+        }
+
+        private async Task QueueUpvoteEmailAsync(Notification notification)
+        {
+            try
+            {
+                if (_emailService != null)
+                {
+                    string entityTitle = "Your content";
+                    string entityPreview = "";
+                    string entityType = "post";
+
+                    // Try to get post or comment details
+                    if (notification.EntityType == "post" && int.TryParse(notification.EntityId, out int postId))
+                    {
+                        var post = await _context.Posts.FindAsync(postId);
+                        if (post != null)
+                        {
+                            entityTitle = post.Title;
+                            entityPreview = post.Content ?? "";
+                            entityType = "post";
+                        }
+                    }
+                    else if (notification.EntityType == "comment" && int.TryParse(notification.EntityId, out int commentId))
+                    {
+                        var comment = await _context.Comments.FindAsync(commentId);
+                        if (comment != null)
+                        {
+                            entityTitle = "Your comment";
+                            entityPreview = comment.Content ?? "";
+                            entityType = "comment";
+                        }
+                    }
+
+                    await _emailService.SendUpvoteNotificationEmailAsync(
+                        notification,
+                        entityTitle,
+                        entityPreview,
+                        notification.Url ?? "",
+                        entityType);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error queuing upvote email");
             }
         }
 

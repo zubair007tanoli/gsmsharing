@@ -68,6 +68,14 @@ namespace discussionspot9.Data.DbContext
         
         // Announcements table
         public DbSet<Announcement> Announcements { get; set; }
+        
+        // User Follow System
+        public DbSet<UserFollow> UserFollows { get; set; }
+        
+        // Email & Notification Enhancement
+        public DbSet<EmailQueue> EmailQueues { get; set; }
+        public DbSet<NotificationPreference> NotificationPreferences { get; set; }
+        public DbSet<UserNotificationSettings> UserNotificationSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -508,13 +516,29 @@ namespace discussionspot9.Data.DbContext
                 entity.Property(e => e.EntityId).HasMaxLength(450);
                 entity.Property(e => e.IsRead).HasDefaultValue(false);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                
+                // Enhanced fields
+                entity.Property(e => e.ActorUserId).HasMaxLength(450);
+                entity.Property(e => e.ActorDisplayName).HasMaxLength(100);
+                entity.Property(e => e.ActorAvatarUrl).HasMaxLength(2048);
+                entity.Property(e => e.Url).HasMaxLength(2048);
+                entity.Property(e => e.EmailSent).HasDefaultValue(false);
+                entity.Property(e => e.GroupId).HasMaxLength(100);
 
                 entity.HasIndex(e => new { e.UserId, e.IsRead });
+                entity.HasIndex(e => e.ActorUserId);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => new { e.UserId, e.Type, e.IsRead });
 
                 entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Actor)
+                    .WithMany()
+                    .HasForeignKey(e => e.ActorUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
             #endregion
 
@@ -1067,6 +1091,136 @@ namespace discussionspot9.Data.DbContext
                 entity.Property(e => e.ClickCount).HasDefaultValue(0);
                 entity.Property(e => e.TargetAudience).HasMaxLength(2000);
                 entity.Property(e => e.MinMessages).HasDefaultValue(0);
+            });
+            #endregion
+
+            #region UserFollow Configuration
+            builder.Entity<UserFollow>(entity =>
+            {
+                entity.HasKey(e => e.FollowId);
+                
+                entity.Property(e => e.FollowerId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.FollowedId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.FollowedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.NotificationsEnabled).HasDefaultValue(true);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+                // Indexes for performance
+                entity.HasIndex(e => e.FollowerId);
+                entity.HasIndex(e => e.FollowedId);
+                entity.HasIndex(e => new { e.FollowerId, e.FollowedId }).IsUnique();
+                entity.HasIndex(e => new { e.FollowedId, e.IsActive });
+
+                // Relationships
+                entity.HasOne(e => e.Follower)
+                    .WithMany()
+                    .HasForeignKey(e => e.FollowerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Followed)
+                    .WithMany()
+                    .HasForeignKey(e => e.FollowedId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Prevent self-following with check constraint
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_UserFollow_NoSelfFollow", "FollowerId != FollowedId");
+                });
+            });
+            #endregion
+
+            #region EmailQueue Configuration
+            builder.Entity<EmailQueue>(entity =>
+            {
+                entity.HasKey(e => e.EmailId);
+                
+                entity.Property(e => e.ToEmail).HasMaxLength(255).IsRequired();
+                entity.Property(e => e.ToName).HasMaxLength(255);
+                entity.Property(e => e.Subject).HasMaxLength(500).IsRequired();
+                entity.Property(e => e.HtmlBody).HasColumnType("NVARCHAR(MAX)").IsRequired();
+                entity.Property(e => e.PlainTextBody).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("pending");
+                entity.Property(e => e.RetryCount).HasDefaultValue(0);
+                entity.Property(e => e.MaxRetries).HasDefaultValue(3);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.ErrorMessage).HasColumnType("NVARCHAR(MAX)");
+                entity.Property(e => e.NotificationId).HasMaxLength(50);
+                entity.Property(e => e.UserId).HasMaxLength(450);
+                entity.Property(e => e.EmailType).HasMaxLength(50).HasDefaultValue("notification");
+                entity.Property(e => e.Priority).HasDefaultValue(5);
+
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => new { e.Status, e.Priority, e.ScheduledFor });
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.CreatedAt);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_EmailQueue_Status", "Status IN ('pending', 'sent', 'failed', 'cancelled')");
+                    t.HasCheckConstraint("CK_EmailQueue_Priority", "Priority BETWEEN 1 AND 10");
+                });
+            });
+            #endregion
+
+            #region NotificationPreference Configuration
+            builder.Entity<NotificationPreference>(entity =>
+            {
+                entity.HasKey(e => e.PreferenceId);
+                
+                entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.NotificationType).HasMaxLength(50).IsRequired();
+                entity.Property(e => e.WebEnabled).HasDefaultValue(true);
+                entity.Property(e => e.EmailEnabled).HasDefaultValue(true);
+                entity.Property(e => e.PushEnabled).HasDefaultValue(false);
+                entity.Property(e => e.EmailFrequency).HasMaxLength(20).HasDefaultValue("instant");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(e => new { e.UserId, e.NotificationType }).IsUnique();
+                entity.HasIndex(e => e.UserId);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_NotificationPreference_EmailFrequency", 
+                        "EmailFrequency IN ('instant', 'daily', 'weekly', 'never')");
+                });
+            });
+            #endregion
+
+            #region UserNotificationSettings Configuration
+            builder.Entity<UserNotificationSettings>(entity =>
+            {
+                entity.HasKey(e => e.UserId);
+                
+                entity.Property(e => e.UserId).HasMaxLength(450);
+                entity.Property(e => e.EmailNotificationsEnabled).HasDefaultValue(true);
+                entity.Property(e => e.WebNotificationsEnabled).HasDefaultValue(true);
+                entity.Property(e => e.PushNotificationsEnabled).HasDefaultValue(false);
+                entity.Property(e => e.EmailDigestFrequency).HasMaxLength(20).HasDefaultValue("never");
+                entity.Property(e => e.QuietHoursEnabled).HasDefaultValue(false);
+                entity.Property(e => e.GroupNotifications).HasDefaultValue(true);
+                entity.Property(e => e.ShowNotificationPreviews).HasDefaultValue(true);
+                entity.Property(e => e.PlayNotificationSound).HasDefaultValue(false);
+                entity.Property(e => e.UnsubscribeFromAll).HasDefaultValue(false);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.User)
+                    .WithOne()
+                    .HasForeignKey<UserNotificationSettings>(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_UserNotificationSettings_EmailDigestFrequency", 
+                        "EmailDigestFrequency IN ('never', 'daily', 'weekly')");
+                });
             });
             #endregion
 

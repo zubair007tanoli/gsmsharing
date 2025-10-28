@@ -1,0 +1,32 @@
+@*
+    Follow/Unfollow Button Component
+    Usage: @await Html.PartialAsync("_FollowButton", new { UserId = "userId", IsFollowing = false })
+*@
+
+@{
+    var userId = ViewData["UserId"]?.ToString() ?? "";
+    var isFollowing = ViewData["IsFollowing"] as bool? ?? false;
+    var displayName = ViewData["DisplayName"]?.ToString() ?? "this user";
+}
+
+<div class="follow-button-wrapper" data-user-id="@userId">
+    @if (isFollowing)
+    {
+        <button class="btn btn-outline-primary follow-btn following" 
+                onclick="unfollowUser('@userId')" 
+                title="Unfollow @displayName">
+            <i class="fas fa-user-check"></i>
+            <span>Following</span>
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-primary follow-btn" 
+                onclick="followUser('@userId')" 
+                title="Follow @displayName">
+            <i class="fas fa-user-plus"></i>
+            <span>Follow</span>
+        </button>
+    }
+</div>
+

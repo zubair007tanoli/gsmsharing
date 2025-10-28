@@ -8,15 +8,17 @@ using discussionspot9.Helpers;
 using Microsoft.EntityFrameworkCore;
 using discussionspot9.Data.DbContext;
 using discussionspot9.Models.Domain;
+using discussionspot9.Interfaces;
 
 namespace DiscussionSpot9.Controllers
 {
-    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ApplicationDbContext context) : Controller
+    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ApplicationDbContext context, IFollowService followService) : Controller
     {
         private readonly IUserService _userService = userService;
         private readonly UserManager<IdentityUser> _userManager = userManager;
         private readonly SignInManager<IdentityUser> _signInManager = signInManager;
         private readonly ApplicationDbContext _context = context;
+        private readonly IFollowService _followService = followService;
 
         [HttpGet]
         [AllowAnonymous]
@@ -439,6 +441,22 @@ namespace DiscussionSpot9.Controllers
             {
                 return NotFound();
             }
+
+            // Get follow data
+            var currentUserId = _userManager.GetUserId(User);
+            var isFollowing = false;
+            var followersCount = await _followService.GetFollowerCountAsync(userProfile.UserId);
+            var followingCount = await _followService.GetFollowingCountAsync(userProfile.UserId);
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                isFollowing = await _followService.IsFollowingAsync(currentUserId, userProfile.UserId);
+            }
+
+            ViewData["IsFollowing"] = isFollowing;
+            ViewData["FollowersCount"] = followersCount;
+            ViewData["FollowingCount"] = followingCount;
+            ViewData["IsOwnProfile"] = currentUserId == userProfile.UserId;
 
             return View(userStats);
         }

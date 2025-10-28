@@ -37,7 +37,7 @@ namespace discussionspot9.Migrations
                 column: "UserId",
                 principalTable: "UserProfiles",
                 principalColumn: "UserId",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />

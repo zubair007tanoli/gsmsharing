@@ -1,0 +1,3 @@
+Sqlcmd: Error: Microsoft ODBC Driver 17 for SQL Server : TCP Provider: An existing connection was forcibly closed by the remote host.
+.
+Sqlcmd: Error: Microsoft ODBC Driver 17 for SQL Server : Communication link failure.

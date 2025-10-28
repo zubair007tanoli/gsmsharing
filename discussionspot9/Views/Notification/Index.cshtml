@@ -1,0 +1,330 @@
+@model List<discussionspot9.Models.Domain.Notification>
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" />
+}
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            
+            <!-- Header -->
+            <div class="notifications-header">
+                <h1 class="notifications-title">
+                    <i class="fas fa-bell me-2"></i>
+                    Notifications
+                </h1>
+                <div class="notifications-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="markAllAsRead()">
+                        <i class="fas fa-check-double me-1"></i>
+                        Mark All Read
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearReadNotifications()">
+                        <i class="fas fa-trash me-1"></i>
+                        Clear Read
+                    </button>
+                    <a href="/notifications/settings" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-cog me-1"></i>
+                        Settings
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="notifications-stats">
+                <div class="stat-item">
+                    <span class="stat-value">@ViewBag.TotalCount</span>
+                    <span class="stat-label">Total</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value text-primary">@ViewBag.UnreadCount</span>
+                    <span class="stat-label">Unread</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">@(ViewBag.TotalCount - ViewBag.UnreadCount)</span>
+                    <span class="stat-label">Read</span>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="notifications-filters">
+                <div class="filter-group">
+                    <label>Filter by Type:</label>
+                    <select class="form-select form-select-sm" onchange="filterByType(this.value)">
+                        <option value="">All Types</option>
+                        <option value="comment" selected="@(ViewBag.CurrentType == "comment" ? "selected" : null)">Comments</option>
+                        <option value="reply" selected="@(ViewBag.CurrentType == "reply" ? "selected" : null)">Replies</option>
+                        <option value="follow" selected="@(ViewBag.CurrentType == "follow" ? "selected" : null)">Follows</option>
+                        <option value="mention" selected="@(ViewBag.CurrentType == "mention" ? "selected" : null)">Mentions</option>
+                        <option value="upvote" selected="@(ViewBag.CurrentType == "upvote" ? "selected" : null)">Upvotes</option>
+                        <option value="award" selected="@(ViewBag.CurrentType == "award" ? "selected" : null)">Awards</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Filter by Status:</label>
+                    <select class="form-select form-select-sm" onchange="filterByStatus(this.value)">
+                        <option value="">All</option>
+                        <option value="false" selected="@(ViewBag.CurrentIsRead == false ? "selected" : null)">Unread Only</option>
+                        <option value="true" selected="@(ViewBag.CurrentIsRead == true ? "selected" : null)">Read Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Notifications List -->
+            <div class="notifications-list">
+                @if (Model.Any())
+                {
+                    foreach (var notification in Model)
+                    {
+                        <div class="notification-card @(notification.IsRead ? "read" : "unread")" data-notification-id="@notification.NotificationId">
+                            <div class="notification-icon">
+                                @switch (notification.Type)
+                                {
+                                    case "comment":
+                                        <i class="fas fa-comment-dots text-primary"></i>
+                                        break;
+                                    case "reply":
+                                        <i class="fas fa-reply text-info"></i>
+                                        break;
+                                    case "follow":
+                                        <i class="fas fa-user-plus text-success"></i>
+                                        break;
+                                    case "mention":
+                                        <i class="fas fa-at text-warning"></i>
+                                        break;
+                                    case "upvote":
+                                        <i class="fas fa-arrow-up text-danger"></i>
+                                        break;
+                                    case "award":
+                                        <i class="fas fa-award text-warning"></i>
+                                        break;
+                                    default:
+                                        <i class="fas fa-bell text-secondary"></i>
+                                        break;
+                                }
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-header">
+                                    @if (!string.IsNullOrEmpty(notification.ActorAvatarUrl))
+                                    {
+                                        <img src="@notification.ActorAvatarUrl" alt="@notification.ActorDisplayName" class="actor-avatar" />
+                                    }
+                                    else if (!string.IsNullOrEmpty(notification.ActorDisplayName))
+                                    {
+                                        <div class="actor-avatar-placeholder">
+                                            @notification.ActorDisplayName.Substring(0, Math.Min(2, notification.ActorDisplayName.Length)).ToUpper()
+                                        </div>
+                                    }
+                                    <div class="notification-meta">
+                                        <h3 class="notification-title">@notification.Title</h3>
+                                        <p class="notification-time">
+                                            <i class="far fa-clock me-1"></i>
+                                            @GetTimeAgo(notification.CreatedAt)
+                                        </p>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(notification.Message))
+                                {
+                                    <p class="notification-message">@notification.Message</p>
+                                }
+                                <div class="notification-actions">
+                                    @if (!string.IsNullOrEmpty(notification.Url))
+                                    {
+                                        <a href="@notification.Url" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-external-link-alt me-1"></i>
+                                            View
+                                        </a>
+                                    }
+                                    @if (!notification.IsRead)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" onclick="markAsRead(@notification.NotificationId)">
+                                            <i class="fas fa-check me-1"></i>
+                                            Mark Read
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification(@notification.NotificationId)">
+                                        <i class="fas fa-trash me-1"></i>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Pagination -->
+                    @if (ViewBag.TotalPages > 1)
+                    {
+                        <nav class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                @if (ViewBag.CurrentPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/notifications?page=@(ViewBag.CurrentPage - 1)&type=@ViewBag.CurrentType&isRead=@ViewBag.CurrentIsRead">
+                                            Previous
+                                        </a>
+                                    </li>
+                                }
+
+                                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                                {
+                                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="/notifications?page=@i&type=@ViewBag.CurrentType&isRead=@ViewBag.CurrentIsRead">
+                                            @i
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="/notifications?page=@(ViewBag.CurrentPage + 1)&type=@ViewBag.CurrentType&isRead=@ViewBag.CurrentIsRead">
+                                            Next
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+                }
+                else
+                {
+                    <div class="notification-empty">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <h3>No Notifications</h3>
+                        <p class="text-muted">You're all caught up! You'll be notified when something happens.</p>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    async function markAsRead(notificationId) {
+        try {
+            const response = await fetch(`/api/notification/${notificationId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (card) {
+                    card.classList.remove('unread');
+                    card.classList.add('read');
+                    const button = card.querySelector('.btn-outline-success');
+                    if (button) button.remove();
+                }
+                updateUnreadCount();
+            }
+        } catch (error) {
+            console.error('Error marking as read:', error);
+        }
+    }
+
+    async function markAllAsRead() {
+        if (!confirm('Mark all notifications as read?')) return;
+
+        try {
+            const response = await fetch('/api/notification/mark-all-read', {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function deleteNotification(notificationId) {
+        if (!confirm('Delete this notification?')) return;
+
+        try {
+            const response = await fetch(`/api/notification/${notificationId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (card) card.remove();
+                updateUnreadCount();
+            }
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    }
+
+    async function clearReadNotifications() {
+        if (!confirm('Delete all read notifications? This cannot be undone.')) return;
+
+        try {
+            const response = await fetch('/api/notification/clear-read', {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function filterByType(type) {
+        const url = new URL(window.location);
+        if (type) {
+            url.searchParams.set('type', type);
+        } else {
+            url.searchParams.delete('type');
+        }
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+
+    function filterByStatus(isRead) {
+        const url = new URL(window.location);
+        if (isRead !== '') {
+            url.searchParams.set('isRead', isRead);
+        } else {
+            url.searchParams.delete('isRead');
+        }
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+
+    function updateUnreadCount() {
+        fetch('/api/notification/unread-count')
+            .then(r => r.json())
+            .then(data => {
+                const badge = document.querySelector('.notification-badge');
+                if (badge) {
+                    badge.textContent = data.count;
+                    badge.style.display = data.count > 0 ? 'inline-block' : 'none';
+                }
+            });
+    }
+</script>
+
+@functions {
+    string GetTimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        
+        if (timeSpan.TotalMinutes < 1) return "Just now";
+        if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 7) return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 30) return $"{(int)(timeSpan.TotalDays / 7)}w ago";
+        
+        return dateTime.ToString("MMM dd, yyyy");
+    }
+}
+

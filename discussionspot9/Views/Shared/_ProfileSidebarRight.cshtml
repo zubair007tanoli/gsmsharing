@@ -1,0 +1,138 @@
+@*
+    Profile Right Sidebar - AdSense & Widgets
+    Displays ads and suggested content
+*@
+
+<div class="profile-sidebar-right">
+    
+    <!-- Google AdSense #1 - Top Rectangle (300x250) -->
+    <div class="profile-ad-container">
+        <div class="profile-ad-label">Advertisement</div>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-5934633595595089"
+             data-ad-slot="7326207040"
+             data-ad-format="rectangle"
+             data-full-width-responsive="false"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+    
+    <!-- Suggested Users Widget -->
+    <div class="profile-widget">
+        <h3 class="profile-widget-header">
+            <i class="fas fa-user-friends me-2"></i>
+            Suggested Users
+        </h3>
+        <div id="suggestedUsersContainer">
+            <!-- Loaded via JavaScript -->
+            <div class="profile-loading">
+                <div class="profile-spinner"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trending Communities (Optional) -->
+    <div class="profile-widget">
+        <h3 class="profile-widget-header">
+            <i class="fas fa-fire me-2"></i>
+            Trending Communities
+        </h3>
+        <div class="suggested-user-item">
+            <div class="suggested-user-avatar" style="background: #ff6b6b; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                T
+            </div>
+            <div class="suggested-user-info">
+                <div class="suggested-user-name">
+                    <a href="/r/technology">r/Technology</a>
+                </div>
+                <div class="suggested-user-stats">
+                    124K members
+                </div>
+            </div>
+            <button class="suggested-user-follow">
+                <i class="fas fa-plus"></i> Join
+            </button>
+        </div>
+        
+        <div class="suggested-user-item">
+            <div class="suggested-user-avatar" style="background: #51cf66; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                G
+            </div>
+            <div class="suggested-user-info">
+                <div class="suggested-user-name">
+                    <a href="/r/gaming">r/Gaming</a>
+                </div>
+                <div class="suggested-user-stats">
+                    89K members
+                </div>
+            </div>
+            <button class="suggested-user-follow">
+                <i class="fas fa-plus"></i> Join
+            </button>
+        </div>
+        
+        <div class="suggested-user-item">
+            <div class="suggested-user-avatar" style="background: #339af0; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                P
+            </div>
+            <div class="suggested-user-info">
+                <div class="suggested-user-name">
+                    <a href="/r/programming">r/Programming</a>
+                </div>
+                <div class="suggested-user-stats">
+                    67K members
+                </div>
+            </div>
+            <button class="suggested-user-follow">
+                <i class="fas fa-plus"></i> Join
+            </button>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="/communities" class="btn btn-sm btn-outline-primary">
+                View All Communities
+            </a>
+        </div>
+    </div>
+    
+    <!-- Google AdSense #2 - Sticky Vertical (300x600) -->
+    <div class="profile-ad-container profile-ad-sticky">
+        <div class="profile-ad-label">Advertisement</div>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-5934633595595089"
+             data-ad-slot="7326207040"
+             data-ad-format="vertical"
+             data-full-width-responsive="false"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+    
+    <!-- Quick Stats (Optional) -->
+    <div class="profile-widget">
+        <h3 class="profile-widget-header">
+            <i class="fas fa-chart-line me-2"></i>
+            Your Activity
+        </h3>
+        <div style="padding: 12px; text-align: center; color: var(--profile-text-secondary);">
+            <p class="mb-2">
+                <i class="fas fa-comment-dots" style="font-size: 24px;"></i>
+            </p>
+            <p style="font-size: 14px;">
+                Keep engaging with the community!<br>
+                Your contributions make DiscussionSpot better.
+            </p>
+        </div>
+    </div>
+    
+</div>
+
+@* Load AdSense Script *@
+@section Scripts {
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+            crossorigin="anonymous"></script>
+}
+

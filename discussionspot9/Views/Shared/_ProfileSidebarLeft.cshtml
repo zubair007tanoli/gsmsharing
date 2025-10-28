@@ -1,0 +1,250 @@
+@using discussionspot9.Models.ViewModels.CreativeViewModels
+@model dynamic
+
+@{
+    var isOwnProfile = ViewData["IsOwnProfile"] as bool? ?? false;
+    var isFollowing = ViewData["IsFollowing"] as bool? ?? false;
+    var followersCount = ViewData["FollowersCount"] as int? ?? 0;
+    var followingCount = ViewData["FollowingCount"] as int? ?? 0;
+    var postCount = ViewBag.PostCount ?? Model.PostCount ?? 0;
+    var commentCount = ViewBag.CommentCount ?? Model.CommentCount ?? 0;
+}
+
+<div class="profile-sidebar-left">
+    <!-- User Avatar & Name Card -->
+    <div class="profile-sidebar-card">
+        @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+        {
+            <img src="@Model.AvatarUrl" alt="@Model.DisplayName" class="profile-avatar-large" />
+        }
+        else
+        {
+            <div class="profile-avatar-placeholder">
+                @Model.DisplayName.Substring(0, Math.Min(2, Model.DisplayName.Length)).ToUpper()
+            </div>
+        }
+        
+        <h2 class="profile-user-name">
+            @Model.DisplayName
+            @if (Model.IsVerified)
+            {
+                <i class="fas fa-check-circle profile-verification-badge" title="Verified Account"></i>
+            }
+        </h2>
+        
+        <div class="profile-username">u/@Model.DisplayName</div>
+        
+        @if (!string.IsNullOrEmpty(Model.Bio))
+        {
+            <p class="profile-bio">@Model.Bio</p>
+        }
+        
+        <!-- Quick Stats -->
+        <div class="profile-quick-stats">
+            <div class="profile-stat-box" onclick="loadFollowers('@Model.UserId')">
+                <span class="profile-stat-value follower-count" data-user-id="@Model.UserId">@followersCount.ToString("N0")</span>
+                <span class="profile-stat-label">Followers</span>
+            </div>
+            <div class="profile-stat-box" onclick="loadFollowing('@Model.UserId')">
+                <span class="profile-stat-value">@followingCount.ToString("N0")</span>
+                <span class="profile-stat-label">Following</span>
+            </div>
+            <div class="profile-stat-box">
+                <span class="profile-stat-value">@postCount</span>
+                <span class="profile-stat-label">Posts</span>
+            </div>
+            <div class="profile-stat-box">
+                <span class="profile-stat-value">@Model.KarmaPoints.ToString("N0")</span>
+                <span class="profile-stat-label">Karma</span>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        @if (isOwnProfile)
+        {
+            <button class="profile-action-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                <i class="fas fa-edit"></i>
+                <span>Edit Profile</span>
+            </button>
+            <a href="/profile/settings" class="profile-action-secondary">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            
+            @* Share Button for Own Profile *@
+            <div class="profile-share-dropdown-wrapper">
+                <button class="profile-action-secondary" onclick="toggleProfileShare(event)" id="profileShareBtn">
+                    <i class="fas fa-share-alt"></i>
+                    <span>Share Profile</span>
+                </button>
+                <div class="profile-share-dropdown" id="profileShareDropdown" style="display: none;">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'facebook')">
+                        <i class="fab fa-facebook-f" style="color: #1877f2;"></i>
+                        <span>Facebook</span>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")&text=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'twitter')">
+                        <i class="fab fa-twitter" style="color: #1da1f2;"></i>
+                        <span>Twitter</span>
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'linkedin')">
+                        <i class="fab fa-linkedin-in" style="color: #0077b5;"></i>
+                        <span>LinkedIn</span>
+                    </a>
+                    <a href="https://reddit.com/submit?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")&title=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'reddit')">
+                        <i class="fab fa-reddit-alien" style="color: #ff4500;"></i>
+                        <span>Reddit</span>
+                    </a>
+                    <a href="https://wa.me/?text=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile - {Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'whatsapp')">
+                        <i class="fab fa-whatsapp" style="color: #25d366;"></i>
+                        <span>WhatsApp</span>
+                    </a>
+                    <button type="button" 
+                            class="profile-share-option" 
+                            onclick="copyProfileLink('@Context.Request.Scheme://@Context.Request.Host/u/@Model.DisplayName')">
+                        <i class="fas fa-copy" style="color: #6c757d;"></i>
+                        <span>Copy Link</span>
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="follow-button-wrapper mb-2">
+                @if (isFollowing)
+                {
+                    <button class="btn btn-outline-primary follow-btn following" 
+                            onclick="unfollowUser('@Model.UserId')" 
+                            title="Unfollow @Model.DisplayName">
+                        <i class="fas fa-user-check"></i>
+                        <span>Following</span>
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-primary follow-btn" 
+                            onclick="followUser('@Model.UserId')" 
+                            title="Follow @Model.DisplayName">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Follow</span>
+                    </button>
+                }
+            </div>
+            
+            @* Share Button with Dropdown *@
+            <div class="profile-share-dropdown-wrapper">
+                <button class="profile-action-secondary" onclick="toggleProfileShare(event)" id="profileShareBtn">
+                    <i class="fas fa-share-alt"></i>
+                    <span>Share Profile</span>
+                </button>
+                <div class="profile-share-dropdown" id="profileShareDropdown" style="display: none;">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'facebook')">
+                        <i class="fab fa-facebook-f" style="color: #1877f2;"></i>
+                        <span>Facebook</span>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")&text=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'twitter')">
+                        <i class="fab fa-twitter" style="color: #1da1f2;"></i>
+                        <span>Twitter</span>
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'linkedin')">
+                        <i class="fab fa-linkedin-in" style="color: #0077b5;"></i>
+                        <span>LinkedIn</span>
+                    </a>
+                    <a href="https://reddit.com/submit?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")&title=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'reddit')">
+                        <i class="fab fa-reddit-alien" style="color: #ff4500;"></i>
+                        <span>Reddit</span>
+                    </a>
+                    <a href="https://wa.me/?text=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile - {Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                       target="_blank" 
+                       rel="noopener" 
+                       class="profile-share-option"
+                       onclick="trackShare('profile', '@Model.UserId', 'whatsapp')">
+                        <i class="fab fa-whatsapp" style="color: #25d366;"></i>
+                        <span>WhatsApp</span>
+                    </a>
+                    <button type="button" 
+                            class="profile-share-option" 
+                            onclick="copyProfileLink('@Context.Request.Scheme://@Context.Request.Host/u/@Model.DisplayName')">
+                        <i class="fas fa-copy" style="color: #6c757d;"></i>
+                        <span>Copy Link</span>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+    
+    <!-- User Links & Info -->
+    @if (!string.IsNullOrEmpty(Model.Website) || !string.IsNullOrEmpty(Model.Location) || Model.JoinDate != default(DateTime))
+    {
+        <div class="profile-sidebar-card">
+            <ul class="profile-user-links">
+                @if (!string.IsNullOrEmpty(Model.Website))
+                {
+                    <li class="profile-user-link">
+                        <i class="fas fa-link"></i>
+                        <a href="@Model.Website" target="_blank" rel="noopener noreferrer">
+                            @(new Uri(Model.Website).Host)
+                        </a>
+                    </li>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.Location))
+                {
+                    <li class="profile-user-link">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>@Model.Location</span>
+                    </li>
+                }
+                
+                <li class="profile-user-link">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Joined @Model.JoinDate.ToString("MMMM yyyy")</span>
+                </li>
+                
+                @if (Model.LastActive != default(DateTime))
+                {
+                    <li class="profile-user-link">
+                        <i class="fas fa-clock"></i>
+                        <span>Last active @Model.LastActive.ToString("MMM dd, yyyy")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
+

@@ -4,6 +4,18 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile-enhanced.css" asp-append-version="true" />
+}
+
+<div class="profile-enhanced-layout">
+    
+    @* Left Sidebar *@
+    @await Html.PartialAsync("_ProfileSidebarLeft", Model)
+    
+    @* Main Content *@
+    <div class="profile-main-content">
+
     <style>
         :root {
             --primary-color: #0079d3;
@@ -967,7 +979,56 @@
         })();
     </script>
 
-    @section Scripts {
-        <partial name="_ValidationScriptsPartial" />
-    }
+    </div>
+    @* End Main Content *@
+    
+    @* Right Sidebar *@
+    @await Html.PartialAsync("_ProfileSidebarRight")
+    
+</div>
+@* End profile-enhanced-layout *@
 
+<!-- Followers Modal -->
+<div class="modal fade" id="followersModal" tabindex="-1" aria-labelledby="followersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="followersModalLabel">
+                    <i class="fas fa-users me-2"></i>Followers
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="followersContent"></div>
+            </div>
+            <div class="modal-footer">
+                <div id="followersPagination"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Following Modal -->
+<div class="modal fade" id="followingModal" tabindex="-1" aria-labelledby="followingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="followingModalLabel">
+                    <i class="fas fa-user-friends me-2"></i>Following
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="followingContent"></div>
+            </div>
+            <div class="modal-footer">
+                <div id="followingPagination"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/follow-system.js" asp-append-version="true"></script>
+}

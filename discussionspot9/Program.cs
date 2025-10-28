@@ -172,6 +172,12 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
+builder.Services.AddScoped<IFollowService, FollowService>();
+
+// Email & Notification Services
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
+builder.Services.AddHostedService<EmailWorkerService>();
 
 // Story Generation Services
 builder.Services.AddScoped<PythonStoryEnhancerService>();

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{SUBJECT}}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .email-header {
+            background: linear-gradient(135deg, #0079d3 0%, #0056b3 100%);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .email-logo {
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: bold;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        .email-tagline {
+            color: #ffffff;
+            font-size: 14px;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+        .email-body {
+            padding: 40px 30px;
+            color: #1a1a1b;
+            line-height: 1.6;
+        }
+        .notification-box {
+            background: #f8f9fa;
+            border-left: 4px solid #0079d3;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .notification-box.comment {
+            border-left-color: #ff4500;
+        }
+        .notification-box.follow {
+            border-left-color: #46d160;
+        }
+        .notification-box.mention {
+            border-left-color: #ffa500;
+        }
+        .btn-primary {
+            display: inline-block;
+            background: #0079d3;
+            color: #ffffff !important;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .email-footer {
+            background: #2c2c2c;
+            color: #a8a8a8;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .email-footer a {
+            color: #0079d3;
+            text-decoration: none;
+        }
+        .email-footer a:hover {
+            text-decoration: underline;
+        }
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 30px 0;
+        }
+        .actor-info {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .actor-avatar {
+            display: table-cell;
+            width: 50px;
+            padding-right: 15px;
+            vertical-align: top;
+        }
+        .actor-avatar img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .actor-content {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .actor-name {
+            font-weight: 600;
+            color: #1a1a1b;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .actor-action {
+            color: #787c7e;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-body {
+                padding: 30px 20px;
+            }
+            .btn-primary {
+                display: block;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="email-logo">DISCUSSIONSPOT</div>
+            <div class="email-tagline">Where Knowledge Meets Community</div>
+        </div>
+
+        <!-- Body Content -->
+        <div class="email-body">
+            {{CONTENT}}
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p style="margin: 0 0 15px 0;">
+                <strong>DiscussionSpot</strong> - Building the future of online communities
+            </p>
+            <p style="margin: 0 0 15px 0;">
+                <a href="{{BASE_URL}}">Visit DiscussionSpot</a> • 
+                <a href="{{BASE_URL}}/account/notification-settings">Notification Preferences</a> • 
+                <a href="{{BASE_URL}}/help">Help Center</a>
+            </p>
+            <p style="margin: 0 0 5px 0; font-size: 12px;">
+                You received this email because you have an account on DiscussionSpot.
+            </p>
+            <p style="margin: 0; font-size: 12px;">
+                <a href="{{UNSUBSCRIBE_URL}}">Unsubscribe from these emails</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

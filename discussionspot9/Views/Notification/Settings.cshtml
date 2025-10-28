@@ -1,0 +1,275 @@
+@model discussionspot9.Models.Domain.UserNotificationSettings
+@{
+    ViewData["Title"] = "Notification Settings";
+    var preferences = ViewBag.Preferences as List<discussionspot9.Models.Domain.NotificationPreference>;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" />
+}
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            
+            <!-- Header -->
+            <div class="notifications-header">
+                <h1 class="notifications-title">
+                    <i class="fas fa-cog me-2"></i>
+                    Notification Settings
+                </h1>
+                <a href="/notifications" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-bell me-1"></i>
+                    Back to Notifications
+                </a>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <form asp-action="UpdateSettings" method="post">
+                
+                <!-- Global Settings -->
+                <div class="settings-section">
+                    <h2 class="settings-section-title">
+                        <i class="fas fa-toggle-on me-2"></i>
+                        Global Settings
+                    </h2>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Email Notifications
+                            </label>
+                            <p class="settings-item-description">
+                                Receive notifications via email when you're offline
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="EmailNotificationsEnabled" class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Web Notifications
+                            </label>
+                            <p class="settings-item-description">
+                                Show notifications in the bell icon and dropdowns
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="WebNotificationsEnabled" class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Push Notifications
+                            </label>
+                            <p class="settings-item-description">
+                                Receive browser push notifications (Coming soon)
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="PushNotificationsEnabled" class="form-check-input" type="checkbox" role="switch" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Digest -->
+                <div class="settings-section">
+                    <h2 class="settings-section-title">
+                        <i class="fas fa-envelope me-2"></i>
+                        Email Digest
+                    </h2>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Digest Frequency
+                            </label>
+                            <p class="settings-item-description">
+                                Get a summary of notifications instead of individual emails
+                            </p>
+                        </div>
+                        <div>
+                            <select asp-for="EmailDigestFrequency" class="form-select">
+                                <option value="never">Never (Send instant emails)</option>
+                                <option value="daily">Daily Digest</option>
+                                <option value="weekly">Weekly Digest</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiet Hours -->
+                <div class="settings-section">
+                    <h2 class="settings-section-title">
+                        <i class="fas fa-moon me-2"></i>
+                        Quiet Hours
+                    </h2>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Enable Quiet Hours
+                            </label>
+                            <p class="settings-item-description">
+                                Mute notifications during specified hours
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="QuietHoursEnabled" class="form-check-input" type="checkbox" role="switch" id="quietHoursToggle">
+                        </div>
+                    </div>
+
+                    <div id="quietHoursSettings" style="display: @(Model?.QuietHoursEnabled == true ? "block" : "none")">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Start Time (UTC)</label>
+                                <input asp-for="QuietHoursStart" class="form-control" type="time">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Time (UTC)</label>
+                                <input asp-for="QuietHoursEnd" class="form-control" type="time">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Preferences -->
+                <div class="settings-section">
+                    <h2 class="settings-section-title">
+                        <i class="fas fa-sliders-h me-2"></i>
+                        Other Preferences
+                    </h2>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Group Notifications
+                            </label>
+                            <p class="settings-item-description">
+                                Show "John and 5 others" instead of individual notifications
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="GroupNotifications" class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Show Notification Previews
+                            </label>
+                            <p class="settings-item-description">
+                                Display message content in notification popups
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="ShowNotificationPreviews" class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title">
+                                Notification Sound
+                            </label>
+                            <p class="settings-item-description">
+                                Play a sound when you receive notifications
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="PlayNotificationSound" class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-section danger-zone">
+                    <h2 class="settings-section-title text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Danger Zone
+                    </h2>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <label class="settings-item-title text-danger">
+                                Unsubscribe from All Emails
+                            </label>
+                            <p class="settings-item-description">
+                                Stop receiving ALL email notifications (not recommended)
+                            </p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="UnsubscribeFromAll" class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="mt-4 d-flex gap-3">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>
+                        Save Preferences
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="sendTestNotification()">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Send Test Notification
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle quiet hours settings
+    document.getElementById('quietHoursToggle')?.addEventListener('change', function() {
+        document.getElementById('quietHoursSettings').style.display = this.checked ? 'block' : 'none';
+    });
+
+    async function sendTestNotification() {
+        try {
+            const response = await fetch('/api/notification/test', {
+                method: 'POST'
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('✅ Test notification sent! Check your bell icon and email inbox.');
+            } else {
+                alert('❌ Failed to send test notification');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error sending test notification');
+        }
+    }
+</script>
+
+@functions {
+    string GetTimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        if (timeSpan.TotalMinutes < 1) return "Just now";
+        if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 7) return $"{(int)timeSpan.TotalDays}d ago";
+        return dateTime.ToString("MMM dd, yyyy");
+    }
+}
+

@@ -165,6 +165,17 @@
                     </div>
                 </div>
 
+                <!-- Report Post Button -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <button class="btn btn-outline-danger btn-sm w-100" 
+                                onclick="openReportModal(@Model.Post.PostId, '@Model.Post.Title')"
+                                @if (!User.Identity.IsAuthenticated) { <text>disabled title="Please login to report"</text> }>
+                            <i class="fas fa-flag me-2"></i> Report Post
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Ad: After Post Content (High Engagement Point) -->
                 <partial name="_AdUnit_InArticle" />
 
@@ -209,6 +220,65 @@
     <partial name="_AdUnit_Multiplex" />
 </div>
 
+<!-- Report Post Modal -->
+<div class="modal fade" id="reportPostModal" tabindex="-1" aria-labelledby="reportPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportPostModalLabel">
+                    <i class="fas fa-flag text-danger me-2"></i> Report Post
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    Please select a reason for reporting this post. Your report will be reviewed by our moderation team.
+                </p>
+                
+                <input type="hidden" id="reportPostId" />
+                <input type="hidden" id="reportPostTitle" />
+                
+                <div class="mb-3">
+                    <label for="reportReason" class="form-label fw-bold">Reason <span class="text-danger">*</span></label>
+                    <select class="form-select" id="reportReason" required>
+                        <option value="">-- Select a reason --</option>
+                        <option value="spam">Spam or Advertising</option>
+                        <option value="harassment">Harassment or Bullying</option>
+                        <option value="hate_speech">Hate Speech</option>
+                        <option value="misinformation">Misinformation</option>
+                        <option value="adult_content">Adult Content (NSFW)</option>
+                        <option value="violence">Violence or Threats</option>
+                        <option value="copyright">Copyright Violation</option>
+                        <option value="self_harm">Self-harm or Suicide</option>
+                        <option value="impersonation">Impersonation</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="reportDetails" class="form-label fw-bold">Additional Details (Optional)</label>
+                    <textarea class="form-control" id="reportDetails" rows="3" 
+                              placeholder="Please provide any additional information that may help us review this report..."></textarea>
+                    <div class="form-text">Maximum 500 characters</div>
+                </div>
+                
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> False reports may result in account restrictions.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" onclick="submitReport()">
+                    <i class="fas fa-flag me-1"></i> Submit Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         window.PostDetail = {
@@ -216,6 +286,114 @@
             communitySlug: '@Model.CommunitySlug',
             postSlug: '@Model.PostSlug'
         };
+        
+        // Report Post Functions
+        function openReportModal(postId, postTitle) {
+            document.getElementById('reportPostId').value = postId;
+            document.getElementById('reportPostTitle').value = postTitle;
+            document.getElementById('reportReason').value = '';
+            document.getElementById('reportDetails').value = '';
+            
+            var modal = new bootstrap.Modal(document.getElementById('reportPostModal'));
+            modal.show();
+        }
+        
+        async function submitReport() {
+            const postId = document.getElementById('reportPostId').value;
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
+            
+            // Validation
+            if (!reason) {
+                alert('Please select a reason for your report');
+                return;
+            }
+            
+            if (details.length > 500) {
+                alert('Details must be 500 characters or less');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = event.target;
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Submitting...';
+            
+            try {
+                const response = await fetch('/api/post/report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        postId: parseInt(postId),
+                        reason: reason,
+                        details: details || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('reportPostModal')).hide();
+                    
+                    // Show success message
+                    showToast('success', '✅ Report Submitted', 'Thank you for your report. Our moderation team will review it shortly.');
+                    
+                    // Reset form
+                    document.getElementById('reportReason').value = '';
+                    document.getElementById('reportDetails').value = '';
+                } else {
+                    showToast('error', '❌ Report Failed', result.message || 'Failed to submit report. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error submitting report:', error);
+                showToast('error', '❌ Error', 'An error occurred while submitting your report. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+        
+        function showToast(type, title, message) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            
+            const toastId = 'toast-' + Date.now();
+            const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <strong>${title}</strong><br>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastEl = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+            toast.show();
+            
+            toastEl.addEventListener('hidden.bs.toast', () => {
+                toastEl.remove();
+            });
+        }
+        
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+            return container;
+        }
     </script>
     <script src="~/js/post-detail.js"></script>
 }

@@ -54,7 +54,10 @@ namespace discussionspot9.Services
             dbContext.Comments.Add(comment);
 
             // Update post comment count
-            var post = await dbContext.Posts.FindAsync(model.PostId); // Access Posts via the created DbContext
+            var post = await dbContext.Posts
+                .Include(p => p.Community)
+                .FirstOrDefaultAsync(p => p.PostId == model.PostId);
+            
             if (post != null)
             {
                 post.CommentCount++;
@@ -87,6 +90,19 @@ namespace discussionspot9.Services
                         comment.CommentId,
                         model.UserId,
                         commenterName);
+                }
+
+                // Check for mentions in comment content
+                if (post != null)
+                {
+                    var commentUrl = $"/r/{post.Community?.Slug ?? "unknown"}/posts/{post.Slug}#{comment.CommentId}";
+                    await _notificationService.NotifyMentionsAsync(
+                        model.Content,
+                        model.UserId,
+                        commenterName,
+                        "comment",
+                        comment.CommentId,
+                        commentUrl);
                 }
             }
             catch (Exception ex)

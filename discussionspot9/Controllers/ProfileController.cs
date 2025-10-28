@@ -5,6 +5,7 @@ using discussionspot9.Data.DbContext;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
+using discussionspot9.Interfaces;
 
 namespace discussionspot9.Controllers
 {
@@ -14,15 +15,18 @@ namespace discussionspot9.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<ProfileController> _logger;
+        private readonly IFollowService _followService;
 
         public ProfileController(
             ApplicationDbContext context,
             UserManager<IdentityUser> userManager,
-            ILogger<ProfileController> logger)
+            ILogger<ProfileController> logger,
+            IFollowService followService)
         {
             _context = context;
             _userManager = userManager;
             _logger = logger;
+            _followService = followService;
         }
 
         // GET: Profile
@@ -94,6 +98,14 @@ namespace discussionspot9.Controllers
                 ViewBag.PostCount = postCount;
                 ViewBag.CommentCount = commentCount;
                 ViewBag.IsCurrentUser = userId == _userManager.GetUserId(User);
+
+                // Get follow counts
+                var followersCount = await _followService.GetFollowerCountAsync(userId);
+                var followingCount = await _followService.GetFollowingCountAsync(userId);
+
+                ViewData["FollowersCount"] = followersCount;
+                ViewData["FollowingCount"] = followingCount;
+                ViewData["IsOwnProfile"] = userId == _userManager.GetUserId(User);
 
                 return View(viewModel);
             }

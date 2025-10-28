@@ -17,6 +17,9 @@ namespace discussionspot9.Interfaces
         Task NotifyPostVoteAsync(int postId, string voterUserId, string voterName, int voteType);
         Task NotifyCommentVoteAsync(int commentId, string voterUserId, string voterName, int voteType);
         
+        // Mention notifications
+        Task NotifyMentionsAsync(string content, string actorUserId, string actorName, string entityType, int entityId, string entityUrl);
+        
         // Utility methods
         Task<int> GetUnreadCountAsync(string userId);
         Task MarkAsReadAsync(int notificationId, string? userId);

@@ -228,13 +228,19 @@ namespace DiscussionSpot9.Services
 
             return new UserStatsViewModel
             {
+                UserId = userProfile.UserId,
                 DisplayName = userProfile.DisplayName,
                 KarmaPoints = userProfile.KarmaPoints,
                 PostCount = postCount,
                 CommentCount = commentCount,
                 JoinDate = userProfile.JoinDate,
                 IsVerified = userProfile.IsVerified,
-                AvatarUrl = userProfile.AvatarUrl
+                AvatarUrl = userProfile.AvatarUrl,
+                Bio = userProfile.Bio,
+                BannerUrl = userProfile.BannerUrl,
+                Website = userProfile.Website,
+                Location = userProfile.Location,
+                LastActive = userProfile.LastActive
             };
         }
 
