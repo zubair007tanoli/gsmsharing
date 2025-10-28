@@ -41,16 +41,77 @@
                 IsFeatured = false
             };
 
-            //// Handle featured image if it exists in the ViewModel
-            //if (!string.IsNullOrEmpty(viewModel.FeaturedImagePath))
-            //{
-            //    post.FeaturedImage = viewModel.FeaturedImagePath;
-            //}
-            //else if (!string.IsNullOrEmpty(viewModel.FeaturedImageUrl))
-            //{
-            //    post.FeaturedImage = viewModel.FeaturedImageUrl;
-            //}
+            // Handle featured image - use URL for web access
             post.FeaturedImage = viewModel.FeaturedImageUrl;
+
+            return post;
+        }
+
+        public static PostEditViewModel ToEditViewModel(this Models.Post post)
+        {
+            return new PostEditViewModel
+            {
+                PostID = post.PostID,
+                UserId = post.UserId,
+                Title = post.Title,
+                Tags = post.Tags,
+                Content = post.Content,
+                CommunityID = post.CommunityID ?? 0,
+                CurrentFeaturedImageUrl = post.FeaturedImage,
+                AllowComments = post.AllowComments ?? true,
+                IsPromoted = post.IsPromoted ?? false,
+                IsFeatured = post.IsFeatured ?? false,
+                MetaTitle = post.MetaTitle,
+                MetaDescription = post.MetaDescription,
+                OgTitle = post.OgTitle,
+                OgDescription = post.OgDescription,
+                Slug = post.Slug,
+                PostStatus = post.PostStatus,
+                ImageAction = "keep" // Default to keeping the current image
+            };
+        }
+
+        public static Models.Post ToModelFromEdit(this PostEditViewModel viewModel, string existingImageUrl = null)
+        {
+            var post = new Models.Post
+            {
+                PostID = viewModel.PostID,
+                UserId = viewModel.UserId,
+                Title = viewModel.Title,
+                Tags = viewModel.Tags,
+                Content = viewModel.Content,
+                CommunityID = viewModel.CommunityID,
+                AllowComments = viewModel.AllowComments,
+                IsPromoted = viewModel.IsPromoted,
+                IsFeatured = viewModel.IsFeatured,
+
+                // SEO properties
+                MetaTitle = viewModel.MetaTitle ?? viewModel.Title,
+                MetaDescription = viewModel.MetaDescription,
+                OgTitle = viewModel.OgTitle ?? viewModel.Title,
+                OgDescription = viewModel.OgDescription ?? viewModel.MetaDescription,
+
+                // Keep the same slug
+                Slug = viewModel.Slug,
+
+                // Status and timestamps
+                PostStatus = viewModel.PostStatus ?? "Draft",
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            // Handle image based on action
+            if (viewModel.ImageAction == "remove")
+            {
+                post.FeaturedImage = null;
+            }
+            else if (viewModel.ImageAction == "replace" && !string.IsNullOrEmpty(viewModel.FeaturedImageUrl))
+            {
+                post.FeaturedImage = viewModel.FeaturedImageUrl;
+            }
+            else if (viewModel.ImageAction == "keep")
+            {
+                post.FeaturedImage = existingImageUrl;
+            }
 
             return post;
         }

@@ -22,34 +22,54 @@ namespace gsmsharing.Repositories
         {
             try
             {
+                _logger.LogInformation($"SaveImageAsync called - FileName: {file?.FileName}, Directory: {directory}");
+                
                 if (file == null || file.Length == 0)
+                {
+                    _logger.LogWarning("SaveImageAsync failed: No file was provided");
                     return FileUploadResult.Failure("No file was provided");
+                }
 
                 if (!ValidateImage(file))
+                {
+                    _logger.LogWarning($"SaveImageAsync failed: Invalid file format or size - FileName: {file.FileName}, Size: {file.Length}, ContentType: {file.ContentType}");
                     return FileUploadResult.Failure("Invalid file format or size");
+                }
 
                 string fileName = GetUniqueFileName(file.FileName);
                 string relativePath = Path.Combine(directory, fileName);
                 string absolutePath = Path.Combine(_options.RootDirectory, relativePath);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
+                _logger.LogInformation($"Image save paths - Relative: {relativePath}, Absolute: {absolutePath}");
+                
+                var directoryPath = Path.GetDirectoryName(absolutePath);
+                if (!Directory.Exists(directoryPath))
+                {
+                    _logger.LogInformation($"Creating directory: {directoryPath}");
+                    Directory.CreateDirectory(directoryPath);
+                }
 
                 using (var stream = new FileStream(absolutePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
                 }
 
+                _logger.LogInformation($"✅ Image saved successfully to: {absolutePath}");
+                
+                var fileUrl = GetFileUrl(relativePath);
+                _logger.LogInformation($"Generated FileUrl: {fileUrl}");
+
                 return FileUploadResult.Success(
                     relativePath,
-                    GetFileUrl(relativePath),
+                    fileUrl,
                     file.Length,
                     file.ContentType
                 );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error saving image file: {FileName}", file?.FileName);
-                return FileUploadResult.Failure("Failed to save the image");
+                _logger.LogError(ex, "❌ Error saving image file: {FileName}", file?.FileName);
+                return FileUploadResult.Failure($"Failed to save the image: {ex.Message}");
             }
         }
 

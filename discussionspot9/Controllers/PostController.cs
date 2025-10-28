@@ -28,6 +28,7 @@ namespace discussionspot9.Controllers
         private readonly discussionspot9.Services.GoogleSearchSeoService _googleSeoService;
         private readonly IStoryGenerationService _storyGenerationService;
         private readonly IReportService _reportService;
+        private readonly IFileStorageService _fileStorageService;
         
         public PostController(
             IPostService postService,
@@ -42,7 +43,8 @@ namespace discussionspot9.Controllers
             IBackgroundSeoService backgroundSeoService,
             discussionspot9.Services.GoogleSearchSeoService googleSeoService,
             IStoryGenerationService storyGenerationService,
-            IReportService reportService)
+            IReportService reportService,
+            IFileStorageService fileStorageService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -57,6 +59,7 @@ namespace discussionspot9.Controllers
             _googleSeoService = googleSeoService;
             _storyGenerationService = storyGenerationService;
             _reportService = reportService;
+            _fileStorageService = fileStorageService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -940,23 +943,307 @@ namespace discussionspot9.Controllers
         }
 
         /// <summary>
-        /// Delete post (only for post owner or moderators)
+        /// Edit post - GET (only for post owner)
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Edit(int id)
+        {
+            try
+            {
+                _logger.LogInformation("=== EDIT POST GET - PostID: {PostId} ===", id);
+                
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    _logger.LogWarning("User not authenticated - redirecting to login");
+                    return RedirectToAction("Login", "Account");
+                }
+
+                // Get the post with all details
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .Include(p => p.Media)
+                    .Include(p => p.PostTags)
+                        .ThenInclude(pt => pt.Tag)
+                    .FirstOrDefaultAsync(p => p.PostId == id);
+                
+                if (post == null)
+                {
+                    _logger.LogWarning("Post not found: {PostId}", id);
+                    return NotFound();
+                }
+
+                // Check ownership
+                if (post.UserId != userId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to edit post {PostId} owned by {OwnerId}", 
+                        userId, id, post.UserId);
+                    return Forbid();
+                }
+
+                // Convert to edit view model
+                var viewModel = new EditPostViewModel
+                {
+                    PostId = post.PostId,
+                    Title = post.Title,
+                    Content = post.Content,
+                    PostType = post.PostType,
+                    Url = post.Url,
+                    CommunityId = post.CommunityId,
+                    CommunitySlug = post.Community?.Slug,
+                    Status = post.Status,
+                    IsNSFW = post.IsNSFW,
+                    IsSpoiler = post.IsSpoiler,
+                    IsPinned = post.IsPinned,
+                    AllowComments = !post.IsLocked,
+                    TagsInput = string.Join(", ", post.PostTags.Select(pt => pt.Tag.Name)),
+                    ExistingMediaUrls = post.Media.Select(m => m.Url).ToList(),
+                    ImageAction = "keep" // Default to keeping existing images
+                };
+
+                _logger.LogInformation("✅ Loaded post for editing: {Title}", viewModel.Title);
+                
+                // Pass slug to view for back button
+                ViewBag.PostSlug = post.Slug;
+                
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading edit page for post {PostId}", id);
+                TempData["ErrorMessage"] = "An error occurred while loading the post for editing.";
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        /// <summary>
+        /// Edit post - POST (only for post owner)
         /// </summary>
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int postId, string? returnUrl = null)
+        public async Task<IActionResult> Edit(int id, EditPostViewModel model)
         {
             try
             {
+                _logger.LogInformation("=== EDIT POST POST - PostID: {PostId} ===", id);
+                
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
                 {
-                    TempData["ErrorMessage"] = "You must be logged in to delete a post.";
+                    return RedirectToAction("Login", "Account");
+                }
+
+                // Verify ownership
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .Include(p => p.Media)
+                    .Include(p => p.PostTags)
+                    .FirstOrDefaultAsync(p => p.PostId == id);
+                
+                if (post == null)
+                {
+                    return NotFound();
+                }
+
+                if (post.UserId != userId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to edit post {PostId} owned by {OwnerId}", 
+                        userId, id, post.UserId);
+                    return Forbid();
+                }
+
+                // Update post fields
+                post.Title = model.Title;
+                post.Content = model.Content;
+                post.PostType = model.PostType;
+                post.Url = model.Url;
+                post.Status = model.Status ?? "published";
+                post.IsNSFW = model.IsNSFW;
+                post.IsSpoiler = model.IsSpoiler;
+                post.IsPinned = model.IsPinned;
+                post.IsLocked = !model.AllowComments;
+                post.UpdatedAt = DateTime.UtcNow;
+
+                // Handle image actions
+                if (model.ImageAction == "remove")
+                {
+                    _logger.LogInformation("🗑️ Removing all media for post {PostId}", id);
+                    var existingMedia = await _context.Media.Where(m => m.PostId == id).ToListAsync();
+                    _context.Media.RemoveRange(existingMedia);
+                }
+                else if (model.ImageAction == "replace" && model.MediaFiles != null && model.MediaFiles.Any())
+                {
+                    _logger.LogInformation("📸 Replacing media for post {PostId}", id);
+                    
+                    // Remove old media
+                    var existingMedia = await _context.Media.Where(m => m.PostId == id).ToListAsync();
+                    _context.Media.RemoveRange(existingMedia);
+                    
+                    // Add new media (handled below)
+                }
+                // If "keep", don't touch existing media
+
+                // Handle new media files if provided
+                if (model.ImageAction == "replace" && model.MediaFiles != null && model.MediaFiles.Any())
+                {
+                    foreach (var file in model.MediaFiles)
+                    {
+                        try
+                        {
+                            var mediaType = file.ContentType.StartsWith("image/") ? "image" : "video";
+                            var folder = mediaType == "image" ? "posts/images" : "posts/videos";
+                            var savedUrl = await _fileStorageService.SaveFileAsync(file, folder);
+                            
+                            var media = new Media
+                            {
+                                PostId = post.PostId,
+                                Url = savedUrl,
+                                MediaType = mediaType,
+                                ContentType = file.ContentType,
+                                FileName = file.FileName,
+                                FileSize = file.Length,
+                                UploadedAt = DateTime.UtcNow,
+                                UserId = userId
+                            };
+                            _context.Media.Add(media);
+                            _logger.LogInformation("✅ New media added: {Url}", savedUrl);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error uploading media file: {FileName}", file.FileName);
+                            // Continue with other files
+                        }
+                    }
+                }
+
+                // Handle media URLs if provided
+                if (model.MediaUrls != null && model.MediaUrls.Any())
+                {
+                    foreach (var url in model.MediaUrls)
+                    {
+                        if (!string.IsNullOrWhiteSpace(url))
+                        {
+                            var media = new Media
+                            {
+                                PostId = post.PostId,
+                                Url = url,
+                                MediaType = "image",
+                                UploadedAt = DateTime.UtcNow,
+                                UserId = userId
+                            };
+                            _context.Media.Add(media);
+                        }
+                    }
+                }
+
+                // Update tags
+                if (!string.IsNullOrEmpty(model.TagsInput))
+                {
+                    // Remove existing tags
+                    var existingPostTags = await _context.PostTags
+                        .Where(pt => pt.PostId == id)
+                        .ToListAsync();
+                    _context.PostTags.RemoveRange(existingPostTags);
+
+                    // Add new tags
+                    var tagNames = model.TagsInput.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(t => t.Trim().ToLower())
+                        .Distinct();
+
+                    foreach (var tagName in tagNames)
+                    {
+                        var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tagName);
+                        if (tag == null)
+                        {
+                            tag = new Tag
+                            {
+                                Name = tagName,
+                                Slug = tagName.ToSlug(),
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            _context.Tags.Add(tag);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        _context.PostTags.Add(new PostTag
+                        {
+                            PostId = post.PostId,
+                            TagId = tag.TagId
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("✅ Post updated successfully: {PostId}", post.PostId);
+                
+                TempData["SuccessMessage"] = "Post updated successfully!";
+                
+                return RedirectToAction("DetailTestPage", new { 
+                    communitySlug = post.Community?.Slug, 
+                    postSlug = post.Slug 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating post {PostId}", id);
+                TempData["ErrorMessage"] = "An error occurred while updating the post.";
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        /// <summary>
+        /// Delete post (only for post owner or moderators)
+        /// Supports both JSON (AJAX) and form submissions
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Delete([FromBody] DeletePostRequest? request, int? postId, string? returnUrl = null)
+        {
+            try
+            {
+                _logger.LogInformation("=== DELETE POST - Request: {Request}, PostId: {PostId} ===", request, postId);
+                
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    var errorMsg = "You must be logged in to delete a post.";
+                    
+                    // Return JSON for AJAX requests
+                    if (Request.ContentType?.Contains("application/json") == true)
+                    {
+                        return Json(new { success = false, message = errorMsg });
+                    }
+                    
+                    TempData["ErrorMessage"] = errorMsg;
                     return RedirectToAction("Index", "Home");
                 }
-                var result = await _postService.DeletePostAsync(postId, userId);
+                
+                // Get postId from either JSON body or form parameter
+                var postIdToDelete = request?.PostId ?? postId;
+                
+                if (!postIdToDelete.HasValue)
+                {
+                    _logger.LogWarning("No postId provided in delete request");
+                    return Json(new { success = false, message = "Post ID is required" });
+                }
+                
+                _logger.LogInformation("Deleting post {PostId} by user {UserId}", postIdToDelete, userId);
+                
+                var result = await _postService.DeletePostAsync(postIdToDelete.Value, userId);
 
+                // Return JSON for AJAX requests
+                if (Request.ContentType?.Contains("application/json") == true || request != null)
+                {
+                    return Json(new { 
+                        success = result.Success, 
+                        message = result.Success ? "Post deleted successfully" : result.ErrorMessage 
+                    });
+                }
+
+                // Traditional form submission
                 if (result.Success)
                 {
                     TempData["SuccessMessage"] = "Post deleted successfully.";
@@ -976,9 +1263,21 @@ namespace discussionspot9.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting post");
+                
+                // Return JSON for AJAX requests
+                if (Request.ContentType?.Contains("application/json") == true || request != null)
+                {
+                    return Json(new { success = false, message = "An error occurred while deleting the post" });
+                }
+                
                 TempData["ErrorMessage"] = "An error occurred while deleting the post.";
                 return RedirectToAction("Index", "Home");
             }
+        }
+        
+        public class DeletePostRequest
+        {
+            public int PostId { get; set; }
         }
 
         private async Task AddTagsToPostAsync(Post post, IEnumerable<string> tagNames)

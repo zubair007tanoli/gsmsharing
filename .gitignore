@@ -362,3 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /discussionspot9/Models/ViewModels/PostDetailPageViewModel.cs
+
+# Uploaded files (but keep directory structure with .gitkeep)
+**/wwwroot/uploads/**/*
+!**/wwwroot/uploads/**/.gitkeep

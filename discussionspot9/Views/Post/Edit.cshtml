@@ -1,0 +1,283 @@
+@model discussionspot9.Models.ViewModels.CreativeViewModels.EditPostViewModel
+
+@{
+    ViewData["Title"] = "Edit Post";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section HeadScripts {
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+    <style>
+        .edit-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .edit-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        
+        .image-action-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .existing-media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .media-thumbnail {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .btn-save {
+            background: #0079d3;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 24px;
+            font-weight: 600;
+        }
+        
+        .btn-save:hover {
+            background: #0066b3;
+            color: white;
+        }
+        
+        .btn-draft {
+            background: #fff;
+            color: #0079d3;
+            padding: 0.75rem 2rem;
+            border: 2px solid #0079d3;
+            border-radius: 24px;
+            font-weight: 600;
+        }
+        
+        .btn-draft:hover {
+            background: #f6f7f8;
+        }
+    </style>
+}
+
+<div class="edit-container">
+    <div class="edit-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-edit me-2"></i> Edit Post</h2>
+            <a href="/r/@Model.CommunitySlug/posts/@(ViewBag.PostSlug ?? "back")" class="btn btn-secondary">
+                <i class="fas fa-times me-1"></i> Cancel
+            </a>
+        </div>
+
+        <form asp-action="Edit" asp-route-id="@Model.PostId" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            
+            <input type="hidden" asp-for="PostId" />
+            <input type="hidden" asp-for="CommunityId" />
+            <input type="hidden" asp-for="CommunitySlug" />
+
+            <!-- Title -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Title</label>
+                <input type="text" asp-for="Title" class="form-control form-control-lg" placeholder="Enter post title" required />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <!-- Post Type (read-only indicator) -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Post Type</label>
+                <input type="text" value="@Model.PostType" class="form-control" readonly style="background-color: #e9ecef;" />
+                <small class="text-muted">Post type cannot be changed after creation</small>
+            </div>
+
+            <!-- URL Field (for link posts) -->
+            @if (Model.PostType == "link" || !string.IsNullOrEmpty(Model.Url))
+            {
+                <div class="mb-3">
+                    <label class="form-label fw-bold">URL</label>
+                    <input type="url" asp-for="Url" class="form-control" placeholder="https://example.com" />
+                    <span asp-validation-for="Url" class="text-danger"></span>
+                </div>
+            }
+
+            <!-- Content Editor -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Content</label>
+                <div id="editor" style="min-height: 300px;"></div>
+                <textarea asp-for="Content" id="content-hidden" style="display: none;"></textarea>
+            </div>
+
+            <!-- Image Management -->
+            <div class="image-action-section">
+                <h5 class="mb-3"><i class="fas fa-images me-2"></i> Image Management</h5>
+                
+                @if (Model.ExistingMediaUrls != null && Model.ExistingMediaUrls.Any())
+                {
+                    <div class="mb-3">
+                        <p class="fw-bold">Current Images:</p>
+                        <div class="existing-media-grid">
+                            @foreach (var mediaUrl in Model.ExistingMediaUrls)
+                            {
+                                <img src="@mediaUrl" alt="Post media" class="media-thumbnail" />
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">What would you like to do with images?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ImageAction" id="keepImages" value="keep" checked />
+                            <label class="form-check-label" for="keepImages">
+                                <i class="fas fa-check-circle text-success me-1"></i> <strong>Keep</strong> current images
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ImageAction" id="replaceImages" value="replace" />
+                            <label class="form-check-label" for="replaceImages">
+                                <i class="fas fa-sync text-primary me-1"></i> <strong>Replace</strong> with new images
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ImageAction" id="removeImages" value="remove" />
+                            <label class="form-check-label" for="removeImages">
+                                <i class="fas fa-trash text-danger me-1"></i> <strong>Remove</strong> all images
+                            </label>
+                        </div>
+                    </div>
+                }
+
+                <!-- New Image Upload (shown when replace is selected or no existing images) -->
+                <div id="newImageUpload" style="@(Model.ExistingMediaUrls == null || !Model.ExistingMediaUrls.Any() ? "" : "display: none;")">
+                    <label class="form-label fw-bold">Upload New Images</label>
+                    <input type="file" name="MediaFiles" class="form-control" accept="image/*,video/*" multiple />
+                    <small class="text-muted">You can select multiple images or videos</small>
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Tags</label>
+                <input type="text" asp-for="TagsInput" class="form-control" placeholder="tech, programming, tutorial (comma-separated)" />
+                <small class="text-muted">Separate tags with commas</small>
+            </div>
+
+            <!-- Publishing Options -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Post Status</label>
+                <select asp-for="Status" class="form-select">
+                    <option value="draft">Draft - Save but don't publish</option>
+                    <option value="published">Published - Visible to everyone</option>
+                </select>
+            </div>
+
+            <!-- Post Settings -->
+            <div class="mb-3">
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="AllowComments" class="form-check-input" id="allowComments" />
+                    <label class="form-check-label" for="allowComments">
+                        <i class="fas fa-comments me-1"></i> Allow comments
+                    </label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="IsNSFW" class="form-check-input" id="isNSFW" />
+                    <label class="form-check-label" for="isNSFW">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Mark as NSFW
+                    </label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="IsSpoiler" class="form-check-input" id="isSpoiler" />
+                    <label class="form-check-label" for="isSpoiler">
+                        <i class="fas fa-eye-slash me-1"></i> Mark as Spoiler
+                    </label>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-3 justify-content-end mt-4">
+                <a href="/r/@Model.CommunitySlug/posts/@(ViewBag.PostSlug ?? "back")" class="btn btn-secondary">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-draft" name="Status" value="draft">
+                    <i class="fas fa-save me-1"></i> Save as Draft
+                </button>
+                <button type="submit" class="btn btn-save" name="Status" value="published">
+                    <i class="fas fa-paper-plane me-1"></i> Update & Publish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script>
+        // Initialize Quill editor
+        var quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ 'header': 1 }, { 'header': 2 }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'script': 'sub'}, { 'script': 'super' }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Write your post content...'
+        });
+
+        // Pre-fill content
+        var existingContent = document.getElementById('content-hidden').value;
+        if (existingContent) {
+            quill.root.innerHTML = existingContent;
+        }
+
+        // Update hidden field when content changes
+        quill.on('text-change', function() {
+            document.getElementById('content-hidden').value = quill.root.innerHTML;
+        });
+
+        // Handle image action radio buttons
+        document.querySelectorAll('input[name="ImageAction"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'replace') {
+                    document.getElementById('newImageUpload').style.display = 'block';
+                } else {
+                    document.getElementById('newImageUpload').style.display = 'none';
+                }
+            });
+        });
+
+        // Form validation before submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            // Update hidden content field
+            document.getElementById('content-hidden').value = quill.root.innerHTML;
+            
+            // Validate title
+            var title = document.querySelector('input[name="Title"]').value;
+            if (!title || title.trim().length < 3) {
+                e.preventDefault();
+                alert('Title must be at least 3 characters long');
+                return false;
+            }
+            
+            return true;
+        });
+    </script>
+}
+

@@ -115,7 +115,32 @@
                 <span>• 5h ago</span>
             </div>
             <div class="post-content">
-                <h1 class="post-title">@Model.Title</h1>
+                <div class="d-flex justify-content-between align-items-start">
+                    <h1 class="post-title flex-grow-1">@Model.Title</h1>
+                    
+                    @* 3-Dot Dropdown Menu - Only visible to post owner *@
+                    @if (User.Identity.IsAuthenticated && User.Identity.Name == Model.UserId)
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted p-0" type="button" id="postOptionsMenu" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem;">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="postOptionsMenu">
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("Edit", "Posts", new { id = Model.PostID })">
+                                        <i class="fas fa-edit text-primary"></i> Edit Post
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" type="button" onclick="confirmDeletePost(@Model.PostID)">
+                                        <i class="fas fa-trash"></i> Delete Post
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                </div>
                 
                 @* Debug: Show what's in FeaturedImage *@
                 @if (ViewContext.HttpContext.Request.Host.Host.Contains("localhost"))
@@ -254,3 +279,87 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deletePostModal" tabindex="-1" aria-labelledby="deletePostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deletePostModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Delete Post
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Are you sure you want to delete this post?</strong></p>
+                <p class="text-muted">This action cannot be undone. All comments and reactions will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <form id="deletePostForm" method="post" action="@Url.Action("Delete", "Posts")">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="deletePostId" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Post
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Delete post confirmation
+        function confirmDeletePost(postId) {
+            document.getElementById('deletePostId').value = postId;
+            const modal = new bootstrap.Modal(document.getElementById('deletePostModal'));
+            modal.show();
+        }
+
+        // Handle delete form submission
+        document.getElementById('deletePostForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const postId = formData.get('id');
+            const token = formData.get('__RequestVerificationToken');
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(parseInt(postId))
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    alert('Post deleted successfully!');
+                    // Redirect to home page
+                    window.location.href = '@Url.Action("IndexAsync", "Home")';
+                } else {
+                    alert('Failed to delete post: ' + (result.message || 'Unknown error'));
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error deleting post:', error);
+                alert('An error occurred while deleting the post');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    </script>
+}

@@ -84,9 +84,23 @@ namespace gsmsharing.Repositories
 
         }
 
-        public Task DeleteAsync(int id)
+        public async Task DeleteAsync(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                const string sql = @"DELETE FROM Posts WHERE PostID = @PostID; SELECT @@ROWCOUNT;";
+                
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@PostID", id }
+                };
+
+                await _db.ExecuteScalarAsync<int>(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error deleting post: {ex.Message}", ex);
+            }
         }
 
         public async Task<IEnumerable<PostViewModelDisplay>> GetAllAsync()
@@ -490,14 +504,90 @@ WHERE p.[Slug] = @Slug AND c.[Slug] = @CommunitySlug";
             };
         }
 
-        public Task<IEnumerable<Post>> GetByStatusAsync(string status)
+        public async Task<IEnumerable<Post>> GetByStatusAsync(string status)
         {
-            throw new NotImplementedException();
+            try
+            {
+                const string sql = @"
+                    SELECT 
+                        p.[PostID], p.[UserId], p.[Title], p.[Slug], p.[Tags], p.[Content], 
+                        p.[FeaturedImage], p.[PostStatus], p.[AllowComments], p.[IsPromoted], 
+                        p.[IsFeatured], p.[ViewCount], p.[CreatedAt], p.[UpdatedAt], 
+                        p.[PublishedAt], p.[CommunityID]
+                    FROM Posts p
+                    WHERE p.[PostStatus] = @Status
+                    ORDER BY p.[CreatedAt] DESC";
+
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@Status", status }
+                };
+
+                var dataTable = await _db.ExecuteQueryAsync(sql, parameters);
+                var posts = new List<Post>();
+
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    posts.Add(MapRowToPost(row));
+                }
+
+                return posts;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving posts by status: {ex.Message}", ex);
+            }
         }
 
-        public Task<IEnumerable<Post>> GetByUserIdAsync(string userId)
+        public async Task<IEnumerable<Post>> GetByUserIdAsync(string userId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                const string sql = @"
+                    SELECT 
+                        p.[PostID], p.[UserId], p.[Title], p.[Slug], p.[Tags], p.[Content], 
+                        p.[FeaturedImage], p.[PostStatus], p.[AllowComments], p.[IsPromoted], 
+                        p.[IsFeatured], p.[ViewCount], p.[CreatedAt], p.[UpdatedAt], 
+                        p.[PublishedAt], p.[CommunityID],
+                        c.[Name] AS CommunityName,
+                        c.[Slug] AS CommunitySlug
+                    FROM Posts p
+                    LEFT JOIN Communities c ON p.[CommunityID] = c.[CommunityID]
+                    WHERE p.[UserId] = @UserId
+                    ORDER BY p.[CreatedAt] DESC";
+
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@UserId", userId }
+                };
+
+                var dataTable = await _db.ExecuteQueryAsync(sql, parameters);
+                var posts = new List<Post>();
+
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    var post = MapRowToPost(row);
+                    
+                    // Add community info if available
+                    if (row.Table.Columns.Contains("CommunityName") && row["CommunityName"] != DBNull.Value)
+                    {
+                        post.Community = new Community
+                        {
+                            CommunityID = post.CommunityID ?? 0,
+                            Name = row["CommunityName"].ToString(),
+                            Slug = row["CommunitySlug"]?.ToString()
+                        };
+                    }
+                    
+                    posts.Add(post);
+                }
+
+                return posts;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving posts by user: {ex.Message}", ex);
+            }
         }
 
         public Task<IEnumerable<Post>> GetFeaturedPostsAsync()
@@ -530,9 +620,59 @@ WHERE p.[Slug] = @Slug AND c.[Slug] = @CommunitySlug";
             throw new NotImplementedException();
         }
 
-        public Task<Post> UpdateAsync(Post post)
+        public async Task<Post> UpdateAsync(Post post)
         {
-            throw new NotImplementedException();
+            try
+            {
+                const string sql = @"
+                    UPDATE Posts SET
+                        Title = @Title,
+                        Slug = @Slug,
+                        Content = @Content,
+                        Tags = @Tags,
+                        FeaturedImage = @FeaturedImage,
+                        PostStatus = @PostStatus,
+                        AllowComments = @AllowComments,
+                        IsPromoted = @IsPromoted,
+                        IsFeatured = @IsFeatured,
+                        UpdatedAt = GETUTCDATE(),
+                        PublishedAt = CASE 
+                            WHEN @PostStatus = 'Published' AND PublishedAt IS NULL 
+                            THEN GETUTCDATE() 
+                            ELSE PublishedAt 
+                        END
+                    WHERE PostID = @PostID AND UserId = @UserId;
+                    
+                    SELECT @@ROWCOUNT;";
+
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@PostID", post.PostID },
+                    { "@UserId", post.UserId },
+                    { "@Title", post.Title },
+                    { "@Slug", post.Slug },
+                    { "@Content", post.Content },
+                    { "@Tags", (object)post.Tags ?? DBNull.Value },
+                    { "@FeaturedImage", (object)post.FeaturedImage ?? DBNull.Value },
+                    { "@PostStatus", post.PostStatus ?? "Draft" },
+                    { "@AllowComments", post.AllowComments ?? true },
+                    { "@IsPromoted", post.IsPromoted ?? false },
+                    { "@IsFeatured", post.IsFeatured ?? false }
+                };
+
+                var rowsAffected = await _db.ExecuteScalarAsync<int>(sql, parameters);
+                
+                if (rowsAffected > 0)
+                {
+                    return post;
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating post: {ex.Message}", ex);
+            }
         }
     }
 }

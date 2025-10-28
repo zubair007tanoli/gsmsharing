@@ -1,0 +1,292 @@
+@model gsmsharing.ViewModels.PostEditViewModel
+
+@{
+    ViewData["Title"] = "Edit Post";
+}
+
+@section Resources {
+    <link rel="stylesheet" href="~/css/CreatePostCss.css" asp-append-version="true" />
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center g-0">
+        <div class="col-md-12">
+            <div class="create-post-card">
+                <div class="post-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold">Edit Post</h5>
+                    <a href="@Url.Action("Details", new { community = "gsmsharing", slug = Model.Slug })" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Cancel
+                    </a>
+                </div>
+
+                <form asp-controller="Posts" asp-action="Edit" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="PostID" />
+                    <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="CurrentFeaturedImageUrl" />
+                    
+                    <div class="post-editor">
+                        <div class="mb-4">
+                            <div class="community-selector">
+                                <select asp-for="CommunityID" class="community-dropdown" required>
+                                    <option value="">Choose a community</option>
+                                    @foreach (var community in Model.Communities)
+                                    {
+                                        <option value="@community.Value">@community.Text</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <input type="text" asp-for="Title" class="form-control mb-3" placeholder="Title" style="font-size: 18px; font-weight: 500;">
+                            <span asp-validation-for="Title" class="text-danger"></span>
+
+                            <textarea asp-for="MetaDescription" class="form-control mb-3" rows="2" placeholder="Post Description"></textarea>
+                            <span asp-validation-for="MetaDescription" class="text-danger"></span>
+
+                            <partial name="_Editor" />
+                            <input type="hidden" asp-for="Content" />
+                            <span asp-validation-for="Content" class="text-danger"></span>
+
+                            <!-- Image Handling Section -->
+                            <div class="mt-3">
+                                <label class="form-label fw-bold">Featured Image</label>
+                                
+                                @if (!string.IsNullOrEmpty(Model.CurrentFeaturedImageUrl))
+                                {
+                                    <div class="current-image-section mb-3 p-3 border rounded">
+                                        <p class="mb-2"><strong>Current Image:</strong></p>
+                                        <img src="@Model.CurrentFeaturedImageUrl" alt="Current featured image" class="img-thumbnail mb-2" style="max-width: 300px; max-height: 200px;">
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="ImageAction" id="keepImage" value="keep" checked>
+                                            <label class="form-check-label" for="keepImage">
+                                                <i class="fas fa-check-circle text-success"></i> Keep current image
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="ImageAction" id="replaceImage" value="replace">
+                                            <label class="form-check-label" for="replaceImage">
+                                                <i class="fas fa-sync text-primary"></i> Replace with new image
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="ImageAction" id="removeImage" value="remove">
+                                            <label class="form-check-label" for="removeImage">
+                                                <i class="fas fa-trash text-danger"></i> Remove image
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <input type="hidden" name="ImageAction" value="replace" />
+                                }
+                                
+                                <div id="newImageUpload" style="@(string.IsNullOrEmpty(Model.CurrentFeaturedImageUrl) ? "" : "display: none;")">
+                                    <label class="form-label">Upload New Image</label>
+                                    <input type="file" asp-for="FeaturedImage" class="form-control" accept="image/*">
+                                    <div class="mt-3">
+                                        <img id="imagePreviewPost" class="image-preview" alt="Image preview" style="display: none; max-width: 300px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tag-input-container">
+                                <div class="tags-container" id="tags-container"></div>
+                                <label class="form-label">Tags</label>
+                                <input type="text" id="tag-input-field" class="form-control mb-3"
+                                       placeholder="Type and press space or enter to add tags"
+                                       style="font-size: 18px; font-weight: 500;">
+                                <input type="hidden" id="tags-hidden" asp-for="Tags">
+                                <span asp-validation-for="Tags" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <button class="seo-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#seoFields" aria-expanded="false" aria-controls="seoFields">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-cog"></i>
+                                <span>SEO Configuration</span>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+
+                        <div class="collapse" id="seoFields">
+                            <div class="seo-fields">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Meta Title</label>
+                                        <input type="text" asp-for="MetaTitle" class="form-control" placeholder="Enter meta title">
+                                        <span asp-validation-for="MetaTitle" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">OG Title</label>
+                                        <input type="text" asp-for="OgTitle" class="form-control" placeholder="Enter OG title">
+                                        <span asp-validation-for="OgTitle" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Meta Description</label>
+                                        <textarea asp-for="MetaDescription" class="form-control" rows="3" placeholder="Enter meta description"></textarea>
+                                        <span asp-validation-for="MetaDescription" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">OG Description</label>
+                                        <textarea asp-for="OgDescription" class="form-control" rows="3" placeholder="Enter OG description"></textarea>
+                                        <span asp-validation-for="OgDescription" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">URL Slug (Cannot be changed)</label>
+                                        <input asp-for="Slug" type="text" class="form-control" readonly style="background-color: #e9ecef;">
+                                        <small class="text-muted">The URL slug cannot be changed to preserve existing links</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Publishing Options Section -->
+                        <div class="publishing-options-section mt-4">
+                            <button class="publishing-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#publishingFields" aria-expanded="true" aria-controls="publishingFields">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-sliders-h"></i>
+                                    <span>Publishing Options</span>
+                                </div>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+
+                            <div class="collapse show" id="publishingFields">
+                                <div class="publishing-fields">
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label class="form-label" for="postStatus">Post Status</label>
+                                                <select asp-for="PostStatus" class="form-select" id="postStatus">
+                                                    <option value="Draft">Draft - Save now, publish later</option>
+                                                    <option value="Published">Published - Make visible to everyone immediately</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-check form-switch mb-3">
+                                                <input asp-for="AllowComments" class="form-check-input" id="allowComments">
+                                                <label class="form-check-label ms-2" for="allowComments">
+                                                    <i class="fas fa-comments me-2"></i>Allow comments on this post
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="card-post bg-light">
+                                                <div class="card-body">
+                                                    <h6 class="card-title mb-3">Visibility Settings</h6>
+
+                                                    <div class="form-check mb-3">
+                                                        <input type="checkbox" class="form-check-input" asp-for="IsPromoted"/>
+                                                        <label class="form-check-label" for="IsPromoted">
+                                                            <i class="fas fa-bullhorn me-2"></i>Promote this post
+                                                        </label>
+                                                    </div>
+
+                                                    <div class="form-check">
+                                                        <input asp-for="IsFeatured" type="checkbox" class="form-check-input" id="isFeatured" />
+                                                        <label class="form-check-label" for="isFeatured">
+                                                            <i class="fas fa-star"></i>Feature this post
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="post-actions">
+                        <div class="action-buttons">
+                            <a href="@Url.Action("Details", new { community = "gsmsharing", slug = Model.Slug })" class="btn-draft">
+                                <i class="fas fa-times"></i>
+                                <span>Cancel</span>
+                            </a>
+                            <button type="submit" class="btn-draft" name="PostStatus" value="Draft">
+                                <i class="fas fa-save"></i>
+                                <span>Save as Draft</span>
+                            </button>
+                            <button type="submit" class="btn-publish" name="PostStatus" value="Published">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Update & Publish</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Tag handling
+            const inputField = $('#tag-input-field');
+            const tagsContainer = $('#tags-container');
+            const hiddenInput = $('#tags-hidden');
+            let tags = hiddenInput.val() ? hiddenInput.val().split(',').map(t => t.trim()).filter(t => t) : [];
+
+            function renderTags() {
+                tagsContainer.empty();
+                tags.forEach(function(tag, index) {
+                    const tagElement = $('<div class="tag"></div>').text(tag);
+                    const closeButton = $('<span class="tag-close">×</span>');
+                    closeButton.on('click', function() {
+                        tags.splice(index, 1);
+                        renderTags();
+                        updateHiddenInput();
+                    });
+                    tagElement.append(closeButton);
+                    tagsContainer.append(tagElement);
+                });
+            }
+
+            function updateHiddenInput() {
+                hiddenInput.val(tags.join(','));
+            }
+
+            inputField.on('keydown', function(e) {
+                if (e.keyCode === 13) {
+                    e.preventDefault();
+                    const value = inputField.val().trim();
+                    if (value && !tags.includes(value)) {
+                        tags.push(value);
+                        renderTags();
+                        updateHiddenInput();
+                        inputField.val('');
+                    }
+                }
+            });
+
+            renderTags();
+
+            // Image action handling
+            $('input[name="ImageAction"]').on('change', function() {
+                if ($(this).val() === 'replace') {
+                    $('#newImageUpload').show();
+                } else {
+                    $('#newImageUpload').hide();
+                }
+            });
+
+            // Image preview
+            $('#Post_FeaturedImage').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#imagePreviewPost').attr('src', e.target.result).show();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
+}
+

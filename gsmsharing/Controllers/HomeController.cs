@@ -27,10 +27,16 @@ namespace gsmsharing.Controllers
 
         public async Task<IActionResult> IndexAsync()
         {
-            var post = await postRepository.GetAllAsync();
+            // Only show published posts on the homepage
+            var allPosts = await postRepository.GetAllAsync();
+            var publishedPosts = allPosts.Where(p => p.PostStatus?.ToLower() == "published" || string.IsNullOrEmpty(p.PostStatus));
+            
             var categorySelectList = await _categoryService.CreateCategorySelectListAsync();
             ViewBag.Categories = categorySelectList;
-            return View(post);
+            
+            _logger.LogInformation($"Showing {publishedPosts.Count()} published posts out of {allPosts.Count()} total posts");
+            
+            return View(publishedPosts);
         }
 
         public IActionResult Privacy()
