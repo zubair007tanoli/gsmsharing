@@ -65,6 +65,10 @@ namespace discussionspot9.Data.DbContext
         // Web Stories tables
         public DbSet<Story> Stories { get; set; }
         public DbSet<StorySlide> StorySlides { get; set; }
+        public DbSet<StoryReaction> StoryReactions { get; set; }
+        public DbSet<StoryShare> StoryShares { get; set; }
+        public DbSet<StoryAnalytics> StoryAnalytics { get; set; }
+        public DbSet<StoryView> StoryViews { get; set; }
         
         // Announcements table
         public DbSet<Announcement> Announcements { get; set; }
@@ -76,6 +80,11 @@ namespace discussionspot9.Data.DbContext
         public DbSet<EmailQueue> EmailQueues { get; set; }
         public DbSet<NotificationPreference> NotificationPreferences { get; set; }
         public DbSet<UserNotificationSettings> UserNotificationSettings { get; set; }
+        
+        // Badge & Achievement System
+        public DbSet<Badge> Badges { get; set; }
+        public DbSet<UserBadge> UserBadges { get; set; }
+        public DbSet<BadgeRequirement> BadgeRequirements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

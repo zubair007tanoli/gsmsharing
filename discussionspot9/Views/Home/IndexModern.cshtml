@@ -715,6 +715,10 @@
 </style>
 
 <div class="container">
+    <!-- Stories Strip on Homepage -->
+    <div class="mb-3">
+        @await Component.InvokeAsync("StoriesStrip", new { count = 20 })
+    </div>
     <div class="row">
         <!-- Main Content Column (70%) -->
         <div class="col-lg-8">
@@ -993,6 +997,16 @@
                     <script>
                         (adsbygoogle = window.adsbygoogle || []).push({});
                     </script>
+                </div>
+            </div>
+
+            <!-- Karma Leaderboard -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-trophy me-2"></i>Top Contributors
+                </div>
+                <div class="sidebar-content">
+                    @await Component.InvokeAsync("KarmaLeaderboard", new { count = 10 })
                 </div>
             </div>
 

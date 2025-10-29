@@ -28,6 +28,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         // Author
         public string AuthorDisplayName { get; set; } = string.Empty;
         public string AuthorInitials { get; set; } = string.Empty;
+        public int AuthorKarma { get; set; } = 0;
 
         // Community
         public string CommunityName { get; set; } = string.Empty;

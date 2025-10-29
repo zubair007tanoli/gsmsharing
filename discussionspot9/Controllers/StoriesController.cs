@@ -419,6 +419,7 @@ namespace discussionspot9.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         [Route("stories/viewer/{slug}")]
         public async Task<IActionResult> Viewer(string slug)
         {
@@ -436,6 +437,7 @@ namespace discussionspot9.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         [Route("stories/amp/{slug}")]
         public async Task<IActionResult> Amp(string slug)
         {
@@ -450,6 +452,38 @@ namespace discussionspot9.Controllers
             }
 
             return View(story);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("stories/explore")]
+        public async Task<IActionResult> Explore(int page = 1)
+        {
+            const int pageSize = 12;
+            var skip = (page - 1) * pageSize;
+
+            var stories = await _context.Stories
+                .Include(s => s.User)
+                .Include(s => s.Slides)
+                .Where(s => s.Status == "published")
+                .OrderByDescending(s => s.UpdatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(s => new
+                {
+                    s.StoryId,
+                    s.Title,
+                    s.Slug,
+                    Cover = s.Slides.OrderBy(x => x.OrderIndex).Select(x => x.MediaUrl).FirstOrDefault(),
+                    Author = s.User != null ? (s.User.UserName ?? "User") : "User",
+                    UpdatedAt = s.UpdatedAt
+                })
+                .ToListAsync();
+
+            ViewBag.Items = stories;
+            ViewBag.Page = page;
+            ViewBag.HasMore = stories.Count == pageSize;
+            return View();
         }
 
         // ViewStory removed - using Viewer action instead to avoid duplicate routes

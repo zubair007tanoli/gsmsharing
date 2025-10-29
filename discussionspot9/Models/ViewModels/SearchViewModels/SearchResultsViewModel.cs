@@ -2,21 +2,37 @@ namespace discussionspot9.Models.ViewModels.SearchViewModels
 {
     public class SearchResultsViewModel
     {
+        // Basic search properties
         public string Query { get; set; } = string.Empty;
         public string CurrentType { get; set; } = "all";
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; }
 
+        // NEW: Filter properties
+        public string SortBy { get; set; } = "relevance"; // relevance, new, hot, top
+        public string PostType { get; set; } = "all"; // all, text, link, image, video, poll
+        public bool HasMedia { get; set; } = false;
+        public string TimeRange { get; set; } = "all"; // hour, day, week, month, year, all
+        public int MinKarma { get; set; } = 0;
+        public bool VerifiedOnly { get; set; } = false;
+        public int MinScore { get; set; } = 0;
+
+        // Results
         public List<SearchPostResult> Posts { get; set; } = new();
         public List<SearchCommunityResult> Communities { get; set; } = new();
         public List<SearchUserResult> Users { get; set; } = new();
 
+        // Counts
         public int TotalPosts { get; set; }
         public int TotalCommunities { get; set; }
         public int TotalUsers { get; set; }
         public int TotalResults => TotalPosts + TotalCommunities + TotalUsers;
 
+        // Helpers
         public bool HasResults => TotalResults > 0;
+        public bool HasActiveFilters => SortBy != "relevance" || PostType != "all" || 
+                                        HasMedia || TimeRange != "all" || 
+                                        MinKarma > 0 || VerifiedOnly || MinScore > 0;
     }
 
     public class SearchPostResult
@@ -28,9 +44,13 @@ namespace discussionspot9.Models.ViewModels.SearchViewModels
         public string CommunityName { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
         public string AuthorName { get; set; } = string.Empty;
+        public int AuthorKarma { get; set; }
         public int Score { get; set; }
         public int CommentCount { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string PostType { get; set; } = "text";
+        public string? ThumbnailUrl { get; set; } // For link previews or media
+        public string? LinkPreviewDomain { get; set; }
         public string TimeAgo => FormatTimeAgo(DateTime.UtcNow - CreatedAt);
         public string Url => $"/r/{CommunitySlug}/posts/{Slug}";
 

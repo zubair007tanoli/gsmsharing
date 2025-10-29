@@ -1,0 +1,53 @@
+@model List<discussionspot9.Components.StoryStripItem>
+
+<div class="stories-strip card-style">
+    <div class="stories-track" id="storiesTrack">
+        @foreach (var item in Model)
+        {
+            <button class="story-tile" data-story-slug="@item.Slug" data-story-title="@item.Title" data-author="@item.Author" data-posturl="@item.PostUrl" title="@item.Title">
+                <div class="story-ring">
+                    <div class="story-avatar">
+                        <img src="@(string.IsNullOrWhiteSpace(item.CoverUrl) ? "/images/story-placeholder-1x1.png" : item.CoverUrl)" alt="@item.Title" loading="lazy" />
+                    </div>
+                </div>
+                <div class="story-meta">
+                    <div class="story-author" title="@item.Author">@item.Author</div>
+                </div>
+            </button>
+        }
+    </div>
+    <button class="stories-nav left" type="button" aria-label="Prev" onclick="window.storiesStrip.scrollBy(-1)"><i class="fas fa-chevron-left"></i></button>
+    <button class="stories-nav right" type="button" aria-label="Next" onclick="window.storiesStrip.scrollBy(1)"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+<div id="storiesPlayerModal" class="stories-modal" aria-hidden="true">
+    <div class="stories-modal-backdrop" onclick="window.storiesPlayer.close()"></div>
+    <div class="stories-modal-content" role="dialog" aria-modal="true">
+        <button class="stories-close" onclick="window.storiesPlayer.close()"><i class="fas fa-times"></i></button>
+        <div class="stories-header">
+            <div class="stories-progress" id="storiesProgress"></div>
+            <div class="stories-titlebar">
+                <div class="title" id="storiesTitle"></div>
+                <div class="actions">
+                    <a id="storiesOpenPage" class="btn-open" href="#" target="_blank" rel="noopener">Open as page</a>
+                </div>
+            </div>
+        </div>
+        <div class="stories-stage" id="storiesStage">
+            <div class="tap-zone tap-left" onclick="window.storiesPlayer.prev()"></div>
+            <div class="tap-zone tap-right" onclick="window.storiesPlayer.next()"></div>
+        </div>
+        <div class="stories-controls">
+            <button class="prev" onclick="window.storiesPlayer.prev()" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+            <button class="next" onclick="window.storiesPlayer.next()" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="stories-bottom-controls">
+            <div id="storiesDots" class="stories-dots" aria-label="Slides"></div>
+            <div class="stories-actions">
+                <button class="mini-btn" onclick="window.storiesPlayer.togglePause()" title="Pause/Play"><i class="fas fa-pause"></i></button>
+                <a id="storiesOpenPageBottom" class="mini-btn" href="#" target="_blank" rel="noopener" title="Open as page"><i class="fas fa-external-link-alt"></i></a>
+            </div>
+        </div>
+    </div>
+    
+</div>

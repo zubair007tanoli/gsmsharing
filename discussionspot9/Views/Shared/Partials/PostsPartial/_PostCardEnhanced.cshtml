@@ -9,6 +9,16 @@
             <a href="@Model.CommunityUrl" class="community-link">r/@Model.CommunityName</a>
             <span>•</span>
             <span>Posted by <a href="@Model.AuthorUrl" class="text-decoration-none text-muted">u/@Model.Username</a></span>
+            
+            @* NEW: Karma Display *@
+            @if (Model.AuthorKarma > 0)
+            {
+                <span class="author-karma" title="@Model.AuthorKarma karma points">
+                    <i class="fas fa-star"></i>
+                    @FormatKarma(Model.AuthorKarma)
+                </span>
+            }
+            
             <span>•</span>
             <span title="@Model.CreatedAt.ToString("f")">@Model.TimeAgo</span>
         </div>
@@ -140,3 +150,12 @@
         </div>
     </div>
 </div>
+
+@functions {
+    string FormatKarma(int karma)
+    {
+        if (karma >= 1000000) return $"{karma / 1000000.0:F1}M";
+        if (karma >= 1000) return $"{karma / 1000.0:F1}K";
+        return karma.ToString();
+    }
+}

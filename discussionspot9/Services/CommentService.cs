@@ -14,17 +14,20 @@ namespace discussionspot9.Services
         private readonly ILogger<CommentService> _logger;
         private readonly ILinkMetadataService _linkMetadataService;
         private readonly INotificationService _notificationService;
+        private readonly IKarmaService _karmaService;
 
         public CommentService(
             IDbContextFactory<ApplicationDbContext> context, 
             ILogger<CommentService> logger, 
             ILinkMetadataService linkMetadataService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            IKarmaService karmaService)
         {
             _context = context;
             _logger = logger;
             _linkMetadataService = linkMetadataService;
             _notificationService = notificationService;
+            _karmaService = karmaService;
         }
 
         public async Task<CreateCommentResult> CreateCommentAsync(CreateCommentViewModel model)
@@ -221,6 +224,23 @@ namespace discussionspot9.Services
                 
                 // Detach the entity to ensure GetCommentByIdAsync gets fresh data
                 dbContext.Entry(comment).State = EntityState.Detached;
+
+                // Update karma for comment author (async, fire and forget)
+                if (voteType != 0 && comment.UserId != userId) // Don't update karma for self-votes or vote removals
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _karmaService.UpdateCommentKarmaAsync(commentId, voteType);
+                            _logger.LogInformation($"⭐ Karma updated for comment {commentId} author");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error updating karma for comment {commentId}");
+                        }
+                    });
+                }
 
                 // Create notification for upvotes only
                 if (voteType == 1)

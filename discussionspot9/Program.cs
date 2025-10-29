@@ -173,6 +173,8 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddHttpClient<ILinkMetadataService, LinkMetadataService>();
 builder.Services.AddScoped<IViewRenderService, ViewRenderService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
+builder.Services.AddScoped<IKarmaService, KarmaService>();
+builder.Services.AddScoped<IBadgeService, BadgeService>();
 
 // Email & Notification Services
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -182,6 +184,7 @@ builder.Services.AddHostedService<EmailWorkerService>();
 // Story Generation Services
 builder.Services.AddScoped<PythonStoryEnhancerService>();
 builder.Services.AddScoped<IStoryGenerationService, StoryGenerationService>();
+builder.Services.AddScoped<IStoryEngagementService, StoryEngagementService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();
 

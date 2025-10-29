@@ -19,14 +19,22 @@ namespace discussionspot9.Services
         private readonly ILogger<PostService> _logger;
         private readonly INotificationService _notificationService;
         private readonly IStoryGenerationService _storyGenerationService;
+        private readonly IKarmaService _karmaService;
 
-        public PostService(ApplicationDbContext context, IMemoryCache cache, ILogger<PostService> logger, INotificationService notificationService, IStoryGenerationService storyGenerationService)
+        public PostService(
+            ApplicationDbContext context, 
+            IMemoryCache cache, 
+            ILogger<PostService> logger, 
+            INotificationService notificationService, 
+            IStoryGenerationService storyGenerationService,
+            IKarmaService karmaService)
         {
             _context = context;
             _cache = cache;
             _logger = logger;
             _notificationService = notificationService;
             _storyGenerationService = storyGenerationService;
+            _karmaService = karmaService;
         }
 
         public async Task<PostListViewModel> GetAllPostsAsync(string sort = "hot", string time = "all", int page = 1)
@@ -1119,6 +1127,23 @@ namespace discussionspot9.Services
             // Detach the entity to ensure GetPostByIdAsync gets fresh data
             _context.Entry(post).State = EntityState.Detached;
 
+                // Update karma for post author (async, fire and forget)
+                if (voteType != 0 && post.UserId != userId) // Don't update karma for self-votes or vote removals
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _karmaService.UpdatePostKarmaAsync(postId, voteType);
+                            _logger.LogInformation($"⭐ Karma updated for post {postId} author");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error updating karma for post {postId}");
+                        }
+                    });
+                }
+
                 // Create notification for upvotes only
                 if (voteType == 1)
                 {
@@ -1207,6 +1232,7 @@ namespace discussionspot9.Services
                 IsSpoiler = p.IsSpoiler,
                 AuthorDisplayName = p.UserProfile?.DisplayName ?? "Unknown User",
                 AuthorInitials = GetInitials(p.UserProfile?.DisplayName ?? "Unknown"),
+                AuthorKarma = p.UserProfile?.KarmaPoints ?? 0,
                 CommunityName = p.Community?.Name ?? "Unknown Community",
                 CommunitySlug = p.Community?.Slug ?? "unknown",
                 Tags = p.PostTags?.Select(pt => pt.Tag?.Name ?? string.Empty).ToList() ?? new List<string>(),

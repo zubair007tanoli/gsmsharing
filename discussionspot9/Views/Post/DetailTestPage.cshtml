@@ -222,7 +222,7 @@
                                 <div class="user-avatar small" style="background-color:@(Model.Post.AuthorDisplayName.ToAvatarColor());">@Model.Post.AuthorInitials</div>
                                 <a href="/r/@Model.Post.CommunitySlug">r/@Model.Post.CommunitySlug</a>
                                 <span>•</span>
-                                <span>Posted by <a href="/u/@Model.Post.AuthorDisplayName">u/@Model.Post.AuthorDisplayName</a></span>
+                                <span>Posted by <a href="/Profile?userId=@Model.Post.UserId">u/@Model.Post.AuthorDisplayName</a></span>
                                 <span>•</span>
                                 @* Assuming ToTimeAgo is a C# extension method/helper *@
                                 <span>@Html.TimeAgo(Model.Post.CreatedAt)</span>

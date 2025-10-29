@@ -41,6 +41,8 @@ body {
 
 .navbar {
     padding: 0.5rem 0;
+    box-shadow: 0 6px 18px rgba(16,24,40,.06);
+    border-bottom: 1px solid var(--navbar-border);
 }
 
 .logo {

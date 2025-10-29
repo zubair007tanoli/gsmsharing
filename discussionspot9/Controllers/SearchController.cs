@@ -18,7 +18,17 @@ namespace discussionspot9.Controllers
 
         [HttpGet]
         [Route("search")]
-        public async Task<IActionResult> Index(string? q, string type = "all", int page = 1)
+        public async Task<IActionResult> Index(
+            string? q, 
+            string type = "all",
+            string sort = "relevance",
+            string postType = "all",
+            bool hasMedia = false,
+            string timeRange = "all",
+            int minKarma = 0,
+            int minScore = 0,
+            bool verifiedOnly = false,
+            int page = 1)
         {
             if (string.IsNullOrWhiteSpace(q))
             {
@@ -32,12 +42,19 @@ namespace discussionspot9.Controllers
             {
                 Query = q,
                 CurrentType = type,
-                CurrentPage = page
+                CurrentPage = page,
+                SortBy = sort,
+                PostType = postType,
+                HasMedia = hasMedia,
+                TimeRange = timeRange,
+                MinKarma = minKarma,
+                MinScore = minScore,
+                VerifiedOnly = verifiedOnly
             };
 
             try
             {
-                // Search Posts
+                // Search Posts with advanced filters
                 if (type == "all" || type == "posts")
                 {
                     var postsQuery = _context.Posts
@@ -45,14 +62,52 @@ namespace discussionspot9.Controllers
                             (p.Title.ToLower().Contains(query) || 
                              (p.Content != null && p.Content.ToLower().Contains(query))))
                         .Include(p => p.Community)
-                        .Include(p => p.UserProfile);
+                        .Include(p => p.UserProfile)
+                        .AsQueryable();
+
+                    // Apply post type filter
+                    if (postType != "all")
+                    {
+                        postsQuery = postsQuery.Where(p => p.PostType == postType);
+                    }
+
+                    // Apply media filter
+                    if (hasMedia)
+                    {
+                        var postsWithMedia = _context.Media
+                            .Select(m => m.PostId)
+                            .Distinct();
+                        postsQuery = postsQuery.Where(p => postsWithMedia.Contains(p.PostId));
+                    }
+
+                    // Apply time range filter
+                    if (timeRange != "all")
+                    {
+                        var cutoffDate = GetTimeRangeCutoff(timeRange);
+                        postsQuery = postsQuery.Where(p => p.CreatedAt >= cutoffDate);
+                    }
+
+                    // Apply score filter
+                    if (minScore > 0)
+                    {
+                        postsQuery = postsQuery.Where(p => p.Score >= minScore);
+                    }
+
+                    // Apply sorting
+                    postsQuery = sort switch
+                    {
+                        "new" => postsQuery.OrderByDescending(p => p.CreatedAt),
+                        "hot" => postsQuery.OrderByDescending(p => p.Score)
+                                          .ThenByDescending(p => p.CreatedAt),
+                        "top" => postsQuery.OrderByDescending(p => p.UpvoteCount - p.DownvoteCount),
+                        _ => postsQuery.OrderByDescending(p => p.Score) // relevance
+                    };
 
                     model.TotalPosts = await postsQuery.CountAsync();
 
                     if (type == "posts")
                     {
                         model.Posts = await postsQuery
-                            .OrderByDescending(p => p.Score)
                             .Skip((page - 1) * pageSize)
                             .Take(pageSize)
                             .Select(p => new SearchPostResult
@@ -64,16 +119,19 @@ namespace discussionspot9.Controllers
                                 CommunityName = p.Community.Name,
                                 CommunitySlug = p.Community.Slug,
                                 AuthorName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
+                                AuthorKarma = p.UserProfile != null ? p.UserProfile.KarmaPoints : 0,
                                 Score = p.Score,
                                 CommentCount = p.CommentCount,
-                                CreatedAt = p.CreatedAt
+                                CreatedAt = p.CreatedAt,
+                                PostType = p.PostType,
+                                ThumbnailUrl = p.Media.Any() ? p.Media.First().ThumbnailUrl : null,
+                                LinkPreviewDomain = null
                             })
                             .ToListAsync();
                     }
                     else
                     {
                         model.Posts = await postsQuery
-                            .OrderByDescending(p => p.Score)
                             .Take(5)
                             .Select(p => new SearchPostResult
                             {
@@ -84,9 +142,13 @@ namespace discussionspot9.Controllers
                                 CommunityName = p.Community.Name,
                                 CommunitySlug = p.Community.Slug,
                                 AuthorName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
+                                AuthorKarma = p.UserProfile != null ? p.UserProfile.KarmaPoints : 0,
                                 Score = p.Score,
                                 CommentCount = p.CommentCount,
-                                CreatedAt = p.CreatedAt
+                                CreatedAt = p.CreatedAt,
+                                PostType = p.PostType,
+                                ThumbnailUrl = p.Media.Any() ? p.Media.First().ThumbnailUrl : null,
+                                LinkPreviewDomain = null
                             })
                             .ToListAsync();
                     }
@@ -139,12 +201,25 @@ namespace discussionspot9.Controllers
                     }
                 }
 
-                // Search Users
+                // Search Users with filters
                 if (type == "all" || type == "users")
                 {
                     var usersQuery = _context.UserProfiles
                         .Where(u => u.DisplayName.ToLower().Contains(query) ||
-                                    (u.Bio != null && u.Bio.ToLower().Contains(query)));
+                                    (u.Bio != null && u.Bio.ToLower().Contains(query)))
+                        .AsQueryable();
+
+                    // Apply karma filter
+                    if (minKarma > 0)
+                    {
+                        usersQuery = usersQuery.Where(u => u.KarmaPoints >= minKarma);
+                    }
+
+                    // Apply verified filter
+                    if (verifiedOnly)
+                    {
+                        usersQuery = usersQuery.Where(u => u.IsVerified);
+                    }
 
                     model.TotalUsers = await usersQuery.CountAsync();
 
@@ -254,6 +329,19 @@ namespace discussionspot9.Controllers
             }
 
             return Json(new { suggestions });
+        }
+
+        private DateTime GetTimeRangeCutoff(string timeRange)
+        {
+            return timeRange switch
+            {
+                "hour" => DateTime.UtcNow.AddHours(-1),
+                "day" => DateTime.UtcNow.AddDays(-1),
+                "week" => DateTime.UtcNow.AddDays(-7),
+                "month" => DateTime.UtcNow.AddMonths(-1),
+                "year" => DateTime.UtcNow.AddYears(-1),
+                _ => DateTime.MinValue
+            };
         }
 
         private async Task TrackSearchAsync(string query, int resultsCount)

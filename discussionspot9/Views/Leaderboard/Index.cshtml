@@ -1,0 +1,47 @@
+@model List<discussionspot9.Services.UserKarmaViewModel>
+
+@{
+    ViewData["Title"] = "Leaderboard";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-3"><i class="fas fa-trophy me-2"></i>Top Contributors</h1>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="karma-leaderboard-widget">
+                        <div class="leaderboard-list">
+                            @for (int i = 0; i < Model.Count; i++)
+                            {
+                                var user = Model[i];
+                                var rank = i + 1;
+                                var medalClass = rank == 1 ? "gold" : rank == 2 ? "silver" : rank == 3 ? "bronze" : "";
+
+                                <div class="leaderboard-item py-2">
+                                    <span class="rank rank-@medalClass">@rank</span>
+                                    <img src="@(user.AvatarUrl ?? "/images/default-avatar.png")" alt="@user.DisplayName" class="avatar-sm">
+                                    <div class="user-info">
+                                        <a class="username" href="/Profile?userId=@user.UserId">
+                                            @user.DisplayName @if (user.IsVerified) { <i class="fas fa-check-circle text-primary"></i> }
+                                        </a>
+                                    </div>
+                                    <span class="karma-points">
+                                        <i class="fas fa-star"></i>
+                                        @user.FormattedKarma
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            @await Component.InvokeAsync("KarmaLeaderboard", new { count = 10 })
+        </div>
+    </div>
+</div>
+
+
