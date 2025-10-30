@@ -10,14 +10,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="stories-header">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="header-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4 stories-header-row">
+                        <div class="header-content flex-grow-1">
                             <h1 class="display-5 fw-bold text-primary">
                                 <i class="fas fa-book-open me-3"></i>My Stories
                             </h1>
                             <p class="lead text-muted">Create and manage your engaging web stories</p>
                         </div>
-                        <div class="d-flex gap-3 align-items-center">
+                        <div class="d-flex gap-3 align-items-center header-actions">
                             <div class="stats-card">
                                 <div class="stat-number">@Model.TotalStories</div>
                                 <div class="stat-label">Stories</div>
@@ -30,9 +30,9 @@
                                     <i class="fas fa-magic me-2"></i>Create with AI
                                 </a>
                             </div>
-        </div>
-    </div>
-</div>
+                        </div>
+                    </div>
+                </div>
 
             @if (TempData["SuccessMessage"] != null)
             {
@@ -192,10 +192,7 @@
 </div>
 
 <style>
-    .stories-page {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        min-height: 100vh;
-    }
+    .stories-page { background:#f7f8fa; min-height:100vh; }
 
     .stories-header {
         background: white;
@@ -204,6 +201,14 @@
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         margin-bottom: 2rem;
     }
+
+    /* Prevent overlap: allow wrapping and define min widths */
+    .stories-header-row { flex-wrap: wrap; row-gap: 1rem; column-gap: 1rem; }
+    .stories-header .header-content { min-width: 260px; }
+    .stories-header .header-actions { flex-shrink: 0; gap: 1rem; max-width: 100%; }
+    .stories-header .btn-group { white-space: nowrap; }
+    .stories-header .btn-group .btn-lg { padding: 0.6rem 1rem; font-size: 1rem; }
+    .stories-header .stats-card { min-width: 110px; }
 
     .stats-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -236,7 +241,7 @@
         perspective: 1000px;
 }
 
-.story-card {
+    .stories-page .story-card {
     background: white;
         border-radius: 20px;
     overflow: hidden;
@@ -247,7 +252,7 @@
         flex-direction: column;
 }
 
-.story-card:hover {
+.stories-page .story-card:hover {
         transform: translateY(-15px) scale(1.02);
         box-shadow: 0 25px 50px rgba(0,0,0,0.2);
         animation: cardFloat 0.6s ease-out;
@@ -259,19 +264,19 @@
         100% { transform: translateY(-15px) scale(1.02); }
     }
 
-    .story-thumbnail {
+    .stories-page .story-thumbnail {
     position: relative;
     height: 200px;
     overflow: hidden;
     }
 
-    .story-preview {
+    .stories-page .story-preview {
         width: 100%;
         height: 100%;
         position: relative;
     }
 
-    .preview-slide {
+    .stories-page .preview-slide {
     width: 100%;
     height: 100%;
         display: flex;
@@ -280,27 +285,27 @@
         position: relative;
     }
 
-    .preview-content {
+    .stories-page .preview-content {
         text-align: center;
         color: white;
         padding: 1rem;
         z-index: 2;
     }
 
-    .preview-title {
+    .stories-page .preview-title {
         font-size: 1.2rem;
         font-weight: bold;
         margin-bottom: 0.5rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
 
-    .preview-description {
+    .stories-page .preview-description {
         font-size: 0.9rem;
         opacity: 0.9;
         margin: 0;
 }
 
-.story-overlay {
+.stories-page .story-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -314,16 +319,16 @@
         transition: opacity 0.3s ease;
 }
 
-.story-card:hover .story-overlay {
+.stories-page .story-card:hover .story-overlay {
     opacity: 1;
 }
 
-    .story-actions {
+    .stories-page .story-actions {
         display: flex;
         gap: 0.5rem;
     }
 
-    .play-btn {
+    .stories-page .play-btn {
     width: 50px;
     height: 50px;
     border-radius: 50%;
@@ -333,24 +338,24 @@
         font-size: 1.2rem;
     }
 
-    .story-status {
+    .stories-page .story-status {
     position: absolute;
         top: 1rem;
         right: 1rem;
 }
 
-.story-content {
+.stories-page .story-content {
         padding: 1.5rem;
         flex: 1;
         display: flex;
         flex-direction: column;
     }
 
-    .story-header {
+    .stories-page .story-header {
         margin-bottom: 1rem;
 }
 
-.story-title {
+.stories-page .story-title {
         font-size: 1.3rem;
         font-weight: bold;
         margin-bottom: 0.5rem;
@@ -359,24 +364,24 @@
         cursor: pointer;
     }
 
-    .story-card:hover .story-title {
+.stories-page .story-card:hover .story-title {
         color: #667eea;
 }
 
-.story-meta {
+.stories-page .story-meta {
     display: flex;
         gap: 1rem;
         font-size: 0.9rem;
         color: #666;
     }
 
-    .meta-item {
+    .stories-page .meta-item {
     display: flex;
     align-items: center;
         gap: 0.25rem;
     }
 
-    .story-description {
+    .stories-page .story-description {
         color: #666;
         line-height: 1.6;
         margin-bottom: 1rem;
@@ -389,28 +394,28 @@
         transition: color 0.3s ease;
     }
 
-    .story-card:hover .story-description {
+.stories-page .story-card:hover .story-description {
         color: #555;
     }
 
-    .story-footer {
+    .stories-page .story-footer {
         margin-top: auto;
     }
 
-    .story-actions-full {
+.stories-page .story-actions-full {
         display: flex;
         gap: 0.5rem;
         align-items: center;
         flex-wrap: wrap;
     }
 
-    .story-actions-full .btn {
+.stories-page .story-actions-full .btn {
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
 
-    .story-actions-full .btn::before {
+.stories-page .story-actions-full .btn::before {
         content: '';
         position: absolute;
         top: 50%;
@@ -423,26 +428,26 @@
         transition: width 0.6s, height 0.6s;
     }
 
-    .story-actions-full .btn:hover::before {
+.stories-page .story-actions-full .btn:hover::before {
         width: 300px;
         height: 300px;
     }
 
-    .story-actions-full .btn:hover {
+.stories-page .story-actions-full .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
-    .story-actions-full .btn-success {
+.stories-page .story-actions-full .btn-success {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
     }
 
-    .story-actions-full .btn-success:hover {
+.stories-page .story-actions-full .btn-success:hover {
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
     }
 
-    .empty-state {
+.stories-page .empty-state {
     display: flex;
     align-items: center;
         justify-content: center;
@@ -452,32 +457,32 @@
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
-    .empty-state-content {
+.stories-page .empty-state-content {
         text-align: center;
         max-width: 500px;
         padding: 2rem;
     }
 
-    .empty-state-icon {
+.stories-page .empty-state-icon {
         font-size: 4rem;
         color: #667eea;
         margin-bottom: 1rem;
     }
 
-    .empty-state-title {
+.stories-page .empty-state-title {
         font-size: 1.5rem;
         font-weight: bold;
         color: #333;
         margin-bottom: 1rem;
     }
 
-    .empty-state-description {
+.stories-page .empty-state-description {
         color: #666;
         margin-bottom: 2rem;
         line-height: 1.6;
     }
 
-    .empty-state-actions {
+.stories-page .empty-state-actions {
         display: flex;
         gap: 1rem;
         justify-content: center;
@@ -486,6 +491,10 @@
 
     /* Responsive Design */
     @@media (max-width: 768px) {
+    .stories-header .header-actions { width: 100%; justify-content: flex-start; }
+    .stories-header .btn-group { width: 100%; display: flex; flex-wrap: wrap; gap: .5rem; }
+    .stories-header .btn-group .btn-lg { flex: 1 1 220px; }
+    .stories-page .story-thumbnail { height: 180px; }
     .stories-grid {
         grid-template-columns: 1fr;
             gap: 1rem;

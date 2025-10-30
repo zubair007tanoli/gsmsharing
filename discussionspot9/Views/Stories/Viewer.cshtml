@@ -37,14 +37,14 @@
                         </div>
                     }
                     
-                    <div class="slide-content" style="background-color: @slide.BackgroundColor; color: @slide.TextColor; text-align: @slide.Alignment; font-size: @slide.FontSize;">
+                    <div class="slide-content card-bottom align-@slide.Alignment?.ToLower()" style="background-color: @slide.BackgroundColor; color: @slide.TextColor; font-size: @slide.FontSize;">
                         @if (!string.IsNullOrEmpty(slide.Headline))
                         {
                             <h1 class="slide-headline">@slide.Headline</h1>
                         }
                         @if (!string.IsNullOrEmpty(slide.Text))
                         {
-                            <p class="slide-text">@slide.Text</p>
+                            <div class="slide-text">@Html.Raw(SanitizeHtml(slide.Text))</div>
                         }
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
@@ -229,10 +229,29 @@
 .slide-content {
     position: relative;
     z-index: 2;
-    padding: 2rem;
-    max-width: 80%;
+    padding: 1.5rem 2rem;
+    max-width: min(720px, 86vw);
     text-align: center;
+    align-self: center;
+    margin: 0 auto 8vh auto; /* keep text away from edges */
+    background: rgba(0, 0, 0, 0.35); /* improve readability */
+    border-radius: 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
 }
+
+/* Consistent bottom card placement like IG/FB */
+.card-bottom {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 8vh;
+}
+
+/* Alignment helper classes (fallback to inline when present) */
+.align-left { text-align: left; }
+.align-center { text-align: center; }
+.align-right { text-align: right; }
 
 .slide-headline {
     font-size: 2.5rem;
@@ -242,10 +261,14 @@
 }
 
 .slide-text {
-    font-size: 1.5rem;
-    line-height: 1.6;
-    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    line-height: 1.75;
+    margin-bottom: 0.75rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    text-align: justify;           /* better paragraph rhythm */
+    text-justify: inter-word;
+    hyphens: auto;
+    word-break: break-word;
 }
 
 .slide-caption {
@@ -462,7 +485,8 @@
     }
     
     .slide-text {
-        font-size: 1.2rem;
+        font-size: 1.05rem;
+        line-height: 1.6;
     }
     
     .story-controls {
@@ -472,6 +496,11 @@
     
     .control-btn {
         padding: 0.8rem;
+    }
+    .slide-content {
+        padding: 1rem 1.25rem;
+        margin-bottom: 6vh;
+        max-width: 90vw;
     }
 }
 </style>
@@ -791,5 +820,24 @@ document.addEventListener('DOMContentLoaded', function() {
     {
         var videoExtensions = new[] { ".mp4", ".webm", ".ogg", ".avi", ".mov" };
         return videoExtensions.Any(ext => url.ToLower().EndsWith(ext));
+    }
+
+    // Minimal allowlist sanitizer: strips scripts/styles and dangerous attributes, allows basic formatting tags
+    private string SanitizeHtml(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+        // Remove script/style tags and contents
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"<\s*(script|style)[^>]*>[\s\S]*?<\s*/\s*\1\s*>", string.Empty, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        // Remove on* event attributes and javascript: urls
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\son[a-z]+\s*=\s*""[^""]*""", string.Empty, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\shref\s*=\s*""javascript:[^""]*""", " href=\"#\"", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        // Allow only a safe set of tags; strip others
+        var allowed = new []{"p","br","strong","em","b","i","u","a","ul","ol","li","blockquote","span","h1","h2","h3"};
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"</?([a-z0-9]+)(?:\s[^>]*)?>", m => {
+            var tag = m.Groups[1].Value.ToLowerInvariant();
+            if (System.Array.IndexOf(allowed, tag) >= 0) return m.Value;
+            return string.Empty;
+        });
+        return html;
     }
 }

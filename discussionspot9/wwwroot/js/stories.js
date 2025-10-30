@@ -32,8 +32,18 @@
   }
 
   async function fetchSlides(slug){
-    // Fallback loads AMP viewer page in iframe; ideal would be a JSON endpoint
-    return {slides:[{type:'iframe', src:'/stories/viewer/'+slug}]};
+    try{
+      const res = await fetch(`/api/stories/${slug}/slides`, { headers: { 'Accept': 'application/json' } });
+      if(!res.ok) throw new Error('no json');
+      const data = await res.json();
+      if(data && data.success && Array.isArray(data.slides) && data.slides.length){
+        return { title: data.title || '', pageUrl: data.pageUrl || '', slides: data.slides };
+      }
+      throw new Error('empty');
+    }catch(e){
+      // Fallback loads classic viewer page in iframe
+      return { slides:[{type:'iframe', src:'/stories/viewer/'+slug}] };
+    }
   }
 
   const storiesPlayer = {
@@ -85,6 +95,14 @@
         img.style.height='100%';
         img.style.objectFit='cover';
         stage.appendChild(img);
+      } else if (item.type==='video') {
+        const video = document.createElement('video');
+        video.src = item.src;
+        video.autoplay = true; video.muted = true; video.playsInline = true; video.loop = true;
+        video.style.width='100%';
+        video.style.height='100%';
+        video.style.objectFit='cover';
+        stage.appendChild(video);
       }
       this.updateBars();
       if(initial){ this.attachGestures(stage); }
@@ -165,8 +183,10 @@
         const viewerUrl = '/stories/viewer/'+slug;
         const targetUrl = postUrlAttr && postUrlAttr.length > 0 ? postUrlAttr : viewerUrl;
         const data = await fetchSlides(slug);
+        const resolvedPageUrl = (data && data.pageUrl) ? data.pageUrl : targetUrl;
+        const resolvedTitle = (data && data.title) ? data.title : (title || author);
         // Enrich slides with title/pageUrl
-        const slides = (data.slides || []).map(s => ({...s, title: title || author, pageUrl: targetUrl}));
+        const slides = (data.slides || []).map(s => ({...s, title: resolvedTitle, pageUrl: resolvedPageUrl}));
         storiesPlayer.open(slides);
       });
       document.addEventListener('keydown', function(ev){

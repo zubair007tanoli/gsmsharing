@@ -436,6 +436,50 @@ namespace discussionspot9.Controllers
             return View(story);
         }
 
+        // Lightweight JSON payload for stories strip/modal
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("api/stories/{slug}/slides")]
+        public async Task<IActionResult> GetSlides(string slug)
+        {
+            var story = await _context.Stories
+                .Include(s => s.Slides)
+                .FirstOrDefaultAsync(s => s.Slug == slug);
+
+            if (story == null)
+            {
+                return NotFound(new { success = false, message = "Story not found" });
+            }
+
+            var pageUrl = !string.IsNullOrWhiteSpace(story.CanonicalUrl)
+                ? story.CanonicalUrl!
+                : Url.Action("Viewer", "Stories", new { slug = story.Slug }, Request.Scheme) ?? string.Empty;
+
+            var slides = story.Slides
+                .OrderBy(s => s.OrderIndex)
+                .Select(s => new
+                {
+                    type = InferType(s.MediaType, s.MediaUrl),
+                    src = s.MediaUrl,
+                    duration = s.Duration > 0 ? s.Duration : 5000
+                })
+                .ToList();
+
+            return Ok(new { success = true, title = story.Title, pageUrl, slides });
+        }
+
+        private static string InferType(string? mediaType, string? url)
+        {
+            if (!string.IsNullOrWhiteSpace(mediaType))
+            {
+                if (mediaType.StartsWith("video", StringComparison.OrdinalIgnoreCase)) return "video";
+                if (mediaType.StartsWith("image", StringComparison.OrdinalIgnoreCase)) return "image";
+            }
+            var u = url ?? string.Empty;
+            if (u.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) || u.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) || u.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)) return "video";
+            return "image";
+        }
+
         [HttpGet]
         [AllowAnonymous]
         [Route("stories/amp/{slug}")]
