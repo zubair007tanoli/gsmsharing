@@ -2,18 +2,26 @@
 .stories-strip.card-style{background:#fff;border:1px solid var(--border-color,#e9ecef);border-radius:12px;box-shadow:0 6px 18px rgba(16,24,40,.06)}
 .stories-track{display:flex;gap:14px;overflow:auto;scroll-snap-type:x mandatory;padding:6px;-ms-overflow-style:none;scrollbar-width:none}
 .stories-track::-webkit-scrollbar{display:none}
-.story-tile{scroll-snap-align:start;border:none;background:transparent;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s ease}
+.story-tile{scroll-snap-align:start;border:none;background:transparent;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s ease, filter .2s ease}
 .story-tile:hover{transform:translateY(-2px)}
-.story-ring{padding:3px;border-radius:50%;background:conic-gradient(#ff7a18,#af002d 30%,#319197 70%,#ff7a18);position:relative}
+.story-ring{padding:3px;border-radius:50%;background:conic-gradient(#ff7a18,#af002d 30%,#319197 70%,#ff7a18);position:relative;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 .story-ring:after{content:"";position:absolute;inset:3px;border-radius:50%;background:#fff}
-.story-avatar{width:70px;height:70px;border-radius:50%;background:#111;display:block;position:relative}
+.story-avatar{width:70px;height:70px;border-radius:50%;background:#111;display:block;position:relative;overflow:hidden}
 .story-avatar img{position:relative;z-index:1}
-.story-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.story-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;filter:saturate(1.05)}
 .story-meta{max-width:92px}
 .story-author{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary,#222);font-weight:600}
-.stories-nav{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(0,0,0,.5);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.stories-nav{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(0,0,0,.5);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.15)}
 .stories-nav.left{left:4px}
 .stories-nav.right{right:4px}
+
+/* Card-style stories (home and shared component) */
+.stories-track.stories-track-cards{display:grid;grid-auto-flow:column;grid-auto-columns:140px;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 0}
+.story-card-tile{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;background:transparent;border:none;padding:0;cursor:pointer;scroll-snap-align:start}
+.story-card-thumb{width:140px;height:200px;border-radius:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);position:relative;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.12);background-size:cover;background-position:center}
+.story-card-overlay{position:absolute;top:8px;left:8px;display:flex;gap:6px}
+.story-card-caption{margin-top:8px;font-size:.92rem;font-weight:600;color:#25324b;text-align:left;padding:0 4px;line-height:1.2;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story-card-tile:hover .story-card-thumb{transform:translateY(-3px);transition:transform .2s ease}
 
 .stories-modal{position:fixed;inset:0;display:none;z-index:1055}
 .stories-modal.active{display:block}
@@ -25,7 +33,7 @@
 .stories-progress .bar{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:3px;overflow:hidden}
 .stories-progress .bar span{display:block;height:100%;width:0;background:#fff;transition:width .05s linear}
 .stories-titlebar{display:flex;align-items:center;justify-content:space-between;margin-top:6px;color:#fff;font-size:.9rem}
-.stories-titlebar .btn-open{color:#fff;opacity:.9;text-decoration:none;border:1px solid rgba(255,255,255,.4);padding:2px 8px;border-radius:12px;font-size:.75rem}
+.stories-titlebar .btn-open{color:#fff;opacity:.9;text-decoration:none;border:1px solid rgba(255,255,255,.4);padding:2px 8px;border-radius:12px;font-size:.75rem;backdrop-filter:blur(6px)}
 .stories-titlebar .btn-open:hover{opacity:1}
 
 /* Centered title like IG/FB with safe truncation */
@@ -35,12 +43,10 @@
 .stories-controls{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px;z-index:2}
 .stories-controls button{background:transparent;border:none;color:transparent;width:38%;height:100%}
 .stories-controls button i{color:#fff}
-.stories-close{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);border:none;color:#fff;width:32px;height:32px;border-radius:50%}
+.stories-close{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);border:none;color:#fff;width:32px;height:32px;border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .tap-zone{position:absolute;top:0;bottom:0;width:35%;z-index:3}
 .tap-zone.tap-left{left:0}
 .tap-zone.tap-right{right:0}
-
-/* Removed heavy overlay to ensure media visibility in all themes */
 
 /* Bottom mini controls like IG/FB */
 .stories-bottom-controls{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:min(420px,100%);z-index:3;display:flex;align-items:center;justify-content:space-between;padding:0 10px}
@@ -50,6 +56,13 @@
 .stories-actions{display:flex;gap:8px}
 .mini-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;border:none}
 .mini-btn:hover{background:rgba(0,0,0,.6)}
+
+/* Reveal animations */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
+
+/* Subtle hover lift for story cards in index page (kept light for performance) */
+@keyframes subtleFloat{0%{transform:translateY(0)}50%{transform:translateY(-2px)}100%{transform:translateY(0)}}
 
 @media (max-width: 576px){.story-avatar{width:60px;height:60px}}
 

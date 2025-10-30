@@ -1,18 +1,18 @@
 @model List<discussionspot9.Components.StoryStripItem>
 
 <div class="stories-strip card-style">
-    <div class="stories-track" id="storiesTrack">
+    <div class="stories-track stories-track-cards" id="storiesTrack">
         @foreach (var item in Model)
         {
-            <button class="story-tile" data-story-slug="@item.Slug" data-story-title="@item.Title" data-author="@item.Author" data-posturl="@item.PostUrl" title="@item.Title">
-                <div class="story-ring">
-                    <div class="story-avatar">
-                        <img src="@(string.IsNullOrWhiteSpace(item.CoverUrl) ? "/images/story-placeholder-1x1.png" : item.CoverUrl)" alt="@item.Title" loading="lazy" />
+            var thumb = string.IsNullOrWhiteSpace(item.CoverUrl) ? "/images/story-placeholder-1x1.png" : item.CoverUrl;
+            var caption = item.Title?.Length > 48 ? item.Title.Substring(0,48)+"…" : item.Title;
+            <button class="story-tile story-card-tile" data-story-slug="@item.Slug" data-story-title="@item.Title" data-author="@item.Author" data-posturl="@item.PostUrl" title="@item.Title">
+                <div class="story-card-thumb" style="background-image:url('@thumb');">
+                    <div class="story-card-overlay">
+                        <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
                     </div>
                 </div>
-                <div class="story-meta">
-                    <div class="story-author" title="@item.Author">@item.Author</div>
-                </div>
+                <div class="story-card-caption">@caption</div>
             </button>
         }
     </div>
@@ -51,3 +51,4 @@
     </div>
     
 </div>
+

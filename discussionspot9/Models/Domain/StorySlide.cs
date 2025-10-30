@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace discussionspot9.Models.Domain
 {
@@ -24,6 +25,16 @@ namespace discussionspot9.Models.Domain
         public string? MediaType { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+
+        // New fields for redesigned stories
+        [NotMapped]
+        public string? PosterUrl { get; set; }
+        [NotMapped]
+        public string? CtaText { get; set; }
+        [NotMapped]
+        public string? CtaUrl { get; set; }
+        [NotMapped]
+        public string? SlideLayout { get; set; } // e.g., media-headline, media-body, quote, cta
 
         // Navigation properties
         public virtual Story Story { get; set; } = null!;

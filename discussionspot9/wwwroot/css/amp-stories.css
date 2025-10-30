@@ -1,0 +1,152 @@
+/* AMP Stories Isolated CSS - Prevents conflicts with global styles */
+/* This file contains only AMP-specific styles that won't interfere with Bootstrap or other global CSS */
+
+/* AMP Story Container - Isolated styles */
+amp-story {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100vh;
+    width: 100vw;
+    background: #000;
+}
+
+/* AMP Story Page Styles */
+amp-story-page {
+    background: #000;
+}
+
+/* Story Page Background */
+.amp-story-page-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 100%;
+    height: 100%;
+}
+
+/* Text Elements - Scoped to AMP Story context */
+amp-story-page .story-headline {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    margin: 1rem 0;
+    padding: 0 1rem;
+    line-height: 1.2;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+amp-story-page .story-text {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    color: #ffffff;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    line-height: 1.6;
+    margin: 0.75rem 0;
+    padding: 0 1rem;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+amp-story-page .story-caption {
+    font-size: clamp(0.875rem, 2vw, 1rem);
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+    font-style: italic;
+    margin: 0.5rem 0;
+    padding: 0 1rem;
+    opacity: 0.9;
+}
+
+/* Gradient Overlay - Scoped */
+amp-story-page .gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.0) 50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* AMP Image Styles */
+amp-story-page amp-img {
+    object-fit: cover;
+}
+
+amp-story-page amp-img img {
+    object-fit: cover;
+}
+
+/* AMP Video Styles */
+amp-story-page amp-video {
+    object-fit: cover;
+}
+
+amp-story-page amp-video video {
+    object-fit: cover;
+}
+
+/* Grid Layer Templates - Ensure proper spacing */
+amp-story-grid-layer {
+    padding: 0;
+}
+
+amp-story-grid-layer[template="fill"] {
+    padding: 0;
+}
+
+amp-story-grid-layer[template="vertical"] {
+    padding: 0 1rem;
+    align-items: center;
+    justify-content: center;
+}
+
+amp-story-grid-layer[template="thirds"] {
+    padding: 0;
+}
+
+/* Responsive Text Sizing */
+@media (max-width: 414px) {
+    amp-story-page .story-headline {
+        font-size: 1.5rem;
+        margin: 0.75rem 0;
+    }
+    
+    amp-story-page .story-text {
+        font-size: 1rem;
+        margin: 0.5rem 0;
+    }
+    
+    amp-story-page .story-caption {
+        font-size: 0.875rem;
+    }
+}
+
+/* Prevent any global CSS interference */
+html[amp] body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+html[amp] {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Ensure AMP story takes full viewport */
+html[amp] body amp-story {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Accessibility - Ensure text is readable */
+amp-story-page * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+

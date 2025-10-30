@@ -91,6 +91,7 @@
       } else if (item.type==='image') {
         const img = document.createElement('img');
         img.src = item.src;
+        img.alt = item.caption || titleEl.textContent || 'Story image';
         img.style.width='100%';
         img.style.height='100%';
         img.style.objectFit='cover';
@@ -98,6 +99,7 @@
       } else if (item.type==='video') {
         const video = document.createElement('video');
         video.src = item.src;
+        if(item.poster){ video.poster = item.poster; }
         video.autoplay = true; video.muted = true; video.playsInline = true; video.loop = true;
         video.style.width='100%';
         video.style.height='100%';
@@ -120,11 +122,12 @@
       this.timer = setInterval(function(){
         if(self.paused) return;
         const elapsed = Date.now()-start;
-        const pct = Math.min(100, Math.round((elapsed/self.durationMs)*100));
+        const dur = self.items[self.currentIndex]?.duration || self.durationMs;
+        const pct = Math.min(100, Math.round((elapsed/dur)*100));
         if(self.bars[self.currentIndex]){
           self.bars[self.currentIndex].style.width = pct+'%';
         }
-        if(elapsed >= self.durationMs){
+        if(elapsed >= dur){
           clearInterval(self.timer);
           self.next();
         }
@@ -157,6 +160,8 @@
     togglePause(){ this.paused = !this.paused; },
     attachGestures(stage){
       let startX = 0, endX = 0;
+      stage.addEventListener('mouseenter', ()=>{ this.pause(); });
+      stage.addEventListener('mouseleave', ()=>{ this.resume(); });
       stage.addEventListener('mousedown', ()=>{ this.pause(); });
       stage.addEventListener('mouseup', ()=>{ this.resume(); });
       stage.addEventListener('touchstart', (e)=>{ this.pause(); startX = e.touches[0].clientX; }, {passive:true});
@@ -172,27 +177,36 @@
   const storiesStrip = {
     async init(){
       const track = document.getElementById('storiesTrack');
-      if(!track) return;
-      track.addEventListener('click', async function(e){
-        const tile = e.target.closest('.story-tile');
-        if(!tile) return;
-        const slug = tile.getAttribute('data-story-slug');
-        const title = tile.getAttribute('data-story-title') || '';
-        const author = tile.getAttribute('data-author') || '';
-        const postUrlAttr = tile.getAttribute('data-posturl');
-        const viewerUrl = '/stories/viewer/'+slug;
-        const targetUrl = postUrlAttr && postUrlAttr.length > 0 ? postUrlAttr : viewerUrl;
-        const data = await fetchSlides(slug);
-        const resolvedPageUrl = (data && data.pageUrl) ? data.pageUrl : targetUrl;
-        const resolvedTitle = (data && data.title) ? data.title : (title || author);
-        // Enrich slides with title/pageUrl
-        const slides = (data.slides || []).map(s => ({...s, title: resolvedTitle, pageUrl: resolvedPageUrl}));
-        storiesPlayer.open(slides);
-      });
+      if(track){
+        track.addEventListener('click', async function(e){
+          const tile = e.target.closest('.story-tile');
+          if(!tile) return;
+          const slug = tile.getAttribute('data-story-slug');
+          if(!slug) return;
+          // Always navigate to AMP view for a consistent experience
+          const ampUrl = '/stories/amp/'+slug;
+          if(e.ctrlKey || e.metaKey){
+            window.open(ampUrl, '_blank', 'noopener');
+          } else {
+            window.location.href = ampUrl;
+          }
+        });
+      }
+
+      // Reveal animations
+      const observer = new IntersectionObserver((entries)=>{
+        entries.forEach(entry=>{
+          if(entry.isIntersecting){ entry.target.classList.add('in'); }
+        });
+      }, {threshold: 0.12});
+
+      document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
       document.addEventListener('keydown', function(ev){
         if(!document.getElementById('storiesPlayerModal').classList.contains('active')) return;
         if(ev.key==='ArrowRight') storiesPlayer.next();
         if(ev.key==='ArrowLeft') storiesPlayer.prev();
+        if(ev.key===' ') { ev.preventDefault(); storiesPlayer.togglePause(); }
         if(ev.key==='Escape') storiesPlayer.close();
       });
     },

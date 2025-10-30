@@ -92,32 +92,43 @@ namespace discussionspot9.Services
         {
             try
             {
-                // Generate story title
+                // Analyze post performance for optimization
+                var performanceData = await AnalyzePostPerformanceAsync(post.PostId, context);
+                
+                // Generate story title with SEO optimization
                 var storyTitle = GenerateStoryTitle(post.Title, options.Style);
                 
-                // Create story entity
+                // Enhanced content extraction
+                var extractedContent = ExtractContentFromPost(post, options);
+                
+                // Generate SEO-optimized description
+                var metaDescription = GenerateSEOOptimizedDescription(extractedContent, post, options);
+                var keywords = GenerateSEOKeywords(post, options, context);
+                
+                // Create story entity with enhanced SEO
                 var story = new Story
                 {
                     Title = storyTitle,
                     Slug = GenerateStorySlug(storyTitle),
-                    Description = GenerateStoryDescription(post.Content, options),
+                    Description = GenerateStoryDescription(extractedContent.MainContent, options),
                     UserId = post.UserId,
                     CommunityId = post.CommunityId,
                     Status = "draft",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     IsAmpEnabled = true,
-                    PublisherName = "DiscussionSpot",
+                    PublisherName = post.Community?.Title ?? "DiscussionSpot",
                     PublisherLogo = "/Assets/Logo_Auth.png",
-                    MetaDescription = GenerateMetaDescription(post.Content),
-                    MetaKeywords = options.Keywords ?? ExtractKeywords(post.Title)
+                    MetaDescription = metaDescription,
+                    MetaKeywords = keywords,
+                    CanonicalUrl = $"/stories/amp/{GenerateStorySlug(storyTitle)}"
                 };
 
                 context.Stories.Add(story);
                 await context.SaveChangesAsync();
 
-                // Generate slides
-                await GenerateStorySlidesAsync(story, post, options, context);
+                // Generate slides with hybrid approach
+                await GenerateStorySlidesAsync(story, post, options, context, performanceData);
 
                 return story;
             }
@@ -128,43 +139,262 @@ namespace discussionspot9.Services
             }
         }
 
-        private async Task GenerateStorySlidesAsync(Story story, Post post, StoryGenerationOptions options, ApplicationDbContext context)
+        private async Task<PostPerformanceData> AnalyzePostPerformanceAsync(int postId, ApplicationDbContext context)
+        {
+            try
+            {
+                var post = await context.Posts.FindAsync(postId);
+                if (post == null) return new PostPerformanceData();
+                
+                // Analyze engagement patterns
+                var viewCount = post.ViewCount;
+                var commentCount = post.CommentCount;
+                var upvoteCount = post.UpvoteCount;
+                var score = post.Score;
+                
+                // Calculate engagement rate
+                var engagementRate = viewCount > 0 
+                    ? (double)(commentCount + upvoteCount) / viewCount 
+                    : 0;
+                
+                // Get similar successful stories
+                var successfulStories = await context.Stories
+                    .Where(s => s.Status == "published" && s.ViewCount > 100)
+                    .OrderByDescending(s => s.ViewCount)
+                    .Take(10)
+                    .Select(s => new { s.SlideCount, s.TotalDuration })
+                    .ToListAsync();
+                
+                var avgSlideCount = successfulStories.Any() 
+                    ? (int)successfulStories.Average(s => s.SlideCount)
+                    : 8;
+                
+                var avgDuration = successfulStories.Any()
+                    ? (int)successfulStories.Average(s => s.TotalDuration)
+                    : 35000;
+                
+                return new PostPerformanceData
+                {
+                    EngagementRate = engagementRate,
+                    ViewCount = viewCount,
+                    OptimalSlideCount = avgSlideCount,
+                    OptimalDuration = avgDuration,
+                    IsHighEngagement = engagementRate > 0.1
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error analyzing post performance for post {postId}");
+                return new PostPerformanceData();
+            }
+        }
+        
+        private ContentExtractionResult ExtractContentFromPost(Post post, StoryGenerationOptions options)
+        {
+            var result = new ContentExtractionResult();
+            
+            // Extract main content
+            result.MainContent = post.Content ?? "";
+            
+            // Extract key points (rule-based)
+            result.KeyPoints = ExtractKeyPoints(result.MainContent);
+            
+            // Extract quotes
+            result.Quotes = ExtractQuotes(result.MainContent);
+            
+            // Extract questions
+            result.Questions = ExtractQuestions(result.MainContent);
+            
+            // Extract media URLs
+            result.MediaUrls = post.Media?.Select(m => m.Url ?? "").Where(url => !string.IsNullOrEmpty(url)).ToList() ?? new List<string>();
+            
+            // Extract tags
+            result.Tags = post.PostTags?.Select(pt => pt.Tag?.Name ?? "").Where(t => !string.IsNullOrEmpty(t)).ToList() ?? new List<string>();
+            
+            // Extract links
+            result.Links = ExtractLinks(result.MainContent);
+            
+            return result;
+        }
+        
+        private List<string> ExtractKeyPoints(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return new List<string>();
+            
+            var sentences = content.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 20 && s.Length < 200)
+                .Take(10)
+                .ToList();
+            
+            return sentences;
+        }
+        
+        private List<string> ExtractQuotes(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return new List<string>();
+            
+            var quotes = new List<string>();
+            var quoteStart = content.IndexOf('"');
+            
+            while (quoteStart >= 0)
+            {
+                var quoteEnd = content.IndexOf('"', quoteStart + 1);
+                if (quoteEnd > quoteStart)
+                {
+                    var quote = content.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+                    if (quote.Length > 10 && quote.Length < 200)
+                    {
+                        quotes.Add(quote);
+                    }
+                    quoteStart = content.IndexOf('"', quoteEnd + 1);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            
+            return quotes;
+        }
+        
+        private List<string> ExtractQuestions(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return new List<string>();
+            
+            return content.Split(new[] { '?' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(q => q.Trim() + "?")
+                .Where(q => q.Length > 10 && q.Length < 200)
+                .Take(5)
+                .ToList();
+        }
+        
+        private List<string> ExtractLinks(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return new List<string>();
+            
+            var links = new List<string>();
+            var urlPattern = new System.Text.RegularExpressions.Regex(@"https?://[^\s]+");
+            var matches = urlPattern.Matches(content);
+            
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                links.Add(match.Value);
+            }
+            
+            return links;
+        }
+        
+        private string GenerateSEOOptimizedDescription(ContentExtractionResult content, Post post, StoryGenerationOptions options)
+        {
+            // Use meta description if available
+            if (!string.IsNullOrEmpty(options.Keywords))
+            {
+                var keywordPhrase = options.Keywords.Split(',').FirstOrDefault()?.Trim();
+                if (!string.IsNullOrEmpty(keywordPhrase))
+                {
+                    var mainContent = content.MainContent ?? "";
+                    var contentLength = Math.Min(120, mainContent.Length);
+                    var snippet = mainContent.Length > 120 ? mainContent.Substring(0, contentLength) : mainContent;
+                    return $"{post.Title} - {keywordPhrase}. {snippet}...";
+                }
+            }
+            
+            // Generate from content
+            var description = content.MainContent?.Length > 160 
+                ? content.MainContent.Substring(0, 160) + "..."
+                : content.MainContent ?? $"Discover {post.Title} on DiscussionSpot";
+            
+            // Add community context if available
+            if (post.Community != null)
+            {
+                description = $"{description} - Join the discussion in {post.Community.Title}";
+            }
+            
+            return description.Length > 160 ? description.Substring(0, 160) + "..." : description;
+        }
+        
+        private string GenerateSEOKeywords(Post post, StoryGenerationOptions options, ApplicationDbContext context)
+        {
+            var keywords = new List<string>();
+            
+            // Use provided keywords
+            if (!string.IsNullOrEmpty(options.Keywords))
+            {
+                keywords.AddRange(options.Keywords.Split(',').Select(k => k.Trim()));
+            }
+            
+            // Extract from title
+            var titleKeywords = ExtractKeywords(post.Title);
+            keywords.AddRange(titleKeywords.Split(',').Select(k => k.Trim()));
+            
+            // Add tags
+            if (post.PostTags != null)
+            {
+                keywords.AddRange(post.PostTags.Select(pt => pt.Tag?.Name ?? "").Where(t => !string.IsNullOrEmpty(t)));
+            }
+            
+            // Add community name
+            if (post.Community != null)
+            {
+                keywords.Add(post.Community.Title);
+            }
+            
+            // Add common story keywords
+            keywords.Add("web story");
+            keywords.Add("amp story");
+            keywords.Add("visual story");
+            
+            // Remove duplicates and take top 10
+            return string.Join(", ", keywords.Distinct(StringComparer.OrdinalIgnoreCase).Take(10));
+        }
+
+        private async Task GenerateStorySlidesAsync(Story story, Post post, StoryGenerationOptions options, ApplicationDbContext context, PostPerformanceData? performanceData = null)
         {
             try
             {
                 var slides = new List<StorySlide>();
-                var slideCount = GetSlideCount(options.Length);
+                
+                // Use optimal slide count from performance data if available
+                var slideCount = performanceData?.OptimalSlideCount ?? GetSlideCount(options.Length);
 
-                // Title slide
+                // Title slide with enhanced SEO
                 slides.Add(new StorySlide
                 {
                     StoryId = story.StoryId,
                     Caption = story.Title,
                     Headline = story.Title,
                     Text = story.Description,
-                    Duration = 3,
+                    Duration = 3000,
                     OrderIndex = 0,
                     SlideType = "title",
-                    BackgroundColor = "#007bff",
+                    BackgroundColor = "#667eea",
                     TextColor = "#ffffff",
                     FontSize = "24",
-                    Alignment = "center"
+                    Alignment = "center",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 });
 
-                // Content slides based on post type
+                // Content slides based on post type with hybrid approach
+                var extractedContent = ExtractContentFromPost(post, options);
+                
                 switch (post.PostType)
                 {
                     case "text":
-                        await GenerateTextSlidesAsync(slides, post, slideCount);
+                        await GenerateEnhancedTextSlidesAsync(slides, post, slideCount, extractedContent, options);
                         break;
                     case "link":
                         await GenerateLinkSlidesAsync(slides, post, slideCount);
                         break;
                     case "image":
-                        await GenerateImageSlidesAsync(slides, post, slideCount);
+                        await GenerateEnhancedImageSlidesAsync(slides, post, slideCount, extractedContent);
                         break;
                     case "poll":
                         await GeneratePollSlidesAsync(slides, post, slideCount);
+                        break;
+                    default:
+                        await GenerateEnhancedTextSlidesAsync(slides, post, slideCount, extractedContent, options);
                         break;
                 }
 
@@ -175,7 +405,7 @@ namespace discussionspot9.Services
                     Caption = "Read more on DiscussionSpot",
                     Headline = "💬 Join the Discussion",
                     Text = $"View full post and comments",
-                    Duration = 4,
+                    Duration = 4000,
                     OrderIndex = slides.Count,
                     SlideType = "cta",
                     BackgroundColor = "#007bff",
@@ -183,16 +413,19 @@ namespace discussionspot9.Services
                     FontSize = "18",
                     Alignment = "center",
                     MediaUrl = $"/post/{post.Community?.Slug}/{post.Slug}",
-                    MediaType = "internal_link"
+                    MediaType = "internal_link",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 });
 
                 // Add slides to database
                 context.StorySlides.AddRange(slides);
                 await context.SaveChangesAsync();
 
-                // Update story with slide count
+                // Update story with slide count and duration
                 story.SlideCount = slides.Count;
                 story.TotalDuration = slides.Sum(s => s.Duration);
+                story.UpdatedAt = DateTime.UtcNow;
                 await context.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -270,26 +503,100 @@ namespace discussionspot9.Services
             });
         }
 
-        private async Task GenerateImageSlidesAsync(List<StorySlide> slides, Post post, int slideCount)
+        private async Task GenerateEnhancedTextSlidesAsync(List<StorySlide> slides, Post post, int slideCount, ContentExtractionResult extractedContent, StoryGenerationOptions options)
         {
-            var media = post.Media?.FirstOrDefault();
-            if (media == null) return;
+            if (string.IsNullOrEmpty(post.Content) && !extractedContent.KeyPoints.Any()) return;
 
-            slides.Add(new StorySlide
+            var slideIndex = 1;
+            
+            // Add key points as slides
+            foreach (var keyPoint in extractedContent.KeyPoints.Take(slideCount - 1))
             {
-                StoryId = slides[0].StoryId,
-                MediaId = media.MediaId,
-                Caption = media.Caption ?? "Image from post",
-                Headline = "Visual Content",
-                Text = media.AltText ?? "Check out this image",
-                Duration = 5,
-                OrderIndex = 1,
-                SlideType = "image",
-                BackgroundColor = "#6c757d",
-                TextColor = "#ffffff",
-                FontSize = "18",
-                Alignment = "center"
-            });
+                slides.Add(new StorySlide
+                {
+                    StoryId = slides[0].StoryId,
+                    Caption = keyPoint,
+                    Headline = $"Key Point {slideIndex}",
+                    Text = keyPoint,
+                    Duration = CalculateOptimalDuration(keyPoint, 4000),
+                    OrderIndex = slideIndex,
+                    SlideType = "text",
+                    BackgroundColor = GetBackgroundColorForStyle(options.Style),
+                    TextColor = "#333333",
+                    FontSize = "18",
+                    Alignment = "left",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                slideIndex++;
+            }
+            
+            // Add quotes if available
+            if (slideIndex < slideCount && extractedContent.Quotes.Any())
+            {
+                foreach (var quote in extractedContent.Quotes.Take(slideCount - slideIndex))
+                {
+                    slides.Add(new StorySlide
+                    {
+                        StoryId = slides[0].StoryId,
+                        Caption = quote,
+                        Headline = "💬 Quote",
+                        Text = $"\"{quote}\"",
+                        Duration = CalculateOptimalDuration(quote, 5000),
+                        OrderIndex = slideIndex,
+                        SlideType = "quote",
+                        BackgroundColor = "#f8f9fa",
+                        TextColor = "#333333",
+                        FontSize = "20",
+                        Alignment = "center",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    slideIndex++;
+                }
+            }
+        }
+        
+        private async Task GenerateEnhancedImageSlidesAsync(List<StorySlide> slides, Post post, int slideCount, ContentExtractionResult extractedContent)
+        {
+            var mediaItems = post.Media?.ToList() ?? new List<Media>();
+            var slideIndex = 1;
+            
+            foreach (var media in mediaItems.Take(slideCount - 1))
+            {
+                slides.Add(new StorySlide
+                {
+                    StoryId = slides[0].StoryId,
+                    MediaId = media.MediaId,
+                    Caption = media.Caption ?? extractedContent.KeyPoints.FirstOrDefault() ?? "Visual Content",
+                    Headline = slideIndex == 1 ? "Visual Content" : $"Image {slideIndex}",
+                    Text = media.AltText ?? (!string.IsNullOrEmpty(extractedContent.MainContent) ? extractedContent.MainContent.Substring(0, Math.Min(100, extractedContent.MainContent.Length)) : "Check out this image"),
+                    Duration = 5000,
+                    OrderIndex = slideIndex,
+                    SlideType = "image",
+                    BackgroundColor = "#6c757d",
+                    TextColor = "#ffffff",
+                    FontSize = "18",
+                    Alignment = "center",
+                    MediaUrl = media.Url,
+                    MediaType = media.MediaType,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                slideIndex++;
+            }
+        }
+        
+        private string GetBackgroundColorForStyle(string style)
+        {
+            return style switch
+            {
+                "engaging" => "#ff6b6b",
+                "educational" => "#4ecdc4",
+                "entertaining" => "#ff9a9e",
+                "informative" => "#667eea",
+                _ => "#f8f9fa"
+            };
         }
 
         private async Task GeneratePollSlidesAsync(List<StorySlide> slides, Post post, int slideCount)
@@ -633,6 +940,26 @@ namespace discussionspot9.Services
                 _logger.LogError(ex, $"Error updating story {story.StoryId} with AI content");
             }
         }
+    }
+
+    public class PostPerformanceData
+    {
+        public double EngagementRate { get; set; }
+        public int ViewCount { get; set; }
+        public int OptimalSlideCount { get; set; } = 8;
+        public int OptimalDuration { get; set; } = 35000;
+        public bool IsHighEngagement { get; set; }
+    }
+    
+    public class ContentExtractionResult
+    {
+        public string MainContent { get; set; } = "";
+        public List<string> KeyPoints { get; set; } = new();
+        public List<string> Quotes { get; set; } = new();
+        public List<string> Questions { get; set; } = new();
+        public List<string> MediaUrls { get; set; } = new();
+        public List<string> Tags { get; set; } = new();
+        public List<string> Links { get; set; } = new();
     }
 
     public class AIStoryResponse

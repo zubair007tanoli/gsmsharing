@@ -451,6 +451,15 @@ namespace discussionspot9.Controllers
                 return NotFound(new { success = false, message = "Story not found" });
             }
 
+            string MakeAbsolute(string? url)
+            {
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+                if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
+                if (url.StartsWith("/")) return baseUrl + url;
+                return baseUrl + "/" + url;
+            }
+
             var pageUrl = !string.IsNullOrWhiteSpace(story.CanonicalUrl)
                 ? story.CanonicalUrl!
                 : Url.Action("Viewer", "Stories", new { slug = story.Slug }, Request.Scheme) ?? string.Empty;
@@ -460,7 +469,11 @@ namespace discussionspot9.Controllers
                 .Select(s => new
                 {
                     type = InferType(s.MediaType, s.MediaUrl),
-                    src = s.MediaUrl,
+                    src = MakeAbsolute(s.MediaUrl),
+                    poster = MakeAbsolute(s.MediaUrl),
+                    headline = s.Headline ?? string.Empty,
+                    text = s.Text ?? string.Empty,
+                    caption = s.Caption ?? string.Empty,
                     duration = s.Duration > 0 ? s.Duration : 5000
                 })
                 .ToList();
@@ -494,6 +507,51 @@ namespace discussionspot9.Controllers
             {
                 return NotFound();
             }
+
+            string MakeAbsolute(string? url)
+            {
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+                if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
+                if (url.StartsWith("/")) return baseUrl + url;
+                return baseUrl + "/" + url;
+            }
+
+            // Normalize slide media URLs and types for AMP
+            foreach (var slide in story.Slides)
+            {
+                if (!string.IsNullOrWhiteSpace(slide.MediaUrl))
+                {
+                    slide.MediaUrl = MakeAbsolute(slide.MediaUrl);
+                }
+                if (string.IsNullOrWhiteSpace(slide.MediaType) && !string.IsNullOrWhiteSpace(slide.MediaUrl))
+                {
+                    var url = slide.MediaUrl.ToLower();
+                    slide.MediaType = (url.EndsWith(".mp4") || url.EndsWith(".webm") || url.EndsWith(".ogg")) ? "video/mp4" : "image/jpeg";
+                }
+            }
+
+            // Build dynamic bookend components (latest published stories)
+            var relatedRaw = await _context.Stories
+                .Include(s => s.Slides)
+                .Where(s => s.Status == "published" && s.Slug != slug)
+                .OrderByDescending(s => s.UpdatedAt)
+                .Take(6)
+                .Select(s => new {
+                    Title = s.Title,
+                    Slug = s.Slug,
+                    Cover = s.Slides.OrderBy(x => x.OrderIndex).Select(x => x.MediaUrl).FirstOrDefault()
+                })
+                .ToListAsync();
+
+            var related = relatedRaw.Select(s => new {
+                type = "small",
+                title = s.Title ?? "Story",
+                url = Url.Action("Amp", "Stories", new { slug = s.Slug }, Request.Scheme),
+                image = MakeAbsolute(s.Cover ?? "/Assets/Logo_Auth.png")
+            }).ToList();
+
+            ViewBag.BookendComponents = System.Text.Json.JsonSerializer.Serialize(related);
 
             return View(story);
         }

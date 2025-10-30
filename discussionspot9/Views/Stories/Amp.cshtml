@@ -2,6 +2,13 @@
 @{
     Layout = null;
     ViewData["Title"] = Model.Title;
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    string MakeAbsolute(string? url) {
+        if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+        if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
+        if (url.StartsWith("/")) return baseUrl + url;
+        return baseUrl + "/" + url;
+    }
 }
 
 <!DOCTYPE html>
@@ -10,9 +17,36 @@
     <meta charset="utf-8">
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     <title>@Model.Title</title>
-    <link rel="canonical" href="@Url.Action("ViewStory", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
-    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
-    <meta name="description" content="@(Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
+    <link rel="canonical" href="@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
+    <meta name="description" content="@Html.Raw((Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "&quot;"))">
+    <meta name="keywords" content="@(Model.MetaKeywords ?? ExtractKeywords(Model.Title))">
+    <meta name="author" content="@(Model.User?.UserName ?? "DiscussionSpot")">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="@Html.Raw(Model.Title.Replace("\"", "&quot;"))">
+    <meta property="og:description" content="@Html.Raw((Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "&quot;"))">
+    <meta property="og:image" content="@MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png")">
+    <meta property="og:url" content="@Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@Html.Raw(Model.Title.Replace("\"", "&quot;"))">
+    <meta name="twitter:description" content="@Html.Raw((Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "&quot;"))">
+    <meta name="twitter:image" content="@MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png")">
+    
+    <!-- Preload hero media -->
+    @{ var hero = MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png"); }
+    <link rel="preload" as="image" href="@hero">
+    
+    <!-- Preload next 2 slides for better performance -->
+    @if (Model.Slides != null && Model.Slides.Any())
+    {
+        var nextSlides = Model.Slides.OrderBy(s => s.OrderIndex).Skip(1).Take(2);
+        foreach (var slide in nextSlides)
+        {
+            if (!string.IsNullOrEmpty(slide.MediaUrl) && !IsVideoFile(slide.MediaUrl))
+            {
+                <link rel="preload" as="image" href="@MakeAbsolute(slide.MediaUrl)">
+            }
+        }
+    }
     
     <!-- AMP Story Required -->
     <script async custom-element="amp-story" src="https://cdn.ampproject.org/v0/amp-story-1.0.js"></script>
@@ -25,52 +59,179 @@
     
     <!-- AMP Story Page Attachment -->
     <script async custom-element="amp-story-page-attachment" src="https://cdn.ampproject.org/v0/amp-story-page-attachment-1.0.js"></script>
+
+    <!-- AMP Analytics -->
+    <script async custom-element="amp-analytics" src="https://cdn.ampproject.org/v0/amp-analytics-0.1.js"></script>
+
+    <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style><noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
     
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "Article",
+      "@@id": "@Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)",
+      "headline": "@Html.Raw(Model.Title.Replace("\"", "\\\""))",
+      "description": "@Html.Raw((Model.Description ?? Model.MetaDescription ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "\\\""))",
+      "datePublished": "@Model.CreatedAt.ToString("o")",
+      "dateModified": "@Model.UpdatedAt.ToString("o")",
+      "author": {
+        "@@type": "Person",
+        "name": "@(Model.User?.UserName ?? "DiscussionSpot")",
+        "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}/user/{Model.User?.UserName ?? ""}")"
+      },
+      "publisher": {
+        "@@type": "Organization",
+        "name": "@(Model.PublisherName ?? "DiscussionSpot")",
+        "logo": {
+          "@@type": "ImageObject",
+          "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
+        }
+      },
+      "mainEntityOfPage": {
+        "@@type": "WebPage",
+        "@@id": "@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)"
+      },
+      "image": [
+        @if (Model.Slides != null && Model.Slides.Any())
+        {
+            var images = Model.Slides.OrderBy(s => s.OrderIndex)
+                .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
+                .Select(s => $"\"{MakeAbsolute(s.MediaUrl)}\"")
+                .Take(5)
+                .ToList();
+            if (images.Any())
+            {
+                @Html.Raw(string.Join(",", images))
+            }
+            else
+            {
+                @Html.Raw($"\"{MakeAbsolute("/Assets/Logo_Auth.png")}\"")
+            }
+        }
+        else
+        {
+            @Html.Raw($"\"{MakeAbsolute("/Assets/Logo_Auth.png")}\"")
+        }
+      ],
+      "keywords": "@(Model.MetaKeywords ?? ExtractKeywords(Model.Title))",
+      "articleSection": "@(Model.Community?.Title ?? "General")",
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "copyrightYear": "@DateTime.Now.Year",
+      "copyrightHolder": {
+        "@@type": "Organization",
+        "name": "DiscussionSpot"
+      }
+    }
+    </script>
+
+    <!-- AMP Custom Styles - Inline for AMP validation -->
     <style amp-custom>
+        /* AMP-specific styles - isolated from global CSS */
+        html[amp], html[amp] body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
         amp-story {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            background: #000;
+        }
+        
+        amp-story-page {
+            background: #000;
         }
         
         .story-page {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 100%;
+            height: 100%;
         }
         
-        .story-headline {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        amp-story-page .story-headline {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.3);
             text-align: center;
-            margin: 2rem 0;
+            margin: 1rem 0;
+            padding: 0 1rem;
+            line-height: 1.2;
+            word-wrap: break-word;
+            max-width: 100%;
         }
         
-        .story-text {
-            font-size: 1.5rem;
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        amp-story-page .story-text {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 0, 0, 0.3);
             text-align: center;
             line-height: 1.6;
-            margin: 1rem 0;
+            margin: 0.75rem 0;
+            padding: 0 1rem;
+            word-wrap: break-word;
+            max-width: 100%;
         }
         
-        .story-caption {
-            font-size: 1rem;
-            color: rgba(255,255,255,0.8);
+        amp-story-page .story-caption {
+            font-size: clamp(0.875rem, 2vw, 1rem);
+            color: rgba(255, 255, 255, 0.85);
             text-align: center;
             font-style: italic;
-            margin: 1rem 0;
+            margin: 0.5rem 0;
+            padding: 0 1rem;
+            opacity: 0.9;
         }
         
-        .story-image {
-            width: 100%;
-            height: 100%;
+        amp-story-page .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.0) 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        amp-story-page amp-img,
+        amp-story-page amp-img img {
             object-fit: cover;
         }
         
-        .story-video {
-            width: 100%;
-            height: 100%;
+        amp-story-page amp-video,
+        amp-story-page amp-video video {
             object-fit: cover;
+        }
+        
+        amp-story-grid-layer {
+            padding: 0;
+        }
+        
+        amp-story-grid-layer[template="vertical"] {
+            padding: 0 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @@media (max-width: 414px) {
+            amp-story-page .story-headline {
+                font-size: 1.5rem;
+                margin: 0.75rem 0;
+            }
+            
+            amp-story-page .story-text {
+                font-size: 1rem;
+                margin: 0.5rem 0;
+            }
+            
+            amp-story-page .story-caption {
+                font-size: 0.875rem;
+            }
         }
     </style>
 </head>
@@ -79,41 +240,45 @@
                title="@Model.Title"
                publisher="DiscussionSpot"
                publisher-logo-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
-               poster-portrait-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
+               poster-portrait-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
+               poster-landscape-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
+               poster-square-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
         
         @if (Model.Slides != null && Model.Slides.Any())
         {
             @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
             {
+                var src = MakeAbsolute(slide.MediaUrl);
                 <amp-story-page id="page-@slide.OrderIndex">
                     <amp-story-grid-layer template="fill">
-                        @if (slide.Media != null && !string.IsNullOrEmpty(slide.Media.Url))
+                        @if (!string.IsNullOrEmpty(slide.MediaUrl))
                         {
-                            @if (IsVideoFile(slide.Media.Url))
+                            @if (IsVideoFile(slide.MediaUrl))
                             {
-                                <amp-video autoplay loop width="720" height="1280" poster="@slide.Media.Url">
-                                    <source src="@slide.Media.Url" type="video/mp4">
+                                <amp-video autoplay loop muted layout="fill" poster="@src">
+                                    <source src="@src" type="video/mp4">
                                 </amp-video>
                             }
                             else
                             {
-                                <amp-img src="@slide.Media.Url" width="720" height="1280" layout="fill" alt="@slide.Caption"></amp-img>
+                                <amp-img src="@src" layout="fill" alt="@slide.Caption" loading="lazy"></amp-img>
                             }
                         }
                         else
                         {
-                            <div class="story-page" style="background: @slide.BackgroundColor;"></div>
+                            <div class="story-page"></div>
                         }
                     </amp-story-grid-layer>
                     
                     <amp-story-grid-layer template="vertical">
+                        <div class="gradient-overlay"></div>
                         @if (!string.IsNullOrEmpty(slide.Headline))
                         {
                             <h1 class="story-headline">@slide.Headline</h1>
                         }
                         @if (!string.IsNullOrEmpty(slide.Text))
                         {
-                            <p class="story-text">@slide.Text</p>
+                            <p class="story-text">@StripHtml(slide.Text)</p>
                         }
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
@@ -142,29 +307,26 @@
             {
                 "bookendVersion": "v1.0",
                 "shareProviders": [
-                    {
-                        "provider": "facebook",
-                        "appId": "your-facebook-app-id"
-                    },
-                    {
-                        "provider": "twitter"
-                    }
+                    { "provider": "facebook" },
+                    { "provider": "twitter" }
                 ],
-                "components": [
-                    {
-                        "type": "heading",
-                        "text": "More Stories"
-                    },
-                    {
-                        "type": "small",
-                        "title": "Create Your Own Story",
-                        "url": "/stories/create",
-                        "image": "@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
-                    }
-                ]
+                "components": @Html.Raw(ViewBag.BookendComponents ?? "[]")
             }
             </script>
         </amp-story-bookend>
+
+        <amp-analytics type="googleanalytics">
+          <script type="application/json">
+          {
+            "vars": { "account": "UA-XXXXX-Y" },
+            "triggers": {
+              "storyStart": { "on": "story-page-visible", "request": "pageview" },
+              "storyAdvance": { "on": "story-next", "request": "event", "vars": { "eventCategory": "Story", "eventAction": "Next" } },
+              "storyEnd": { "on": "story-end", "request": "event", "vars": { "eventCategory": "Story", "eventAction": "Complete" } }
+            }
+          }
+          </script>
+        </amp-analytics>
     </amp-story>
 </body>
 </html>
@@ -174,5 +336,25 @@
     {
         var videoExtensions = new[] { ".mp4", ".webm", ".ogg", ".avi", ".mov" };
         return videoExtensions.Any(ext => url.ToLower().EndsWith(ext));
+    }
+    
+    private string ExtractKeywords(string title)
+    {
+        if (string.IsNullOrEmpty(title)) return "web story, discussion";
+        
+        var keywords = title.ToLowerInvariant()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(word => word.Length > 3)
+            .Take(5)
+            .ToList();
+            
+        if (!keywords.Any()) return "web story, discussion";
+        
+        return string.Join(", ", keywords);
+    }
+    private static string StripHtml(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty);
     }
 }

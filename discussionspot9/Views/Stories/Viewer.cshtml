@@ -3,6 +3,13 @@
     ViewData["Title"] = Model.Title;
     ViewData["Description"] = Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot";
     ViewData["CanonicalUrl"] = Model.CanonicalUrl ?? Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme);
+    var ampUrl = Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme);
+    var hero = Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png";
+}
+
+@section Head {
+<link rel="amphtml" href="@ampUrl" />
+<link rel="preload" as="image" href="@hero" />
 }
 
 <!-- Story Viewer Container -->
@@ -40,15 +47,15 @@
                     <div class="slide-content card-bottom align-@slide.Alignment?.ToLower()" style="background-color: @slide.BackgroundColor; color: @slide.TextColor; font-size: @slide.FontSize;">
                         @if (!string.IsNullOrEmpty(slide.Headline))
                         {
-                            <h1 class="slide-headline">@slide.Headline</h1>
+                            <h1 class="slide-headline">@StripHtml(slide.Headline)</h1>
                         }
                         @if (!string.IsNullOrEmpty(slide.Text))
                         {
-                            <div class="slide-text">@Html.Raw(SanitizeHtml(slide.Text))</div>
+                            <div class="slide-text">@StripHtml(slide.Text)</div>
                         }
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
-                            <p class="slide-caption">@slide.Caption</p>
+                            <p class="slide-caption">@StripHtml(slide.Caption)</p>
                         }
                     </div>
                 </div>
@@ -816,6 +823,11 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 @functions {
+    private static string StripHtml(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty);
+    }
     private bool IsVideoFile(string url)
     {
         var videoExtensions = new[] { ".mp4", ".webm", ".ogg", ".avi", ".mov" };
