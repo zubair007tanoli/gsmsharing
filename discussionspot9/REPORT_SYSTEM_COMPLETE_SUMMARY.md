@@ -440,3 +440,4 @@ If you encounter issues:
 
 **Everything is ready - just need to create the database tables!** 🎉
 
+

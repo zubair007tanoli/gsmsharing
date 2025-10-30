@@ -71,3 +71,4 @@ END
 
 PRINT 'Notification columns enhancement complete!';
 
+
