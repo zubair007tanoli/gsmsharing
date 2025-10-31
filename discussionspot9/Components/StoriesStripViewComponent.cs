@@ -27,7 +27,8 @@ namespace discussionspot9.Components
                     Slug = s.Slug ?? string.Empty,
                     Title = s.Title ?? string.Empty,
                     Author = s.User != null ? (s.User.UserName ?? "User") : "User",
-                    CoverUrl = s.Slides.OrderBy(x => x.OrderIndex).Select(x => x.MediaUrl).FirstOrDefault() ?? string.Empty,
+                    CoverUrl = s.Slides.OrderBy(x => x.OrderIndex).Select(x => x.MediaUrl).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty,
+                    PosterImageUrl = s.PosterImageUrl ?? string.Empty,
                     PostUrl = s.CanonicalUrl ?? string.Empty
                 })
                 .ToListAsync();
@@ -43,6 +44,7 @@ namespace discussionspot9.Components
         public string Title { get; set; } = string.Empty;
         public string Author { get; set; } = string.Empty;
         public string CoverUrl { get; set; } = string.Empty;
+        public string PosterImageUrl { get; set; } = string.Empty;
         public string PostUrl { get; set; } = string.Empty;
     }
 }

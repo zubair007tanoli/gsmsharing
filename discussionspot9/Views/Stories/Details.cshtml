@@ -94,7 +94,7 @@
                                 </div>
                             }
                             <div class="slide-content">
-                                @Html.Raw(slide.Content)
+                                @Html.Raw(System.Net.WebUtility.HtmlEncode(slide.Content))
                             </div>
                         </div>
                     </div>

@@ -19,7 +19,8 @@
 .stories-track.stories-track-cards{display:grid;grid-auto-flow:column;grid-auto-columns:140px;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 0}
 .story-card-tile{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;background:transparent;border:none;padding:0;cursor:pointer;scroll-snap-align:start}
 .story-card-thumb{width:140px;height:200px;border-radius:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);position:relative;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.12);background-size:cover;background-position:center}
-.story-card-overlay{position:absolute;top:8px;left:8px;display:flex;gap:6px}
+.story-card-thumb .story-placeholder-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);z-index:1}
+.story-card-overlay{position:absolute;top:8px;left:8px;display:flex;gap:6px;z-index:2}
 .story-card-caption{margin-top:8px;font-size:.92rem;font-weight:600;color:#25324b;text-align:left;padding:0 4px;line-height:1.2;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .story-card-tile:hover .story-card-thumb{transform:translateY(-3px);transition:transform .2s ease}
 
@@ -64,6 +65,97 @@
 /* Subtle hover lift for story cards in index page (kept light for performance) */
 @keyframes subtleFloat{0%{transform:translateY(0)}50%{transform:translateY(-2px)}100%{transform:translateY(0)}}
 
-@media (max-width: 576px){.story-avatar{width:60px;height:60px}}
+/* Enhanced card-style stories with better hover effects */
+.stories-track.stories-track-cards {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 140px;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 6px 0;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.stories-track.stories-track-cards::-webkit-scrollbar {
+    display: none;
+}
+
+.story-card-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: transform 0.2s ease;
+}
+
+.story-card-thumb {
+    width: 140px;
+    height: 200px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.story-card-overlay {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 2;
+}
+
+.story-card-caption {
+    margin-top: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #25324b;
+    text-align: left;
+    padding: 0 4px;
+    line-height: 1.2;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.story-card-tile:hover .story-card-thumb {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 576px) {
+    .story-avatar {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .story-card-thumb {
+        width: 120px;
+        height: 180px;
+    }
+    
+    .stories-track.stories-track-cards {
+        grid-auto-columns: 120px;
+        gap: 10px;
+    }
+    
+    .story-card-caption {
+        font-size: 0.85rem;
+        max-width: 120px;
+    }
+}
 
 

@@ -4,10 +4,28 @@
     <div class="stories-track stories-track-cards" id="storiesTrack">
         @foreach (var item in Model)
         {
-            var thumb = string.IsNullOrWhiteSpace(item.CoverUrl) ? "/images/story-placeholder-1x1.png" : item.CoverUrl;
+            // Use story thumbnail or first slide image, fallback to logo or gradient placeholder
+            var thumb = string.IsNullOrWhiteSpace(item.CoverUrl) 
+                ? (string.IsNullOrWhiteSpace(item.PosterImageUrl) 
+                    ? "/Assets/Logo_Auth.png" 
+                    : item.PosterImageUrl)
+                : item.CoverUrl;
+            
+            // If still empty, use a CSS gradient placeholder
+            var hasThumb = !string.IsNullOrWhiteSpace(thumb) && thumb != "/Assets/Logo_Auth.png";
+            var thumbStyle = hasThumb 
+                ? $"background-image:url('{thumb}');" 
+                : "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);";
+            
             var caption = item.Title?.Length > 48 ? item.Title.Substring(0,48)+"…" : item.Title;
             <button class="story-tile story-card-tile" data-story-slug="@item.Slug" data-story-title="@item.Title" data-author="@item.Author" data-posturl="@item.PostUrl" title="@item.Title">
-                <div class="story-card-thumb" style="background-image:url('@thumb');">
+                <div class="story-card-thumb" style="@thumbStyle">
+                    @if (!hasThumb)
+                    {
+                        <div class="story-placeholder-icon">
+                            <i class="fas fa-book-open fa-2x"></i>
+                        </div>
+                    }
                     <div class="story-card-overlay">
                         <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
                     </div>

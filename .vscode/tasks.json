@@ -45,7 +45,11 @@
                 "clean",
                 "${workspaceFolder}/discussionspot9/discussionspot9.csproj"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

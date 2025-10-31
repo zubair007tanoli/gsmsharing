@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace discussionspot9.Models.Domain
 {
@@ -8,6 +9,8 @@ namespace discussionspot9.Models.Domain
         public int StoryId { get; set; }
         
         // Link back to originating post for traffic and attribution
+        // Marked as NotMapped if database column doesn't exist yet
+        [NotMapped]
         public int? PostId { get; set; }
         
         [Required(ErrorMessage = "Title is required")]
@@ -34,11 +37,15 @@ namespace discussionspot9.Models.Domain
         public string? CanonicalUrl { get; set; }
         public string? MetaDescription { get; set; }
         public string? MetaKeywords { get; set; }
+        
+        // Marked as NotMapped since database column doesn't exist
+        [NotMapped]
         public string? BackgroundAudioUrl { get; set; }
 
         // Navigation properties
         public virtual IdentityUser? User { get; set; }
         public virtual Community? Community { get; set; }
+        [NotMapped]
         public virtual Post? Post { get; set; }
         public virtual ICollection<StorySlide> Slides { get; set; } = new List<StorySlide>();
     }

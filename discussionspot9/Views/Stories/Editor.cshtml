@@ -797,6 +797,30 @@
     outline-offset: 4px;
 }
 
+.story-element .resize-handle {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    background: #0066cc;
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.story-element .resize-handle:hover {
+    background: #0052a3;
+    transform: scale(1.1);
+}
+
 .story-element.text-element {
     display: flex;
     align-items: center;

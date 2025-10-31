@@ -1,11 +1,14 @@
+using discussionspot9.Constants;
 using discussionspot9.Data.DbContext;
 using discussionspot9.Extensions;
+using discussionspot9.Helpers;
 using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 
 namespace discussionspot9.Controllers
@@ -30,7 +33,7 @@ namespace discussionspot9.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int page = 1)
         {
-            const int pageSize = 10;
+            var pageSize = StoryConstants.IndexPageSize;
             var skip = (page - 1) * pageSize;
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -39,32 +42,37 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var stories = await _context.Stories
+            var storiesQuery = _context.Stories
+                .AsNoTracking()
                 .Include(s => s.Community)
+                .Include(s => s.Slides.OrderBy(sl => sl.OrderIndex))
                 .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.CreatedAt)
+                .OrderByDescending(s => s.CreatedAt);
+
+            var totalStories = await storiesQuery.CountAsync();
+            
+            var storiesList = await storiesQuery
                 .Skip(skip)
                 .Take(pageSize)
-                .Select(s => new StoryViewModel
-                {
-                    StoryId = s.StoryId,
-                    Title = s.Title ?? "",
-                    Slug = s.Slug ?? "",
-                    Description = s.Description ?? "",
-                    Status = s.Status ?? "",
-                    CreatedAt = s.CreatedAt,
-                    UpdatedAt = s.UpdatedAt,
-                    PostTitle = s.Title ?? "",
-                    PostSlug = s.Slug ?? "",
-                    CommunityName = s.Community != null ? s.Community.Title : "",
-                    CommunitySlug = s.Community != null ? s.Community.Slug : "",
-                    SlideCount = s.Slides.Count
-                })
                 .ToListAsync();
 
-            var totalStories = await _context.Stories
-                .Where(s => s.UserId == userId)
-                .CountAsync();
+            var stories = storiesList.Select(s => new StoryViewModel
+            {
+                StoryId = s.StoryId,
+                Title = s.Title ?? "",
+                Slug = s.Slug ?? "",
+                Description = s.Description ?? "",
+                Status = s.Status ?? "",
+                CreatedAt = s.CreatedAt,
+                UpdatedAt = s.UpdatedAt,
+                PostTitle = s.Title ?? "",
+                PostSlug = s.Slug ?? "",
+                CommunityName = s.Community != null ? s.Community.Title : "",
+                CommunitySlug = s.Community != null ? s.Community.Slug : "",
+                SlideCount = s.Slides.Count,
+                PosterImageUrl = s.PosterImageUrl ?? s.Slides.OrderBy(sl => sl.OrderIndex)
+                    .FirstOrDefault(sl => !string.IsNullOrEmpty(sl.MediaUrl))?.MediaUrl
+            }).ToList();
 
             var model = new StoriesIndexViewModel
             {
@@ -81,10 +89,7 @@ namespace discussionspot9.Controllers
         [Route("stories/details/{storySlug}")]
         public async Task<IActionResult> Details(string storySlug)
         {
-            var story = await _context.Stories
-                .Include(s => s.Community)
-                .Include(s => s.Slides)
-                .FirstOrDefaultAsync(s => s.Slug == storySlug);
+            var story = await StoryControllerHelpers.GetStoryWithSlidesAsync(_context, storySlug, tracking: false);
 
             if (story == null)
             {
@@ -92,33 +97,33 @@ namespace discussionspot9.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (story.UserId != userId)
+            if (!StoryControllerHelpers.ValidateStoryOwnership(story, userId))
             {
                 return Forbid();
             }
 
             var model = new StoryDetailViewModel
             {
-                StoryId = story.StoryId,
-                Title = story.Title ?? "",
-                Slug = story.Slug ?? "",
-                Description = story.Description ?? "",
-                Status = story.Status ?? "",
-                CreatedAt = story.CreatedAt,
-                UpdatedAt = story.UpdatedAt,
-                PostTitle = story.Title ?? "",
-                PostSlug = story.Slug ?? "",
-                CommunityName = story.Community?.Title ?? "",
-                CommunitySlug = story.Community?.Slug ?? "",
-                Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideViewModel
-                {
-                    SlideId = s.StorySlideId,
-                    Title = s.Headline ?? "",
-                    Content = s.Text ?? "",
-                    ImageUrl = s.MediaUrl ?? "",
-                    SlideOrder = s.OrderIndex,
-                    SlideType = s.SlideType ?? ""
-                }).ToList()
+                    StoryId = story.StoryId,
+                    Title = story.Title ?? "",
+                    Slug = story.Slug ?? "",
+                    Description = story.Description ?? "",
+                    Status = story.Status ?? "",
+                    CreatedAt = story.CreatedAt,
+                    UpdatedAt = story.UpdatedAt,
+                    PostTitle = story.Title ?? "",
+                    PostSlug = story.Slug ?? "",
+                    CommunityName = story.Community?.Title ?? "",
+                    CommunitySlug = story.Community?.Slug ?? "",
+                    Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideViewModel
+                    {
+                        SlideId = s.StorySlideId,
+                        Title = s.Headline ?? "",
+                        Content = s.Text ?? "",
+                        ImageUrl = s.MediaUrl ?? "",
+                        SlideOrder = s.OrderIndex,
+                        SlideType = s.SlideType ?? StoryConstants.SlideTypeMedia
+                    }).ToList()
             };
 
             return View(model);
@@ -138,7 +143,7 @@ namespace discussionspot9.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (story.UserId != userId)
+            if (!StoryControllerHelpers.ValidateStoryOwnership(story, userId))
             {
                 return Forbid();
             }
@@ -159,10 +164,10 @@ namespace discussionspot9.Controllers
                     Content = s.Text ?? "",
                     ImageUrl = s.MediaUrl ?? "",
                     SlideOrder = s.OrderIndex,
-                    SlideType = s.SlideType ?? "",
-                    BackgroundColor = s.BackgroundColor ?? "#667eea",
+                    SlideType = s.SlideType ?? StoryConstants.SlideTypeMedia,
+                    BackgroundColor = s.BackgroundColor ?? StoryConstants.DefaultBackgroundColor,
                     BackgroundImageUrl = s.MediaUrl ?? "",
-                    LinkUrl = s.Text ?? ""
+                    LinkUrl = s.MediaUrl ?? ""
                 }).ToList()
             };
 
@@ -188,7 +193,7 @@ namespace discussionspot9.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (story.UserId != userId)
+            if (!StoryControllerHelpers.ValidateStoryOwnership(story, userId))
             {
                 return Forbid();
             }
@@ -201,10 +206,16 @@ namespace discussionspot9.Controllers
                 story.Status = model.Status;
                 story.UpdatedAt = DateTime.UtcNow;
 
-                // Update slides
+                // Update slides - validate ownership
                 foreach (var slideModel in model.Slides)
                 {
                     var slide = story.Slides.FirstOrDefault(s => s.StorySlideId == slideModel.SlideId);
+                    if (slide == null && slideModel.SlideId > 0)
+                    {
+                        ModelState.AddModelError("", $"Slide {slideModel.SlideId} does not belong to this story");
+                        return View(model);
+                    }
+                    
                     if (slide != null)
                     {
                         slide.Headline = slideModel.Title;
@@ -242,7 +253,7 @@ namespace discussionspot9.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (story.UserId != userId)
+            if (!StoryControllerHelpers.ValidateStoryOwnership(story, userId))
             {
                 return Forbid();
             }
@@ -253,8 +264,8 @@ namespace discussionspot9.Controllers
                 {
                     AutoGenerate = true,
                     UseAI = true,
-                    Style = "informative",
-                    Length = "medium"
+                    Style = StoryConstants.StyleInformative,
+                    Length = StoryConstants.LengthMedium
                 };
 
                 // Note: Story regeneration would need a different approach since Story doesn't have Post reference
@@ -285,15 +296,23 @@ namespace discussionspot9.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (story.UserId != userId)
+            if (!StoryControllerHelpers.ValidateStoryOwnership(story, userId))
             {
                 return Forbid();
             }
 
             try
             {
-                _context.Stories.Remove(story);
-                await _context.SaveChangesAsync();
+                // Load story with related entities to handle cascading deletes properly
+                var storyWithRelations = await _context.Stories
+                    .Include(s => s.Slides)
+                    .FirstOrDefaultAsync(s => s.StoryId == story.StoryId);
+
+                if (storyWithRelations != null)
+                {
+                    _context.Stories.Remove(storyWithRelations);
+                    await _context.SaveChangesAsync();
+                }
 
                 TempData["SuccessMessage"] = "Story deleted successfully!";
                 return RedirectToAction("Index");
@@ -333,13 +352,16 @@ namespace discussionspot9.Controllers
 
             try
             {
+                // Generate unique slug
+                var slug = await StoryControllerHelpers.GenerateUniqueSlugAsync(_context, model.Title);
+
                 // Create new story
                 var story = new Story
                 {
                     Title = model.Title,
-                    Slug = model.Title.ToSlug(),
+                    Slug = slug,
                     Description = model.Description,
-                    Status = "draft",
+                    Status = StoryConstants.StatusDraft,
                     UserId = userId,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -390,8 +412,8 @@ namespace discussionspot9.Controllers
                         MediaUrl = s.MediaUrl ?? "",
                         MediaType = s.MediaType ?? "",
                         OrderIndex = s.OrderIndex,
-                        BackgroundColor = s.BackgroundColor ?? "#000000",
-                        TextColor = s.TextColor ?? "#FFFFFF",
+                    BackgroundColor = s.BackgroundColor ?? StoryConstants.DefaultBackgroundColor,
+                    TextColor = s.TextColor ?? StoryConstants.DefaultTextColor,
                         Duration = s.Duration
                     }).OrderBy(s => s.OrderIndex).ToList()
                 };
@@ -405,7 +427,7 @@ namespace discussionspot9.Controllers
                 StoryId = 0,
                 Title = "",
                 Description = "",
-                Status = "draft",
+                Status = StoryConstants.StatusDraft,
                 Slides = new List<StorySlideEditViewModel>()
             };
             return View("Editor", model);
@@ -426,14 +448,55 @@ namespace discussionspot9.Controllers
             var story = await _context.Stories
                 .Include(s => s.Slides)
                 .Include(s => s.User)
-                .Include(s => s.Post)
-                    .ThenInclude(p => p.Community)
+                .Include(s => s.Community)
+                // Post relationship removed - column doesn't exist in database yet
+                // .Include(s => s.Post)
+                //     .ThenInclude(p => p.Community)
                 .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)
             {
                 return NotFound();
             }
+
+            // Track story view for analytics (fire and forget - don't block page load)
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            var storyId = story.StoryId;
+            var serviceProvider = HttpContext.RequestServices;
+            
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    
+                    var view = new StoryView
+                    {
+                        StoryId = storyId,
+                        UserId = userId,
+                        ViewedAt = DateTime.UtcNow,
+                        IpAddress = ipAddress,
+                        UserAgent = userAgent
+                    };
+                    context.StoryViews.Add(view);
+                    
+                    // Update story view count
+                    var storyToUpdate = await context.Stories.FindAsync(storyId);
+                    if (storyToUpdate != null)
+                    {
+                        storyToUpdate.ViewCount++;
+                    }
+                    
+                    await context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error tracking story view for story {StoryId}", storyId);
+                }
+            });
 
             return View(story);
         }
@@ -453,14 +516,18 @@ namespace discussionspot9.Controllers
                 return NotFound(new { success = false, message = "Story not found" });
             }
 
-            string MakeAbsolute(string? url)
+            // Check authorization for draft stories
+            if (story.Status == StoryConstants.StatusDraft)
             {
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                if (string.IsNullOrWhiteSpace(url)) return string.Empty;
-                if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
-                if (url.StartsWith("/")) return baseUrl + url;
-                return baseUrl + "/" + url;
+                var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!StoryControllerHelpers.ValidateStoryOwnership(story, userId))
+                {
+                    return Unauthorized(new { success = false, message = "Story not published" });
+                }
             }
+
+            string MakeAbsolute(string? url) => 
+                StoryControllerHelpers.MakeAbsoluteUrl(url, Request.Scheme, Request.Host.Value ?? "");
 
             var pageUrl = !string.IsNullOrWhiteSpace(story.CanonicalUrl)
                 ? story.CanonicalUrl!
@@ -476,7 +543,7 @@ namespace discussionspot9.Controllers
                     headline = s.Headline ?? string.Empty,
                     text = s.Text ?? string.Empty,
                     caption = s.Caption ?? string.Empty,
-                    duration = s.Duration > 0 ? s.Duration : 5000
+                    duration = s.Duration > 0 ? s.Duration : StoryConstants.DefaultDuration
                 })
                 .ToList();
 
@@ -500,9 +567,12 @@ namespace discussionspot9.Controllers
         [Route("stories/amp/{slug}")]
         public async Task<IActionResult> Amp(string slug)
         {
+            // Optimized query - use AsNoTracking for read-only access and better performance
             var story = await _context.Stories
-                .Include(s => s.Slides)
+                .AsNoTracking()
+                .Include(s => s.Slides.OrderBy(sl => sl.OrderIndex))
                 .Include(s => s.User)
+                .Include(s => s.Community)
                 .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)
@@ -510,14 +580,47 @@ namespace discussionspot9.Controllers
                 return NotFound();
             }
 
-            string MakeAbsolute(string? url)
+            // Track story view for analytics (fire and forget - don't block page load)
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            var storyId = story.StoryId;
+            var serviceProvider = HttpContext.RequestServices;
+            
+            _ = Task.Run(async () =>
             {
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                if (string.IsNullOrWhiteSpace(url)) return string.Empty;
-                if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
-                if (url.StartsWith("/")) return baseUrl + url;
-                return baseUrl + "/" + url;
-            }
+                try
+                {
+                    using var scope = serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    
+                    var view = new StoryView
+                    {
+                        StoryId = storyId,
+                        UserId = userId,
+                        ViewedAt = DateTime.UtcNow,
+                        IpAddress = ipAddress,
+                        UserAgent = userAgent
+                    };
+                    context.StoryViews.Add(view);
+                    
+                    // Update story view count
+                    var storyToUpdate = await context.Stories.FindAsync(storyId);
+                    if (storyToUpdate != null)
+                    {
+                        storyToUpdate.ViewCount++;
+                    }
+                    
+                    await context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error tracking story view for story {StoryId}", storyId);
+                }
+            });
+
+            string MakeAbsolute(string? url) => 
+                StoryControllerHelpers.MakeAbsoluteUrl(url, Request.Scheme, Request.Host.Value ?? "");
 
             // Normalize slide media URLs and types for AMP
             foreach (var slide in story.Slides)
@@ -535,10 +638,11 @@ namespace discussionspot9.Controllers
 
             // Build dynamic bookend components (latest published stories)
             var relatedRaw = await _context.Stories
+                .AsNoTracking()
                 .Include(s => s.Slides)
-                .Where(s => s.Status == "published" && s.Slug != slug)
+                .Where(s => s.Status == StoryConstants.StatusPublished && s.Slug != slug)
                 .OrderByDescending(s => s.UpdatedAt)
-                .Take(6)
+                .Take(StoryConstants.RelatedStoriesCount)
                 .Select(s => new {
                     Title = s.Title,
                     Slug = s.Slug,
@@ -563,13 +667,14 @@ namespace discussionspot9.Controllers
         [Route("stories/explore")]
         public async Task<IActionResult> Explore(int page = 1)
         {
-            const int pageSize = 12;
+            var pageSize = StoryConstants.ExplorePageSize;
             var skip = (page - 1) * pageSize;
 
             var stories = await _context.Stories
+                .AsNoTracking()
                 .Include(s => s.User)
                 .Include(s => s.Slides)
-                .Where(s => s.Status == "published")
+                .Where(s => s.Status == StoryConstants.StatusPublished)
                 .OrderByDescending(s => s.UpdatedAt)
                 .Skip(skip)
                 .Take(pageSize)
@@ -625,12 +730,15 @@ namespace discussionspot9.Controllers
                 }
                 else
                 {
+                    // Generate unique slug
+                    var slug = await StoryControllerHelpers.GenerateUniqueSlugAsync(_context, request.Title);
+
                     // Create new story
                     story = new Story
                     {
                         Title = request.Title,
-                        Slug = request.Title.ToSlug(),
-                        Status = "draft",
+                        Slug = slug,
+                        Status = StoryConstants.StatusDraft,
                         UserId = userId,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -669,8 +777,14 @@ namespace discussionspot9.Controllers
                     return NotFound(new { success = false, message = "Story not found" });
                 }
 
-                story.Status = "published";
+                story.Status = StoryConstants.StatusPublished;
                 story.UpdatedAt = DateTime.UtcNow;
+                
+                // Set published date if not already set
+                if (!story.PublishedAt.HasValue)
+                {
+                    story.PublishedAt = DateTime.UtcNow;
+                }
 
                 await _context.SaveChangesAsync();
 
@@ -688,6 +802,8 @@ namespace discussionspot9.Controllers
     {
         public int StoryId { get; set; }
         public string Title { get; set; } = string.Empty;
+        // TODO: Implement slide saving in SaveDraft action
+        // Currently unused - reserved for future implementation
         public List<SlideData> Slides { get; set; } = new();
     }
 

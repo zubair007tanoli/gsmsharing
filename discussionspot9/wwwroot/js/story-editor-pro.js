@@ -92,6 +92,8 @@
             this.on('add-heading-btn', 'click', () => this.addHeadingElement());
             this.on('add-image-btn', 'click', () => this.showImagePicker());
             this.on('add-video-btn', 'click', () => this.showVideoPicker());
+            this.on('add-link-btn', 'click', () => this.showLinkDialog());
+            this.on('add-link-btn-modal', 'click', () => this.addLinkToElement());
             
             // Background controls
             this.on('bg-type', 'change', (e) => this.changeBgType(e.target.value));
@@ -647,6 +649,73 @@
             this.saveHistory();
         }
         
+        showLinkDialog() {
+            const linkModal = document.getElementById('linkModal');
+            if (linkModal) {
+                const modal = new bootstrap.Modal(linkModal);
+                modal.show();
+                
+                // Reset form
+                document.getElementById('link-url').value = '';
+                document.getElementById('link-text').value = '';
+                document.getElementById('link-type').value = 'external';
+            }
+        }
+        
+        addLinkToElement() {
+            const url = document.getElementById('link-url')?.value;
+            const linkText = document.getElementById('link-text')?.value || 'Click here';
+            const linkType = document.getElementById('link-type')?.value || 'external';
+            
+            if (!url) {
+                this.showNotification('Please enter a URL', 'warning');
+                return;
+            }
+            
+            if (this.selectedElement) {
+                // Add link to existing element
+                this.selectedElement.linkUrl = url;
+                this.selectedElement.linkType = linkType;
+                this.updateCanvas();
+            } else {
+                // Create new link button element
+                const element = {
+                    id: 'element-' + (++this.elementIdCounter),
+                    type: 'link',
+                    text: linkText,
+                    linkUrl: url,
+                    linkType: linkType,
+                    x: 100,
+                    y: 500,
+                    fontSize: '18px',
+                    fontFamily: 'Arial, sans-serif',
+                    fontWeight: '600',
+                    color: '#ffffff',
+                    backgroundColor: '#0066cc',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    opacity: 1,
+                    animation: 'fade-in',
+                    animationDelay: 0,
+                    zIndex: this.selectedSlide.elements.length
+                };
+                
+                this.selectedSlide.elements.push(element);
+                this.selectedElement = element;
+                this.updateCanvas();
+                this.updatePropertiesPanel();
+            }
+            
+            const linkModal = document.getElementById('linkModal');
+            if (linkModal) {
+                const modal = bootstrap.Modal.getInstance(linkModal);
+                modal.hide();
+            }
+            
+            this.saveHistory();
+        }
+        
         // ==================== SLIDE MANAGEMENT ====================
         
         addSlide() {
@@ -872,6 +941,18 @@
                                    ${element.muted ? 'muted' : ''} ${element.loop ? 'loop' : ''}
                                    style="width: 100%; height: 100%; object-fit: cover;"></video>
                         </div>`;
+            } else if (element.type === 'link') {
+                const linkStyle = style + `
+                    background: ${element.backgroundColor || '#0066cc'};
+                    padding: ${element.padding || '12px 24px'};
+                    border-radius: ${element.borderRadius || '8px'};
+                    cursor: pointer;
+                `;
+                return `<a href="${element.linkUrl || '#'}" 
+                          class="story-element link-element ${element.id === this.selectedElement?.id ? 'selected' : ''}" 
+                          data-element-id="${element.id}" 
+                          style="${linkStyle}"
+                          ${element.linkType === 'external' ? 'target="_blank" rel="noopener"' : ''}>${element.text || 'Click here'}</a>`;
             }
             
             return '';
@@ -879,6 +960,7 @@
         
         attachElementHandlers(canvas) {
             canvas.querySelectorAll('.story-element').forEach(el => {
+                // Click handler for selection
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const elementId = el.dataset.elementId;
@@ -886,6 +968,188 @@
                     this.updateCanvas();
                     this.updatePropertiesPanel();
                 });
+                
+                // Double-click for editing text
+                if (el.classList.contains('text-element')) {
+                    el.addEventListener('dblclick', (e) => {
+                        e.stopPropagation();
+                        this.enableTextEditing(el);
+                    });
+                }
+                
+                // Drag and drop positioning
+                this.makeDraggable(el);
+                
+                // Resize handles for images/videos
+                if (el.classList.contains('image-element') || el.classList.contains('video-element')) {
+                    this.makeResizable(el);
+                }
+            });
+        }
+        
+        makeDraggable(element) {
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+            
+            element.style.cursor = 'move';
+            
+            const onMouseDown = (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                isDragging = true;
+                const elementId = element.dataset.elementId;
+                this.selectedElement = this.selectedSlide.elements.find(el => el.id === elementId);
+                
+                const rect = element.getBoundingClientRect();
+                const canvasRect = document.getElementById('story-canvas')?.getBoundingClientRect();
+                
+                if (!canvasRect) return;
+                
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+                initialX = this.selectedElement.x;
+                initialY = this.selectedElement.y;
+                
+                element.style.transition = 'none';
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                
+                e.preventDefault();
+            };
+            
+            const onMouseMove = (e) => {
+                if (!isDragging || !this.selectedElement) return;
+                
+                const canvasRect = document.getElementById('story-canvas')?.getBoundingClientRect();
+                if (!canvasRect) return;
+                
+                const newX = e.clientX - canvasRect.left - startX;
+                const newY = e.clientY - canvasRect.top - startY;
+                
+                // Constrain to canvas bounds
+                const maxX = 360 - (this.selectedElement.width || 100);
+                const maxY = 640 - (this.selectedElement.height || 50);
+                
+                this.selectedElement.x = Math.max(0, Math.min(newX, maxX));
+                this.selectedElement.y = Math.max(0, Math.min(newY, maxY));
+                
+                element.style.left = this.selectedElement.x + 'px';
+                element.style.top = this.selectedElement.y + 'px';
+            };
+            
+            const onMouseUp = () => {
+                isDragging = false;
+                element.style.transition = '';
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                this.saveHistory();
+            };
+            
+            element.addEventListener('mousedown', onMouseDown);
+        }
+        
+        makeResizable(element) {
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            resizeHandle.innerHTML = '<i class="fas fa-grip-lines"></i>';
+            element.appendChild(resizeHandle);
+            
+            let isResizing = false;
+            let startX, startY, startWidth, startHeight;
+            
+            const onResizeStart = (e) => {
+                isResizing = true;
+                const elementId = element.dataset.elementId;
+                this.selectedElement = this.selectedSlide.elements.find(el => el.id === elementId);
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = this.selectedElement.width || 100;
+                startHeight = this.selectedElement.height || 100;
+                
+                element.style.transition = 'none';
+                document.addEventListener('mousemove', onResize);
+                document.addEventListener('mouseup', onResizeEnd);
+                
+                e.stopPropagation();
+                e.preventDefault();
+            };
+            
+            const onResize = (e) => {
+                if (!isResizing || !this.selectedElement) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                const newWidth = Math.max(50, Math.min(340, startWidth + deltaX));
+                const newHeight = Math.max(50, Math.min(590, startHeight + deltaY));
+                
+                this.selectedElement.width = newWidth;
+                this.selectedElement.height = newHeight;
+                
+                element.style.width = newWidth + 'px';
+                element.style.height = newHeight + 'px';
+            };
+            
+            const onResizeEnd = () => {
+                isResizing = false;
+                element.style.transition = '';
+                document.removeEventListener('mousemove', onResize);
+                document.removeEventListener('mouseup', onResizeEnd);
+                this.saveHistory();
+            };
+            
+            resizeHandle.addEventListener('mousedown', onResizeStart);
+        }
+        
+        enableTextEditing(element) {
+            const elementId = element.dataset.elementId;
+            const elementData = this.selectedSlide.elements.find(el => el.id === elementId);
+            if (!elementData) return;
+            
+            const input = document.createElement('textarea');
+            input.value = elementData.text;
+            input.style.cssText = `
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                border: 2px solid #0066cc;
+                background: rgba(255,255,255,0.95);
+                padding: 8px;
+                font-size: ${elementData.fontSize || '24px'};
+                font-family: ${elementData.fontFamily || 'Arial'};
+                font-weight: ${elementData.fontWeight || '400'};
+                color: ${elementData.color || '#000'};
+                text-align: ${elementData.textAlign || 'center'};
+                resize: none;
+                outline: none;
+                z-index: 10000;
+            `;
+            
+            element.appendChild(input);
+            input.focus();
+            input.select();
+            
+            const saveText = () => {
+                elementData.text = input.value;
+                input.remove();
+                this.updateCanvas();
+                this.updatePropertiesPanel();
+                this.saveHistory();
+            };
+            
+            input.addEventListener('blur', saveText);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveText();
+                }
+                if (e.key === 'Escape') {
+                    input.remove();
+                    this.updateCanvas();
+                }
             });
         }
         

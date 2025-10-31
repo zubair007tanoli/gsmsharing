@@ -1,4 +1,4 @@
-﻿using discussionspot9.Models.Domain;
+using discussionspot9.Models.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -877,7 +877,8 @@ namespace discussionspot9.Data.DbContext
                 entity.HasIndex(e => new { e.Status, e.PublishedAt });
                 entity.HasIndex(e => new { e.UserId, e.CreatedAt });
                 entity.HasIndex(e => e.Slug);
-                entity.HasIndex(e => e.PostId);
+                // PostId index removed - column doesn't exist in database yet
+                // entity.HasIndex(e => e.PostId);
 
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -889,10 +890,16 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.CommunityId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasOne(e => e.Post)
-                    .WithMany()
-                    .HasForeignKey(e => e.PostId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                // Post relationship removed - column doesn't exist in database yet
+                // entity.HasOne(e => e.Post)
+                //     .WithMany()
+                //     .HasForeignKey(e => e.PostId)
+                //     .OnDelete(DeleteBehavior.SetNull);
+                
+                // Ignore properties that don't exist in database
+                entity.Ignore(e => e.PostId);
+                entity.Ignore(e => e.BackgroundAudioUrl);
+                entity.Ignore(e => e.Post);
 
                 entity.ToTable(t =>
                 {

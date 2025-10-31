@@ -160,8 +160,9 @@
                             foreach (var story in Model.Stories)
                             {
                                 var thumbTitle = story.Title?.Length > 48 ? story.Title.Substring(0,48)+"…" : story.Title;
+                                var thumbImage = !string.IsNullOrEmpty(story.PosterImageUrl) ? story.PosterImageUrl : "/Assets/Logo_Auth.png";
                                 <button class="story-tile story-card-tile reveal" type="button" data-story-slug="@story.Slug" data-story-title="@story.Title" data-author="@story.CommunityName" data-posturl="/stories/viewer/@story.Slug" title="@story.Title">
-                                    <div class="story-card-thumb">
+                                    <div class="story-card-thumb" style="background-image: url('@thumbImage'); background-size: cover; background-position: center;">
                                         <div class="story-card-overlay">
                                             <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
                                         </div>
@@ -201,15 +202,31 @@
                             <div class="story-card">
                                 <div class="story-thumbnail">
                                     <div class="story-preview">
-                                        <div class="preview-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                            <div class="preview-content">
-                                                <div class="d-flex justify-content-center mb-2">
-                                                    <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
+                                        @if (!string.IsNullOrEmpty(story.PosterImageUrl))
+                                        {
+                                            <div class="preview-slide" style="background-image: url('@story.PosterImageUrl'); background-size: cover; background-position: center;">
+                                                <div class="preview-overlay"></div>
+                                                <div class="preview-content">
+                                                    <div class="d-flex justify-content-center mb-2">
+                                                        <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
+                                                    </div>
+                                                    <h3 class="preview-title">@story.Title</h3>
+                                                    <p class="preview-description">@(story.Description?.Length > 50 ? story.Description.Substring(0, 50) + "..." : story.Description)</p>
                                                 </div>
-                                                <h3 class="preview-title">@story.Title</h3>
-                                                <p class="preview-description">@(story.Description?.Length > 50 ? story.Description.Substring(0, 50) + "..." : story.Description)</p>
                                             </div>
-                                        </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="preview-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                <div class="preview-content">
+                                                    <div class="d-flex justify-content-center mb-2">
+                                                        <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
+                                                    </div>
+                                                    <h3 class="preview-title">@story.Title</h3>
+                                                    <p class="preview-description">@(story.Description?.Length > 50 ? story.Description.Substring(0, 50) + "..." : story.Description)</p>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                     <div class="story-overlay">
                                         <div class="story-actions">

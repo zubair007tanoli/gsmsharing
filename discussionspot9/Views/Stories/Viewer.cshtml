@@ -27,19 +27,19 @@
             @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
             {
                 <div class="story-slide" data-duration="@slide.Duration" data-slide-type="@slide.SlideType">
-                    @if (slide.SlideType == "media" && slide.Media != null && !string.IsNullOrEmpty(slide.Media.Url))
+                    @if (slide.SlideType == "media" && !string.IsNullOrEmpty(slide.MediaUrl))
                     {
                         <div class="slide-media">
-                            @if (IsVideoFile(slide.Media.Url))
+                            @if (IsVideoFile(slide.MediaUrl))
                             {
                                 <video class="slide-video" autoplay muted loop>
-                                    <source src="@slide.Media.Url" type="video/mp4">
+                                    <source src="@slide.MediaUrl" type="video/mp4">
                                     Your browser does not support the video tag.
                                 </video>
                             }
                             else
                             {
-                                <img class="slide-image" src="@slide.Media.Url" alt="@slide.Caption" />
+                                <img class="slide-image" src="@slide.MediaUrl" alt="@slide.Caption" />
                             }
                         </div>
                     }
@@ -513,54 +513,10 @@
 </style>
 
 <!-- Story Viewer JavaScript -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const storyViewer = document.getElementById('story-viewer');
-    const slides = document.querySelectorAll('.story-slide');
-    const progressBar = document.getElementById('progress-bar');
-    const currentSlideSpan = document.getElementById('current-slide');
-    const totalSlidesSpan = document.getElementById('total-slides');
-    const playPauseBtn = document.getElementById('play-pause-btn');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const closeBtn = document.getElementById('close-btn');
-    
-    let currentSlideIndex = 0;
-    let isPlaying = true;
-    let slideTimer = null;
-    let slideStartTime = null;
-    let totalSlides = slides.length;
-    let viewCount = 0;
-    let likeCount = 0;
-    let isLiked = false;
-    let isBookmarked = false;
-    
-    totalSlidesSpan.textContent = totalSlides;
-    
-    // Initialize progress indicators
-    initializeProgressIndicators();
-    
-    // Initialize stats
-    updateStats();
-    
-    // Initialize
-    showSlide(0);
-    if (isPlaying) {
-        startSlideTimer();
-    }
-    
-    function showSlide(index) {
-        // Hide all slides
-        slides.forEach(slide => slide.classList.remove('active'));
-        
-        // Show current slide
-        if (slides[index]) {
-            slides[index].classList.add('active');
-            currentSlideIndex = index;
-            currentSlideSpan.textContent = index + 1;
-            
-            // Update progress bar
-            const progress = ((index + 1) / totalSlides) * 100;
+<script src="~/js/stories/story-utils.js"></script>
+<script src="~/js/stories/story-notifications.js"></script>
+<script src="~/js/stories/story-viewer.js"></script>
+
             progressBar.style.width = progress + '%';
             
             // Update progress indicators
@@ -722,7 +678,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const indicatorsContainer = document.getElementById('progress-indicators');
         if (!indicatorsContainer) return;
         
-        indicatorsContainer.innerHTML = '';
+        // Clear using safe method (not innerHTML)
+        while (indicatorsContainer.firstChild) {
+            indicatorsContainer.removeChild(indicatorsContainer.firstChild);
+        }
+        
         for (let i = 0; i < totalSlides; i++) {
             const indicator = document.createElement('div');
             indicator.className = 'progress-indicator';
@@ -817,11 +777,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Update timer every second
-    setInterval(updateSlideTimer, 1000);
-});
-</script>
-
 @functions {
     private static string StripHtml(string input)
     {

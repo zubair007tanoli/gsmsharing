@@ -113,7 +113,6 @@ namespace discussionspot9.Services
                     Description = GenerateStoryDescription(extractedContent.MainContent, options),
                     UserId = post.UserId,
                     CommunityId = post.CommunityId,
-                    PostId = post.PostId,
                     Status = "draft",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
@@ -122,8 +121,7 @@ namespace discussionspot9.Services
                     PublisherLogo = "/Assets/Logo_Auth.png",
                     MetaDescription = metaDescription,
                     MetaKeywords = keywords,
-                    // Canonical should be the non-AMP story viewer route
-                    CanonicalUrl = $"/stories/viewer/{GenerateStorySlug(storyTitle)}"
+                    CanonicalUrl = $"/stories/amp/{GenerateStorySlug(storyTitle)}"
                 };
 
                 context.Stories.Add(story);
@@ -566,19 +564,19 @@ namespace discussionspot9.Services
             
             foreach (var media in mediaItems.Take(slideCount - 1))
             {
-                slides.Add(new StorySlide
-                {
-                    StoryId = slides[0].StoryId,
-                    MediaId = media.MediaId,
+            slides.Add(new StorySlide
+            {
+                StoryId = slides[0].StoryId,
+                MediaId = media.MediaId,
                     Caption = media.Caption ?? extractedContent.KeyPoints.FirstOrDefault() ?? "Visual Content",
                     Headline = slideIndex == 1 ? "Visual Content" : $"Image {slideIndex}",
                     Text = media.AltText ?? (!string.IsNullOrEmpty(extractedContent.MainContent) ? extractedContent.MainContent.Substring(0, Math.Min(100, extractedContent.MainContent.Length)) : "Check out this image"),
                     Duration = 5000,
                     OrderIndex = slideIndex,
-                    SlideType = "image",
-                    BackgroundColor = "#6c757d",
-                    TextColor = "#ffffff",
-                    FontSize = "18",
+                SlideType = "image",
+                BackgroundColor = "#6c757d",
+                TextColor = "#ffffff",
+                FontSize = "18",
                     Alignment = "center",
                     MediaUrl = media.Url,
                     MediaType = media.MediaType,

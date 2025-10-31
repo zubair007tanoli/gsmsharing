@@ -14,6 +14,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string CommunityName { get; set; } = string.Empty;
         public string CommunitySlug { get; set; } = string.Empty;
         public int SlideCount { get; set; }
+        public string? PosterImageUrl { get; set; }
     }
 
     public class StoryDetailViewModel

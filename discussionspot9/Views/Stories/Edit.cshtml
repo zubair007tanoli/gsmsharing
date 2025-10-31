@@ -1072,10 +1072,23 @@ small.text-muted {
                                     urlInput.closest('.mb-3').appendChild(preview);
                                 }
                                 
+                                // Safe element creation (prevents XSS)
                                 if (file.type.startsWith('image/')) {
-                                    preview.innerHTML = `<img src="${filePath}" alt="Slide media" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                                    const img = document.createElement('img');
+                                    img.src = filePath;
+                                    img.alt = 'Slide media';
+                                    img.style.maxWidth = '100%';
+                                    img.style.maxHeight = '150px';
+                                    img.style.borderRadius = '8px';
+                                    preview.appendChild(img);
                                 } else if (file.type.startsWith('video/')) {
-                                    preview.innerHTML = `<video src="${filePath}" controls style="max-width: 100%; max-height: 150px; border-radius: 8px;"></video>`;
+                                    const video = document.createElement('video');
+                                    video.src = filePath;
+                                    video.controls = true;
+                                    video.style.maxWidth = '100%';
+                                    video.style.maxHeight = '150px';
+                                    video.style.borderRadius = '8px';
+                                    preview.appendChild(video);
                                 }
                             }
                         }
@@ -1149,12 +1162,26 @@ small.text-muted {
                 justify-content: center;
                 z-index: 9999;
             `;
-            overlay.innerHTML = `
-                <div style="background: white; padding: 40px; border-radius: 12px; text-align: center;">
-                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
-                    <p class="mb-0">Uploading...</p>
-                </div>
-            `;
+            // Safe element creation for upload overlay
+            const overlayContent = document.createElement('div');
+            overlayContent.style.background = 'white';
+            overlayContent.style.padding = '40px';
+            overlayContent.style.borderRadius = '12px';
+            overlayContent.style.textAlign = 'center';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner-border text-primary mb-3';
+            spinner.setAttribute('role', 'status');
+            spinner.style.width = '3rem';
+            spinner.style.height = '3rem';
+            
+            const text = document.createElement('p');
+            text.className = 'mb-0';
+            text.textContent = 'Uploading...';
+            
+            overlayContent.appendChild(spinner);
+            overlayContent.appendChild(text);
+            overlay.appendChild(overlayContent);
             document.body.appendChild(overlay);
         } else if (!show && overlay) {
             overlay.remove();
@@ -1165,11 +1192,19 @@ small.text-muted {
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
         alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
         
+        // Safe text content (prevents XSS)
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.setAttribute('data-bs-dismiss', 'alert');
+        closeButton.setAttribute('aria-label', 'Close');
+        
+        alertDiv.appendChild(messageSpan);
+        alertDiv.appendChild(closeButton);
         document.body.appendChild(alertDiv);
         
         setTimeout(() => {

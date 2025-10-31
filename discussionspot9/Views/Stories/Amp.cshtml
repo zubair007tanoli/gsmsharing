@@ -18,21 +18,26 @@
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     <title>@Model.Title</title>
     <link rel="canonical" href="@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
-    <meta name="description" content="@Html.Raw((Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "&quot;"))">
+    <meta name="description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
     <meta name="keywords" content="@(Model.MetaKeywords ?? ExtractKeywords(Model.Title))">
     <meta name="author" content="@(Model.User?.UserName ?? "DiscussionSpot")">
     <meta property="og:type" content="article">
-    <meta property="og:title" content="@Html.Raw(Model.Title.Replace("\"", "&quot;"))">
-    <meta property="og:description" content="@Html.Raw((Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "&quot;"))">
+    <meta property="og:title" content="@System.Net.WebUtility.HtmlEncode(Model.Title)">
+    <meta property="og:description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
     <meta property="og:image" content="@MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png")">
     <meta property="og:url" content="@Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@Html.Raw(Model.Title.Replace("\"", "&quot;"))">
-    <meta name="twitter:description" content="@Html.Raw((Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "&quot;"))">
+    <meta name="twitter:title" content="@System.Net.WebUtility.HtmlEncode(Model.Title)">
+    <meta name="twitter:description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
     <meta name="twitter:image" content="@MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png")">
     
     <!-- Preload hero media -->
-    @{ var hero = MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png"); }
+    @{ 
+        var hero = Model.Slides?.OrderBy(s => s.OrderIndex)
+            .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
+            .Select(s => MakeAbsolute(s.MediaUrl))
+            .FirstOrDefault() ?? MakeAbsolute("/Assets/Logo_Auth.png");
+    }
     <link rel="preload" as="image" href="@hero">
     
     <!-- Preload next 2 slides for better performance -->
@@ -70,8 +75,8 @@
       "@@context": "https://schema.org",
       "@@type": "Article",
       "@@id": "@Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)",
-      "headline": "@Html.Raw(Model.Title.Replace("\"", "\\\""))",
-      "description": "@Html.Raw((Model.Description ?? Model.MetaDescription ?? $"Read {Model.Title} on DiscussionSpot").Replace("\"", "\\\""))",
+      "headline": "@System.Text.Json.JsonSerializer.Serialize(Model.Title ?? "")",
+      "description": "@System.Text.Json.JsonSerializer.Serialize(Model.Description ?? Model.MetaDescription ?? $"Read {Model.Title} on DiscussionSpot")",
       "datePublished": "@Model.CreatedAt.ToString("o")",
       "dateModified": "@Model.UpdatedAt.ToString("o")",
       "author": {
@@ -91,32 +96,23 @@
         "@@type": "WebPage",
         "@@id": "@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)"
       },
-      @if (Model.Post != null) {
-      @:"isPartOf": {
-      @:  "@@type": "WebPage",
-      @:  "@@id": "@Url.Action("Details", "Post", new { communitySlug = Model.Post.Community?.Slug ?? string.Empty, postSlug = Model.Post.Slug }, Context.Request.Scheme)"
-      @:},
-      }
       "image": [
-        @if (Model.Slides != null && Model.Slides.Any())
-        {
-            var images = Model.Slides.OrderBy(s => s.OrderIndex)
-                .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
-                .Select(s => $"\"{MakeAbsolute(s.MediaUrl)}\"")
-                .Take(5)
-                .ToList();
-            if (images.Any())
+        @{
+            var imageUrls = Model.Slides != null && Model.Slides.Any()
+                ? Model.Slides.OrderBy(s => s.OrderIndex)
+                    .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
+                    .Select(s => MakeAbsolute(s.MediaUrl))
+                    .Take(5)
+                    .ToList()
+                : new List<string>();
+            
+            if (!imageUrls.Any())
             {
-                @Html.Raw(string.Join(",", images))
+                imageUrls.Add(MakeAbsolute("/Assets/Logo_Auth.png"));
             }
-            else
-            {
-                @Html.Raw($"\"{MakeAbsolute("/Assets/Logo_Auth.png")}\"")
-            }
-        }
-        else
-        {
-            @Html.Raw($"\"{MakeAbsolute("/Assets/Logo_Auth.png")}\"")
+            
+            var imageJson = System.Text.Json.JsonSerializer.Serialize(imageUrls);
+            @Html.Raw(imageJson.Replace("[", "").Replace("]", "")) // Remove array brackets, keep commas
         }
       ],
       "keywords": "@(Model.MetaKeywords ?? ExtractKeywords(Model.Title))",
@@ -242,28 +238,26 @@
     </style>
 </head>
 <body>
+    @{
+        var firstSlideImage = Model.Slides?.OrderBy(s => s.OrderIndex)
+            .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
+            .Select(s => MakeAbsolute(s.MediaUrl))
+            .FirstOrDefault() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
+        var publisherLogo = MakeAbsolute(Model.PublisherLogo) ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
+    }
     <amp-story standalone 
-               title="@Model.Title"
-               publisher="DiscussionSpot"
-               publisher-logo-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
-               poster-portrait-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
-               poster-landscape-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
-               poster-square-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
-        @* Optional background audio *@
-        @if (!string.IsNullOrWhiteSpace(Model.BackgroundAudioUrl))
-        {
-            var audioSrc = MakeAbsolute(Model.BackgroundAudioUrl);
-            <amp-audio autoplay loop>
-                <source src="@audioSrc" type="audio/mpeg" />
-            </amp-audio>
-        }
+               title="@System.Net.WebUtility.HtmlEncode(Model.Title)"
+               publisher="@(Model.PublisherName ?? "DiscussionSpot")"
+               publisher-logo-src="@publisherLogo"
+               poster-portrait-src="@firstSlideImage"
+               poster-landscape-src="@firstSlideImage"
+               poster-square-src="@firstSlideImage"
+               theme-color="#667eea">
         
         @if (Model.Slides != null && Model.Slides.Any())
         {
-            var orderedSlides = Model.Slides.OrderBy(s => s.OrderIndex).ToList();
-            for (int i = 0; i < orderedSlides.Count; i++)
+            @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
             {
-                var slide = orderedSlides[i];
                 var src = MakeAbsolute(slide.MediaUrl);
                 <amp-story-page id="page-@slide.OrderIndex">
                     <amp-story-grid-layer template="fill">
@@ -301,18 +295,6 @@
                             <p class="story-caption">@slide.Caption</p>
                         }
                     </amp-story-grid-layer>
-                    @* Add swipe-up attachment to the post on the last page *@
-                    @if (i == orderedSlides.Count - 1 && Model.Post != null)
-                    {
-                        var communitySlug = Model.Post.Community?.Slug ?? string.Empty;
-                        var postUrl = Url.Action("Details", "Post", new { communitySlug = communitySlug, postSlug = Model.Post.Slug }, Context.Request.Scheme);
-                        if (!string.IsNullOrEmpty(postUrl))
-                        {
-                            <amp-story-page-attachment layout="nodisplay" href="@postUrl">
-                                Read full post
-                            </amp-story-page-attachment>
-                        }
-                    }
                 </amp-story-page>
             }
         }
@@ -338,7 +320,7 @@
                     { "provider": "facebook" },
                     { "provider": "twitter" }
                 ],
-                "components": @Html.Raw(ViewBag.BookendComponents ?? "[]")
+                "components": @(ViewBag.BookendComponents ?? "[]")
             }
             </script>
         </amp-story-bookend>
