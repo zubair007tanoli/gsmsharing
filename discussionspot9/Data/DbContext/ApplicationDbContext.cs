@@ -877,6 +877,7 @@ namespace discussionspot9.Data.DbContext
                 entity.HasIndex(e => new { e.Status, e.PublishedAt });
                 entity.HasIndex(e => new { e.UserId, e.CreatedAt });
                 entity.HasIndex(e => e.Slug);
+                entity.HasIndex(e => e.PostId);
 
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -886,6 +887,11 @@ namespace discussionspot9.Data.DbContext
                 entity.HasOne(e => e.Community)
                     .WithMany()
                     .HasForeignKey(e => e.CommunityId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
                     .OnDelete(DeleteBehavior.SetNull);
 
                 entity.ToTable(t =>

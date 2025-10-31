@@ -40,7 +40,7 @@ namespace discussionspot9.Controllers
             sitemap.AppendLine("    <priority>0.9</priority>");
             sitemap.AppendLine("  </url>");
 
-            // Individual stories
+            // Individual stories (use non-AMP viewer as canonical)
             var stories = await _context.Stories
                 .Where(s => s.Status == "published")
                 .OrderByDescending(s => s.PublishedAt)
@@ -50,7 +50,7 @@ namespace discussionspot9.Controllers
             foreach (var story in stories)
             {
                 sitemap.AppendLine("  <url>");
-                sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}/stories/{story.Slug}</loc>");
+                sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}/stories/viewer/{story.Slug}</loc>");
                 sitemap.AppendLine($"    <lastmod>{story.UpdatedAt:yyyy-MM-dd}</lastmod>");
                 sitemap.AppendLine("    <changefreq>weekly</changefreq>");
                 sitemap.AppendLine("    <priority>0.8</priority>");

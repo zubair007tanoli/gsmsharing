@@ -7,6 +7,9 @@ namespace discussionspot9.Models.Domain
     {
         public int StoryId { get; set; }
         
+        // Link back to originating post for traffic and attribution
+        public int? PostId { get; set; }
+        
         [Required(ErrorMessage = "Title is required")]
         [StringLength(300, ErrorMessage = "Title cannot exceed 300 characters")]
         public string Title { get; set; } = null!;
@@ -31,10 +34,12 @@ namespace discussionspot9.Models.Domain
         public string? CanonicalUrl { get; set; }
         public string? MetaDescription { get; set; }
         public string? MetaKeywords { get; set; }
+        public string? BackgroundAudioUrl { get; set; }
 
         // Navigation properties
         public virtual IdentityUser? User { get; set; }
         public virtual Community? Community { get; set; }
+        public virtual Post? Post { get; set; }
         public virtual ICollection<StorySlide> Slides { get; set; } = new List<StorySlide>();
     }
 }

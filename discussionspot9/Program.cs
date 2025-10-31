@@ -190,6 +190,7 @@ builder.Services.AddHostedService<QueuedHostedService>();
 
 // Media Upload Service
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
+builder.Services.AddScoped<IMediaOptimizationService, MediaOptimizationService>();
 
 // AI Content Enhancement Service
 builder.Services.AddScoped<IAIContentEnhancementService, AIContentEnhancementService>();

@@ -91,6 +91,12 @@
         "@@type": "WebPage",
         "@@id": "@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)"
       },
+      @if (Model.Post != null) {
+      @:"isPartOf": {
+      @:  "@@type": "WebPage",
+      @:  "@@id": "@Url.Action("Details", "Post", new { communitySlug = Model.Post.Community?.Slug ?? string.Empty, postSlug = Model.Post.Slug }, Context.Request.Scheme)"
+      @:},
+      }
       "image": [
         @if (Model.Slides != null && Model.Slides.Any())
         {
@@ -243,11 +249,21 @@
                poster-portrait-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
                poster-landscape-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
                poster-square-src="@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
+        @* Optional background audio *@
+        @if (!string.IsNullOrWhiteSpace(Model.BackgroundAudioUrl))
+        {
+            var audioSrc = MakeAbsolute(Model.BackgroundAudioUrl);
+            <amp-audio autoplay loop>
+                <source src="@audioSrc" type="audio/mpeg" />
+            </amp-audio>
+        }
         
         @if (Model.Slides != null && Model.Slides.Any())
         {
-            @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
+            var orderedSlides = Model.Slides.OrderBy(s => s.OrderIndex).ToList();
+            for (int i = 0; i < orderedSlides.Count; i++)
             {
+                var slide = orderedSlides[i];
                 var src = MakeAbsolute(slide.MediaUrl);
                 <amp-story-page id="page-@slide.OrderIndex">
                     <amp-story-grid-layer template="fill">
@@ -285,6 +301,18 @@
                             <p class="story-caption">@slide.Caption</p>
                         }
                     </amp-story-grid-layer>
+                    @* Add swipe-up attachment to the post on the last page *@
+                    @if (i == orderedSlides.Count - 1 && Model.Post != null)
+                    {
+                        var communitySlug = Model.Post.Community?.Slug ?? string.Empty;
+                        var postUrl = Url.Action("Details", "Post", new { communitySlug = communitySlug, postSlug = Model.Post.Slug }, Context.Request.Scheme);
+                        if (!string.IsNullOrEmpty(postUrl))
+                        {
+                            <amp-story-page-attachment layout="nodisplay" href="@postUrl">
+                                Read full post
+                            </amp-story-page-attachment>
+                        }
+                    }
                 </amp-story-page>
             }
         }

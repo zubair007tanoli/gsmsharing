@@ -113,6 +113,7 @@ namespace discussionspot9.Services
                     Description = GenerateStoryDescription(extractedContent.MainContent, options),
                     UserId = post.UserId,
                     CommunityId = post.CommunityId,
+                    PostId = post.PostId,
                     Status = "draft",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
@@ -121,7 +122,8 @@ namespace discussionspot9.Services
                     PublisherLogo = "/Assets/Logo_Auth.png",
                     MetaDescription = metaDescription,
                     MetaKeywords = keywords,
-                    CanonicalUrl = $"/stories/amp/{GenerateStorySlug(storyTitle)}"
+                    // Canonical should be the non-AMP story viewer route
+                    CanonicalUrl = $"/stories/viewer/{GenerateStorySlug(storyTitle)}"
                 };
 
                 context.Stories.Add(story);

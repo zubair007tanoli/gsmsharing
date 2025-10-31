@@ -426,6 +426,8 @@ namespace discussionspot9.Controllers
             var story = await _context.Stories
                 .Include(s => s.Slides)
                 .Include(s => s.User)
+                .Include(s => s.Post)
+                    .ThenInclude(p => p.Community)
                 .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)
