@@ -1,4 +1,4 @@
-﻿<style>
+<style>
     /* Prevent horizontal scroll globally */
     html, body {
         overflow-x: hidden !important;
@@ -178,6 +178,66 @@
         height: 40px !important;
     }
 
+    /* Create Post Button */
+    .create-post-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+    }
+
+    .create-post-btn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+        color: white !important;
+    }
+
+    .create-post-btn i {
+        font-size: 0.9rem !important;
+        margin-right: 0.5rem !important;
+    }
+
+    /* Chat Badge */
+    #chatBadge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+        animation: pulse-badge 2s infinite;
+    }
+
+    .chat-btn {
+        position: relative;
+    }
+
+    @@keyframes pulse-badge {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.9;
+        }
+    }
+
     /* Responsive adjustments */
     @@media (max-width: 1200px) {
         .main-header .navbar-nav .nav-link span {
@@ -321,6 +381,11 @@
     }
 </style>
 
+@inject discussionspot9.Services.LiveStatsService LiveStatsService
+@{
+    var liveStats = await LiveStatsService.GetLiveStatsAsync();
+}
+
 <!-- Live Bar -->
 <div class="live-bar">
     <div class="container">
@@ -328,49 +393,74 @@
             <div class="live-item">
                 <span class="live-icon"><i class="fas fa-circle" style="font-size: 0.5rem;"></i></span>
                 <span class="live-badge hot">LIVE</span>
-                <span>🔥 523 users online right now</span>
+                <span>🔥 <span id="online-count-dynamic">@liveStats.OnlineUsersCount</span> users online right now</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-fire"></i>
-                <span>Trending: "Best coding practices 2025" - 234 comments</span>
+                <span>Trending: @liveStats.TrendingPost</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-bolt"></i>
-                <span>New: 12 posts in the last hour</span>
+                <span>New: @liveStats.PostsLastHour posts in the last hour</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-star"></i>
-                <span>Hot Topic: AI Discussion - 1.2K views</span>
+                <span>Hot Topic: @liveStats.HotTopic.Title - @liveStats.HotTopic.FormattedViewCount views</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-trophy"></i>
-                <span>Top Contributor: @@TechGuru - 89 posts this week</span>
+                <span>Top Contributor: @liveStats.TopContributor</span>
             </div>
             <!-- Duplicate items for seamless loop -->
             <div class="live-item">
                 <span class="live-icon"><i class="fas fa-circle" style="font-size: 0.5rem;"></i></span>
                 <span class="live-badge hot">LIVE</span>
-                <span>🔥 523 users online right now</span>
+                <span>🔥 <span id="online-count-dynamic-2">@liveStats.OnlineUsersCount</span> users online right now</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-fire"></i>
-                <span>Trending: "Best coding practices 2025" - 234 comments</span>
+                <span>Trending: @liveStats.TrendingPost</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-bolt"></i>
-                <span>New: 12 posts in the last hour</span>
+                <span>New: @liveStats.PostsLastHour posts in the last hour</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-star"></i>
-                <span>Hot Topic: AI Discussion - 1.2K views</span>
+                <span>Hot Topic: @liveStats.HotTopic.Title - @liveStats.HotTopic.FormattedViewCount views</span>
             </div>
             <div class="live-item">
                 <i class="fas fa-trophy"></i>
-                <span>Top Contributor: @@TechGuru - 89 posts this week</span>
+                <span>Top Contributor: @liveStats.TopContributor</span>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Auto-refresh online count every minute
+(function() {
+    function updateOnlineCount() {
+        fetch('/api/stats/online-count')
+            .then(response => response.json())
+            .then(data => {
+                if (data.count !== undefined) {
+                    const count1 = document.getElementById('online-count-dynamic');
+                    const count2 = document.getElementById('online-count-dynamic-2');
+                    const count3 = document.getElementById('online-count');
+                    
+                    if (count1) count1.textContent = data.count;
+                    if (count2) count2.textContent = data.count;
+                    if (count3) count3.textContent = data.count.toLocaleString();
+                }
+            })
+            .catch(err => console.log('Failed to fetch online count:', err));
+    }
+    
+    // Update every minute
+    setInterval(updateOnlineCount, 60000);
+})();
+</script>
 
 <!-- Compact Search Bar -->
 <div class="search-bar bg-light border-bottom">
@@ -387,7 +477,7 @@
             <div class="col-md-4 text-end">
                 <small class="text-muted">
                     <i class="fas fa-users me-1"></i>
-                    <span id="online-count">1,234</span> online
+                    <span id="online-count">@liveStats.OnlineUsersCount.ToString("N0")</span> online
                 </small>
             </div>
         </div>
@@ -419,6 +509,21 @@
                 <!-- Right-side elements -->
                 <div class="navbar-right">
                     <div class="nav-actions">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            <!-- Create Post Button -->
+                            <a href="/post/create" class="btn btn-primary btn-sm create-post-btn" title="Create Post">
+                                <i class="fas fa-plus me-1"></i>
+                                <span class="d-none d-md-inline">Create Post</span>
+                            </a>
+                            
+                            <!-- Chat Button -->
+                            <a asp-controller="ChatView" asp-action="Index" class="action-icon chat-btn" title="Messages" id="chatNavLink">
+                                <i class="fas fa-comments"></i>
+                                <span class="notification-badge" id="chatBadge" style="display: none;">0</span>
+                            </a>
+                        }
+                        
                         <div class="action-icon dark-mode-toggle" title="Toggle Dark Mode">
                             <i class="fas fa-moon"></i>
                             <i class="fas fa-sun"></i>
@@ -482,8 +587,9 @@
                                     <div class="avatar">JD</div>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="profile.html"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                    <li><a class="dropdown-item" href="settings.html"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    <li><a class="dropdown-item" asp-controller="ChatView" asp-action="Index"><i class="fas fa-comments me-2"></i>Messages <span class="badge bg-danger rounded-pill ms-1" id="messagesUnreadBadge" style="display: none;">0</span></a></li>
+                                    <li><a class="dropdown-item" asp-controller="Profile" asp-action="Settings"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                     <li><a class="dropdown-item" href="bookmarks.html"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
                                     @if (User.IsInRole("Admin"))
                                     {

@@ -158,33 +158,170 @@ class ChatUI {
     }
 
     /**
-     * Add conversation to list
+     * Render direct chats list
      */
-    addConversationToList(user) {
+    renderDirectChatsList(chats) {
         const listEl = document.getElementById('directChatList');
         if (!listEl) return;
 
-        // Remove empty state
+        // Remove empty state if exists
         const emptyState = listEl.querySelector('.chat-empty-state');
-        if (emptyState) {
+        if (emptyState && chats.length > 0) {
             emptyState.remove();
         }
 
-        const conversationHtml = `
-            <div class="chat-conversation-item" data-user-id="${user.userId}" onclick="window.openChat('${user.userId}', '${user.displayName}')">
-                <div class="chat-user-avatar" style="background: ${user.color || '#0079d3'}">
-                    ${user.initials}
-                    <div class="chat-online-dot"></div>
-                </div>
-                <div class="chat-conversation-info">
-                    <div class="chat-conversation-name">${user.displayName}</div>
-                    <div class="chat-conversation-preview">Click to start chatting...</div>
-                </div>
-                <div class="chat-conversation-time">now</div>
-            </div>
-        `;
+        if (chats.length === 0) {
+            return; // Keep empty state
+        }
 
-        listEl.insertAdjacentHTML('afterbegin', conversationHtml);
+        // Clear and render
+        listEl.innerHTML = '';
+        chats.forEach(chat => {
+            const initials = chat.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const lastMessageTime = chat.lastMessage ? this.formatTime(chat.lastMessage.sentAt) : '';
+            const lastMessageText = chat.lastMessage ? this.escapeHtml(chat.lastMessage.content.substring(0, 50)) : 'No messages yet';
+            
+            const conversationHtml = `
+                <div class="chat-conversation-item" data-user-id="${chat.userId}" onclick="window.openChat('${chat.userId}', '${this.escapeHtml(chat.displayName)}')">
+                    <div class="chat-user-avatar" style="background: ${this.getColorFromName(chat.displayName)}">
+                        ${initials}
+                        <div class="chat-online-dot" style="background: ${chat.status === 'online' ? '#46d160' : 'transparent'}"></div>
+                    </div>
+                    <div class="chat-conversation-info">
+                        <div class="chat-conversation-name">${this.escapeHtml(chat.displayName)}</div>
+                        <div class="chat-conversation-preview">${lastMessageText}${lastMessageText.length >= 50 ? '...' : ''}</div>
+                    </div>
+                    <div class="chat-conversation-meta">
+                        ${chat.unreadCount > 0 ? `<span class="chat-unread-badge-small">${chat.unreadCount > 99 ? '99+' : chat.unreadCount}</span>` : ''}
+                        <div class="chat-conversation-time">${lastMessageTime}</div>
+                    </div>
+                </div>
+            `;
+            listEl.insertAdjacentHTML('beforeend', conversationHtml);
+        });
+    }
+
+    /**
+     * Render chat rooms list
+     */
+    renderChatRoomsList(rooms) {
+        const listEl = document.getElementById('roomsListContent');
+        if (!listEl) return;
+
+        // Remove empty state if exists
+        const emptyState = listEl.querySelector('.chat-empty-state');
+        if (emptyState && rooms.length > 0) {
+            emptyState.remove();
+        }
+
+        if (rooms.length === 0) {
+            return; // Keep empty state
+        }
+
+        // Clear and render
+        listEl.innerHTML = '';
+        rooms.forEach(room => {
+            const initials = room.name.substring(0, 2).toUpperCase();
+            const lastMessageTime = room.lastMessage ? this.formatTime(room.lastMessage.sentAt) : '';
+            const lastMessageText = room.lastMessage ? this.escapeHtml(room.lastMessage.content.substring(0, 50)) : 'No messages yet';
+            
+            const roomHtml = `
+                <div class="chat-room-item" data-room-id="${room.chatRoomId}" onclick="openChatRoomWindow(${room.chatRoomId}, '${this.escapeHtml(room.name)}', '${room.iconUrl || ''}')">
+                    <div class="chat-room-avatar" style="background: ${this.getColorFromName(room.name)}">
+                        ${initials}
+                    </div>
+                    <div class="chat-room-info">
+                        <div class="chat-room-name">
+                            ${this.escapeHtml(room.name)}
+                            ${room.isPublic ? '<i class="fas fa-globe" title="Public Room"></i>' : '<i class="fas fa-lock" title="Private Room"></i>'}
+                        </div>
+                        <div class="chat-room-preview">${lastMessageText}${lastMessageText.length >= 50 ? '...' : ''}</div>
+                        <div class="chat-room-meta-info">
+                            <span><i class="fas fa-users"></i> ${room.memberCount} members</span>
+                        </div>
+                    </div>
+                    <div class="chat-room-meta">
+                        ${room.unreadCount > 0 ? `<span class="chat-unread-badge-small">${room.unreadCount > 99 ? '99+' : room.unreadCount}</span>` : ''}
+                        <div class="chat-room-time">${lastMessageTime}</div>
+                    </div>
+                </div>
+            `;
+            listEl.insertAdjacentHTML('beforeend', roomHtml);
+        });
+    }
+
+    /**
+     * Format time for display
+     */
+    formatTime(dateString) {
+        if (!dateString) return '';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'now';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+        if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
+        
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    /**
+     * Get color from name (deterministic)
+     */
+    getColorFromName(name) {
+        const colors = ['#0079d3', '#ff4500', '#46d160', '#ffa500', '#7c7c7c', '#0056b3', '#8b5cf6', '#ec4899'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    /**
+     * Render online users list
+     */
+    renderOnlineUsersList(users) {
+        const listEl = document.getElementById('onlineUsersContent');
+        const emptyState = document.getElementById('onlineUsersEmpty');
+        
+        if (!listEl) return;
+
+        // Show/hide empty state
+        if (users.length === 0) {
+            if (emptyState) emptyState.style.display = 'block';
+            listEl.innerHTML = '';
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
+        // Clear and render
+        listEl.innerHTML = '';
+        users.forEach(user => {
+            const initials = user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const avatarColor = this.getColorFromName(user.displayName);
+            
+            const userHtml = `
+                <div class="chat-conversation-item" onclick="window.openChat('${user.userId}', '${this.escapeHtml(user.displayName)}')">
+                    <div class="chat-user-avatar" style="background: ${avatarColor}; position: relative;">
+                        ${user.avatarUrl 
+                            ? `<img src="${this.escapeHtml(user.avatarUrl)}" alt="${this.escapeHtml(user.displayName)}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">`
+                            : `${initials}`}
+                        <div class="chat-online-dot" style="background: #46d160; display: block;"></div>
+                    </div>
+                    <div class="chat-conversation-info">
+                        <div class="chat-conversation-name">${this.escapeHtml(user.displayName)}</div>
+                        <div class="chat-conversation-preview" style="color: #46d160;">
+                            <i class="fas fa-circle" style="font-size: 0.5rem;"></i> Online
+                        </div>
+                    </div>
+                </div>
+            `;
+            listEl.insertAdjacentHTML('beforeend', userHtml);
+        });
     }
 }
 

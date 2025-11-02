@@ -1,7 +1,230 @@
-﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.HeaderViewModel
+@model discussionspot9.Models.ViewModels.CreativeViewModels.HeaderViewModel
 
 @* Modern Navbar Styles *@
 <link href="~/css/modern-navbar.css" rel="stylesheet" />
+
+<style>
+    /* Create Post Button - Replaced with icon-only version */
+
+    /* Chat Button */
+    .chat-btn {
+        position: relative;
+    }
+
+    /* Icon-Only Navigation - Space Efficient */
+    .icon-nav-list {
+        gap: 0.15rem;
+        align-items: center;
+    }
+
+    .icon-nav-link {
+        padding: 0.6rem 0.65rem !important;
+        justify-content: center;
+        min-width: 42px;
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        position: relative;
+    }
+
+    .icon-nav-link i {
+        font-size: 1.15rem;
+        margin: 0;
+    }
+
+    .icon-nav-link .icon-nav-text {
+        display: none;
+    }
+
+    .icon-nav-link:hover {
+        background: var(--hover-bg);
+        transform: translateY(-1px);
+    }
+
+    .icon-nav-link.active {
+        background: var(--active-bg);
+        color: #667eea;
+    }
+
+    /* Custom tooltip styling for better visibility */
+    .icon-nav-link[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        animation: tooltipFadeIn 0.2s ease forwards;
+    }
+
+    @@keyframes tooltipFadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .icon-nav-link[title]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    /* Tooltips for action icons */
+    .action-icon[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        animation: tooltipFadeIn 0.2s ease forwards;
+    }
+
+    .action-icon[title]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    /* Compact Search */
+    .compact-search {
+        max-width: 220px;
+        margin-right: 0.75rem;
+    }
+
+    .compact-search input {
+        font-size: 0.85rem;
+        padding: 0.5rem 2.25rem 0.5rem 0.9rem;
+    }
+
+    /* Tighter spacing for navbar-right */
+    .navbar-right {
+        gap: 0.5rem !important;
+    }
+
+    @@media (max-width: 991px) {
+        .compact-search {
+            max-width: 100%;
+            margin-right: 0;
+        }
+    }
+
+    /* Create Post Icon Button */
+    .create-post-icon-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        color: white !important;
+        width: 40px;
+        height: 40px;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+        margin-right: 0 !important;
+        position: relative;
+    }
+
+    .create-post-icon-btn:hover {
+        transform: translateY(-2px) scale(1.1) !important;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+        color: white !important;
+    }
+
+    .create-post-icon-btn:hover::after {
+        content: "Create Post";
+        position: absolute;
+        bottom: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+        animation: tooltipFadeIn 0.2s ease forwards;
+    }
+
+    .create-post-icon-btn:hover::before {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .create-post-icon-btn i {
+        font-size: 1rem !important;
+    }
+
+    /* Mobile: Show text labels */
+    @@media (max-width: 991px) {
+        .icon-nav-link {
+            justify-content: flex-start;
+            padding: 0.6rem 1rem !important;
+            min-width: auto;
+        }
+
+        .icon-nav-link i {
+            margin-right: 0.75rem;
+        }
+
+        .icon-nav-link .icon-nav-text {
+            display: inline;
+        }
+
+        .create-post-icon-btn {
+            width: auto;
+            padding: 0.5rem 1rem !important;
+            border-radius: 20px !important;
+        }
+
+        .create-post-icon-btn i {
+            margin-right: 0.5rem;
+        }
+
+        .create-post-icon-btn::after {
+            content: "Create";
+        }
+    }
+</style>
+
+<!-- CSS tooltips are used - no JavaScript needed -->
 
 <header class="main-header sticky-top">
     <div class="container">
@@ -16,40 +239,37 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto icon-nav-list">
                     <li class="nav-item">
-                        <a class="nav-link" asp-action="Index" asp-controller="Home">
-                            <i class="fas fa-home"></i> <span>Home</span>
+                        <a class="nav-link icon-nav-link" asp-action="Index" asp-controller="Home" title="Home">
+                            <i class="fas fa-home"></i>
+                            <span class="icon-nav-text d-lg-none">Home</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" asp-action="Index" asp-controller="Community">
-                            <i class="fas fa-users"></i> <span>Communities</span>
+                        <a class="nav-link icon-nav-link" asp-action="Index" asp-controller="Community" title="Communities">
+                            <i class="fas fa-users"></i>
+                            <span class="icon-nav-text d-lg-none">Communities</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" asp-action="Popular" asp-controller="Home">
-                            <i class="fas fa-fire"></i> <span>Popular</span>
+                        <a class="nav-link icon-nav-link" asp-action="Popular" asp-controller="Home" title="Popular">
+                            <i class="fas fa-fire"></i>
+                            <span class="icon-nav-text d-lg-none">Popular</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" asp-action="All" asp-controller="Post">
-                            <i class="fas fa-newspaper"></i> <span>Posts</span>
+                        <a class="nav-link icon-nav-link" asp-action="All" asp-controller="Post" title="Posts">
+                            <i class="fas fa-newspaper"></i>
+                            <span class="icon-nav-text d-lg-none">Posts</span>
                         </a>
                     </li>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" href="/create" style="color: #ff4500; font-weight: 600;">
-                                <i class="fas fa-plus-circle"></i> <span>Create</span>
-                            </a>
-                        </li>
-                    }
                     
                     @* More Dropdown *@
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-ellipsis-h"></i> <span>More</span>
+                        <a class="nav-link icon-nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="More">
+                            <i class="fas fa-ellipsis-h"></i>
+                            <span class="icon-nav-text d-lg-none">More</span>
                         </a>
                         <ul class="dropdown-menu">
                             <li>
@@ -68,13 +288,26 @@
 
                 <!-- Combined right-side elements into one container -->
                 <div class="navbar-right">
-                    <form asp-action="Index" asp-controller="Search" method="get" class="search-container">
+                    <form asp-action="Index" asp-controller="Search" method="get" class="search-container compact-search">
                         <input type="text" name="q" id="headerSearchInput" class="form-control form-control-sm" placeholder="Search..." autocomplete="off">
-                        <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+                        <button type="submit" class="search-btn" title="Search"><i class="fas fa-search"></i></button>
                         <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
                     </form>
 
                     <div class="nav-actions">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            <!-- Create Post Button - Icon Only -->
+                            <a href="/post/create" class="action-icon create-post-icon-btn" title="Create Post">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                            
+                            <!-- Chat Button -->
+                            <a href="#" onclick="if(typeof toggleChatWidget === 'function') { toggleChatWidget(); } return false;" class="action-icon chat-btn" title="Chat">
+                                <i class="fas fa-comments"></i>
+                            </a>
+                        }
+                        
                         <div class="action-icon dark-mode-toggle" title="Toggle Dark Mode">
                             <i class="fas fa-moon"></i>
                             <i class="fas fa-sun"></i>
@@ -83,7 +316,7 @@
                         {
                             <!-- Notification Dropdown -->
                             <div class="dropdown">
-                                <a href="#" class="action-icon notification-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                <a href="#" class="action-icon notification-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" title="Notifications">
                                     <i class="fas fa-bell"></i>
                                     @if (Model.UnreadNotifications > 0)
                                     {
@@ -161,6 +394,13 @@
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    <li><a class="dropdown-item" asp-controller="ChatView" asp-action="Index">
+                                        <i class="fas fa-comments me-2"></i>Messages 
+                                        @if (Model.UnreadMessagesCount > 0)
+                                        {
+                                            <span class="badge bg-danger rounded-pill ms-1">@Model.UnreadMessagesCount</span>
+                                        }
+                                    </a></li>
                                     <li><a class="dropdown-item" href="/profile/edit"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                     <li><a class="dropdown-item" href="/notifications"><i class="fas fa-bookmark me-2"></i>Bookmarks</a></li>
                                     

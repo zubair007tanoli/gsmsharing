@@ -38,8 +38,11 @@ builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions =>
     {
         sqlOptions.CommandTimeout(120); // Increased for remote server
-        // Don't use EnableRetryOnFailure - conflicts with manual transactions
-        // Instead, rely on connection string retry settings and pooling
+        // Enhanced retry on transient failures (SSL errors, network issues, connection drops)
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5, // Increased from 3 to 5
+            maxRetryDelay: TimeSpan.FromSeconds(60), // Increased from 30 to 60
+            errorNumbersToAdd: new[] { -2, 2, 53, 121, 233 }); // Add specific error codes for connection issues
         sqlOptions.MigrationsAssembly("discussionspot9");
     });
     
@@ -164,6 +167,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 //Interfaces & Repositories
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
+builder.Services.AddScoped<LiveStatsService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
@@ -534,6 +538,28 @@ app.MapControllerRoute(
     name: "post_create_general",
     pattern: "create",
     defaults: new { controller = "Post", action = "Create" });
+
+// Chat Routes
+app.MapControllerRoute(
+    name: "chat_index",
+    pattern: "chat",
+    defaults: new { controller = "ChatView", action = "Index" });
+
+app.MapControllerRoute(
+    name: "chat_direct",
+    pattern: "chat/direct/{userId}",
+    defaults: new { controller = "ChatView", action = "Direct" },
+    constraints: new { userId = @"^[a-zA-Z0-9_-]+$" });
+
+app.MapControllerRoute(
+    name: "chat_room",
+    pattern: "chat/rooms/{roomId}",
+    defaults: new { controller = "ChatView", action = "Room" });
+
+app.MapControllerRoute(
+    name: "chat_create_room",
+    pattern: "chat/rooms/create",
+    defaults: new { controller = "ChatView", action = "CreateRoom" });
 
 // Default fallback route (keep this last)
 app.MapControllerRoute(

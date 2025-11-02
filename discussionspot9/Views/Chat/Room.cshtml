@@ -1,0 +1,176 @@
+@model discussionspot9.Models.ViewModels.ChatViewModels.RoomChatViewModel
+@{
+    ViewData["Title"] = $"{Model.Room.Name} - Chat Room";
+}
+
+<link href="~/css/chat.css" rel="stylesheet" />
+<link href="~/css/chat-pages.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+
+<div class="chat-pages-container">
+    <div class="container py-4">
+        <div class="row">
+            <!-- Back to Inbox -->
+            <div class="col-12 mb-3">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Messages
+                </a>
+            </div>
+
+            <!-- Chat Window -->
+            <div class="col-lg-8 offset-lg-2">
+                <div class="chat-page-window">
+                    <!-- Chat Header -->
+                    <div class="chat-page-header">
+                        <div class="chat-page-user-info">
+                            <div class="chat-page-avatar" style="background: @GetColorFromName(Model.Room.Name)">
+                                @GetInitials(Model.Room.Name)
+                            </div>
+                            <div>
+                                <h4 class="mb-0">
+                                    @Model.Room.Name
+                                    @if (Model.Room.IsPublic)
+                                    {
+                                        <i class="fas fa-globe text-muted ms-2" style="font-size: 0.8rem;" title="Public Room"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-lock text-muted ms-2" style="font-size: 0.8rem;" title="Private Room"></i>
+                                    }
+                                </h4>
+                                <small class="text-muted">
+                                    <i class="fas fa-users"></i> @Model.Room.MemberCount members
+                                </small>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.Room.Description))
+                        {
+                            <div class="chat-room-description mt-2">
+                                <small class="text-muted">@Model.Room.Description</small>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Messages Area -->
+                    <div class="chat-page-messages" id="chatMessages">
+                        @if (Model.Messages != null && Model.Messages.Any())
+                        {
+                            @foreach (var message in Model.Messages.OrderBy(m => m.SentAt))
+                            {
+                                <div class="chat-message @(message.IsMine ? "mine" : "")">
+                                    <div class="chat-message-avatar">@GetInitials(message.SenderName)</div>
+                                    <div class="chat-message-content">
+                                        <div class="chat-message-sender">@message.SenderName</div>
+                                        <div class="chat-message-bubble">
+                                            <p class="chat-message-text">@Html.Raw(Html.Encode(message.Content).Replace("\n", "<br>"))</p>
+                                        </div>
+                                        <div class="chat-message-time">@message.FormattedTime</div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="chat-empty-messages">
+                                <p>No messages yet. Be the first to start the conversation!</p>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="chat-typing-indicator" id="typingIndicator" style="display: none;">
+                        <div class="typing-dots">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </div>
+                        <span>Someone is typing...</span>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="chat-page-input">
+                        <div class="chat-input-wrapper">
+                            <input type="text" class="chat-input" id="messageInput" placeholder="Type a message to @Model.Room.Name..." autocomplete="off" />
+                            <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/chat/chat-service.js"></script>
+<script src="~/js/chat/chat-controller.js"></script>
+<script src="~/js/chat/chat-ui.js"></script>
+
+<script>
+    let chatController = null;
+    const roomId = @Model.Room.ChatRoomId;
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Initialize chat
+        chatController = new ChatController();
+        await chatController.initialize();
+        
+        // Load room conversation
+        await chatController.loadRoomHistory(roomId);
+
+        // Setup input handlers
+        const input = document.getElementById('messageInput');
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    });
+
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        
+        if (message && chatController) {
+            chatController.sendMessage(message);
+            input.value = '';
+        }
+    }
+</script>
+
+<style>
+    .chat-message-sender {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #7c7c7c;
+        margin-bottom: 0.25rem;
+    }
+
+    .chat-message.mine .chat-message-sender {
+        display: none;
+    }
+</style>
+
+@functions {
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "U";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return (parts[0][0].ToString() + parts[1][0].ToString()).ToUpper();
+        return name.Substring(0, Math.Min(2, name.Length)).ToUpper();
+    }
+
+    private string GetColorFromName(string name)
+    {
+        var colors = new[] { "#0079d3", "#ff4500", "#46d160", "#ffa500", "#7c7c7c", "#0056b3", "#8b5cf6", "#ec4899" };
+        int hash = 0;
+        foreach (char c in name)
+        {
+            hash = c + ((hash << 5) - hash);
+        }
+        return colors[Math.Abs(hash) % colors.Length];
+    }
+}
+

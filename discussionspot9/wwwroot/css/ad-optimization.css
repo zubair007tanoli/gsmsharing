@@ -74,10 +74,11 @@
 }
 
 .sticky-ad-enhanced {
-    position: sticky;
-    top: 80px;
-    z-index: 900;
-    animation: slideInRight 0.6s ease-out;
+    position: relative;
+    top: 0;
+    z-index: 1;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
 }
 
 /* Multiple Sticky Positions */

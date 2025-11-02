@@ -8,6 +8,7 @@
         public string? AvatarUrl { get; set; }
         public string? UserId { get; set; }
         public int UnreadNotifications { get; set; }
+        public int UnreadMessagesCount { get; set; }
         public List<NotificationViewModel> RecentNotifications { get; set; } = new();
         public int KarmaPoints { get; set; }
         public bool IsVerified { get; set; }

@@ -1,0 +1,140 @@
+@model discussionspot9.Models.ViewModels.ChatViewModels.CreateChatRoomViewModel
+@{
+    ViewData["Title"] = "Create Chat Room - DiscussionSpot";
+}
+
+<link href="~/css/chat.css" rel="stylesheet" />
+<link href="~/css/chat-pages.css" rel="stylesheet" />
+
+<div class="chat-pages-container">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="chat-page-card">
+                    <div class="chat-page-header">
+                        <h2><i class="fas fa-plus-circle me-2"></i>Create New Chat Room</h2>
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+
+                    <form asp-action="CreateRoom" method="post" class="chat-create-form">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="chat-form-group">
+                            <label asp-for="Name" class="form-label">
+                                <i class="fas fa-hashtag me-2"></i>Room Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Name" class="form-control" placeholder="Enter room name (e.g., Gaming Lovers, Tech Talk)" required maxlength="100" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                            <small class="form-text text-muted">Choose a catchy name that describes your room</small>
+                        </div>
+
+                        <div class="chat-form-group">
+                            <label asp-for="Description" class="form-label">
+                                <i class="fas fa-align-left me-2"></i>Description (Optional)
+                            </label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Describe what this room is about..." maxlength="500"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                            <small class="form-text text-muted">Help others understand what this room is for</small>
+                        </div>
+
+                        <div class="chat-form-group">
+                            <div class="form-check">
+                                <input asp-for="IsPublic" class="form-check-input" type="checkbox" checked />
+                                <label asp-for="IsPublic" class="form-check-label">
+                                    <i class="fas fa-globe me-2"></i>Public Room
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Public rooms can be discovered and joined by anyone. Private rooms require invitations.
+                            </small>
+                        </div>
+
+                        <div class="chat-form-actions">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-2"></i>Create Room
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Info Card -->
+                <div class="chat-info-card mt-4">
+                    <h5><i class="fas fa-info-circle me-2"></i>Room Features</h5>
+                    <ul class="chat-features-list">
+                        <li><i class="fas fa-check text-success me-2"></i>Real-time messaging with SignalR</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Support for images and file attachments</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Member management and roles</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Read receipts and typing indicators</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Mobile-responsive design</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chat-page-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .chat-create-form {
+        padding: 2rem;
+    }
+
+    .chat-form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .chat-form-group label {
+        font-weight: 600;
+        color: #1c1c1c;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .chat-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #edeff1;
+    }
+
+    .chat-info-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+    }
+
+    .chat-info-card h5 {
+        margin-bottom: 1rem;
+        color: #1c1c1c;
+    }
+
+    .chat-features-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .chat-features-list li {
+        padding: 0.5rem 0;
+        color: #7c7c7c;
+    }
+</style>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

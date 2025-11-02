@@ -51,6 +51,12 @@ class ChatService {
             this.callbacks.onMessageReceived.forEach(cb => cb(message));
         });
 
+        // Receive room message
+        this.connection.on('ReceiveRoomMessage', (message) => {
+            console.log('📩 Room message received:', message);
+            this.callbacks.onMessageReceived.forEach(cb => cb(message));
+        });
+
         // Message sent confirmation
         this.connection.on('MessageSent', (message) => {
             console.log('✅ Message sent confirmation:', message);
@@ -187,6 +193,177 @@ class ChatService {
             return history;
         } catch (error) {
             console.error('❌ Error getting chat history:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get room chat history
+     */
+    async getRoomHistory(roomId, page = 1) {
+        if (!this.isConnected) return [];
+
+        try {
+            const history = await this.connection.invoke('GetRoomHistory', roomId, page, 50);
+            console.log('📜 Room history loaded:', history.length, 'messages');
+            return history;
+        } catch (error) {
+            console.error('❌ Error getting room history:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Join a room (SignalR group)
+     */
+    async joinRoom(roomId) {
+        if (!this.isConnected) return false;
+
+        try {
+            await this.connection.invoke('JoinRoom', roomId);
+            console.log('✅ Joined room:', roomId);
+            return true;
+        } catch (error) {
+            console.error('❌ Error joining room:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Leave a room (SignalR group)
+     */
+    async leaveRoom(roomId) {
+        if (!this.isConnected) return false;
+
+        try {
+            await this.connection.invoke('LeaveRoom', roomId);
+            console.log('✅ Left room:', roomId);
+            return true;
+        } catch (error) {
+            console.error('❌ Error leaving room:', error);
+            return false;
+        }
+    }
+
+    /**
+     * API Calls - HTTP endpoints
+     */
+
+    /**
+     * Get user's direct chats (HTTP)
+     */
+    async fetchDirectChats() {
+        try {
+            const response = await fetch('/api/chat/direct', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data.success ? data.chats : [];
+        } catch (error) {
+            console.error('❌ Error fetching direct chats:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get user's chat rooms (HTTP)
+     */
+    async fetchChatRooms() {
+        try {
+            const response = await fetch('/api/chat/rooms', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data.success ? data.rooms : [];
+        } catch (error) {
+            console.error('❌ Error fetching chat rooms:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Create a chat room (HTTP)
+     */
+    async createChatRoom(name, description, isPublic) {
+        try {
+            const response = await fetch('/api/chat/rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ name, description, isPublic })
+            });
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('❌ Error creating chat room:', error);
+            return { success: false, message: 'Failed to create room' };
+        }
+    }
+
+    /**
+     * Join a chat room (HTTP)
+     */
+    async joinChatRoom(roomId) {
+        try {
+            const response = await fetch(`/api/chat/rooms/${roomId}/join`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('❌ Error joining chat room:', error);
+            return { success: false, message: 'Failed to join room' };
+        }
+    }
+
+    /**
+     * Leave a chat room (HTTP)
+     */
+    async leaveChatRoom(roomId) {
+        try {
+            const response = await fetch(`/api/chat/rooms/${roomId}/leave`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('❌ Error leaving chat room:', error);
+            return { success: false, message: 'Failed to leave room' };
+        }
+    }
+
+    /**
+     * Get unread count (HTTP)
+     */
+    async getUnreadCount() {
+        try {
+            const response = await fetch('/api/chat/unread-count', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data.success ? data.count : 0;
+        } catch (error) {
+            console.error('❌ Error getting unread count:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Get online users (HTTP)
+     */
+    async fetchOnlineUsers() {
+        try {
+            const response = await fetch('/api/chat/online-users', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            return data.success ? data.users : [];
+        } catch (error) {
+            console.error('❌ Error fetching online users:', error);
             return [];
         }
     }

@@ -1,12 +1,36 @@
-﻿@model IEnumerable<gsmsharing.ViewModels.PostViewModelDisplay>
+@model IEnumerable<gsmsharing.ViewModels.PostViewModelDisplay>
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "Home - GSMSharing";
 }
 
-<div class="card">
+@section customStyle {
+    <link rel="stylesheet" href="~/css/Enhanced.css" asp-append-version="true" />
+}
+
+<!-- Welcome Banner -->
+<div class="welcome-banner mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-home me-2"></i>Welcome to GSMSharing
+            </h2>
+            <p class="mb-0 text-muted">Discover, share, and solve mobile tech challenges together</p>
+        </div>
+        <div class="quick-actions">
+            <a href="/Posts/Create" class="btn btn-gradient-primary">
+                <i class="fas fa-plus me-2"></i>Create Post
+            </a>
+            <a href="/Community" class="btn btn-outline-primary">
+                <i class="fas fa-users me-2"></i>Browse Communities
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card modern-card">
     <div class="card-body p-0">
         <!-- Tab Navigation -->
-        <ul class="nav nav-tabs" role="tablist">
+        <ul class="nav nav-tabs modern-tabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#recentTab">
                     <i class="fas fa-clock"></i>
@@ -17,6 +41,7 @@
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trendingTab">
                     <i class="fas fa-fire"></i>
                     <span>Trending</span>
+                    <span class="badge bg-danger ms-2">Hot</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -109,18 +134,18 @@
                                 </div> *@
                                 <!-- Post Actions -->
                                 <div class="d-flex align-items-center gap-2 post-actions">
-                                    <button class="like-btn" onclick="handleReaction(this, 'like')">
+                                    <button class="like-btn" onclick="handleReaction(this, 'like', @item.PostID)">
                                         <i class="far fa-thumbs-up"></i>
-                                        <span class="engagement-count">1.8k</span>
+                                        <span class="engagement-count">@item.Reactions.FormattedLikeCount</span>
                                     </button>
-                                    <button class="dislike-btn" onclick="handleReaction(this, 'dislike')">
+                                    <button class="dislike-btn" onclick="handleReaction(this, 'dislike', @item.PostID)">
                                         <i class="far fa-thumbs-down"></i>
-                                        <span class="engagement-count">32</span>
+                                        <span class="engagement-count">@item.Reactions.FormattedDislikeCount</span>
                                     </button>
-                                    <button class="btn-action">
+                                    <a href="/r/@item.CommunitySlug/posts/@item.Slug" class="btn-action">
                                         <i class="far fa-comment-alt"></i>
-                                        <span>142 Comments</span>
-                                    </button>
+                                        <span>@item.CommentCount Comments</span>
+                                    </a>
                                     <div class="dropdown">
                                         <button class="btn-action" data-bs-toggle="dropdown">
                                             <i class="fas fa-share"></i>
@@ -128,32 +153,36 @@
                                         </button>
                                         <ul class="dropdown-menu share-dropdown">
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a class="dropdown-item" href="https://www.facebook.com/sharer/sharer.php?u=@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)" target="_blank">
                                                     <i class="fab fa-facebook me-2"></i>Facebook
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a class="dropdown-item" href="https://twitter.com/intent/tweet?url=@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)&text=@item.Title" target="_blank">
                                                     <i class="fab fa-twitter me-2"></i>Twitter
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a class="dropdown-item" href="https://www.linkedin.com/sharing/share-offsite/?url=@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)" target="_blank">
                                                     <i class="fab fa-linkedin me-2"></i>LinkedIn
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a class="dropdown-item" href="#" onclick="copyToClipboard('@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)'); return false;">
                                                     <i class="fas fa-link me-2"></i>Copy Link
                                                 </a>
                                             </li>
                                         </ul>
                                     </div>
-                                    <button class="btn-action">
+                                    <button class="btn-action" onclick="savePost(@item.PostID)">
                                         <i class="far fa-bookmark"></i>
                                         <span>Save</span>
                                     </button>
+                                    <div class="views-count ms-auto">
+                                        <i class="fas fa-eye me-1"></i>
+                                        <span>@item.ViewCount views</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -169,9 +198,109 @@
 
             <!-- Following Tab -->
             <div class="tab-pane fade" id="followingTab" role="tabpanel">
-                <!-- Following content here -->
+                <div class="text-center py-5">
+                    <i class="fas fa-user-friends fa-4x text-muted mb-3"></i>
+                    <h4>Follow Communities and Users</h4>
+                    <p class="text-muted">Start following communities and users to see their posts here.</p>
+                    <a href="/Community" class="btn btn-gradient-primary mt-3">
+                        <i class="fas fa-compass me-2"></i>Explore Communities
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+@section Scripts {
+    <script>
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Link copied to clipboard!', 'success');
+            }, function(err) {
+                showToast('Failed to copy link', 'error');
+            });
+        }
+
+        // Handle reactions
+        function handleReaction(button, type, postId) {
+            // Add animation
+            button.classList.add('reacting');
+            
+            // Simulate API call (replace with actual API call)
+            fetch(`/api/posts/${postId}/react`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reactionType: type })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update count
+                const countSpan = button.querySelector('.engagement-count');
+                if (countSpan && data.count) {
+                    countSpan.textContent = data.count;
+                }
+                
+                // Toggle active state
+                button.classList.toggle('active');
+                
+                showToast(`Post ${type}d!`, 'success');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Please log in to react', 'warning');
+            })
+            .finally(() => {
+                setTimeout(() => button.classList.remove('reacting'), 300);
+            });
+        }
+
+        // Save post function
+        function savePost(postId) {
+            fetch(`/api/posts/${postId}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showToast('Post saved!', 'success');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Please log in to save posts', 'warning');
+            });
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Add loading skeleton on tab change
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (event) {
+                const targetPane = document.querySelector(event.target.getAttribute('data-bs-target'));
+                if (targetPane && !targetPane.hasChildNodes()) {
+                    targetPane.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+                    // Load content via AJAX here
+                }
+            });
+        });
+    </script>
+}

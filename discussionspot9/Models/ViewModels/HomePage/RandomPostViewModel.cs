@@ -1,4 +1,4 @@
-﻿// Models/ViewModels/HomePage/RandomPostViewModel.cs
+// Models/ViewModels/HomePage/RandomPostViewModel.cs
 using discussionspot9.Models.Domain;
 using System.ComponentModel.DataAnnotations;
 
@@ -20,6 +20,11 @@ namespace discussionspot9.Models.ViewModels.HomePage
         [Required]
         [StringLength(300)]
         public string Title { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Thumbnail URL for image posts or featured image
+        /// </summary>
+        public string? ThumbnailUrl { get; set; }
 
         /// <summary>
         /// URL-friendly version of the title

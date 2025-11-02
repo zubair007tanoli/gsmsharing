@@ -22,8 +22,11 @@
 
 <style>
     .sticky-ad-enhanced {
-        position: relative;
-        margin-bottom: 1.5rem;
+        position: relative !important;
+        top: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 1.5rem !important;
+        z-index: 1 !important;
     }
 
     .sticky-ad-enhanced .ad-wrapper {
@@ -33,11 +36,12 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         border: 2px solid #e1e8ed;
         transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .sticky-ad-enhanced .ad-wrapper:hover {
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        transform: translateY(-2px);
     }
 
     .ad-label-modern {
@@ -68,22 +72,12 @@
         overflow: hidden;
     }
 
-    @@keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
     /* Responsive */
     @@media (max-width: 991px) {
         .sticky-ad-enhanced {
-            position: relative;
-            top: 0;
+            position: relative !important;
+            top: 0 !important;
+            margin-top: 0 !important;
         }
     }
 

@@ -31,6 +31,9 @@
             <button class="chat-tab active" data-tab="direct" onclick="switchChatTab('direct')">
                 <i class="fas fa-user me-1"></i> Direct
             </button>
+            <button class="chat-tab" data-tab="users" onclick="switchChatTab('users')">
+                <i class="fas fa-circle me-1" style="color: #46d160; font-size: 0.7rem;"></i> Online
+            </button>
             <button class="chat-tab" data-tab="rooms" onclick="switchChatTab('rooms')">
                 <i class="fas fa-users me-1"></i> Rooms
             </button>
@@ -46,13 +49,33 @@
             </div>
         </div>
 
+        <!-- Online Users List -->
+        <div id="onlineUsersList" class="chat-list" style="display: none;">
+            <div class="chat-empty-state" id="onlineUsersEmpty" style="display: none;">
+                <div class="chat-empty-icon">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <div class="chat-empty-text">No users online right now.</div>
+            </div>
+            <div id="onlineUsersContent">
+                <!-- Online users will be loaded here -->
+            </div>
+        </div>
+
         <!-- Rooms List -->
         <div id="roomsChatList" class="chat-list" style="display: none;">
-            <div class="chat-empty-state">
-                <div class="chat-empty-icon">
-                    <i class="far fa-comments"></i>
+            <div class="chat-list-header">
+                <button class="chat-create-room-btn" onclick="openCreateRoomModal()" title="Create New Room">
+                    <i class="fas fa-plus"></i> Create Room
+                </button>
+            </div>
+            <div id="roomsListContent">
+                <div class="chat-empty-state">
+                    <div class="chat-empty-icon">
+                        <i class="far fa-comments"></i>
+                    </div>
+                    <div class="chat-empty-text">No chat rooms yet.<br>Create one to start group conversations!</div>
                 </div>
-                <div class="chat-empty-text">No chat rooms yet.<br>Create one to start group conversations!</div>
             </div>
         </div>
 
@@ -149,7 +172,13 @@
 
         // Show appropriate content
         document.getElementById('directChatList').style.display = tabName === 'direct' ? 'block' : 'none';
+        document.getElementById('onlineUsersList').style.display = tabName === 'users' ? 'block' : 'none';
         document.getElementById('roomsChatList').style.display = tabName === 'rooms' ? 'block' : 'none';
+        
+        // Load online users when tab is switched to 'users'
+        if (tabName === 'users' && chatController) {
+            chatController.loadOnlineUsers();
+        }
     }
 
     // Open chat window with specific user
@@ -161,8 +190,13 @@
         document.getElementById('chatWindowUserName').textContent = userName;
         document.getElementById('chatWindowAvatar').textContent = avatar;
         document.getElementById('chatWindowAvatar').style.background = getRandomColor();
+        document.getElementById('chatWindowStatus').innerHTML = '<i class="fas fa-circle" style="font-size: 0.5rem;"></i> Online';
         
-        // Load chat history (will be implemented)
+        // Store current user ID (clear room ID)
+        window.currentChatUserId = userId;
+        window.currentChatRoomId = null;
+        
+        // Load chat history
         if (chatController) {
             chatController.loadChatHistory(userId);
         }
@@ -187,6 +221,18 @@
             input.value = '';
         }
     }
+
+    // Handle input typing for typing indicator
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('chatInput');
+        if (input) {
+            input.addEventListener('input', function() {
+                if (chatController && window.currentChatUserId) {
+                    chatController.handleTyping();
+                }
+            });
+        }
+    });
 
     // Enter key to send
     document.addEventListener('DOMContentLoaded', function() {
@@ -214,11 +260,126 @@
             toggleChatWidget();
         }
         
+        // Switch to direct messages tab
+        switchChatTab('direct');
+        
         // Get initials
         const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         
         // Open chat window
         openChatWindow(userId, displayName, initials);
     };
+
+    // Open chat room window
+    function openChatRoomWindow(roomId, roomName, roomIcon) {
+        document.getElementById('directChatList').style.display = 'none';
+        document.getElementById('roomsChatList').style.display = 'none';
+        document.getElementById('chatWindow').classList.add('active');
+        
+        document.getElementById('chatWindowUserName').textContent = roomName;
+        document.getElementById('chatWindowAvatar').textContent = roomIcon || roomName.substring(0, 2).toUpperCase();
+        document.getElementById('chatWindowAvatar').style.background = getRandomColor();
+        document.getElementById('chatWindowStatus').innerHTML = '<i class="fas fa-users"></i> Group Chat';
+        
+        // Store current room ID
+        window.currentChatRoomId = roomId;
+        window.currentChatUserId = null;
+        
+        // Load room chat history
+        if (chatController) {
+            chatController.loadRoomHistory(roomId);
+        }
+    }
+
+    // Open create room modal
+    function openCreateRoomModal() {
+        const modal = document.getElementById('createRoomModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    // Close create room modal
+    function closeCreateRoomModal() {
+        const modal = document.getElementById('createRoomModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.getElementById('createRoomForm').reset();
+        }
+    }
+
+    // Create chat room form handler
+    async function createChatRoom(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const name = form.name.value.trim();
+        const description = form.description.value.trim();
+        const isPublic = form.isPublic.checked;
+        
+        if (!name) {
+            alert('Please enter a room name');
+            return;
+        }
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
+        
+        try {
+            if (chatController) {
+                const result = await chatController.createChatRoom(name, description || null, isPublic);
+                
+                if (result.success) {
+                    closeCreateRoomModal();
+                } else {
+                    alert(result.message || 'Failed to create room');
+                }
+            } else {
+                alert('Chat system not initialized');
+            }
+        } catch (error) {
+            console.error('Error creating room:', error);
+            alert('An error occurred while creating the room');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
 </script>
+
+<!-- Create Room Modal -->
+<div id="createRoomModal" class="chat-modal" style="display: none;">
+    <div class="chat-modal-content">
+        <div class="chat-modal-header">
+            <h3>Create New Chat Room</h3>
+            <button class="chat-modal-close" onclick="closeCreateRoomModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="createRoomForm" onsubmit="createChatRoom(event)">
+            <div class="chat-modal-body">
+                <div class="chat-form-group">
+                    <label for="roomName">Room Name *</label>
+                    <input type="text" id="roomName" name="name" required maxlength="100" placeholder="Enter room name" />
+                </div>
+                <div class="chat-form-group">
+                    <label for="roomDescription">Description (optional)</label>
+                    <textarea id="roomDescription" name="description" rows="3" maxlength="500" placeholder="Describe what this room is about"></textarea>
+                </div>
+                <div class="chat-form-group">
+                    <label class="chat-checkbox-label">
+                        <input type="checkbox" id="roomIsPublic" name="isPublic" checked />
+                        <span>Public Room (others can discover and join)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="chat-modal-footer">
+                <button type="button" class="chat-btn-secondary" onclick="closeCreateRoomModal()">Cancel</button>
+                <button type="submit" class="chat-btn-primary">Create Room</button>
+            </div>
+        </form>
+    </div>
+</div>
 

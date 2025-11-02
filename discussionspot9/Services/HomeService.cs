@@ -1,4 +1,4 @@
-﻿// Services/IHomeService.cs
+// Services/IHomeService.cs
 using discussionspot9.Models.ViewModels.HomePage;
 using Microsoft.Extensions.Caching.Memory;
 // Services/HomeService.cs
@@ -67,10 +67,16 @@ namespace discussionspot9.Services
                     .Include(p => p.Community)
                     .ThenInclude(c => c!.Category)
                     .Include(p => p.UserProfile)
+                    .Include(p => p.Media)
                     .AsNoTracking()
                     .OrderBy(r => Guid.NewGuid())
                     .Take(count)
-                    .Select(p => new RandomPostViewModel
+                    .ToListAsync();
+
+                var result = new List<RandomPostViewModel>();
+                foreach (var p in randomPosts)
+                {
+                    var post = new RandomPostViewModel
                     {
                         PostId = p.PostId,
                         Title = p.Title,
@@ -82,20 +88,20 @@ namespace discussionspot9.Services
                         AuthorDisplayName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
                         CommentCount = p.CommentCount,
                         CreatedAt = p.CreatedAt
-                    })
-                    .ToListAsync();
-
-                foreach (var post in randomPosts)
-                {
+                    };
                     post.AuthorInitials = GetInitials(post.AuthorDisplayName);
+                    // Get first image thumbnail if available
+                    post.ThumbnailUrl = p.Media?.FirstOrDefault(m => m.MediaType == "image")?.ThumbnailUrl ?? 
+                                       p.Media?.FirstOrDefault(m => m.MediaType == "image")?.Url;
+                    result.Add(post);
                 }
 
-                _cache.Set(cacheKey, randomPosts, new MemoryCacheEntryOptions
+                _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
                     Priority = CacheItemPriority.Normal
                 });
-                return randomPosts;
+                return result;
             }
             catch (Exception ex)
             {
@@ -172,10 +178,16 @@ namespace discussionspot9.Services
                     .Include(p => p.PostTags)
                     .ThenInclude(pt => pt.Tag)
                     .Include(p => p.UserProfile)
+                    .Include(p => p.Media)
                     .AsNoTracking()
                     .OrderByDescending(p => p.CreatedAt)
                     .Take(count)
-                    .Select(p => new RecentPostViewModel
+                    .ToListAsync();
+
+                var result = new List<RecentPostViewModel>();
+                foreach (var p in recentPosts)
+                {
+                    var post = new RecentPostViewModel
                     {
                         PostId = p.PostId,
                         Title = p.Title,
@@ -190,21 +202,21 @@ namespace discussionspot9.Services
                         ViewCount = p.ViewCount,
                         CreatedAt = p.CreatedAt,
                         Tags = p.PostTags.Select(pt => pt.Tag.Name).ToList()
-                    })
-                    .ToListAsync();
-
-                foreach (var post in recentPosts)
-                {
+                    };
                     post.Excerpt = GenerateExcerpt(post.Content, 150);
                     post.AuthorInitials = GetInitials(post.AuthorDisplayName);
+                    // Get first image thumbnail if available
+                    post.ThumbnailUrl = p.Media?.FirstOrDefault(m => m.MediaType == "image")?.ThumbnailUrl ?? 
+                                       p.Media?.FirstOrDefault(m => m.MediaType == "image")?.Url;
+                    result.Add(post);
                 }
 
-                _cache.Set(cacheKey, recentPosts, new MemoryCacheEntryOptions
+                _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
                     Priority = CacheItemPriority.Normal
                 });
-                return recentPosts;
+                return result;
             }
             catch (Exception ex)
             {
@@ -247,10 +259,16 @@ namespace discussionspot9.Services
 .Where(p => p.Status == "published") // Remove date filter for now
                 .Include(p => p.Community)
                 .ThenInclude(c => c!.Category)
+                .Include(p => p.Media)
                 .AsNoTracking()
                 .OrderByDescending(p => (p.Score * 2) + (p.CommentCount * 3) + p.ViewCount) // Better trending algorithm
                 .Take(15) // Show 15 trending posts for more content
-                .Select(p => new TrendingTopicViewModel
+                .ToListAsync();
+
+            var result = new List<TrendingTopicViewModel>();
+            foreach (var p in trending)
+            {
+                var topic = new TrendingTopicViewModel
                 {
                     PostId = p.PostId,
                     Title = p.Title,
@@ -265,15 +283,19 @@ namespace discussionspot9.Services
                     IsHot = p.CommentCount > 5 || p.Score > 50, // Better hot logic
                     CreatedAt = p.CreatedAt,
                     LastActivity = p.UpdatedAt
-                })
-                .ToListAsync();
+                };
+                // Get first image thumbnail if available
+                topic.ThumbnailUrl = p.Media?.FirstOrDefault(m => m.MediaType == "image")?.ThumbnailUrl ?? 
+                                   p.Media?.FirstOrDefault(m => m.MediaType == "image")?.Url;
+                result.Add(topic);
+            }
 
-            _cache.Set(cacheKey, trending, new MemoryCacheEntryOptions
+            _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
                 Priority = CacheItemPriority.Normal
             });
-            return trending;
+            return result;
         }
 
         private async Task<OnlineUsersViewModel> GetOnlineUsersDataAsync()

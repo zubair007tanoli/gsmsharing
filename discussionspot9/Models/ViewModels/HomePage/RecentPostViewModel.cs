@@ -1,4 +1,4 @@
-﻿// Models/ViewModels/HomePage/RecentPostViewModel.cs
+// Models/ViewModels/HomePage/RecentPostViewModel.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace discussionspot9.Models.ViewModels.HomePage
@@ -100,6 +100,11 @@ namespace discussionspot9.Models.ViewModels.HomePage
         /// Post type (text, link, image, video, poll)
         /// </summary>
         public string PostType { get; set; } = "text";
+
+        /// <summary>
+        /// Thumbnail URL for image posts or featured image
+        /// </summary>
+        public string? ThumbnailUrl { get; set; }
 
         /// <summary>
         /// Whether this post is pinned

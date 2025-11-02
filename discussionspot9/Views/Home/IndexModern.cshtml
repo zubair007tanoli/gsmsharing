@@ -85,6 +85,176 @@
         color: var(--accent-orange);
     }
 
+    /* Gamification Showcase */
+    .gamification-showcase {
+        background: linear-gradient(135deg, #f8f9ff 0%, #fff5f8 100%);
+        border: 2px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .gamification-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .gamification-card {
+        text-align: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+
+    .gamification-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+    }
+
+    .gamification-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 2rem;
+        color: white;
+    }
+
+    .karma-icon {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    }
+
+    .badge-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .leader-icon {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .gamification-card h4 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-dark);
+    }
+
+    .gamification-card p {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .karma-levels {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        margin-top: 1rem;
+    }
+
+    .level-badge {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .badge-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .preview-badge {
+        font-size: 2rem;
+        filter: grayscale(0%);
+        transition: all 0.3s ease;
+    }
+
+    .preview-badge:hover {
+        transform: scale(1.2);
+        filter: grayscale(0%);
+    }
+
+    .badge-count {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    /* Join CTA */
+    .join-cta {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+
+    .join-cta-content {
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+    }
+
+    .join-cta-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+    }
+
+    .join-cta-content h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .join-cta-content > p {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.95;
+    }
+
+    .join-cta-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .feature-item i {
+        font-size: 1.2rem;
+    }
+
+    .join-cta-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .join-cta-buttons .btn {
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+
     /* Hot Posts - Reddit Style List */
     .hot-posts-list {
         padding: 0;
@@ -236,6 +406,28 @@
         text-transform: uppercase;
     }
 
+    .post-thumbnail-section {
+        width: 120px;
+        height: 80px;
+        min-width: 120px;
+        overflow: hidden;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .post-thumbnail-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .post-thumbnail-img:hover {
+        transform: scale(1.05);
+    }
+
     .post-list-content {
         flex: 1;
     }
@@ -384,97 +576,56 @@
         background: var(--hover-bg);
     }
 
-    /* Sticky Sidebar Card */
-    .sidebar-card-sticky {
-        position: sticky;
-        top: 80px;
-        z-index: 10;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        border: 2px solid #667eea;
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-        transition: all 0.3s ease;
+    /* Premium Ad Card - Well-designed AdSense unit */
+    .premium-ad-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: box-shadow 0.3s ease;
+        margin-bottom: 1.5rem;
     }
 
-    .sidebar-card-sticky:hover {
-        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
-        transform: translateY(-2px);
+    .premium-ad-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    .sidebar-card-sticky .sidebar-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .premium-ad-card .sidebar-header {
+        background: linear-gradient(135deg, #0079d3 0%, #0056b3 100%);
         color: white;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1.25rem;
-    }
-
-    .sidebar-card-sticky .sidebar-header .badge {
-        background: rgba(255, 255, 255, 0.25);
-        color: white;
+        padding: 0.875rem 1.25rem;
         font-weight: 600;
+        font-size: 0.95rem;
     }
 
-    /* Enhanced new member item */
-    .new-member-item {
+    .premium-ad-card .sidebar-header i {
+        font-size: 0.9rem;
+    }
+
+    .premium-ad-content {
+        padding: 1.25rem;
+        min-height: 250px;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
-        transition: all 0.3s ease;
-        background: white;
-        border: 1px solid transparent;
+        justify-content: center;
     }
 
-    .new-member-item:hover {
-        background: #f8f9ff;
-        border-color: #667eea;
-        transform: translateX(4px);
-    }
-
-    .new-member-item .author-avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
+    .premium-ad-content .ad-wrapper {
+        width: 100%;
+        min-height: 250px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
-    .new-member-item .member-name {
-        font-weight: 600;
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .new-member-item .member-name a {
-        color: var(--text-dark);
-        text-decoration: none;
-        transition: color 0.2s;
-    }
-
-    .new-member-item .member-name a:hover {
-        color: #667eea;
-    }
-
-    .new-member-item .member-joined {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-
-    /* Responsive sticky behavior */
-    @@media (max-width: 991px) {
-        .sidebar-card-sticky {
-            position: relative;
-            top: 0;
-        }
+    .premium-ad-content .ad-footer-text {
+        margin-top: 0.75rem;
+        text-align: center;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-color);
+        width: 100%;
     }
 
     .online-users-grid {
@@ -567,6 +718,12 @@
 
         .post-list-item {
             flex-direction: column;
+        }
+
+        .post-thumbnail-section {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 0.5rem;
         }
 
         .hot-post-meta {
@@ -791,6 +948,95 @@
                 </div>
             }
 
+            <!-- Gamification Showcase -->
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <div class="content-card gamification-showcase">
+                    <div class="card-header-modern">
+                        <h2><i class="fas fa-trophy me-2"></i>🎉 Earn Rewards as You Contribute</h2>
+                    </div>
+                    <div class="gamification-cards">
+                        <div class="gamification-card">
+                            <div class="gamification-icon karma-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <h4>Karma Points</h4>
+                            <p>Earn karma for helpful posts and comments. Rise through 5 levels!</p>
+                            <div class="karma-levels">
+                                <span class="level-badge">🌱 Newbie</span> →
+                                <span class="level-badge">🌿 Contributor</span> →
+                                <span class="level-badge">🌳 Expert</span> →
+                                <span class="level-badge">🏅 Master</span> →
+                                <span class="level-badge">👑 Legend</span>
+                            </div>
+                        </div>
+                        <div class="gamification-card">
+                            <div class="gamification-icon badge-icon">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                            <h4>Achievement Badges</h4>
+                            <p>Unlock 30+ unique badges! Collect them all and show off your expertise.</p>
+                            <div class="badge-preview">
+                                <span class="preview-badge">🎯</span>
+                                <span class="preview-badge">🔥</span>
+                                <span class="preview-badge">💬</span>
+                                <span class="preview-badge">⭐</span>
+                                <span class="preview-badge">🏆</span>
+                                <span class="badge-count">+25 more</span>
+                            </div>
+                        </div>
+                        <div class="gamification-card">
+                            <div class="gamification-icon leader-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h4>Leaderboards</h4>
+                            <p>Compete with the best! See where you rank among top contributors.</p>
+                            <a href="/Leaderboard" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-trophy me-1"></i>View Rankings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="content-card join-cta">
+                    <div class="join-cta-content">
+                        <div class="join-cta-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3>🚀 Join the DiscussionSpot Community!</h3>
+                        <p>Get personalized recommendations, earn karma, unlock badges, and compete on leaderboards!</p>
+                        <div class="join-cta-features">
+                            <div class="feature-item">
+                                <i class="fas fa-check text-success"></i>
+                                <span>Earn Karma Points</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check text-success"></i>
+                                <span>Unlock Achievement Badges</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check text-success"></i>
+                                <span>Compete on Leaderboards</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check text-success"></i>
+                                <span>Connect with Experts</span>
+                            </div>
+                        </div>
+                        <div class="join-cta-buttons">
+                            <a asp-controller="Account" asp-action="Auth" class="btn btn-primary btn-lg">
+                                <i class="fas fa-rocket me-2"></i>Get Started Free
+                            </a>
+                            <a href="/Leaderboard" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-trophy me-2"></i>View Leaderboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
             <!-- In-Feed Ad - Blends with content -->
             <partial name="_AdUnit_InFeed" />
 
@@ -810,6 +1056,12 @@
                                     <div class="vote-count-large">@post.FormattedVoteCount</div>
                                     <div class="vote-label-small">votes</div>
                                 </div>
+                                @if (!string.IsNullOrEmpty(post.ThumbnailUrl))
+                                {
+                                    <div class="post-thumbnail-section">
+                                        <img src="@post.ThumbnailUrl" alt="@post.Title" class="post-thumbnail-img" loading="lazy">
+                                    </div>
+                                }
                                 <div class="post-list-content">
                                     <div class="post-list-title">
                                         <a href="@post.PostUrl">@post.Title</a>
@@ -915,6 +1167,12 @@
             <!-- Enhanced Sticky Ad - Top -->
             <partial name="_AdUnit_Sticky" />
 
+            <!-- User Stats Sidebar (for logged-in users) -->
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                @await Component.InvokeAsync("UserStatsSidebar")
+            }
+
             <!-- Online Users - Enhanced with Chat -->
             @if (Model?.Sidebar?.HasOnlineUsers == true)
             {
@@ -1010,109 +1268,32 @@
                 </div>
             </div>
 
-            <!-- New Members - Sticky Card with Karma System -->
-            @if (Model?.Sidebar?.HasNewMembers == true)
-            {
-                <div class="sidebar-card sidebar-card-sticky new-members-card">
-                    <div class="sidebar-header">
-                        <i class="fas fa-user-plus me-2"></i>Welcome New Members
-                        <span class="badge bg-success">@Model.Sidebar.NewMembers.Count() new</span>
+            <!-- Premium Sidebar Ad Unit - Optimized for High Visibility -->
+            <div class="sidebar-card premium-ad-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-ad me-2"></i>Sponsored Content
+                </div>
+                <div class="sidebar-content premium-ad-content">
+                    <div class="ad-wrapper">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+                                crossorigin="anonymous"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-5934633595595089"
+                             data-ad-slot="7326207040"
+                             data-ad-format="rectangle"
+                             data-full-width-responsive="true"></ins>
+                        <script>
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
                     </div>
-                    <div class="sidebar-content p-0">
-                        @foreach (var member in Model.Sidebar.NewMembers)
-                        {
-                            <div class="new-member-item @member.NewMemberCssClass" title="@member.TooltipText">
-                                <div class="member-content-wrapper">
-                                    <div class="member-avatar-section">
-                                        @if (member.HasAvatar)
-                                        {
-                                            <img src="@member.AvatarUrl" alt="@member.DisplayName" class="member-avatar-img" />
-                                        }
-                                        else
-                                        {
-                                            <div class="author-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2); width: 42px; height: 42px; font-size: 14px;">
-                                                @member.Initials
-                                            </div>
-                                        }
-                                        @if (member.IsBrandNew)
-                                        {
-                                            <span class="new-badge pulse">NEW</span>
-                                        }
-                                    </div>
-
-                                    <div class="member-info flex-grow-1">
-                                        <div class="member-name-row">
-                                            <a href="@member.ProfileUrl" class="member-name-link">
-                                                @member.DisplayName
-                                            </a>
-                                            @if (member.IsVerified)
-                                            {
-                                                <i class="fas fa-check-circle text-primary ms-1" title="Verified User"></i>
-                                            }
-                                            @if (member.JoinedToday)
-                                            {
-                                                <span class="badge bg-success badge-sm ms-2">Today</span>
-                                            }
-                                        </div>
-                                        
-                                        <div class="member-stats small text-muted">
-                                            <i class="far fa-clock me-1"></i>@member.JoinDateAgo
-                                        </div>
-
-                                        <!-- Karma and Activity Stats -->
-                                        @if (member.ShowDetailedStats)
-                                        {
-                                            <div class="member-karma-stats mt-2">
-                                                @if (member.KarmaPoints > 0)
-                                                {
-                                                    <span class="karma-badge" title="Karma Points">
-                                                        <i class="fas fa-star text-warning me-1"></i>
-                                                        <strong>@member.KarmaPoints</strong> karma
-                                                    </span>
-                                                }
-                                                @if (member.HasPosts)
-                                                {
-                                                    <span class="post-badge ms-2" title="Total Posts">
-                                                        <i class="fas fa-comment-dots me-1"></i>
-                                                        @member.PostCount post@(member.PostCount != 1 ? "s" : "")
-                                                    </span>
-                                                }
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="member-activity-level mt-2">
-                                                <span class="activity-badge">
-                                                    <i class="fas fa-seedling me-1"></i>@member.ActivityLevel
-                                                </span>
-                                            </div>
-                                        }
-                                    </div>
-
-                                    <div class="member-action">
-                                        <a href="@member.ProfileUrl" class="btn btn-sm btn-outline-primary rounded-pill" title="View Profile">
-                                            <i class="fas fa-user"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                                
-                                <!-- Bio (if available) -->
-                                @if (member.HasBio)
-                                {
-                                    <div class="member-bio">
-                                        <small class="text-muted">@member.ShortBio</small>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
-                    <div class="sidebar-footer text-center">
-                        <a href="/users" class="view-all-link">
-                            View All Members <i class="fas fa-arrow-right ms-2"></i>
-                        </a>
+                    <div class="ad-footer-text">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>Ad supports our community
+                        </small>
                     </div>
                 </div>
-            }
+            </div>
 
             <!-- Ad Space - Sidebar Bottom -->
             <div class="ad-space">
@@ -1172,37 +1353,7 @@
 
 <style>
 /* Enhanced New Members Card Styles with Karma System */
-.new-members-card {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    border: 1px solid #e1e8ed;
-}
-
-.new-members-card .sidebar-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 16px 20px;
-    font-weight: 600;
-}
-
-.new-members-card .sidebar-content {
-    max-height: none !important;
-}
-
-.new-member-item {
-    padding: 16px 20px;
-    border-bottom: 1px solid #f0f2f5;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-.new-member-item:hover {
-    background: #f8f9fa;
-    transform: translateX(4px);
-}
-
-.new-member-item:last-child {
-    border-bottom: none;
-}
+/* Removed unused new-members-card styles - replaced with premium-ad-card */
 
 .brand-new-member {
     background: linear-gradient(90deg, #fff8e1 0%, #ffffff 100%);
@@ -1380,27 +1531,17 @@
 
 /* Responsive Design */
 @@media (max-width: 768px) {
-    .new-member-item {
-        padding: 12px 16px;
+    .premium-ad-card {
+        margin-bottom: 1rem;
     }
-    
-    .member-content-wrapper {
-        gap: 8px;
+
+    .premium-ad-content {
+        padding: 1rem;
+        min-height: 200px;
     }
-    
-    .member-avatar-img,
-    .author-avatar {
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 12px !important;
-    }
-    
-    .member-name-link {
-        font-size: 13px;
-    }
-    
-    .member-karma-stats {
-        font-size: 10px;
+
+    .premium-ad-content .ad-wrapper {
+        min-height: 200px;
     }
 }
 </style>
