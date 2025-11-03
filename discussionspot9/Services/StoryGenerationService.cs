@@ -111,6 +111,7 @@ namespace discussionspot9.Services
                     Title = storyTitle,
                     Slug = GenerateStorySlug(storyTitle),
                     Description = GenerateStoryDescription(extractedContent.MainContent, options),
+                    PostId = post.PostId, // CRITICAL: Link back to original post
                     UserId = post.UserId,
                     CommunityId = post.CommunityId,
                     Status = "draft",

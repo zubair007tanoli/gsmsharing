@@ -44,6 +44,8 @@ builder.Services.AddScoped<ISeo, SEORepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<PostSEODataAccess>();
 builder.Services.AddSingleton<AIContentGenerator>();
+builder.Services.AddScoped<IForumThreadRepository, ForumThreadRepository>();
+builder.Services.AddScoped<IForumReplyRepository, ForumReplyRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -51,7 +53,6 @@ if (app.Environment.IsDevelopment())
 {
     // Show detailed error pages in development
     app.UseDeveloperExceptionPage();
-    app.UseMigrationsEndPoint(); // Database error page
 }
 else
 {

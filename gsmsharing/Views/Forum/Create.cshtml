@@ -1,0 +1,79 @@
+@model gsmsharing.Models.ForumThread
+@{
+    ViewData["Title"] = "Create Forum Thread - GSMSharing";
+}
+
+@section customStyle {
+    <link rel="stylesheet" href="~/css/Enhanced.css" asp-append-version="true" />
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+}
+
+<div class="card modern-card">
+    <div class="card-header">
+        <h4 class="mb-0"><i class="fas fa-plus me-2"></i>Create New Forum Thread</h4>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" asp-controller="Forum" method="post">
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label"><strong>Thread Title</strong></label>
+                <input asp-for="Title" class="form-control" placeholder="e.g., iPhone 14 Pro Max Not Turning On - Need Help" required />
+                <span asp-validation-for="Title" class="text-danger"></span>
+                <small class="form-text text-muted">Be specific and descriptive</small>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Content" class="form-label"><strong>Content</strong></label>
+                <div id="editor" style="min-height: 300px;"></div>
+                <textarea asp-for="Content" id="content" style="display: none;"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Tags" class="form-label"><strong>Tags (comma separated)</strong></label>
+                <input asp-for="Tags" class="form-control" placeholder="e.g., iPhone, Power Issue, Battery" />
+                <span asp-validation-for="Tags" class="text-danger"></span>
+                <small class="form-text text-muted">Add relevant tags to help others find your thread</small>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="MetaDiscription" class="form-label"><strong>Meta Description</strong></label>
+                <textarea asp-for="MetaDiscription" class="form-control" rows="2" placeholder="Brief description for SEO"></textarea>
+                <small class="form-text text-muted">Optional: Short description for search engines</small>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Create Thread
+                </button>
+                <a href="/Forum" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        var quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['code-block'],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            }
+        });
+
+        var form = document.querySelector('form');
+        form.onsubmit = function() {
+            var content = document.getElementById('content');
+            content.value = quill.root.innerHTML;
+            return true;
+        };
+    </script>
+}
+

@@ -260,6 +260,18 @@
                                     
                                     <p class="story-description">@(story.Description ?? "No description available")</p>
                                     
+                                    @if (!string.IsNullOrEmpty(story.PostSlug))
+                                    {
+                                        <div class="source-post-link mb-2">
+                                            <small class="text-info">
+                                                <i class="fas fa-link me-1"></i>
+                                                <a href="/r/@story.CommunitySlug/posts/@story.PostSlug" class="text-decoration-none">
+                                                    View Original Post
+                                                </a>
+                                            </small>
+                                        </div>
+                                    }
+                                    
                                     <div class="story-footer">
                                         <div class="story-actions-full">
                                             <a href="/stories/amp/@story.Slug" target="_blank" rel="noopener" class="btn btn-warning btn-sm text-dark">

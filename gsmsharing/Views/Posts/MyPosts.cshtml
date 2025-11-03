@@ -88,7 +88,7 @@
                                         @if (post.UpdatedAt.HasValue && post.UpdatedAt != post.CreatedAt)
                                         {
                                             <span class="mx-2">•</span>
-                                            <i class="fas fa-edit"></i> Updated: @post.UpdatedAt?.ToString("MMM dd, yyyy")
+                                            <i class="fas fa-edit"></i><span> Updated: </span>@post.UpdatedAt?.ToString("MMM dd, yyyy")
                                         }
                                     </p>
                                     <p class="mb-0">
@@ -103,7 +103,10 @@
                                         <a href="@Url.Action("Edit", new { id = post.PostID })" class="btn btn-sm btn-outline-secondary mb-2">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletePost(@post.PostID, '@post.Title')">
+                                        @{
+                                            var safeTitle = post.Title?.Replace("'", "&#39;")?.Replace("\n", " ")?.Replace("\r", "");
+                                        }
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletePost(@post.PostID, '@safeTitle')">
                                             <i class="fas fa-trash"></i> Delete
                                         </button>
                                     </div>
@@ -211,4 +214,3 @@
         });
     </script>
 }
-

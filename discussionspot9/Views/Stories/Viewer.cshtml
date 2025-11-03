@@ -7,6 +7,24 @@
     var hero = Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png";
 }
 
+@functions {
+    public static string StripHtml(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return string.Empty;
+            
+        // Remove HTML tags using regex
+        return System.Text.RegularExpressions.Regex.Replace(input, "<.*?>", string.Empty).Trim();
+    }
+    
+    public static bool IsVideoFile(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return false;
+        var extension = System.IO.Path.GetExtension(url).ToLower();
+        return extension == ".mp4" || extension == ".webm" || extension == ".mov" || extension == ".avi";
+    }
+}
+
 @section Head {
 <link rel="amphtml" href="@ampUrl" />
 <link rel="preload" as="image" href="@hero" />
@@ -37,21 +55,26 @@
                                     Your browser does not support the video tag.
                                 </video>
                             }
-                            else
+                            else if (!string.IsNullOrEmpty(slide.MediaUrl))
                             {
-                                <img class="slide-image" src="@slide.MediaUrl" alt="@slide.Caption" />
+                                <img class="slide-image" 
+                                     src="@slide.MediaUrl" 
+                                     alt="@(slide.Caption ?? slide.Headline ?? "Story slide")" 
+                                     loading="@(slide.OrderIndex <= 1 ? "eager" : "lazy")"
+                                     decoding="async"
+                                     onerror="this.style.opacity='0.5';" />
                             }
                         </div>
                     }
                     
-                    <div class="slide-content card-bottom align-@slide.Alignment?.ToLower()" style="background-color: @slide.BackgroundColor; color: @slide.TextColor; font-size: @slide.FontSize;">
+                    <div class="slide-content card-bottom align-@(slide.Alignment?.ToLower() ?? "center")" style="background-color: @slide.BackgroundColor; color: @slide.TextColor; font-size: @slide.FontSize;">
                         @if (!string.IsNullOrEmpty(slide.Headline))
                         {
                             <h1 class="slide-headline">@StripHtml(slide.Headline)</h1>
                         }
                         @if (!string.IsNullOrEmpty(slide.Text))
                         {
-                            <div class="slide-text">@StripHtml(slide.Text)</div>
+                            <div class="slide-text">@Html.Raw(StripHtml(slide.Text))</div>
                         }
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
@@ -60,6 +83,15 @@
                     </div>
                 </div>
             }
+        }
+        else
+        {
+            <div class="story-slide active">
+                <div class="slide-content">
+                    <h1 class="slide-headline">No slides available</h1>
+                    <p class="slide-text">This story doesn't have any slides to display.</p>
+                </div>
+            </div>
         }
     </div>
 
@@ -71,7 +103,7 @@
         
         <div class="control-center">
             <button class="control-btn play-pause-btn" id="play-pause-btn" title="Play/Pause">
-                <i class="fas fa-play"></i>
+                <i class="fas fa-pause"></i>
             </button>
             <div class="slide-counter">
                 <span id="current-slide">1</span> / <span id="total-slides">@(Model.Slides?.Count ?? 0)</span>
@@ -92,6 +124,12 @@
             <div class="story-header">
                 <h2 class="story-title">@Model.Title</h2>
                 <div class="story-actions">
+                    @if (Model.Post != null)
+                    {
+                        <a href="/r/@Model.Post.Community.Slug/posts/@Model.Post.Slug" class="action-btn" title="View Original Post">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    }
                     <button class="action-btn" id="share-btn" title="Share Story">
                         <i class="fas fa-share"></i>
                     </button>
@@ -103,30 +141,25 @@
                     </button>
                 </div>
             </div>
+            <div class="story-author">
+                <div class="author-info">
+                    <span class="author-name">@(Model.User?.UserName ?? "Unknown")</span>
+                    <span class="story-date">@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                </div>
+            </div>
             @if (!string.IsNullOrEmpty(Model.Description))
             {
                 <p class="story-description">@Model.Description</p>
             }
-            <div class="story-author">
-                <div class="author-info">
-                    <div class="author-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="author-details">
-                        <span class="author-name">@(Model.User?.UserName ?? "Unknown")</span>
-                        <span class="story-date">@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
-                    </div>
-                </div>
-                <div class="story-stats">
-                    <span class="stat-item">
-                        <i class="fas fa-eye"></i>
-                        <span id="view-count">0</span>
-                    </span>
-                    <span class="stat-item">
-                        <i class="fas fa-heart"></i>
-                        <span id="like-count">0</span>
-                    </span>
-                </div>
+            <div class="story-stats">
+                <span class="stat-item">
+                    <i class="fas fa-eye"></i>
+                    <span id="view-count">@Model.ViewCount</span>
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-heart"></i>
+                    <span id="like-count">0</span>
+                </span>
             </div>
         </div>
     </div>
@@ -187,6 +220,7 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.4);
     transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .progress-indicator.active {
@@ -215,6 +249,11 @@
 
 .story-slide.active {
     opacity: 1;
+    z-index: 10;
+}
+
+.story-slide:not(.active) {
+    pointer-events: none;
 }
 
 .slide-media {
@@ -224,64 +263,112 @@
     width: 100%;
     height: 100%;
     z-index: 1;
+    overflow: hidden;
 }
 
-.slide-video,
-.slide-image {
+.slide-image,
+.slide-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+.slide-image {
+    min-width: 100%;
+    min-height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    background-image: url('/Assets/Logo_Auth.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Ensure empty/broken images are handled */
+.slide-image[src=""],
+.slide-image:not([src]),
+.slide-image[src="undefined"],
+.slide-image[src="null"] {
+    opacity: 0.5;
+}
+
+/* Handle image load errors */
+.slide-image::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: -1;
 }
 
 .slide-content {
-    position: relative;
-    z-index: 2;
-    padding: 1.5rem 2rem;
-    max-width: min(720px, 86vw);
-    text-align: center;
-    align-self: center;
-    margin: 0 auto 8vh auto; /* keep text away from edges */
-    background: rgba(0, 0, 0, 0.35); /* improve readability */
-    border-radius: 18px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-}
-
-/* Consistent bottom card placement like IG/FB */
-.card-bottom {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 8vh;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 50%, transparent 100%);
+    color: white;
+    z-index: 2;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
 }
-
-/* Alignment helper classes (fallback to inline when present) */
-.align-left { text-align: left; }
-.align-center { text-align: center; }
-.align-right { text-align: right; }
 
 .slide-headline {
-    font-size: 2.5rem;
+    font-size: clamp(1.8rem, 5vw, 3rem);
     font-weight: bold;
-    margin-bottom: 1rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin: 0 auto 1.25rem auto;
+    padding: 0 1rem;
+    max-width: 90%;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.5);
+    line-height: 1.2;
+    word-wrap: break-word;
 }
 
 .slide-text {
-    font-size: 1.25rem;
+    font-size: clamp(1rem, 3vw, 1.4rem);
     line-height: 1.75;
-    margin-bottom: 0.75rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    text-align: justify;           /* better paragraph rhythm */
+    margin: 0 auto 1.25rem auto;
+    padding: 0 1.5rem;
+    max-width: 85%;
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.5);
+    text-align: justify;
     text-justify: inter-word;
+    word-wrap: break-word;
     hyphens: auto;
-    word-break: break-word;
 }
 
 .slide-caption {
-    font-size: 1rem;
-    opacity: 0.8;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    opacity: 0.95;
+    margin: 0 auto;
+    padding: 0 1rem;
+    max-width: 80%;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
     font-style: italic;
+}
+
+.align-left { 
+    text-align: left !important; 
+    margin-left: 0 !important;
+    margin-right: auto !important;
+}
+
+.align-center { 
+    text-align: center !important; 
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+.align-right { 
+    text-align: right !important; 
+    margin-left: auto !important;
+    margin-right: 0 !important;
 }
 
 .story-controls {
@@ -291,159 +378,136 @@
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1.5rem;
     z-index: 10000;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.6);
     padding: 1rem 2rem;
     border-radius: 50px;
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .control-btn {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 1rem;
+    padding: 0.8rem;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    width: 50px;
-    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 45px;
+    height: 45px;
 }
 
 .control-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .control-center {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
 }
 
-.slide-counter {
+.slide-counter,
+.slide-timer {
     color: white;
     font-size: 0.9rem;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-}
-
-.slide-timer {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.8rem;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    margin-top: 0.25rem;
+    font-weight: 500;
 }
 
 .story-info {
     position: absolute;
-    top: 2rem;
-    left: 2rem;
-    right: 2rem;
+    top: 1.5rem;
+    left: 1.5rem;
+    right: 80px; /* Leave space for close button */
     z-index: 10000;
-    color: white;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 1.5rem;
-    border-radius: 20px;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: calc(100% - 200px); /* Better width utilization */
+    min-width: 300px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1.25rem 1.5rem;
+    border-radius: 16px;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .story-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 1rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .story-title {
-    font-size: 1.8rem;
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
     font-weight: bold;
+    color: white;
     margin: 0;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
     flex: 1;
+    min-width: 200px;
+    line-height: 1.3;
+    word-wrap: break-word;
 }
 
 .story-actions {
     display: flex;
     gap: 0.5rem;
-    margin-left: 1rem;
 }
 
 .action-btn {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
     padding: 0.5rem;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s ease;
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
     display: flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
 }
 
 .action-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
-}
-
-.story-description {
-    font-size: 1rem;
-    opacity: 0.9;
-    margin-bottom: 1rem;
-    line-height: 1.5;
+    color: white;
 }
 
 .story-author {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 1rem;
 }
 
 .author-info {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: clamp(0.85rem, 2vw, 1rem);
 }
 
-.author-avatar {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-}
-
-.author-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.author-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.story-date {
-    font-size: 0.8rem;
-    opacity: 0.8;
+.story-description {
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    opacity: 0.95;
+    margin: 0 0 1rem 0;
+    padding: 0;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    line-height: 1.6;
+    text-align: justify;
+    text-justify: inter-word;
+    word-wrap: break-word;
+    width: 100%;
 }
 
 .story-stats {
@@ -457,6 +521,7 @@
     gap: 0.25rem;
     font-size: 0.9rem;
     opacity: 0.8;
+    color: white;
 }
 
 .close-btn {
@@ -488,112 +553,154 @@
 /* Mobile Responsive */
 @@media (max-width: 768px) {
     .slide-headline {
-        font-size: 2rem;
+        font-size: clamp(1.5rem, 6vw, 2.2rem);
+        max-width: 95%;
+        padding: 0 0.75rem;
     }
     
     .slide-text {
-        font-size: 1.05rem;
-        line-height: 1.6;
+        font-size: clamp(0.95rem, 3.5vw, 1.2rem);
+        line-height: 1.7;
+        max-width: 92%;
+        padding: 0 1rem;
+        text-align: left; /* Better for mobile readability */
+    }
+    
+    .slide-caption {
+        max-width: 90%;
+        padding: 0 0.75rem;
     }
     
     .story-controls {
         bottom: 1rem;
         gap: 1rem;
+        padding: 0.75rem 1.5rem;
     }
     
     .control-btn {
-        padding: 0.8rem;
+        width: 40px;
+        height: 40px;
+        padding: 0.6rem;
     }
+    
     .slide-content {
+        padding: 2rem 1rem;
+        width: 100%;
+    }
+    
+    .story-info {
+        top: 1rem;
+        left: 1rem;
+        right: 70px;
+        max-width: calc(100% - 150px);
+        min-width: 250px;
         padding: 1rem 1.25rem;
-        margin-bottom: 6vh;
-        max-width: 90vw;
+    }
+    
+    .story-title {
+        font-size: clamp(1rem, 3vw, 1.3rem);
+    }
+    
+    .story-description {
+        font-size: clamp(0.85rem, 2.5vw, 1rem);
+        text-align: left; /* Better for mobile */
+    }
+    
+    .close-btn {
+        top: 1rem;
+        right: 1rem;
+        width: 45px;
+        height: 45px;
+        padding: 0.75rem;
+    }
+}
+
+/* Tablet Responsive */
+@@media (min-width: 769px) and (max-width: 1024px) {
+    .story-info {
+        max-width: calc(100% - 250px);
+        right: 90px;
+    }
+    
+    .slide-content {
+        padding: 2.25rem 1.75rem;
+    }
+    
+    .slide-headline {
+        max-width: 88%;
+    }
+    
+    .slide-text {
+        max-width: 83%;
     }
 }
 </style>
 
 <!-- Story Viewer JavaScript -->
 <script src="~/js/stories/story-utils.js"></script>
-<script src="~/js/stories/story-notifications.js"></script>
-<script src="~/js/stories/story-viewer.js"></script>
+<script>
+// Initialize story viewer when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎬 Story Viewer initializing...');
+    
+    // Check if story-utils.js loaded properly
+    if (typeof window.storyViewer === 'undefined') {
+        console.warn('⚠️ story-utils.js not loaded, using fallback');
+        initializeFallbackViewer();
+    } else {
+        console.log('✅ Story viewer loaded from story-utils.js');
+    }
+});
 
-            progressBar.style.width = progress + '%';
-            
-            // Update progress indicators
-            updateProgressIndicators();
-            
-            // Reset slide timer
-            slideStartTime = Date.now();
-            document.getElementById('slide-timer').textContent = '0';
-            
-            // Increment view count on first view
-            if (index === 0 && viewCount === 0) {
-                viewCount++;
-                updateStats();
-            }
-        }
+function initializeFallbackViewer() {
+    const slides = document.querySelectorAll('.story-slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+    let isPlaying = true;
+    let slideTimer = null;
+    
+    console.log(`📊 Found ${totalSlides} slides`);
+    
+    // Show first slide
+    if (totalSlides > 0) {
+        showSlide(0);
+        startSlideTimer();
     }
     
-    function nextSlide() {
-        const nextIndex = (currentSlideIndex + 1) % totalSlides;
-        showSlide(nextIndex);
-        
-        if (isPlaying) {
-            startSlideTimer();
-        }
-    }
-    
-    function prevSlide() {
-        const prevIndex = currentSlideIndex === 0 ? totalSlides - 1 : currentSlideIndex - 1;
-        showSlide(prevIndex);
-        
-        if (isPlaying) {
-            startSlideTimer();
-        }
-    }
-    
-    function startSlideTimer() {
-        if (slideTimer) {
-            clearTimeout(slideTimer);
-        }
-        
-        const currentSlide = slides[currentSlideIndex];
-        const duration = currentSlide ? parseInt(currentSlide.dataset.duration) || 5000 : 5000;
-        
-        slideTimer = setTimeout(() => {
-            if (isPlaying) {
-                nextSlide();
-            }
-        }, duration);
-    }
-    
-    function togglePlayPause() {
-        isPlaying = !isPlaying;
-        const icon = playPauseBtn.querySelector('i');
-        
-        if (isPlaying) {
-            icon.className = 'fas fa-pause';
-            startSlideTimer();
-        } else {
-            icon.className = 'fas fa-play';
-            if (slideTimer) {
-                clearTimeout(slideTimer);
-            }
-        }
-    }
+    // Navigation buttons
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const closeBtn = document.getElementById('close-btn');
     
     // Event listeners
-    playPauseBtn.addEventListener('click', togglePlayPause);
-    nextBtn.addEventListener('click', () => {
-        nextSlide();
-    });
-    prevBtn.addEventListener('click', () => {
-        prevSlide();
-    });
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            console.log('⬅️ Previous slide');
+            prevSlide();
+        });
+    }
     
-    closeBtn.addEventListener('click', () => {
-        window.history.back();
-    });
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            console.log('➡️ Next slide');
+            nextSlide();
+        });
+    }
+    
+    if (playPauseBtn) {
+        playPauseBtn.addEventListener('click', () => {
+            console.log('⏯️ Toggle play/pause');
+            togglePlayPause();
+        });
+    }
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            console.log('❌ Close viewer');
+            closeViewer();
+        });
+    }
     
     // Keyboard navigation
     document.addEventListener('keydown', function(e) {
@@ -608,7 +715,7 @@
                 prevSlide();
                 break;
             case 'Escape':
-                window.history.back();
+                closeViewer();
                 break;
         }
     });
@@ -617,194 +724,173 @@
     let startX = 0;
     let startY = 0;
     
-    storyViewer.addEventListener('touchstart', function(e) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-    });
-    
-    storyViewer.addEventListener('touchend', function(e) {
-        const endX = e.changedTouches[0].clientX;
-        const endY = e.changedTouches[0].clientY;
-        const diffX = startX - endX;
-        const diffY = startY - endY;
+    const storyViewer = document.getElementById('story-viewer');
+    if (storyViewer) {
+        storyViewer.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
         
-        // Only handle horizontal swipes
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-            if (diffX > 0) {
-                nextSlide(); // Swipe left - next slide
-            } else {
-                prevSlide(); // Swipe right - previous slide
+        storyViewer.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const diffX = startX - endX;
+            const diffY = startY - endY;
+            
+            // Only handle horizontal swipes
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                if (diffX > 0) {
+                    nextSlide(); // Swipe left - next slide
+                } else {
+                    prevSlide(); // Swipe right - previous slide
+                }
             }
-        }
-    });
-    
-    // Auto-hide controls
-    let hideControlsTimer = null;
-    
-    function showControls() {
-        document.querySelector('.story-controls').style.opacity = '1';
-        document.querySelector('.story-info').style.opacity = '1';
-        document.querySelector('.close-btn').style.opacity = '1';
-        
-        if (hideControlsTimer) {
-            clearTimeout(hideControlsTimer);
-        }
-        
-        hideControlsTimer = setTimeout(() => {
-            document.querySelector('.story-controls').style.opacity = '0.3';
-            document.querySelector('.story-info').style.opacity = '0.3';
-            document.querySelector('.close-btn').style.opacity = '0.3';
-        }, 3000);
+        }, { passive: true });
     }
     
-    function hideControls() {
-        document.querySelector('.story-controls').style.opacity = '0';
-        document.querySelector('.story-info').style.opacity = '0';
-        document.querySelector('.close-btn').style.opacity = '0';
-    }
-    
-    // Show controls on interaction
-    storyViewer.addEventListener('click', showControls);
-    storyViewer.addEventListener('touchstart', showControls);
-    
-    // Initialize controls visibility
-    showControls();
-    
-    // Initialize action buttons
-    initializeActionButtons();
-    
-    // Helper functions
-    function initializeProgressIndicators() {
-        const indicatorsContainer = document.getElementById('progress-indicators');
-        if (!indicatorsContainer) return;
+    function showSlide(index) {
+        if (index < 0 || index >= totalSlides) return;
         
-        // Clear using safe method (not innerHTML)
-        while (indicatorsContainer.firstChild) {
-            indicatorsContainer.removeChild(indicatorsContainer.firstChild);
+        // Hide all slides
+        slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === index);
+        });
+        
+        currentSlide = index;
+        console.log(`📍 Showing slide ${index + 1}/${totalSlides}`);
+        
+        // Update counter
+        const currentSlideSpan = document.getElementById('current-slide');
+        if (currentSlideSpan) {
+            currentSlideSpan.textContent = index + 1;
         }
         
+        // Update progress indicators
+        const indicators = document.querySelectorAll('.progress-indicator');
+        indicators.forEach((indicator, i) => {
+            indicator.classList.toggle('active', i <= index);
+            indicator.classList.toggle('current', i === index);
+        });
+        
+        // Handle video autoplay
+        handleMediaPlayback(slides[index]);
+    }
+    
+    function handleMediaPlayback(slide) {
+        // Pause all videos
+        document.querySelectorAll('.story-slide video').forEach(video => {
+            video.pause();
+        });
+        
+        // Play video in current slide
+        const video = slide.querySelector('video');
+        if (video) {
+            video.currentTime = 0;
+            video.play().catch(e => console.warn('Video autoplay failed:', e));
+        }
+        
+        // Handle image loading
+        const images = slide.querySelectorAll('.slide-image');
+        images.forEach(img => {
+            // Set loading attribute for better performance
+            if (!img.hasAttribute('loading')) {
+                img.setAttribute('loading', 'eager');
+            }
+            
+            // Handle image load errors
+            img.addEventListener('error', function() {
+                console.warn('Image failed to load:', this.src);
+                this.style.opacity = '0.3';
+                // Keep the fallback background
+            });
+            
+            // Ensure image is visible when loaded
+            img.addEventListener('load', function() {
+                this.style.opacity = '1';
+            });
+        });
+    }
+    
+    function nextSlide() {
+        if (currentSlide < totalSlides - 1) {
+            clearSlideTimer();
+            showSlide(currentSlide + 1);
+            if (isPlaying) startSlideTimer();
+        } else {
+            // Restart from beginning
+            clearSlideTimer();
+            showSlide(0);
+        }
+    }
+    
+    function prevSlide() {
+        if (currentSlide > 0) {
+            clearSlideTimer();
+            showSlide(currentSlide - 1);
+            if (isPlaying) startSlideTimer();
+        }
+    }
+    
+    function togglePlayPause() {
+        isPlaying = !isPlaying;
+        const icon = playPauseBtn?.querySelector('i');
+        
+        if (isPlaying) {
+            icon?.setAttribute('class', 'fas fa-pause');
+            startSlideTimer();
+        } else {
+            icon?.setAttribute('class', 'fas fa-play');
+            clearSlideTimer();
+        }
+    }
+    
+    function startSlideTimer() {
+        clearSlideTimer();
+        const currentSlideElement = slides[currentSlide];
+        const duration = parseInt(currentSlideElement?.dataset.duration) || 5000;
+        
+        slideTimer = setTimeout(() => {
+            nextSlide();
+        }, duration);
+    }
+    
+    function clearSlideTimer() {
+        if (slideTimer) {
+            clearTimeout(slideTimer);
+            slideTimer = null;
+        }
+    }
+    
+    function closeViewer() {
+        clearSlideTimer();
+        
+        // Pause all videos
+        document.querySelectorAll('.story-slide video').forEach(video => {
+            video.pause();
+        });
+        
+        // Go back or redirect
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = '/stories';
+        }
+    }
+    
+    // Initialize progress indicators
+    const indicatorsContainer = document.getElementById('progress-indicators');
+    if (indicatorsContainer && totalSlides > 0) {
+        indicatorsContainer.innerHTML = '';
         for (let i = 0; i < totalSlides; i++) {
             const indicator = document.createElement('div');
             indicator.className = 'progress-indicator';
-            if (i === 0) indicator.classList.add('active');
+            indicator.addEventListener('click', () => {
+                clearSlideTimer();
+                showSlide(i);
+                if (isPlaying) startSlideTimer();
+            });
             indicatorsContainer.appendChild(indicator);
         }
     }
-    
-    function updateProgressIndicators() {
-        const indicators = document.querySelectorAll('.progress-indicator');
-        indicators.forEach((indicator, index) => {
-            indicator.classList.toggle('active', index === currentSlideIndex);
-        });
-    }
-    
-    function updateStats() {
-        document.getElementById('view-count').textContent = viewCount;
-        document.getElementById('like-count').textContent = likeCount;
-    }
-    
-    function initializeActionButtons() {
-        // Share button
-        document.getElementById('share-btn')?.addEventListener('click', () => {
-            if (navigator.share) {
-                navigator.share({
-                    title: document.querySelector('.story-title').textContent,
-                    text: document.querySelector('.story-description')?.textContent || '',
-                    url: window.location.href
-                });
-            } else {
-                // Fallback to copying URL
-                navigator.clipboard.writeText(window.location.href);
-                showNotification('Link copied to clipboard!');
-            }
-        });
-        
-        // Like button
-        document.getElementById('like-btn')?.addEventListener('click', () => {
-            isLiked = !isLiked;
-            likeCount += isLiked ? 1 : -1;
-            updateStats();
-            
-            const likeBtn = document.getElementById('like-btn');
-            likeBtn.style.color = isLiked ? '#ff6b6b' : 'white';
-            likeBtn.style.transform = isLiked ? 'scale(1.2)' : 'scale(1)';
-            
-            showNotification(isLiked ? 'Story liked!' : 'Story unliked!');
-        });
-        
-        // Bookmark button
-        document.getElementById('bookmark-btn')?.addEventListener('click', () => {
-            isBookmarked = !isBookmarked;
-            
-            const bookmarkBtn = document.getElementById('bookmark-btn');
-            bookmarkBtn.style.color = isBookmarked ? '#ffd700' : 'white';
-            bookmarkBtn.style.transform = isBookmarked ? 'scale(1.2)' : 'scale(1)';
-            
-            showNotification(isBookmarked ? 'Story bookmarked!' : 'Story unbookmarked!');
-        });
-    }
-    
-    function showNotification(message) {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            z-index: 10001;
-            font-size: 0.9rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        `;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
-    }
-    
-    function updateSlideTimer() {
-        if (slideStartTime) {
-            const elapsed = Math.floor((Date.now() - slideStartTime) / 1000);
-            document.getElementById('slide-timer').textContent = elapsed;
-        }
-    }
-    
-@functions {
-    private static string StripHtml(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-        return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty);
-    }
-    private bool IsVideoFile(string url)
-    {
-        var videoExtensions = new[] { ".mp4", ".webm", ".ogg", ".avi", ".mov" };
-        return videoExtensions.Any(ext => url.ToLower().EndsWith(ext));
-    }
-
-    // Minimal allowlist sanitizer: strips scripts/styles and dangerous attributes, allows basic formatting tags
-    private string SanitizeHtml(string html)
-    {
-        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
-        // Remove script/style tags and contents
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"<\s*(script|style)[^>]*>[\s\S]*?<\s*/\s*\1\s*>", string.Empty, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        // Remove on* event attributes and javascript: urls
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\son[a-z]+\s*=\s*""[^""]*""", string.Empty, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\shref\s*=\s*""javascript:[^""]*""", " href=\"#\"", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        // Allow only a safe set of tags; strip others
-        var allowed = new []{"p","br","strong","em","b","i","u","a","ul","ol","li","blockquote","span","h1","h2","h3"};
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"</?([a-z0-9]+)(?:\s[^>]*)?>", m => {
-            var tag = m.Groups[1].Value.ToLowerInvariant();
-            if (System.Array.IndexOf(allowed, tag) >= 0) return m.Value;
-            return string.Empty;
-        });
-        return html;
-    }
 }
+</script>

@@ -1,4 +1,4 @@
-﻿using gsmsharing.ViewModels;
+using gsmsharing.ViewModels;
 using System.Text.RegularExpressions;
 
 namespace gsmsharing.ExeMethods
@@ -22,6 +22,42 @@ namespace gsmsharing.ExeMethods
             if (string.IsNullOrWhiteSpace(post.MetaDescription))
             {
                 // Generate meta description from summary or content
+                var description = !string.IsNullOrWhiteSpace(post.MetaDescription)
+                    ? post.MetaDescription
+                    : StripHtmlAndTruncate(post.Content, 155);
+
+                post.MetaDescription = description?.Length > 160
+                    ? description.Substring(0, 157) + "..."
+                    : description;
+            }
+
+            if (string.IsNullOrWhiteSpace(post.OgDescription))
+            {
+                post.OgDescription = post.MetaDescription;
+            }
+
+            if (string.IsNullOrWhiteSpace(post.Slug))
+            {
+                post.Slug = GenerateSlug(post.Title);
+            }
+        }
+
+        public static void SetDefaultSeoValues(this PostEditViewModel post)
+        {
+            if (string.IsNullOrWhiteSpace(post.MetaTitle))
+            {
+                post.MetaTitle = post.Title?.Length > 60
+                    ? post.Title.Substring(0, 57) + "..."
+                    : post.Title;
+            }
+
+            if (string.IsNullOrWhiteSpace(post.OgTitle))
+            {
+                post.OgTitle = post.MetaTitle;
+            }
+
+            if (string.IsNullOrWhiteSpace(post.MetaDescription))
+            {
                 var description = !string.IsNullOrWhiteSpace(post.MetaDescription)
                     ? post.MetaDescription
                     : StripHtmlAndTruncate(post.Content, 155);

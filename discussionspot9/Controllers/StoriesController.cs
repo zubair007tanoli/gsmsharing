@@ -45,6 +45,7 @@ namespace discussionspot9.Controllers
             var storiesQuery = _context.Stories
                 .AsNoTracking()
                 .Include(s => s.Community)
+                .Include(s => s.Post) // Include the original post
                 .Include(s => s.Slides.OrderBy(sl => sl.OrderIndex))
                 .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.CreatedAt);
@@ -65,8 +66,8 @@ namespace discussionspot9.Controllers
                 Status = s.Status ?? "",
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt,
-                PostTitle = s.Title ?? "",
-                PostSlug = s.Slug ?? "",
+                PostTitle = s.Post?.Title ?? s.Title ?? "", // Use original post title
+                PostSlug = s.Post?.Slug ?? "", // Use original post slug
                 CommunityName = s.Community != null ? s.Community.Title : "",
                 CommunitySlug = s.Community != null ? s.Community.Slug : "",
                 SlideCount = s.Slides.Count,
@@ -89,7 +90,12 @@ namespace discussionspot9.Controllers
         [Route("stories/details/{storySlug}")]
         public async Task<IActionResult> Details(string storySlug)
         {
-            var story = await StoryControllerHelpers.GetStoryWithSlidesAsync(_context, storySlug, tracking: false);
+            var story = await _context.Stories
+                .AsNoTracking()
+                .Include(s => s.Post) // Include original post
+                .Include(s => s.Community)
+                .Include(s => s.Slides.OrderBy(sl => sl.OrderIndex))
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
 
             if (story == null)
             {
@@ -111,8 +117,8 @@ namespace discussionspot9.Controllers
                     Status = story.Status ?? "",
                     CreatedAt = story.CreatedAt,
                     UpdatedAt = story.UpdatedAt,
-                    PostTitle = story.Title ?? "",
-                    PostSlug = story.Slug ?? "",
+                    PostTitle = story.Post?.Title ?? story.Title ?? "", // Original post title
+                    PostSlug = story.Post?.Slug ?? "", // Original post slug
                     CommunityName = story.Community?.Title ?? "",
                     CommunitySlug = story.Community?.Slug ?? "",
                     Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideViewModel
@@ -449,9 +455,8 @@ namespace discussionspot9.Controllers
                 .Include(s => s.Slides)
                 .Include(s => s.User)
                 .Include(s => s.Community)
-                // Post relationship removed - column doesn't exist in database yet
-                // .Include(s => s.Post)
-                //     .ThenInclude(p => p.Community)
+                .Include(s => s.Post) // Now include the post relationship
+                    .ThenInclude(p => p.Community)
                 .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)
@@ -656,6 +661,21 @@ namespace discussionspot9.Controllers
                 url = Url.Action("Amp", "Stories", new { slug = s.Slug }, Request.Scheme),
                 image = MakeAbsolute(s.Cover ?? "/Assets/Logo_Auth.png")
             }).ToList();
+
+            // Add original post link to bookend if available
+            if (story.Post != null)
+            {
+                var postLink = new {
+                    type = "small",
+                    title = "View Original Post",
+                    url = Url.Action("DetailTestPage", "Post", new { 
+                        communitySlug = story.Post.Community?.Slug, 
+                        postSlug = story.Post.Slug 
+                    }, Request.Scheme),
+                    image = MakeAbsolute("/Assets/Logo_Auth.png")
+                };
+                related.Insert(0, postLink);
+            }
 
             ViewBag.BookendComponents = System.Text.Json.JsonSerializer.Serialize(related);
 

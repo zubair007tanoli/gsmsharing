@@ -1,4 +1,6 @@
-﻿namespace gsmsharing.ExeMethods
+using gsmsharing.ViewModels;
+
+namespace gsmsharing.ExeMethods
 {
     public static class ViewModelExtensions
     {

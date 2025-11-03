@@ -897,9 +897,13 @@ namespace discussionspot9.Data.DbContext
                 //     .OnDelete(DeleteBehavior.SetNull);
                 
                 // Ignore properties that don't exist in database
-                entity.Ignore(e => e.PostId);
                 entity.Ignore(e => e.BackgroundAudioUrl);
-                entity.Ignore(e => e.Post);
+                
+                // Configure Post relationship
+                entity.HasOne(e => e.Post)
+                    .WithMany()
+                    .HasForeignKey(e => e.PostId)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.ToTable(t =>
                 {

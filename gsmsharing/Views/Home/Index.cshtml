@@ -7,203 +7,29 @@
     <link rel="stylesheet" href="~/css/Enhanced.css" asp-append-version="true" />
 }
 
-<!-- Welcome Banner -->
-<div class="welcome-banner mb-4">
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-        <div>
-            <h2 class="mb-1">
-                <i class="fas fa-home me-2"></i>Welcome to GSMSharing
-            </h2>
-            <p class="mb-0 text-muted">Discover, share, and solve mobile tech challenges together</p>
-        </div>
-        <div class="quick-actions">
-            <a href="/Posts/Create" class="btn btn-gradient-primary">
-                <i class="fas fa-plus me-2"></i>Create Post
-            </a>
-            <a href="/Community" class="btn btn-outline-primary">
-                <i class="fas fa-users me-2"></i>Browse Communities
-            </a>
-        </div>
-    </div>
-</div>
-
-<div class="card modern-card">
-    <div class="card-body p-0">
-        <!-- Tab Navigation -->
-        <ul class="nav nav-tabs modern-tabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#recentTab">
-                    <i class="fas fa-clock"></i>
-                    <span>Recent Posts</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trendingTab">
-                    <i class="fas fa-fire"></i>
-                    <span>Trending</span>
-                    <span class="badge bg-danger ms-2">Hot</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#followingTab">
-                    <i class="fas fa-users"></i>
-                    <span>Following</span>
-                </button>
-            </li>
-        </ul>
-        @* Method to split keywords into multiple tags *@
-        @{
-            Func<string, IEnumerable<string>> ProcessKeywordTags = (keywords) =>
-            {
-                if (string.IsNullOrWhiteSpace(keywords))
-                    return Enumerable.Empty<string>();
-
-                return keywords
-            .Split(new[] { ' ', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(k => k.Trim())
-            .Distinct();
-            };
-
-        }
-
-        <!-- Tab Content -->
-        <div class="tab-content p-3">
-            <!-- Recent Posts Tab -->
-            <div class="tab-pane fade show active" id="recentTab" role="tabpanel">
-                @foreach (var item in Model)
-                {
-                    <div class="post-card border shadow-sm">
-                        <div class="d-flex gap-3">
-                            <!-- Thumbnail -->
-                            <div class="d-none d-sm-block">
-                                <img src="@item.FeaturedImage" class="thumbnail rounded" alt="Post Thumbnail">
-                            </div>
-
-                            <!-- Post Content -->
-                            <div class="flex-grow-1">
-                                <!-- Post Header -->
-                                <div class="post-meta mb-2">
-                                    <a href="#" class="community-badge me-1">r/@item.CommunityName</a>
-                                    <span>•</span>
-                                    <span class="ms-1">Posted by</span>
-                                    <a href="#" class="text-decoration-none ms-1">u/@item.AuthorName</a>
-                                    <span class="ms-1">@item.CreatedTime</span>
-                                </div>
-
-                                <!-- Post Title -->
-                                <h3 class="post-title mb-2">
-                                    <a href="/r/@item.CommunitySlug/posts/@item.Slug" class="text-decoration-none text-dark">
-                                        @item.Title
-                                    </a>
-                                </h3>
-
-                                <!-- Post Description -->
-                                <p class="post-meta mb-2">@item.Discription</p>
-                                <!-- Tags -->
-                                <div class="tags-container mb-2">
-                                    @foreach (var tag in ProcessKeywordTags(item.Keywords))
-                                    {
-                                        <span class="badge bg-primary rounded-pill me-1">@tag</span>
-                                    }
-                                    @* Optional: Add a static tag if needed *@
-                                    <span class="badge bg-secondary rounded-pill">iPhone 15</span>
-                                </div>
-
-                                <!-- Post Actions -->
-                             @*    <div class="post-actions d-flex align-items-center gap-2">
-                                    <button type="button">
-                                        <i class="fas fa-arrow-up me-1"></i>
-                                        @item.Reactions.FormattedLikeCount Like
-                                    </button>
-                                    <button type="button">
-                                        <i class="fas fa-arrow-down me-1"></i>
-                                          @item.Reactions.FormattedDislikeCount Dislike
-                                    </button>
-                                    <button type="button">
-                                        <i class="fas fa-comment-alt me-1"></i>
-                                        @item.CommentCount Comments
-                                    </button>
-                                    <button type="button">
-                                        <i class="fas fa-share me-1"></i>
-                                        Share
-                                    </button>
-                                    <div class="views-count ms-auto">
-                                        <i class="fas fa-eye me-1"></i>
-                                        @item.ViewCount                                        
-                                    </div>
-                                </div> *@
-                                <!-- Post Actions -->
-                                <div class="d-flex align-items-center gap-2 post-actions">
-                                    <button class="like-btn" onclick="handleReaction(this, 'like', @item.PostID)">
-                                        <i class="far fa-thumbs-up"></i>
-                                        <span class="engagement-count">@item.Reactions.FormattedLikeCount</span>
-                                    </button>
-                                    <button class="dislike-btn" onclick="handleReaction(this, 'dislike', @item.PostID)">
-                                        <i class="far fa-thumbs-down"></i>
-                                        <span class="engagement-count">@item.Reactions.FormattedDislikeCount</span>
-                                    </button>
-                                    <a href="/r/@item.CommunitySlug/posts/@item.Slug" class="btn-action">
-                                        <i class="far fa-comment-alt"></i>
-                                        <span>@item.CommentCount Comments</span>
-                                    </a>
-                                    <div class="dropdown">
-                                        <button class="btn-action" data-bs-toggle="dropdown">
-                                            <i class="fas fa-share"></i>
-                                            <span>Share</span>
-                                        </button>
-                                        <ul class="dropdown-menu share-dropdown">
-                                            <li>
-                                                <a class="dropdown-item" href="https://www.facebook.com/sharer/sharer.php?u=@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)" target="_blank">
-                                                    <i class="fab fa-facebook me-2"></i>Facebook
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="https://twitter.com/intent/tweet?url=@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)&text=@item.Title" target="_blank">
-                                                    <i class="fab fa-twitter me-2"></i>Twitter
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="https://www.linkedin.com/sharing/share-offsite/?url=@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)" target="_blank">
-                                                    <i class="fab fa-linkedin me-2"></i>LinkedIn
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="copyToClipboard('@Url.Action("Details", "Posts", new { community = item.CommunitySlug, slug = item.Slug }, Request.Scheme)'); return false;">
-                                                    <i class="fas fa-link me-2"></i>Copy Link
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <button class="btn-action" onclick="savePost(@item.PostID)">
-                                        <i class="far fa-bookmark"></i>
-                                        <span>Save</span>
-                                    </button>
-                                    <div class="views-count ms-auto">
-                                        <i class="fas fa-eye me-1"></i>
-                                        <span>@item.ViewCount views</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-              
-            </div>
-
-            <!-- Trending Tab -->
-            <div class="tab-pane fade" id="trendingTab" role="tabpanel">
-                <!-- Trending content here -->
-            </div>
-
-            <!-- Following Tab -->
-            <div class="tab-pane fade" id="followingTab" role="tabpanel">
-                <div class="text-center py-5">
-                    <i class="fas fa-user-friends fa-4x text-muted mb-3"></i>
-                    <h4>Follow Communities and Users</h4>
-                    <p class="text-muted">Start following communities and users to see their posts here.</p>
-                    <a href="/Community" class="btn btn-gradient-primary mt-3">
-                        <i class="fas fa-compass me-2"></i>Explore Communities
+<!-- Hero Section -->
+<div class="hero-banner bg-gradient-primary text-white py-5 mb-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-tools me-2"></i>GSMSharing
+                </h1>
+                <p class="lead mb-4">
+                    The Complete Mobile Repair Community Platform
+                </p>
+                <p class="mb-4">
+                    Share knowledge, buy/sell devices, access specs, learn from code, and connect with professionals worldwide.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="/Posts/Create" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Share Solution
+                    </a>
+                    <a href="/Forum" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-comments me-2"></i>Browse Forums
+                    </a>
+                    <a href="/Marketplace" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-store me-2"></i>Marketplace
                     </a>
                 </div>
             </div>
@@ -211,96 +37,273 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        // Copy to clipboard function
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(function() {
-                showToast('Link copied to clipboard!', 'success');
-            }, function(err) {
-                showToast('Failed to copy link', 'error');
-            });
-        }
+<!-- Quick Stats -->
+<div class="container mb-4">
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-primary">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+                <div class="stat-value">12.5k</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-success">
+                    <i class="fas fa-comments fa-2x"></i>
+                </div>
+                <div class="stat-value">45.2k</div>
+                <div class="stat-label">Forum Threads</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-warning">
+                    <i class="fas fa-store fa-2x"></i>
+                </div>
+                <div class="stat-value">8.9k</div>
+                <div class="stat-label">Listings</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon text-info">
+                    <i class="fas fa-mobile-alt fa-2x"></i>
+                </div>
+                <div class="stat-value">2.1k</div>
+                <div class="stat-label">Mobile Specs</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Handle reactions
-        function handleReaction(button, type, postId) {
-            // Add animation
-            button.classList.add('reacting');
-            
-            // Simulate API call (replace with actual API call)
-            fetch(`/api/posts/${postId}/react`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ reactionType: type })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Update count
-                const countSpan = button.querySelector('.engagement-count');
-                if (countSpan && data.count) {
-                    countSpan.textContent = data.count;
-                }
-                
-                // Toggle active state
-                button.classList.toggle('active');
-                
-                showToast(`Post ${type}d!`, 'success');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Please log in to react', 'warning');
-            })
-            .finally(() => {
-                setTimeout(() => button.classList.remove('reacting'), 300);
-            });
-        }
+<!-- Feature Categories -->
+<div class="container mb-5">
+    <div class="row g-4">
+        <!-- Forums -->
+        <div class="col-lg-3 col-md-6">
+            <div class="feature-card h-100">
+                <div class="feature-icon bg-primary">
+                    <i class="fas fa-comments fa-2x text-white"></i>
+                </div>
+                <h5 class="mt-3">Technical Forums</h5>
+                <p class="text-muted">Ask questions, share solutions, and discuss mobile repair techniques.</p>
+                <a href="/Forum" class="btn btn-sm btn-outline-primary">Explore Forums</a>
+            </div>
+        </div>
 
-        // Save post function
-        function savePost(postId) {
-            fetch(`/api/posts/${postId}/save`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                showToast('Post saved!', 'success');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Please log in to save posts', 'warning');
-            });
-        }
+        <!-- Marketplace -->
+        <div class="col-lg-3 col-md-6">
+            <div class="feature-card h-100">
+                <div class="feature-icon bg-success">
+                    <i class="fas fa-store fa-2x text-white"></i>
+                </div>
+                <h5 class="mt-3">Buy & Sell</h5>
+                <p class="text-muted">Find mobile devices, parts, and accessories at great prices.</p>
+                <a href="/Marketplace" class="btn btn-sm btn-outline-success">Browse Marketplace</a>
+            </div>
+        </div>
 
-        // Toast notification function
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'} me-2"></i>
-                ${message}
-            `;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+        <!-- Specs Database -->
+        <div class="col-lg-3 col-md-6">
+            <div class="feature-card h-100">
+                <div class="feature-icon bg-info">
+                    <i class="fas fa-mobile-alt fa-2x text-white"></i>
+                </div>
+                <h5 class="mt-3">Mobile Specs</h5>
+                <p class="text-muted">Comprehensive database of mobile device specifications.</p>
+                <a href="/MobileSpecs" class="btn btn-sm btn-outline-info">View Specs</a>
+            </div>
+        </div>
 
-        // Add loading skeleton on tab change
-        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-            tab.addEventListener('shown.bs.tab', function (event) {
-                const targetPane = document.querySelector(event.target.getAttribute('data-bs-target'));
-                if (targetPane && !targetPane.hasChildNodes()) {
-                    targetPane.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
-                    // Load content via AJAX here
-                }
-            });
-        });
-    </script>
+        <!-- Code Sharing -->
+        <div class="col-lg-3 col-md-6">
+            <div class="feature-card h-100">
+                <div class="feature-icon bg-warning">
+                    <i class="fas fa-code fa-2x text-white"></i>
+                </div>
+                <h5 class="mt-3">Code Library</h5>
+                <p class="text-muted">Share firmware, tools, and code snippets for repairs.</p>
+                <a href="/Code" class="btn btn-sm btn-outline-warning">Browse Code</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Feed -->
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <!-- Tab Navigation -->
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#recentTab">
+                        <i class="fas fa-clock"></i> Recent
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trendingTab">
+                        <i class="fas fa-fire"></i> Trending
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#followingTab">
+                        <i class="fas fa-users"></i> Following
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content p-3">
+                <!-- Recent Tab -->
+                <div class="tab-pane fade show active" id="recentTab" role="tabpanel">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <div class="post-card border-bottom mb-3 pb-3">
+                                <div class="post-header mb-2">
+                                    <a href="#" class="community-badge me-2">r/@item.CommunityName</a>
+                                    <span class="text-muted">•</span>
+                                    <span class="text-muted ms-2">Posted by u/@item.AuthorName</span>
+                                    <span class="text-muted">@item.CreatedTime</span>
+                                </div>
+                                <h5 class="post-title mb-2">
+                                    <a href="/r/@item.CommunitySlug/posts/@item.Slug" class="text-decoration-none text-dark">
+                                        @item.Title
+                                    </a>
+                                </h5>
+                                <div class="post-footer d-flex gap-3 align-items-center">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-thumbs-up"></i> @(item.Reactions?.FormattedLikeCount ?? "0")
+                                    </button>
+                                    <a href="/r/@item.CommunitySlug/posts/@item.Slug#comments" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-comments"></i> @item.CommentCount
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-share"></i> Share
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class="far fa-bookmark"></i> Save
+                                    </button>
+                                    <div class="ms-auto text-muted">
+                                        <i class="fas fa-eye"></i> @item.ViewCount views
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No posts yet. Be the first to share!</p>
+                            <a href="/Posts/Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Post
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <!-- Trending Tab -->
+                <div class="tab-pane fade" id="trendingTab" role="tabpanel">
+                    <div class="text-center py-5">
+                        <i class="fas fa-fire fa-3x text-danger mb-3"></i>
+                        <p class="text-muted">Trending content coming soon!</p>
+                    </div>
+                </div>
+
+                <!-- Following Tab -->
+                <div class="tab-pane fade" id="followingTab" role="tabpanel">
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                        <p class="text-muted">Follow communities to see their posts here!</p>
+                        <a href="/Community" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Discover Communities
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hero-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    margin-bottom: 2rem;
 }
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    margin-bottom: 1rem;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.feature-card {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.post-card .post-header {
+    font-size: 0.85rem;
+}
+
+.post-title a:hover {
+    color: #667eea !important;
+}
+
+.community-badge {
+    font-weight: 600;
+    color: #667eea;
+    text-decoration: none;
+}
+
+.community-badge:hover {
+    text-decoration: underline;
+}
+</style>

@@ -1,4 +1,4 @@
-﻿using gsmsharing.Database;
+using gsmsharing.Database;
 using gsmsharing.Interfaces;
 using gsmsharing.Models;
 using gsmsharing.ViewModels;
@@ -34,14 +34,43 @@ namespace gsmsharing.Repositories
         {
             try
             {
-                string sql = @"SELECT CategoryID, Name, Slug, ParentCategoryID, Description, 
-                               MetaTitle, MetaDescription, OgTitle, OgDescription, OgImage, 
-                               IconClass, DisplayOrder, IsActive, CreatedAt, UpdatedAt, 
-                               CreatedBy, UpdatedBy 
-                               FROM Categories";
+                string sql = @"SELECT CategoryID, Name, Slug, ParentCategoryID, Description,
+                               MetaTitle, MetaDescription, OgTitle, OgDescription, OgImage,
+                               IconClass, DisplayOrder, IsActive, CreatedAt, UpdatedAt,
+                               CreatedBy, UpdatedBy
+                               FROM dbo.Categories";
 
-                DataTable result = await _dbConnection.ExecuteQueryAsync(sql);
-                return ConvertDataTableToCategories(result);
+                try
+                {
+                    DataTable result = await _dbConnection.ExecuteQueryAsync(sql);
+                    return ConvertDataTableToCategories(result);
+                }
+                catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) // Invalid object name
+                {
+                    // Fallback to existing table structure in current DB
+                    string fallbackSql = @"SELECT 
+                            CategoryId      AS CategoryID,
+                            CategoryName    AS Name,
+                            CAST(NULL AS nvarchar(255)) AS Slug,
+                            CAST(NULL AS int) AS ParentCategoryID,
+                            Description,
+                            CAST(NULL AS nvarchar(255)) AS MetaTitle,
+                            CAST(NULL AS nvarchar(255)) AS MetaDescription,
+                            CAST(NULL AS nvarchar(255)) AS OgTitle,
+                            CAST(NULL AS nvarchar(255)) AS OgDescription,
+                            CAST(NULL AS nvarchar(255)) AS OgImage,
+                            IconClass,
+                            CAST(0 AS int) AS DisplayOrder,
+                            CAST(1 AS bit) AS IsActive,
+                            CreatedAt,
+                            CAST(NULL AS datetime) AS UpdatedAt,
+                            CAST(NULL AS nvarchar(255)) AS CreatedBy,
+                            CAST(NULL AS nvarchar(255)) AS UpdatedBy
+                        FROM dbo.SocialCategories";
+
+                    var fallbackResult = await _dbConnection.ExecuteQueryAsync(fallbackSql);
+                    return ConvertDataTableToCategories(fallbackResult);
+                }
             }
             catch (Exception ex)
             {
@@ -226,23 +255,23 @@ namespace gsmsharing.Repositories
             {
                 categories.Add(new Category
                 {
-                    CategoryID = Convert.ToInt32(row["CategoryID"]),
-                    Name = row["Name"].ToString(),
-                    Slug = row["Slug"].ToString(),
-                    ParentCategoryID = row["ParentCategoryID"] != DBNull.Value ? Convert.ToInt32(row["ParentCategoryID"]) : null,
-                    Description = row["Description"].ToString(),
-                    MetaTitle = row["MetaTitle"].ToString(),
-                    MetaDescription = row["MetaDescription"].ToString(),
-                    OgTitle = row["OgTitle"].ToString(),
-                    OgDescription = row["OgDescription"].ToString(),
-                    OgImage = row["OgImage"].ToString(),
-                    IconClass = row["IconClass"].ToString(),
-                    DisplayOrder = Convert.ToInt32(row["DisplayOrder"]),
-                    IsActive = Convert.ToBoolean(row["IsActive"]),
-                    CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                    UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                    CreatedBy = row["CreatedBy"].ToString(),
-                    UpdatedBy = row["UpdatedBy"].ToString()
+                    CategoryID = row["CategoryID"] != DBNull.Value ? Convert.ToInt32(row["CategoryID"]) : 0,
+                    Name = row.Table.Columns.Contains("Name") && row["Name"] != DBNull.Value ? row["Name"].ToString() : null,
+                    Slug = row.Table.Columns.Contains("Slug") && row["Slug"] != DBNull.Value ? row["Slug"].ToString() : null,
+                    ParentCategoryID = row.Table.Columns.Contains("ParentCategoryID") && row["ParentCategoryID"] != DBNull.Value ? Convert.ToInt32(row["ParentCategoryID"]) : null,
+                    Description = row.Table.Columns.Contains("Description") && row["Description"] != DBNull.Value ? row["Description"].ToString() : null,
+                    MetaTitle = row.Table.Columns.Contains("MetaTitle") && row["MetaTitle"] != DBNull.Value ? row["MetaTitle"].ToString() : null,
+                    MetaDescription = row.Table.Columns.Contains("MetaDescription") && row["MetaDescription"] != DBNull.Value ? row["MetaDescription"].ToString() : null,
+                    OgTitle = row.Table.Columns.Contains("OgTitle") && row["OgTitle"] != DBNull.Value ? row["OgTitle"].ToString() : null,
+                    OgDescription = row.Table.Columns.Contains("OgDescription") && row["OgDescription"] != DBNull.Value ? row["OgDescription"].ToString() : null,
+                    OgImage = row.Table.Columns.Contains("OgImage") && row["OgImage"] != DBNull.Value ? row["OgImage"].ToString() : null,
+                    IconClass = row.Table.Columns.Contains("IconClass") && row["IconClass"] != DBNull.Value ? row["IconClass"].ToString() : null,
+                    DisplayOrder = row.Table.Columns.Contains("DisplayOrder") && row["DisplayOrder"] != DBNull.Value ? Convert.ToInt32(row["DisplayOrder"]) : (int?)null,
+                    IsActive = row.Table.Columns.Contains("IsActive") && row["IsActive"] != DBNull.Value ? Convert.ToBoolean(row["IsActive"]) : (bool?)null,
+                    CreatedAt = row.Table.Columns.Contains("CreatedAt") && row["CreatedAt"] != DBNull.Value ? Convert.ToDateTime(row["CreatedAt"]) : (DateTime?)null,
+                    UpdatedAt = row.Table.Columns.Contains("UpdatedAt") && row["UpdatedAt"] != DBNull.Value ? Convert.ToDateTime(row["UpdatedAt"]) : (DateTime?)null,
+                    CreatedBy = row.Table.Columns.Contains("CreatedBy") && row["CreatedBy"] != DBNull.Value ? row["CreatedBy"].ToString() : null,
+                    UpdatedBy = row.Table.Columns.Contains("UpdatedBy") && row["UpdatedBy"] != DBNull.Value ? row["UpdatedBy"].ToString() : null
                 });
             }
 

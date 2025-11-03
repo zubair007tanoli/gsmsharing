@@ -34,20 +34,26 @@
                 <!-- Quick Actions -->
                 <div class="card mb-4">
                     <div class="card-body">
+                        <h6 class="card-title mb-3">Quick Actions</h6>
                         <div class="d-grid gap-2">
-                            <button class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Create New Post
-                            </button>
-                            <button class="btn btn-light">
-                                <i class="fas fa-tools me-2"></i>Access Tools
-                            </button>
+                            <a href="/Posts/Create" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-2"></i>Create Post
+                            </a>
+                            <a href="/Forum/Create" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-comments me-2"></i>Start Thread
+                            </a>
+                            <a href="/Marketplace/Create" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-store me-2"></i>Sell Item
+                            </a>
+                            <a href="/Blog/Create" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-blog me-2"></i>Write Blog
+                            </a>
+                            <a href="/Code/Create" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-code me-2"></i>Share Code
+                            </a>
                         </div>
                     </div>
                 </div>
-
-                <!-- Categories -->
-                @* @await Component.InvokeAsync("LayoutSideCategory") *@
-                <!-- Categories Ends-->
 
                 <!-- Categories -->
                 @await Component.InvokeAsync("LayoutSideCategoryCout")
@@ -55,7 +61,7 @@
             </div>
 
             <!-- Main Content Column -->
-            <div class="col-lg-6">
+            <div class="col-lg-9">
                 <main role="main" class="pb-3">
                     @RenderBody()
                 </main>
@@ -65,27 +71,51 @@
             <!-- Right Sidebar -->
             <div class="col-lg-3 d-none d-lg-block">
                 <!-- Community Stats -->
-                <div class="card community-pulse-card mb-4">
+                <div class="card mb-4">
                     <div class="card-body">
-                        <h5 class="card-title">Community Pulse</h5>
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <div class="pulse-stat">
-                                    <div class="stat-value">1.2k</div>
-                                    <div class="stat-label">Online Users</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="pulse-stat">
-                                    <div class="stat-value">458</div>
-                                    <div class="stat-label">New Posts</div>
-                                </div>
-                            </div>
+                        <h6 class="card-title">Community Stats</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Online Users</span>
+                            <strong>1,247</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>New Posts Today</span>
+                            <strong>458</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Total Threads</span>
+                            <strong>45.2k</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Active Listings</span>
+                            <strong>8.9k</strong>
                         </div>
                     </div>
                 </div>
 
-                <!-- Other sidebar content here -->
+                <!-- Top Communities -->
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Top Communities</h6>
+                        <div class="list-group list-group-flush">
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <i class="fas fa-circle me-2 text-success"></i>
+                                <span>iPhone Repairs</span>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <i class="fas fa-circle me-2 text-primary"></i>
+                                <span>Samsung Solutions</span>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <i class="fas fa-circle me-2 text-warning"></i>
+                                <span>Android Guides</span>
+                            </a>
+                            <a href="/Community" class="list-group-item list-group-item-action text-center">
+                                View All <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

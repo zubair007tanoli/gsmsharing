@@ -18,11 +18,11 @@ namespace discussionspot9.Migrations
             //     type: "nvarchar(max)",
             //     nullable: true);
 
-            // migrationBuilder.AddColumn<int>(
-            //     name: "PostId",
-            //     table: "Stories",
-            //     type: "int",
-            //     nullable: true);
+            migrationBuilder.AddColumn<int>(
+                name: "PostId",
+                table: "Stories",
+                type: "int",
+                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "Badges",
@@ -198,11 +198,10 @@ namespace discussionspot9.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            // PostId index removed - column doesn't exist in database
-            // migrationBuilder.CreateIndex(
-            //     name: "IX_Stories_PostId",
-            //     table: "Stories",
-            //     column: "PostId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Stories_PostId",
+                table: "Stories",
+                column: "PostId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BadgeRequirements_BadgeId",
@@ -234,14 +233,13 @@ namespace discussionspot9.Migrations
                 table: "UserBadges",
                 column: "BadgeId");
 
-            // PostId foreign key removed - column doesn't exist in database
-            // migrationBuilder.AddForeignKey(
-            //     name: "FK_Stories_Posts_PostId",
-            //     table: "Stories",
-            //     column: "PostId",
-            //     principalTable: "Posts",
-            //     principalColumn: "PostId",
-            //     onDelete: ReferentialAction.SetNull);
+            migrationBuilder.AddForeignKey(
+                name: "FK_Stories_Posts_PostId",
+                table: "Stories",
+                column: "PostId",
+                principalTable: "Posts",
+                principalColumn: "PostId",
+                onDelete: ReferentialAction.SetNull);
         }
 
         /// <inheritdoc />

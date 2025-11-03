@@ -1,0 +1,112 @@
+@model IEnumerable<gsmsharing.Models.ForumThread>
+@{
+    ViewData["Title"] = "Mobile Repair Forums - GSMSharing";
+}
+
+@section customStyle {
+    <link rel="stylesheet" href="~/css/Enhanced.css" asp-append-version="true" />
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">
+            <i class="fas fa-comments me-2"></i>Mobile Repair Forums
+        </h2>
+        <p class="text-muted mb-0">Discuss mobile repair challenges, share solutions, and learn from experts</p>
+    </div>
+    @if (User.Identity.IsAuthenticated)
+    {
+        <a href="/Forum/Create" class="btn btn-gradient-primary">
+            <i class="fas fa-plus me-2"></i>New Thread
+        </a>
+    }
+</div>
+
+<div class="card modern-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;"></th>
+                        <th>Thread</th>
+                        <th style="width: 100px;">Replies</th>
+                        <th style="width: 150px;">Last Reply</th>
+                        <th style="width: 120px;">Author</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var thread in Model)
+                    {
+                        <tr class="forum-row">
+                            <td class="text-center">
+                                @if (thread.Likes > 10)
+                                {
+                                    <i class="fas fa-fire text-danger"></i>
+                                }
+                            </td>
+                            <td>
+                                <div>
+                                    <a href="/Forum/Details/@thread.UserFourmID" class="fw-bold text-decoration-none">
+                                        @thread.Title
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(thread.Tags))
+                                    {
+                                        <div class="mt-1">
+                                            @foreach (var tag in thread.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                            {
+                                                <span class="badge bg-secondary me-1">@tag.Trim()</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary">@(thread.Replies?.Count ?? 0)</span>
+                            </td>
+                            <td class="text-muted small">
+                                @if (thread.Replies != null && thread.Replies.Any())
+                                {
+                                    var lastReply = thread.Replies.OrderByDescending(r => r.PublishDate).First();
+                                    <div>@lastReply.PublishDate?.ToString("MMM dd, yyyy")</div>
+                                }
+                                else
+                                {
+                                    <div>@thread.CreationDate?.ToString("MMM dd, yyyy")</div>
+                                }
+                            </td>
+                            <td class="small">
+                                @thread.User?.UserName
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No forum threads yet. Be the first to start a discussion!</p>
+                                @if (User.Identity.IsAuthenticated)
+                                {
+                                    <a href="/Forum/Create" class="btn btn-primary">Create First Thread</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .forum-row:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+
+    .forum-row:hover a {
+        color: var(--bs-primary) !important;
+    }
+</style>
+

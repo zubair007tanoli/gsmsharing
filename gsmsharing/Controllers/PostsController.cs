@@ -1,4 +1,4 @@
-﻿using gsmsharing.ExeMethods;
+using gsmsharing.ExeMethods;
 using gsmsharing.Interfaces;
 using gsmsharing.Models;
 using gsmsharing.ViewModels;
@@ -233,7 +233,7 @@ namespace gsmsharing.Controllers
                 return Forbid();
             }
 
-            PostViewModelExtensions.SetDefaultSeoValues(viewModel);
+            viewModel.SetDefaultSeoValues();
 
             // Handle image upload if user wants to replace
             if (viewModel.ImageAction == "replace" && viewModel.FeaturedImage != null)

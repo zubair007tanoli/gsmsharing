@@ -1,4 +1,4 @@
-﻿namespace gsmsharing.ViewModels
+namespace gsmsharing.ViewModels
 {
     public class PostViewModelWithSEO
     {
@@ -8,6 +8,7 @@
         public string Title { get; set; }
         public string Slug { get; set; }
         public string Content { get; set; }
+        public string Tags { get; set; }
         public string FeaturedImage { get; set; }
         public int ViewCount { get; set; }
         public string FormattedViewCount { get; set; }
