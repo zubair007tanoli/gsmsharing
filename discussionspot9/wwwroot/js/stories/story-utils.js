@@ -250,6 +250,39 @@ class StoryViewer {
                 }
             });
         });
+        
+        // Story info toggle functionality
+        this.bindStoryInfoToggle();
+    }
+    
+    bindStoryInfoToggle() {
+        const storyInfo = document.getElementById('story-info');
+        const storyInfoToggle = document.getElementById('story-info-toggle');
+        const storyInfoClose = document.getElementById('story-info-close');
+        
+        if (storyInfoToggle) {
+            storyInfoToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                storyInfo?.classList.toggle('expanded');
+            });
+        }
+        
+        if (storyInfoClose) {
+            storyInfoClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                storyInfo?.classList.remove('expanded');
+            });
+        }
+        
+        // Close story info when clicking outside
+        document.addEventListener('click', (e) => {
+            if (storyInfo && storyInfo.classList.contains('expanded')) {
+                const clickedInside = storyInfo.contains(e.target);
+                if (!clickedInside && e.target !== storyInfoToggle) {
+                    storyInfo.classList.remove('expanded');
+                }
+            }
+        });
     }
     
     bindTouchEvents() {
