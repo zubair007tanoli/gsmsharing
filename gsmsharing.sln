@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11104.47 d18.0
+VisualStudioVersion = 18.0.11104.47
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gsmsharing", "gsmsharing\gsmsharing.csproj", "{7E5E39C7-4CBE-4222-A837-3049164D0679}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "discussionspot9", "discussionspot9\discussionspot9.csproj", "{31044077-8C6C-47E0-811C-DB288D206291}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BSS", "BSS\BSS.csproj", "{452C685B-0CD7-48D0-A5C0-0A76A69D504D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GsmsharingV2", "GsmsharingV2\GsmsharingV2.csproj", "{FE44095E-00E1-4037-A905-765BD0FE50CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{452C685B-0CD7-48D0-A5C0-0A76A69D504D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{452C685B-0CD7-48D0-A5C0-0A76A69D504D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{452C685B-0CD7-48D0-A5C0-0A76A69D504D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE44095E-00E1-4037-A905-765BD0FE50CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE44095E-00E1-4037-A905-765BD0FE50CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE44095E-00E1-4037-A905-765BD0FE50CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE44095E-00E1-4037-A905-765BD0FE50CC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
