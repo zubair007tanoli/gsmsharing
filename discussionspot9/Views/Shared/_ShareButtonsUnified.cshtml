@@ -7,21 +7,27 @@
 @{
     var shareTitle = ViewData["ShareTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "Check this out on DiscussionSpot";
     var shareDescription = ViewData["ShareDescription"]?.ToString() ?? "";
-    var shareUrl = ViewData["ShareUrl"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
-    var shareType = ViewData["ShareType"]?.ToString() ?? "content"; // post, community, profile, category
-    var shareImage = ViewData["ShareImage"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
+    var shareUrl = ViewData["ShareUrl"]?.ToString() ?? "";
+    var shareType = ViewData["ShareType"]?.ToString() ?? "content";
     var contentId = ViewData["ContentId"]?.ToString() ?? "";
-    var variant = ViewData["ShareVariant"]?.ToString() ?? "dropdown"; // dropdown, inline, floating
-    
-    var encodedUrl = Uri.EscapeDataString(shareUrl);
-    var encodedTitle = Uri.EscapeDataString(shareTitle);
-    var encodedText = Uri.EscapeDataString($"{shareTitle} - {shareDescription}");
+    var variant = ViewData["ShareVariant"]?.ToString() ?? "dropdown";
+
+    // Ensure we have an absolute URL for sharing
+    var absoluteShareUrl = shareUrl;
+    if (!string.IsNullOrWhiteSpace(absoluteShareUrl) && !absoluteShareUrl.StartsWith("http"))
+    {
+        absoluteShareUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{absoluteShareUrl}";
+    } 
+    else if (string.IsNullOrWhiteSpace(absoluteShareUrl))
+    {
+        absoluteShareUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
+    }
 }
 
 @if (variant == "inline")
 {
     <!-- Inline Variant (for post cards/lists) -->
-    <div class="share-inline" data-share-url="@shareUrl" data-share-title="@shareTitle" data-content-type="@shareType" data-content-id="@contentId">
+    <div class="share-inline" data-share-url="@absoluteShareUrl" data-share-title="@shareTitle" data-content-type="@shareType" data-content-id="@contentId">
         <button class="share-inline-trigger" onclick="openSharePopup(this)" title="Share">
             <i class="fas fa-share-alt"></i>
             <span class="share-count" id="share-count-@contentId"></span>
@@ -42,27 +48,27 @@ else if (variant == "simple" || variant == "action-btn")
                 <button class="share-close-btn" onclick="closeShareDropdown('@contentId')">&times;</button>
             </div>
             <div class="share-options-list">
-                <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'facebook')">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('facebook', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
                     <i class="fab fa-facebook-f" style="color: #1877f2;"></i>
                     <span>Facebook</span>
                 </a>
-                <a href="https://twitter.com/intent/tweet?url=@encodedUrl&text=@encodedTitle" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'twitter')">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('twitter', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
                     <i class="fab fa-twitter" style="color: #1da1f2;"></i>
                     <span>Twitter</span>
                 </a>
-                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@encodedUrl" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'linkedin')">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('linkedin', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
                     <i class="fab fa-linkedin-in" style="color: #0077b5;"></i>
                     <span>LinkedIn</span>
                 </a>
-                <a href="https://reddit.com/submit?url=@encodedUrl&title=@encodedTitle" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'reddit')">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('reddit', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
                     <i class="fab fa-reddit-alien" style="color: #ff4500;"></i>
                     <span>Reddit</span>
                 </a>
-                <a href="https://wa.me/?text=@encodedText%20@encodedUrl" target="_blank" rel="noopener" class="share-popup-option" onclick="trackShare('@shareType', '@contentId', 'whatsapp')">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('whatsapp', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
                     <i class="fab fa-whatsapp" style="color: #25d366;"></i>
                     <span>WhatsApp</span>
                 </a>
-                <button type="button" class="share-popup-option" onclick="copyLinkSimple('@shareUrl', this, '@shareType', '@contentId')">
+                <button type="button" class="share-popup-option" onclick="copyLinkSimple('@absoluteShareUrl', this, '@shareType', '@contentId')">
                     <i class="fas fa-copy" style="color: #6c757d;"></i>
                     <span>Copy Link</span>
                 </button>
@@ -92,7 +98,7 @@ else if (variant == "floating")
 else
 {
     <!-- Dropdown/Full Variant (default) -->
-    <div class="share-buttons-unified" data-share-url="@shareUrl" data-share-title="@shareTitle" data-content-type="@shareType" data-content-id="@contentId">
+    <div class="share-buttons-unified" data-share-url="@absoluteShareUrl" data-share-title="@shareTitle" data-content-type="@shareType" data-content-id="@contentId">
         <div class="share-trigger">
             <button class="btn btn-outline-primary btn-share" onclick="toggleShareMenu(this)">
                 <i class="fas fa-share-alt"></i>
@@ -108,11 +114,9 @@ else
             
             <div class="share-options-grid">
                 <!-- Facebook -->
-                <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" 
-                   class="share-option facebook" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   onclick="trackShare('@shareType', '@contentId', 'facebook')">
+                <a href="javascript:void(0);" 
+                   onclick="shareOnSocialMedia('facebook', '@absoluteShareUrl', '@shareTitle')"
+                   class="share-option facebook">
                     <div class="share-option-icon">
                         <i class="fab fa-facebook-f"></i>
                     </div>
@@ -120,11 +124,9 @@ else
                 </a>
                 
                 <!-- Twitter/X -->
-                <a href="https://twitter.com/intent/tweet?url=@encodedUrl&text=@encodedTitle" 
-                   class="share-option twitter" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   onclick="trackShare('@shareType', '@contentId', 'twitter')">
+                <a href="javascript:void(0);" 
+                   onclick="shareOnSocialMedia('twitter', '@absoluteShareUrl', '@shareTitle')"
+                   class="share-option twitter">
                     <div class="share-option-icon">
                         <i class="fab fa-twitter"></i>
                     </div>
@@ -132,11 +134,9 @@ else
                 </a>
                 
                 <!-- LinkedIn -->
-                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@encodedUrl" 
-                   class="share-option linkedin" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   onclick="trackShare('@shareType', '@contentId', 'linkedin')">
+                <a href="javascript:void(0);" 
+                   onclick="shareOnSocialMedia('linkedin', '@absoluteShareUrl', '@shareTitle')"
+                   class="share-option linkedin">
                     <div class="share-option-icon">
                         <i class="fab fa-linkedin-in"></i>
                     </div>
@@ -144,11 +144,9 @@ else
                 </a>
                 
                 <!-- Reddit -->
-                <a href="https://reddit.com/submit?url=@encodedUrl&title=@encodedTitle" 
-                   class="share-option reddit" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   onclick="trackShare('@shareType', '@contentId', 'reddit')">
+                <a href="javascript:void(0);" 
+                   onclick="shareOnSocialMedia('reddit', '@absoluteShareUrl', '@shareTitle')"
+                   class="share-option reddit">
                     <div class="share-option-icon">
                         <i class="fab fa-reddit-alien"></i>
                     </div>
@@ -156,11 +154,9 @@ else
                 </a>
                 
                 <!-- WhatsApp -->
-                <a href="https://wa.me/?text=@encodedText%20@encodedUrl" 
-                   class="share-option whatsapp" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   onclick="trackShare('@shareType', '@contentId', 'whatsapp')">
+                <a href="javascript:void(0);" 
+                   onclick="shareOnSocialMedia('whatsapp', '@absoluteShareUrl', '@shareTitle')"
+                   class="share-option whatsapp">
                     <div class="share-option-icon">
                         <i class="fab fa-whatsapp"></i>
                     </div>
@@ -168,11 +164,9 @@ else
                 </a>
                 
                 <!-- Telegram -->
-                <a href="https://t.me/share/url?url=@encodedUrl&text=@encodedTitle" 
-                   class="share-option telegram" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   onclick="trackShare('@shareType', '@contentId', 'telegram')">
+                <a href="javascript:void(0);" 
+                   onclick="shareOnSocialMedia('telegram', '@absoluteShareUrl', '@shareTitle')"
+                   class="share-option telegram">
                     <div class="share-option-icon">
                         <i class="fab fa-telegram-plane"></i>
                     </div>
@@ -180,7 +174,7 @@ else
                 </a>
                 
                 <!-- Email -->
-                <a href="mailto:?subject=@encodedTitle&body=@encodedText%0A%0A@encodedUrl" 
+                <a href="mailto:?subject=@Uri.EscapeDataString(shareTitle)&body=@Uri.EscapeDataString($"{shareTitle} - {shareDescription}")%0A%0A@absoluteShareUrl" 
                    class="share-option email"
                    onclick="trackShare('@shareType', '@contentId', 'email')">
                     <div class="share-option-icon">
@@ -192,7 +186,7 @@ else
                 <!-- Copy Link -->
                 <button type="button" 
                         class="share-option copy" 
-                        onclick="copyShareLink(this, '@shareUrl', '@shareType', '@contentId')">
+                        onclick="copyShareLink(this, '@absoluteShareUrl', '@shareType', '@contentId')">
                     <div class="share-option-icon">
                         <i class="fas fa-copy"></i>
                     </div>
@@ -203,8 +197,8 @@ else
             <!-- URL Input -->
             <div class="share-url-section">
                 <div class="input-group">
-                    <input type="text" class="form-control share-url-input" value="@shareUrl" readonly onclick="this.select()">
-                    <button class="btn btn-outline-secondary" onclick="copyShareLink(this, '@shareUrl', '@shareType', '@contentId')">
+                    <input type="text" class="form-control share-url-input" value="@absoluteShareUrl" readonly onclick="this.select()">
+                    <button class="btn btn-outline-secondary" onclick="copyShareLink(this, '@absoluteShareUrl', '@shareType', '@contentId')">
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
@@ -212,7 +206,7 @@ else
             
             <!-- QR Code Section -->
             <div class="share-qr-section">
-                <button class="btn btn-outline-primary btn-qr" onclick="generateQRCode('@shareUrl', '@shareTitle')">
+                <button class="btn btn-outline-primary btn-qr" onclick="generateQRCode('@absoluteShareUrl', '@shareTitle')">
                     <i class="fas fa-qrcode"></i> Generate QR Code
                 </button>
             </div>
@@ -479,5 +473,38 @@ else
             document.querySelectorAll('.share-dropdown-menu').forEach(d => d.style.display = 'none');
         }
     });
+
+    function shareOnSocialMedia(platform, url, title) {
+        const encodedUrl = encodeURIComponent(url);
+        const encodedTitle = encodeURIComponent(title);
+        let shareUrl = '';
+
+        switch (platform) {
+            case 'facebook':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+                break;
+            case 'twitter':
+                shareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
+                break;
+            case 'linkedin':
+                shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+                break;
+            case 'reddit':
+                shareUrl = `https://reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
+                break;
+            case 'whatsapp':
+                shareUrl = `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`;
+                break;
+            case 'telegram':
+                shareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`;
+                break;
+            default:
+                console.error('Unsupported share platform:', platform);
+                return;
+        }
+
+        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer');
+        trackShare('@shareType', '@contentId', platform);
+    }
 </script>
 

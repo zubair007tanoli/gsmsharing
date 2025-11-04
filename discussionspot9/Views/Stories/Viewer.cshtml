@@ -12,9 +12,32 @@
     {
         if (string.IsNullOrEmpty(input))
             return string.Empty;
-            
-        // Remove HTML tags using regex
-        return System.Text.RegularExpressions.Regex.Replace(input, "<.*?>", string.Empty).Trim();
+        
+        // Decode HTML entities first
+        var decoded = System.Net.WebUtility.HtmlDecode(input);
+        
+        // Remove HTML tags using regex (non-greedy)
+        var withoutTags = System.Text.RegularExpressions.Regex.Replace(decoded, "<[^>]+>", string.Empty);
+        
+        // Remove multiple spaces and newlines, replace with single space
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(withoutTags, @"\s+", " ");
+        
+        // Remove HTML entities that might remain
+        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "&[#a-zA-Z0-9]+;", " ");
+        
+        return cleaned.Trim();
+    }
+    
+    public static string CleanTextForDisplay(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return string.Empty;
+        
+        // Strip HTML and clean
+        var cleaned = StripHtml(input);
+        
+        // Escape for HTML display (prevents XSS)
+        return System.Net.WebUtility.HtmlEncode(cleaned);
     }
     
     public static bool IsVideoFile(string url)
@@ -25,9 +48,86 @@
     }
 }
 
+@{
+    var storyUrl = Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme);
+    var storyDescription = !string.IsNullOrEmpty(Model.Description) 
+        ? (Model.Description.Length > 155 ? Model.Description.Substring(0, 155) + "..." : Model.Description)
+        : $"Read {Model.Title} on DiscussionSpot";
+    var storyImage = hero.StartsWith("http") ? hero : $"{Context.Request.Scheme}://{Context.Request.Host}{hero}";
+    var storyTitle = $"{Model.Title} | DiscussionSpot";
+    
+    // Helper function to make URLs absolute
+    string MakeAbsoluteUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return "";
+        if (url.StartsWith("http://") || url.StartsWith("https://")) return url;
+        if (url.StartsWith("/")) return $"{Context.Request.Scheme}://{Context.Request.Host}{url}";
+        return $"{Context.Request.Scheme}://{Context.Request.Host}/{url}";
+    }
+}
+
 @section Head {
 <link rel="amphtml" href="@ampUrl" />
 <link rel="preload" as="image" href="@hero" />
+<link rel="canonical" href="@storyUrl" />
+
+<!-- Primary Meta Tags -->
+<meta name="title" content="@storyTitle" />
+<meta name="description" content="@storyDescription" />
+<meta name="author" content="@(Model.User?.UserName ?? "DiscussionSpot")" />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="article" />
+<meta property="og:url" content="@storyUrl" />
+<meta property="og:title" content="@Model.Title" />
+<meta property="og:description" content="@storyDescription" />
+<meta property="og:image" content="@storyImage" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:site_name" content="DiscussionSpot" />
+<meta property="article:published_time" content="@Model.CreatedAt.ToString("o")" />
+<meta property="article:author" content="@(Model.User?.UserName ?? "DiscussionSpot")" />
+@if (Model.Post != null)
+{
+    <meta property="article:section" content="@(Model.Post.Community?.Name ?? "General")" />
+}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content="@storyUrl" />
+<meta name="twitter:title" content="@Model.Title" />
+<meta name="twitter:description" content="@storyDescription" />
+<meta name="twitter:image" content="@storyImage" />
+<meta name="twitter:creator" content="@@DiscussionSpot" />
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "Article",
+    "headline": "@Model.Title",
+    "description": "@storyDescription",
+    "image": "@storyImage",
+    "author": {
+        "@@type": "Person",
+        "name": "@(Model.User?.UserName ?? "DiscussionSpot")"
+    },
+    "publisher": {
+        "@@type": "Organization",
+        "name": "DiscussionSpot",
+        "logo": {
+            "@@type": "ImageObject",
+            "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
+        }
+    },
+    "datePublished": "@Model.CreatedAt.ToString("o")",
+    "dateModified": "@Model.UpdatedAt.ToString("o")",
+    "mainEntityOfPage": {
+        "@@type": "WebPage",
+        "@@id": "@storyUrl"
+    }
+}
+</script>
 }
 
 <!-- Story Viewer Container -->
@@ -44,41 +144,46 @@
         {
             @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
             {
-                <div class="story-slide" data-duration="@slide.Duration" data-slide-type="@slide.SlideType">
-                    @if (slide.SlideType == "media" && !string.IsNullOrEmpty(slide.MediaUrl))
+                var mediaUrl = MakeAbsoluteUrl(slide.MediaUrl);
+                var hasImage = !string.IsNullOrEmpty(mediaUrl) && !IsVideoFile(mediaUrl);
+                var bgImageStyle = hasImage ? $"background-image: url('{mediaUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;" : "";
+                
+                <div class="story-slide" data-duration="@slide.Duration" data-slide-type="@slide.SlideType" style="@bgImageStyle">
+                    @if (!string.IsNullOrEmpty(mediaUrl))
                     {
-                        <div class="slide-media">
-                            @if (IsVideoFile(slide.MediaUrl))
+                        <div class="slide-media" style="@(hasImage ? $"background-image: url('{mediaUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;" : "")">
+                            @if (IsVideoFile(mediaUrl))
                             {
-                                <video class="slide-video" autoplay muted loop>
-                                    <source src="@slide.MediaUrl" type="video/mp4">
+                                <video class="slide-video" autoplay muted loop playsinline>
+                                    <source src="@mediaUrl" type="video/mp4">
                                     Your browser does not support the video tag.
                                 </video>
                             }
-                            else if (!string.IsNullOrEmpty(slide.MediaUrl))
+                            else if (hasImage)
                             {
                                 <img class="slide-image" 
-                                     src="@slide.MediaUrl" 
+                                     src="@mediaUrl" 
                                      alt="@(slide.Caption ?? slide.Headline ?? "Story slide")" 
                                      loading="@(slide.OrderIndex <= 1 ? "eager" : "lazy")"
                                      decoding="async"
-                                     onerror="this.style.opacity='0.5';" />
+                                     style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;"
+                                     onerror="this.style.display='none'; var parent = this.closest('.slide-media'); if(parent) parent.style.backgroundImage='url(\'' + this.src + '\')'; var slideEl = this.closest('.story-slide'); if(slideEl) slideEl.style.backgroundImage='url(\'' + this.src + '\')';" />
                             }
                         </div>
                     }
                     
-                    <div class="slide-content card-bottom align-@(slide.Alignment?.ToLower() ?? "center")" style="background-color: @slide.BackgroundColor; color: @slide.TextColor; font-size: @slide.FontSize;">
+                    <div class="slide-content card-bottom align-@(slide.Alignment?.ToLower() ?? "center")" style="background: linear-gradient(to top, @(slide.BackgroundColor ?? "rgba(0,0,0,0.95)") 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.4) 60%, transparent 100%); color: @(slide.TextColor ?? "#ffffff"); font-size: @(slide.FontSize ?? "24px");">
                         @if (!string.IsNullOrEmpty(slide.Headline))
                         {
-                            <h1 class="slide-headline">@StripHtml(slide.Headline)</h1>
+                            <h1 class="slide-headline">@CleanTextForDisplay(slide.Headline)</h1>
                         }
                         @if (!string.IsNullOrEmpty(slide.Text))
                         {
-                            <div class="slide-text">@Html.Raw(StripHtml(slide.Text))</div>
+                            <div class="slide-text">@CleanTextForDisplay(slide.Text)</div>
                         }
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
-                            <p class="slide-caption">@StripHtml(slide.Caption)</p>
+                            <p class="slide-caption">@CleanTextForDisplay(slide.Caption)</p>
                         }
                     </div>
                 </div>
@@ -144,15 +249,21 @@
                 <div class="story-actions">
                     @if (Model.Post != null)
                     {
-                        <a href="/r/@Model.Post.Community.Slug/posts/@Model.Post.Slug" class="action-btn" title="View Original Post">
+                        <a href="/r/@Model.Post.Community.Slug/posts/@Model.Post.Slug" class="action-btn" title="View Original Post" target="_blank" rel="noopener">
                             <i class="fas fa-external-link-alt"></i>
                             <span>View Post</span>
                         </a>
                     }
-                    <button class="action-btn" id="share-btn" title="Share Story">
-                        <i class="fas fa-share"></i>
-                        <span>Share</span>
-                    </button>
+                    @{
+                        ViewData["ShareTitle"] = Model.Title;
+                        ViewData["ShareDescription"] = !string.IsNullOrEmpty(Model.Description) ? Model.Description : $"Read {Model.Title} on DiscussionSpot";
+                        ViewData["ShareUrl"] = storyUrl;
+                        ViewData["ShareImage"] = storyImage;
+                        ViewData["ShareType"] = "story";
+                        ViewData["ContentId"] = Model.StoryId.ToString();
+                        ViewData["ShareVariant"] = "action-btn";
+                    }
+                    @await Html.PartialAsync("_ShareButtonsUnified", ViewData)
                     <button class="action-btn" id="like-btn" title="Like Story">
                         <i class="fas fa-heart"></i>
                         <span>Like</span>
@@ -195,6 +306,9 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .story-progress {
@@ -253,10 +367,16 @@
     width: 100%;
     height: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-color: #000;
+    overflow: hidden;
 }
 
 .story-slide.active {
@@ -276,6 +396,7 @@
     height: 100%;
     z-index: 1;
     overflow: hidden;
+    background-color: #000;
 }
 
 .slide-image,
@@ -283,18 +404,26 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    object-position: center center;
     display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .slide-image {
     min-width: 100%;
     min-height: 100%;
-    background-color: rgba(0, 0, 0, 0.3);
-    background-image: url('/Assets/Logo_Auth.png');
+    width: 100%;
+    height: 100%;
+    background-color: #000;
     background-size: cover;
     background-repeat: no-repeat;
-    background-position: center;
+    background-position: center center;
+    opacity: 1 !important;
+    display: block !important;
+    object-fit: cover;
+    object-position: center center;
 }
 
 /* Ensure empty/broken images are handled */
@@ -302,19 +431,21 @@
 .slide-image:not([src]),
 .slide-image[src="undefined"],
 .slide-image[src="null"] {
-    opacity: 0.5;
+    opacity: 0;
+    display: none;
 }
 
-/* Handle image load errors */
-.slide-image::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
-    z-index: -1;
+/* Ensure images are always visible */
+.slide-image {
+    opacity: 1 !important;
+}
+
+/* Handle image load errors - use background as fallback */
+.slide-media:has(.slide-image[src=""]) {
+    background-image: url('/Assets/Logo_Auth.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .slide-content {
@@ -322,37 +453,60 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 2.5rem 2rem;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 50%, transparent 100%);
+    padding: 3rem 2.5rem 2.5rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 30%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
     color: white;
     z-index: 2;
     text-align: center;
     width: 100%;
     box-sizing: border-box;
+    backdrop-filter: blur(2px);
+    min-height: auto;
+}
+
+/* When content is minimal, center it vertically */
+.story-slide:has(.slide-content .slide-headline:only-child) .slide-content,
+.story-slide:has(.slide-content .slide-text:only-child) .slide-content {
+    position: absolute;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 20%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.95) 100%);
+}
+
+/* When both headline and minimal text, position better */
+.story-slide:has(.slide-headline + .slide-text:empty) .slide-content {
+    position: absolute;
+    top: 40%;
+    bottom: auto;
+    transform: translateY(-50%);
 }
 
 .slide-headline {
     font-size: clamp(1.8rem, 5vw, 3rem);
-    font-weight: bold;
-    margin: 0 auto 1.25rem auto;
-    padding: 0 1rem;
+    font-weight: 700;
+    margin: 0 auto 1.5rem auto;
+    padding: 0 1.5rem;
     max-width: 90%;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.5);
-    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 0, 0, 0.5);
+    line-height: 1.25;
     word-wrap: break-word;
+    letter-spacing: -0.02em;
 }
 
 .slide-text {
     font-size: clamp(1rem, 3vw, 1.4rem);
-    line-height: 1.75;
-    margin: 0 auto 1.25rem auto;
-    padding: 0 1.5rem;
+    line-height: 1.8;
+    margin: 0 auto 1.5rem auto;
+    padding: 0 2rem;
     max-width: 85%;
-    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95), 0 2px 12px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.5);
     text-align: justify;
     text-justify: inter-word;
     word-wrap: break-word;
     hyphens: auto;
+    font-weight: 400;
+    letter-spacing: 0.01em;
 }
 
 .slide-caption {
@@ -435,9 +589,10 @@
 .story-info {
     position: absolute;
     top: 1.5rem;
+    left: 1rem;
     right: 80px; /* Leave space for close button */
     z-index: 10000;
-    max-width: 320px;
+    max-width: none;
     min-width: 0;
 }
 
@@ -467,11 +622,12 @@
 .story-info-content {
     position: absolute;
     top: 0;
+    left: auto;
     right: 0;
     width: 0;
     max-height: 0;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.78);
     border-radius: 16px;
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -483,12 +639,15 @@
 }
 
 .story-info.expanded .story-info-content {
-    width: 320px;
+    left: 0;
+    right: 0;
+    width: calc(100% - 0rem);
     max-height: 85vh;
     opacity: 1;
     transform: translateY(0);
     pointer-events: all;
     overflow-y: auto;
+    margin: 0;
 }
 
 .story-info-content::-webkit-scrollbar {
@@ -510,10 +669,12 @@
 }
 
 .story-meta {
-    padding: 1.25rem;
+    padding: 1.25rem 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    max-width: 1100px;
+    margin: 0 auto;
 }
 
 .story-header {
@@ -604,14 +765,15 @@
 }
 
 .story-description {
-    font-size: clamp(0.85rem, 1.8vw, 0.95rem);
-    opacity: 0.9;
+    font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+    opacity: 0.92;
     margin: 0;
     padding: 0.75rem 0;
     color: white;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-    line-height: 1.5;
-    text-align: left;
+    line-height: 1.7;
+    text-align: justify;
+    text-justify: inter-word;
     word-wrap: break-word;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -697,12 +859,14 @@
     
     .story-info {
         top: 1rem;
+        left: 0.75rem;
         right: 60px;
-        max-width: 280px;
     }
     
     .story-info.expanded .story-info-content {
-        width: 280px;
+        left: 0;
+        right: 0;
+        width: 100%;
         max-height: 80vh;
     }
     
@@ -717,8 +881,9 @@
     }
     
     .story-description {
-        font-size: clamp(0.8rem, 2.2vw, 0.9rem);
-        text-align: left;
+        font-size: clamp(0.85rem, 2.4vw, 1rem);
+        text-align: justify;
+        text-justify: inter-word;
     }
     
     .action-btn {
@@ -738,12 +903,14 @@
 /* Tablet Responsive */
 @@media (min-width: 769px) and (max-width: 1024px) {
     .story-info {
-        max-width: 300px;
+        left: 1rem;
         right: 85px;
     }
     
     .story-info.expanded .story-info-content {
-        width: 300px;
+        left: 0;
+        right: 0;
+        width: 100%;
     }
     
     .slide-content {
@@ -915,24 +1082,77 @@ function initializeFallbackViewer() {
         
         // Handle image loading
         const images = slide.querySelectorAll('.slide-image');
-        images.forEach(img => {
+        const slideIndex = Array.from(slides).indexOf(slide);
+        const storySlide = slide;
+        
+        console.log(`🖼️ Slide ${slideIndex + 1}: Found ${images.length} images`);
+        
+        images.forEach((img, idx) => {
+            console.log(`  Image ${idx + 1}: src="${img.src}", complete=${img.complete}, naturalWidth=${img.naturalWidth}`);
+            
             // Set loading attribute for better performance
             if (!img.hasAttribute('loading')) {
-                img.setAttribute('loading', 'eager');
+                img.setAttribute('loading', slideIndex <= 1 ? 'eager' : 'lazy');
             }
             
-            // Handle image load errors
+            // Force image to be visible immediately
+            img.style.opacity = '1';
+            img.style.display = 'block';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.objectPosition = 'center';
+            
+            // Handle image load errors - use background as fallback
             img.addEventListener('error', function() {
-                console.warn('Image failed to load:', this.src);
-                this.style.opacity = '0.3';
-                // Keep the fallback background
+                console.warn(`❌ Image ${idx + 1} failed to load:`, this.src);
+                const slideMedia = this.closest('.slide-media');
+                
+                // Hide broken image
+                this.style.display = 'none';
+                
+                // Set background image on parent elements as fallback
+                if (slideMedia && this.src) {
+                    console.log(`  Setting background on .slide-media: ${this.src}`);
+                    slideMedia.style.backgroundImage = `url('${this.src}')`;
+                    slideMedia.style.backgroundSize = 'cover';
+                    slideMedia.style.backgroundPosition = 'center';
+                    slideMedia.style.backgroundRepeat = 'no-repeat';
+                }
+                
+                if (storySlide && this.src) {
+                    console.log(`  Setting background on .story-slide: ${this.src}`);
+                    storySlide.style.backgroundImage = `url('${this.src}')`;
+                    storySlide.style.backgroundSize = 'cover';
+                    storySlide.style.backgroundPosition = 'center';
+                    storySlide.style.backgroundRepeat = 'no-repeat';
+                }
             });
             
             // Ensure image is visible when loaded
             img.addEventListener('load', function() {
+                console.log(`✅ Image ${idx + 1} loaded successfully:`, this.src);
                 this.style.opacity = '1';
+                this.style.display = 'block';
             });
+            
+            // Check if image is already loaded
+            if (img.complete) {
+                if (img.naturalWidth > 0) {
+                    console.log(`✅ Image ${idx + 1} already loaded:`, img.src);
+                    img.style.opacity = '1';
+                    img.style.display = 'block';
+                } else {
+                    console.warn(`⚠️ Image ${idx + 1} complete but naturalWidth is 0:`, img.src);
+                }
+            }
         });
+        
+        // Also check for background images on slide elements
+        const slideBg = window.getComputedStyle(storySlide).backgroundImage;
+        if (slideBg && slideBg !== 'none') {
+            console.log(`  Slide has background image: ${slideBg}`);
+        }
     }
     
     function nextSlide() {
