@@ -400,6 +400,7 @@ namespace discussionspot9.Services
                 }
 
                 // Add final CTA slide with link back to post
+                var postUrl = $"/r/{post.Community?.Slug}/posts/{post.Slug}";
                 slides.Add(new StorySlide
                 {
                     StoryId = story.StoryId,
@@ -413,7 +414,7 @@ namespace discussionspot9.Services
                     TextColor = "#ffffff",
                     FontSize = "18",
                     Alignment = "center",
-                    MediaUrl = $"/post/{post.Community?.Slug}/{post.Slug}",
+                    MediaUrl = postUrl,
                     MediaType = "internal_link",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -500,7 +501,11 @@ namespace discussionspot9.Services
                 BackgroundColor = "#007bff",
                 TextColor = "#ffffff",
                 FontSize = "18",
-                Alignment = "center"
+                Alignment = "center",
+                MediaUrl = post.Url,
+                MediaType = "external_link",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             });
         }
 
@@ -767,6 +772,7 @@ namespace discussionspot9.Services
                 context.StorySlides.RemoveRange(existingSlides);
 
                 // Add enhanced slides
+                var maxOrderIndex = enhancedSlides.Any() ? enhancedSlides.Max(s => s.OrderIndex) : -1;
                 foreach (var slideData in enhancedSlides)
                 {
                     var slide = new StorySlide
@@ -788,8 +794,30 @@ namespace discussionspot9.Services
                     context.StorySlides.Add(slide);
                 }
 
+                // CRITICAL: Always add final CTA slide with link back to post (even after Python enhancement)
+                var postUrl = $"/r/{post.Community?.Slug}/posts/{post.Slug}";
+                var finalCtaSlide = new StorySlide
+                {
+                    StoryId = story.StoryId,
+                    Caption = "Read more on DiscussionSpot",
+                    Headline = "💬 Join the Discussion",
+                    Text = "View full post and comments",
+                    Duration = 4000,
+                    OrderIndex = maxOrderIndex + 1, // Add after all Python-generated slides
+                    SlideType = "cta",
+                    BackgroundColor = "#007bff",
+                    TextColor = "#ffffff",
+                    FontSize = "18",
+                    Alignment = "center",
+                    MediaUrl = postUrl, // CRITICAL: Link to original post
+                    MediaType = "internal_link", // CRITICAL: Mark as internal link
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                context.StorySlides.Add(finalCtaSlide);
+
                 await context.SaveChangesAsync();
-                _logger.LogInformation($"Python AI enhancement completed for story {story.StoryId} with {enhancedSlides.Count} slides");
+                _logger.LogInformation($"Python AI enhancement completed for story {story.StoryId} with {enhancedSlides.Count} slides + final CTA slide");
             }
             catch (Exception ex)
             {

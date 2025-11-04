@@ -142,14 +142,83 @@
     <div class="story-content" id="story-content">
         @if (Model.Slides != null && Model.Slides.Any())
         {
-            @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
+            @{
+                // CRITICAL: Always determine post URL for internal linking
+                var defaultPostUrl = Model.Post != null 
+                    ? $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.Community?.Slug}/posts/{Model.Post.Slug}"
+                    : "";
+                var orderedSlides = Model.Slides.OrderBy(s => s.OrderIndex).ToList();
+                var slideCount = orderedSlides.Count;
+                var maxOrderIndex = orderedSlides.Any() ? orderedSlides.Max(s => s.OrderIndex) : -1;
+            }
+            
+            @foreach (var slide in orderedSlides)
             {
+                var isLastSlide = slide.OrderIndex == maxOrderIndex;
+                
                 var mediaUrl = MakeAbsoluteUrl(slide.MediaUrl);
                 var hasImage = !string.IsNullOrEmpty(mediaUrl) && !IsVideoFile(mediaUrl);
-                var bgImageStyle = hasImage ? $"background-image: url('{mediaUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;" : "";
+                var isLink = slide.MediaType == "internal_link" || slide.MediaType == "external_link";
+                var isCta = slide.SlideType == "cta";
+                var linkUrl = "";
                 
-                <div class="story-slide" data-duration="@slide.Duration" data-slide-type="@slide.SlideType" style="@bgImageStyle">
-                    @if (!string.IsNullOrEmpty(mediaUrl))
+                // CRITICAL: Determine link URL - ALWAYS prioritize post link for internal linking
+                if (isLink || isCta)
+                {
+                    if (slide.MediaType == "internal_link" && !string.IsNullOrEmpty(slide.MediaUrl))
+                    {
+                        // Internal link - FIX wrong URL format if present
+                        var mediaUrl = slide.MediaUrl;
+                        
+                        // Fix wrong URL format: /post/communitySlug/postSlug -> /r/communitySlug/posts/postSlug
+                        if (mediaUrl.Contains("/post/") && !mediaUrl.Contains("/posts/"))
+                        {
+                            mediaUrl = mediaUrl.Replace("/post/", "/r/").Replace("/r/", "/r/", StringComparison.OrdinalIgnoreCase);
+                            // If it doesn't have /posts/, add it
+                            var parts = mediaUrl.Split(new[] { "/r/" }, StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length > 1 && !parts[1].StartsWith("posts/"))
+                            {
+                                var communityAndPost = parts[1].Split('/');
+                                if (communityAndPost.Length >= 2)
+                                {
+                                    mediaUrl = $"/r/{communityAndPost[0]}/posts/{string.Join("/", communityAndPost.Skip(1))}";
+                                }
+                            }
+                        }
+                        
+                        // Always use correct format from Model.Post if available
+                        if (Model.Post != null && !string.IsNullOrEmpty(defaultPostUrl))
+                        {
+                            linkUrl = defaultPostUrl;
+                        }
+                        else
+                        {
+                            // Fallback: make absolute if relative
+                            linkUrl = mediaUrl.StartsWith("http") ? mediaUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{mediaUrl}";
+                        }
+                    }
+                    else if (slide.MediaType == "external_link" && !string.IsNullOrEmpty(slide.MediaUrl))
+                    {
+                        linkUrl = slide.MediaUrl;
+                    }
+                    else if (!string.IsNullOrEmpty(defaultPostUrl))
+                    {
+                        // CRITICAL: Always link to post if available (for CTA slides without explicit link)
+                        linkUrl = defaultPostUrl;
+                    }
+                }
+                
+                // CRITICAL: If this is the last slide and no link exists, add post link
+                if (isLastSlide && string.IsNullOrEmpty(linkUrl) && !string.IsNullOrEmpty(defaultPostUrl))
+                {
+                    linkUrl = defaultPostUrl;
+                    isCta = true; // Make it a CTA slide
+                }
+                
+                var bgImageStyle = hasImage && !isLink ? $"background-image: url('{mediaUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;" : "";
+                
+                <div class="story-slide @(isCta ? "cta-slide" : "")" data-duration="@slide.Duration" data-slide-type="@slide.SlideType" @(isLink || isCta ? $"data-link-url=\"{linkUrl}\"" : "") style="@bgImageStyle">
+                    @if (!string.IsNullOrEmpty(mediaUrl) && !isLink)
                     {
                         <div class="slide-media" style="@(hasImage ? $"background-image: url('{mediaUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;" : "")">
                             @if (IsVideoFile(mediaUrl))
@@ -184,6 +253,27 @@
                         @if (!string.IsNullOrEmpty(slide.Caption))
                         {
                             <p class="slide-caption">@CleanTextForDisplay(slide.Caption)</p>
+                        }
+                        
+                        @* CRITICAL: Add clickable CTA button - ALWAYS show on last slide or CTA/link slides *@
+                        @if ((isCta || isLink || isLastSlide) && !string.IsNullOrEmpty(linkUrl))
+                        {
+                            <div class="slide-cta-button-container">
+                                <a href="@linkUrl" class="slide-cta-button" target="_blank" rel="noopener" onclick="event.stopPropagation();">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span>@(isLink && slide.MediaType == "external_link" ? "Visit Link" : !string.IsNullOrEmpty(defaultPostUrl) && (linkUrl == defaultPostUrl || isLastSlide) ? "View Original Post" : "Read More")</span>
+                                </a>
+                            </div>
+                        }
+                        @* CRITICAL FALLBACK: If no link button was added but we have a post, add it on last slide *@
+                        else if (isLastSlide && !string.IsNullOrEmpty(defaultPostUrl) && string.IsNullOrEmpty(linkUrl))
+                        {
+                            <div class="slide-cta-button-container">
+                                <a href="@defaultPostUrl" class="slide-cta-button" target="_blank" rel="noopener" onclick="event.stopPropagation();">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span>View Original Post</span>
+                                </a>
+                            </div>
                         }
                     </div>
                 </div>
@@ -249,9 +339,9 @@
                 <div class="story-actions">
                     @if (Model.Post != null)
                     {
-                        <a href="/r/@Model.Post.Community.Slug/posts/@Model.Post.Slug" class="action-btn" title="View Original Post" target="_blank" rel="noopener">
+                        <a href="/r/@Model.Post.Community?.Slug/posts/@Model.Post.Slug" class="action-btn" title="View Original Post" target="_blank" rel="noopener" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; font-weight: 600;">
                             <i class="fas fa-external-link-alt"></i>
-                            <span>View Post</span>
+                            <span>View Original Post</span>
                         </a>
                     }
                     @{
@@ -291,6 +381,16 @@
     <button class="close-btn" id="close-btn" title="Close Story">
         <i class="fas fa-times"></i>
     </button>
+    
+    <!-- ALWAYS VISIBLE: Floating Link to Original Post (CRITICAL for internal linking) -->
+    @if (Model.Post != null)
+    {
+        var postUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.Community?.Slug}/posts/{Model.Post.Slug}";
+        <a href="@postUrl" class="floating-post-link" target="_blank" rel="noopener" title="View Original Post" onclick="event.stopPropagation();">
+            <i class="fas fa-link"></i>
+            <span>View Post</span>
+        </a>
+    }
 </div>
 
 <!-- Story Viewer Styles -->
@@ -517,6 +617,128 @@
     max-width: 80%;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
     font-style: italic;
+}
+
+/* CTA Button Styles - MUST be above all controls */
+.slide-cta-button-container {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001 !important; /* Above all story controls */
+    position: relative;
+    pointer-events: auto; /* Ensure clicks work */
+}
+
+.slide-cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10002 !important; /* Above container */
+    position: relative;
+    pointer-events: auto; /* Ensure clicks work */
+    cursor: pointer;
+}
+
+.slide-cta-button:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
+    color: white;
+    text-decoration: none;
+}
+
+.slide-cta-button:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.slide-cta-button i {
+    font-size: 1.2em;
+}
+
+/* Make CTA slides clickable */
+.cta-slide {
+    cursor: pointer;
+}
+
+.cta-slide:hover {
+    opacity: 0.95;
+}
+
+/* ALWAYS VISIBLE: Floating Link to Original Post (CRITICAL for internal linking) */
+.floating-post-link {
+    position: fixed;
+    bottom: 120px;
+    right: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 10001;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    animation: pulse 2s infinite;
+}
+
+.floating-post-link:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.7);
+    color: white;
+    text-decoration: none;
+}
+
+.floating-post-link i {
+    font-size: 1.2em;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+    }
+    50% {
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.8), 0 0 0 8px rgba(102, 126, 234, 0.1);
+    }
+}
+
+/* Mobile responsive for floating link */
+@@media (max-width: 768px) {
+    .floating-post-link {
+        bottom: 100px;
+        right: 1rem;
+        padding: 0.85rem 1.25rem;
+        font-size: 0.9rem;
+    }
+    
+    .floating-post-link span {
+        display: none;
+    }
+    
+    .floating-post-link {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        padding: 0;
+        justify-content: center;
+    }
 }
 
 .align-left { 
@@ -838,6 +1060,11 @@
     .slide-caption {
         max-width: 90%;
         padding: 0 0.75rem;
+    }
+    
+    .slide-cta-button {
+        padding: 0.85rem 1.75rem;
+        font-size: clamp(0.95rem, 3vw, 1.1rem);
     }
     
     .story-controls {

@@ -254,14 +254,72 @@
                poster-square-src="@firstSlideImage"
                theme-color="#667eea">
         
+        @{
+            // CRITICAL: Determine correct post URL for internal linking
+            var defaultPostUrl = Model.Post != null 
+                ? $"/r/{Model.Post.Community?.Slug}/posts/{Model.Post.Slug}"
+                : "";
+            var orderedSlides = Model.Slides?.OrderBy(s => s.OrderIndex).ToList() ?? new List<StorySlide>();
+            var maxOrderIndex = orderedSlides.Any() ? orderedSlides.Max(s => s.OrderIndex) : -1;
+        }
+        
         @if (Model.Slides != null && Model.Slides.Any())
         {
-            @foreach (var slide in Model.Slides.OrderBy(s => s.OrderIndex))
+            @foreach (var slide in orderedSlides)
             {
+                var isLastSlide = slide.OrderIndex == maxOrderIndex;
+                var isCta = slide.SlideType == "cta";
+                var isLink = slide.MediaType == "internal_link" || slide.MediaType == "external_link";
+                var linkUrl = "";
+                
+                // Determine link URL for CTA or link slides
+                if (isLink || isCta)
+                {
+                    if (slide.MediaType == "internal_link" && !string.IsNullOrEmpty(slide.MediaUrl))
+                    {
+                        // Fix wrong URL format if present
+                        var mediaUrl = slide.MediaUrl;
+                        if (mediaUrl.Contains("/post/") && !mediaUrl.Contains("/posts/"))
+                        {
+                            // Fix: /post/communitySlug/postSlug -> /r/communitySlug/posts/postSlug
+                            var parts = mediaUrl.Replace("/post/", "/").Split('/');
+                            if (parts.Length >= 3)
+                            {
+                                mediaUrl = $"/r/{parts[1]}/posts/{string.Join("/", parts.Skip(2))}";
+                            }
+                        }
+                        
+                        // Always use correct format from Model.Post if available
+                        if (!string.IsNullOrEmpty(defaultPostUrl))
+                        {
+                            linkUrl = defaultPostUrl;
+                        }
+                        else
+                        {
+                            linkUrl = mediaUrl.StartsWith("http") ? mediaUrl : mediaUrl;
+                        }
+                    }
+                    else if (slide.MediaType == "external_link" && !string.IsNullOrEmpty(slide.MediaUrl))
+                    {
+                        linkUrl = slide.MediaUrl;
+                    }
+                    else if (!string.IsNullOrEmpty(defaultPostUrl))
+                    {
+                        linkUrl = defaultPostUrl;
+                    }
+                }
+                
+                // If last slide and no link, add post link
+                if (isLastSlide && string.IsNullOrEmpty(linkUrl) && !string.IsNullOrEmpty(defaultPostUrl))
+                {
+                    linkUrl = defaultPostUrl;
+                    isCta = true;
+                }
+                
                 var src = MakeAbsolute(slide.MediaUrl);
                 <amp-story-page id="page-@slide.OrderIndex">
                     <amp-story-grid-layer template="fill">
-                        @if (!string.IsNullOrEmpty(slide.MediaUrl))
+                        @if (!string.IsNullOrEmpty(slide.MediaUrl) && !isLink)
                         {
                             @if (IsVideoFile(slide.MediaUrl))
                             {
@@ -294,16 +352,32 @@
                         {
                             <p class="story-caption">@slide.Caption</p>
                         }
-                        
-                        @if (slide.OrderIndex == 0 && Model.Post != null)
+                    </amp-story-grid-layer>
+                    
+                    @* CRITICAL: Add CTA link for CTA slides, link slides, or last slide *@
+                    @* Use amp-story-page-outlink for external links (opens in new tab) *@
+                    @if ((isCta || isLink || isLastSlide) && !string.IsNullOrEmpty(linkUrl))
+                    {
+                        @if (slide.MediaType == "external_link" || linkUrl.StartsWith("http"))
                         {
-                            <!-- Add post link on first slide -->
-                            <amp-story-page-attachment layout="nodisplay" href="/r/@Model.Post.Community.Slug/posts/@Model.Post.Slug">
-                                <h3>View Original Post</h3>
-                                <p>Read the full discussion: @Model.Post.Title</p>
+                            <amp-story-page-outlink layout="nodisplay">
+                                <a href="@linkUrl" target="_blank" rel="noopener">
+                                    @(isLink && slide.MediaType == "external_link" ? "Visit Link" : "View Original Post")
+                                </a>
+                            </amp-story-page-outlink>
+                        }
+                        else
+                        {
+                            @* For internal links, use page attachment (swipe up) - make URL absolute *@
+                            @{
+                                var absoluteLinkUrl = linkUrl.StartsWith("http") ? linkUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{linkUrl}";
+                            }
+                            <amp-story-page-attachment layout="nodisplay" href="@absoluteLinkUrl">
+                                <h3>@(isLink && slide.MediaType == "external_link" ? "Visit External Link" : "View Original Post")</h3>
+                                <p>@(isLink && slide.MediaType == "external_link" ? slide.MediaUrl : (Model.Post != null ? $"Read the full discussion: {Model.Post.Title}" : "Read more on DiscussionSpot"))</p>
                             </amp-story-page-attachment>
                         }
-                    </amp-story-grid-layer>
+                    }
                 </amp-story-page>
             }
         }
