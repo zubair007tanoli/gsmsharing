@@ -48,23 +48,23 @@ else if (variant == "simple" || variant == "action-btn")
                 <button class="share-close-btn" onclick="closeShareDropdown('@contentId')">&times;</button>
             </div>
             <div class="share-options-list">
-                <a href="javascript:void(0);" onclick="shareOnSocialMedia('facebook', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('facebook', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')" class="share-popup-option">
                     <i class="fab fa-facebook-f" style="color: #1877f2;"></i>
                     <span>Facebook</span>
                 </a>
-                <a href="javascript:void(0);" onclick="shareOnSocialMedia('twitter', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('twitter', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')" class="share-popup-option">
                     <i class="fab fa-twitter" style="color: #1da1f2;"></i>
                     <span>Twitter</span>
                 </a>
-                <a href="javascript:void(0);" onclick="shareOnSocialMedia('linkedin', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('linkedin', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')" class="share-popup-option">
                     <i class="fab fa-linkedin-in" style="color: #0077b5;"></i>
                     <span>LinkedIn</span>
                 </a>
-                <a href="javascript:void(0);" onclick="shareOnSocialMedia('reddit', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('reddit', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')" class="share-popup-option">
                     <i class="fab fa-reddit-alien" style="color: #ff4500;"></i>
                     <span>Reddit</span>
                 </a>
-                <a href="javascript:void(0);" onclick="shareOnSocialMedia('whatsapp', '@absoluteShareUrl', '@shareTitle')" class="share-popup-option">
+                <a href="javascript:void(0);" onclick="shareOnSocialMedia('whatsapp', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')" class="share-popup-option">
                     <i class="fab fa-whatsapp" style="color: #25d366;"></i>
                     <span>WhatsApp</span>
                 </a>
@@ -115,7 +115,7 @@ else
             <div class="share-options-grid">
                 <!-- Facebook -->
                 <a href="javascript:void(0);" 
-                   onclick="shareOnSocialMedia('facebook', '@absoluteShareUrl', '@shareTitle')"
+                   onclick="shareOnSocialMedia('facebook', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')"
                    class="share-option facebook">
                     <div class="share-option-icon">
                         <i class="fab fa-facebook-f"></i>
@@ -125,7 +125,7 @@ else
                 
                 <!-- Twitter/X -->
                 <a href="javascript:void(0);" 
-                   onclick="shareOnSocialMedia('twitter', '@absoluteShareUrl', '@shareTitle')"
+                   onclick="shareOnSocialMedia('twitter', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')"
                    class="share-option twitter">
                     <div class="share-option-icon">
                         <i class="fab fa-twitter"></i>
@@ -135,7 +135,7 @@ else
                 
                 <!-- LinkedIn -->
                 <a href="javascript:void(0);" 
-                   onclick="shareOnSocialMedia('linkedin', '@absoluteShareUrl', '@shareTitle')"
+                   onclick="shareOnSocialMedia('linkedin', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')"
                    class="share-option linkedin">
                     <div class="share-option-icon">
                         <i class="fab fa-linkedin-in"></i>
@@ -145,7 +145,7 @@ else
                 
                 <!-- Reddit -->
                 <a href="javascript:void(0);" 
-                   onclick="shareOnSocialMedia('reddit', '@absoluteShareUrl', '@shareTitle')"
+                   onclick="shareOnSocialMedia('reddit', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')"
                    class="share-option reddit">
                     <div class="share-option-icon">
                         <i class="fab fa-reddit-alien"></i>
@@ -155,7 +155,7 @@ else
                 
                 <!-- WhatsApp -->
                 <a href="javascript:void(0);" 
-                   onclick="shareOnSocialMedia('whatsapp', '@absoluteShareUrl', '@shareTitle')"
+                   onclick="shareOnSocialMedia('whatsapp', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')"
                    class="share-option whatsapp">
                     <div class="share-option-icon">
                         <i class="fab fa-whatsapp"></i>
@@ -165,7 +165,7 @@ else
                 
                 <!-- Telegram -->
                 <a href="javascript:void(0);" 
-                   onclick="shareOnSocialMedia('telegram', '@absoluteShareUrl', '@shareTitle')"
+                   onclick="shareOnSocialMedia('telegram', '@absoluteShareUrl', '@shareTitle', '@shareType', '@contentId')"
                    class="share-option telegram">
                     <div class="share-option-icon">
                         <i class="fab fa-telegram-plane"></i>
@@ -474,9 +474,14 @@ else
         }
     });
 
-    function shareOnSocialMedia(platform, url, title) {
+    function shareOnSocialMedia(platform, url, title, shareType, contentId) {
+        if (!url || url === '') {
+            console.error('Share URL is empty or undefined');
+            return;
+        }
+        
         const encodedUrl = encodeURIComponent(url);
-        const encodedTitle = encodeURIComponent(title);
+        const encodedTitle = encodeURIComponent(title || '');
         let shareUrl = '';
 
         switch (platform) {
@@ -503,8 +508,13 @@ else
                 return;
         }
 
+        console.log('Opening share URL:', shareUrl);
         window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer');
-        trackShare('@shareType', '@contentId', platform);
+        
+        // Track share if tracking function exists and we have the required parameters
+        if (typeof trackShare === 'function' && shareType && contentId) {
+            trackShare(shareType, contentId, platform);
+        }
     }
 </script>
 
