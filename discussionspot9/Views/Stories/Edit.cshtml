@@ -69,6 +69,14 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label asp-for="PosterImageUrl" class="form-label fw-bold">
+                                        <i class="fas fa-image me-2 text-primary"></i>Poster Image URL (Thumbnail)
+                                    </label>
+                                    <input asp-for="PosterImageUrl" class="form-control" placeholder="https://example.com/image.jpg">
+                                    <small class="text-muted">This image appears as the story thumbnail in listings</small>
+                                </div>
+
+                                <div class="mb-3">
                                     <label asp-for="Status" class="form-label fw-bold">
                                         <i class="fas fa-flag me-2 text-primary"></i>Status
                                     </label>
@@ -77,6 +85,37 @@
                                         <option value="published">Published</option>
                                         <option value="archived">Archived</option>
                                     </select>
+                                </div>
+                                
+                                <!-- SEO Fields (Collapsible) -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" data-bs-toggle="collapse" data-bs-target="#seoFields">
+                                        <i class="fas fa-search me-2"></i>SEO & Metadata (Optional)
+                                    </button>
+                                    <div class="collapse mt-2" id="seoFields">
+                                        <div class="card card-body">
+                                            <div class="mb-2">
+                                                <label asp-for="MetaDescription" class="form-label small">Meta Description</label>
+                                                <textarea asp-for="MetaDescription" class="form-control form-control-sm" rows="2" placeholder="SEO description (150-160 characters recommended)"></textarea>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label asp-for="MetaKeywords" class="form-label small">Meta Keywords</label>
+                                                <input asp-for="MetaKeywords" class="form-control form-control-sm" placeholder="keyword1, keyword2, keyword3">
+                                            </div>
+                                            <div class="mb-2">
+                                                <label asp-for="CanonicalUrl" class="form-label small">Canonical URL</label>
+                                                <input asp-for="CanonicalUrl" class="form-control form-control-sm" placeholder="https://example.com/canonical-url">
+                                            </div>
+                                            <div class="mb-2">
+                                                <label asp-for="PublisherName" class="form-label small">Publisher Name</label>
+                                                <input asp-for="PublisherName" class="form-control form-control-sm" placeholder="Publisher Name">
+                                            </div>
+                                            <div class="mb-2">
+                                                <label asp-for="PublisherLogo" class="form-label small">Publisher Logo URL</label>
+                                                <input asp-for="PublisherLogo" class="form-control form-control-sm" placeholder="https://example.com/logo.png">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -119,17 +158,28 @@
                                                 </div>
                                             </div>
 
+                                            <input type="hidden" name="Slides[@i].StorySlideId" value="@slide.StorySlideId" />
                                             <input type="hidden" name="Slides[@i].SlideId" value="@slide.SlideId" />
+                                            <input type="hidden" name="Slides[@i].OrderIndex" value="@slide.OrderIndex" />
                                             <input type="hidden" name="Slides[@i].SlideOrder" value="@slide.SlideOrder" class="slide-order" />
+                                            <input type="hidden" name="Slides[@i].Duration" value="@(slide.Duration > 0 ? slide.Duration : 5000)" />
+                                            <input type="hidden" name="Slides[@i].Caption" value="@slide.Caption" />
 
                                             <div class="mb-2">
-                                                <label class="form-label fw-bold small">Slide Title</label>
-                                                <input type="text" name="Slides[@i].Title" value="@slide.Title" class="form-control" placeholder="Slide title...">
+                                                <label class="form-label fw-bold small">Slide Headline</label>
+                                                <input type="text" name="Slides[@i].Headline" value="@slide.Headline" class="form-control" placeholder="Slide headline...">
+                                                <input type="hidden" name="Slides[@i].Title" value="@slide.Headline" />
                                             </div>
 
                                             <div class="mb-2">
-                                                <label class="form-label fw-bold small">Slide Content</label>
-                                                <textarea name="Slides[@i].Content" class="form-control" rows="3" placeholder="Slide content...">@slide.Content</textarea>
+                                                <label class="form-label fw-bold small">Slide Text/Content</label>
+                                                <textarea name="Slides[@i].Text" class="form-control" rows="3" placeholder="Slide content...">@slide.Text</textarea>
+                                                <input type="hidden" name="Slides[@i].Content" value="@slide.Text" />
+                                            </div>
+                                            
+                                            <div class="mb-2">
+                                                <label class="form-label fw-bold small">Slide Caption (Optional)</label>
+                                                <input type="text" name="Slides[@i].Caption" value="@slide.Caption" class="form-control" placeholder="Slide caption...">
                                             </div>
 
                                             <!-- Media Upload Section -->
@@ -138,7 +188,9 @@
                                                     <i class="fas fa-image me-1"></i>Slide Media
                                                 </label>
                                                 <div class="input-group mb-2">
-                                                    <input type="text" name="Slides[@i].ImageUrl" value="@slide.ImageUrl" class="form-control slide-media-url" placeholder="Media URL or upload below..." data-slide-index="@i">
+                                                    <input type="text" name="Slides[@i].MediaUrl" value="@slide.MediaUrl" class="form-control slide-media-url" placeholder="Media URL or upload below..." data-slide-index="@i">
+                                                    <input type="hidden" name="Slides[@i].ImageUrl" value="@slide.MediaUrl" />
+                                                    <input type="hidden" name="Slides[@i].MediaType" value="@slide.MediaType" />
                                                     <button type="button" class="btn btn-outline-primary upload-media-btn" data-slide-index="@i">
                                                         <i class="fas fa-upload"></i> Upload
                                                     </button>
@@ -146,21 +198,29 @@
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 </div>
-                                                @if (!string.IsNullOrEmpty(slide.ImageUrl))
+                                                @if (!string.IsNullOrEmpty(slide.MediaUrl) && slide.MediaType != "internal_link" && slide.MediaType != "external_link")
                                                 {
                                                     <div class="media-preview mb-2">
-                                                        <img src="@slide.ImageUrl" alt="Slide media" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+                                                        <img src="@slide.MediaUrl" alt="Slide media" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
                                                     </div>
                                                 }
                                             </div>
 
-                                            <!-- Link/URL Section -->
+                                            <!-- Link/URL Section - Only show if MediaType is a link type -->
+                                            @{
+                                                var isLinkSlide = slide.MediaType == "internal_link" || slide.MediaType == "external_link";
+                                                var linkUrl = isLinkSlide ? slide.MediaUrl : slide.LinkUrl;
+                                            }
                                             <div class="mb-3">
                                                 <label class="form-label fw-bold small">
                                                     <i class="fas fa-link me-1"></i>Slide Link (Optional)
                                                 </label>
-                                                <input type="url" name="Slides[@i].LinkUrl" value="@slide.Content" class="form-control" placeholder="https://example.com">
-                                                <small class="text-muted">Add a clickable link to this slide</small>
+                                                <input type="url" name="Slides[@i].LinkUrl" value="@linkUrl" class="form-control" placeholder="https://example.com or /r/community/posts/slug">
+                                                <small class="text-muted">Add a clickable link to this slide. Leave empty if not a link slide.</small>
+                                                @if (isLinkSlide)
+                                                {
+                                                    <input type="hidden" name="Slides[@i].MediaType" value="@slide.MediaType" />
+                                                }
                                             </div>
 
                                             <!-- Background Settings -->
@@ -631,17 +691,28 @@ small.text-muted {
                         </div>
                     </div>
 
+                    <input type="hidden" name="Slides[${slideCounter}].StorySlideId" value="0" />
                     <input type="hidden" name="Slides[${slideCounter}].SlideId" value="0" />
+                    <input type="hidden" name="Slides[${slideCounter}].OrderIndex" value="${slideCounter}" />
                     <input type="hidden" name="Slides[${slideCounter}].SlideOrder" value="${slideCounter}" class="slide-order" />
+                    <input type="hidden" name="Slides[${slideCounter}].Duration" value="5000" />
+                    <input type="hidden" name="Slides[${slideCounter}].Caption" value="" />
 
                     <div class="mb-2">
-                        <label class="form-label fw-bold small">Slide Title</label>
-                        <input type="text" name="Slides[${slideCounter}].Title" class="form-control" placeholder="Slide title...">
+                        <label class="form-label fw-bold small">Slide Headline</label>
+                        <input type="text" name="Slides[${slideCounter}].Headline" class="form-control" placeholder="Slide headline...">
+                        <input type="hidden" name="Slides[${slideCounter}].Title" value="" />
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label fw-bold small">Slide Content</label>
-                        <textarea name="Slides[${slideCounter}].Content" class="form-control" rows="3" placeholder="Slide content..."></textarea>
+                        <label class="form-label fw-bold small">Slide Text/Content</label>
+                        <textarea name="Slides[${slideCounter}].Text" class="form-control" rows="3" placeholder="Slide content..."></textarea>
+                        <input type="hidden" name="Slides[${slideCounter}].Content" value="" />
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Slide Caption (Optional)</label>
+                        <input type="text" name="Slides[${slideCounter}].Caption" class="form-control" placeholder="Slide caption...">
                     </div>
 
                     <!-- Media Upload Section -->
@@ -650,7 +721,9 @@ small.text-muted {
                             <i class="fas fa-image me-1"></i>Slide Media
                         </label>
                         <div class="input-group mb-2">
-                            <input type="text" name="Slides[${slideCounter}].ImageUrl" class="form-control slide-media-url" placeholder="Media URL or upload below..." data-slide-index="${slideCounter}">
+                            <input type="text" name="Slides[${slideCounter}].MediaUrl" class="form-control slide-media-url" placeholder="Media URL or upload below..." data-slide-index="${slideCounter}">
+                            <input type="hidden" name="Slides[${slideCounter}].ImageUrl" value="" />
+                            <input type="hidden" name="Slides[${slideCounter}].MediaType" value="" />
                             <button type="button" class="btn btn-outline-primary upload-media-btn" data-slide-index="${slideCounter}">
                                 <i class="fas fa-upload"></i> Upload
                             </button>
@@ -665,8 +738,8 @@ small.text-muted {
                         <label class="form-label fw-bold small">
                             <i class="fas fa-link me-1"></i>Slide Link (Optional)
                         </label>
-                        <input type="url" name="Slides[${slideCounter}].LinkUrl" class="form-control" placeholder="https://example.com">
-                        <small class="text-muted">Add a clickable link to this slide</small>
+                        <input type="url" name="Slides[${slideCounter}].LinkUrl" class="form-control" placeholder="https://example.com or /r/community/posts/slug">
+                        <small class="text-muted">Add a clickable link to this slide. Leave empty if not a link slide.</small>
                     </div>
 
                     <!-- Background Settings -->

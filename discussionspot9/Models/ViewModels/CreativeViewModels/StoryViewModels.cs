@@ -41,6 +41,15 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public string Description { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public DateTime UpdatedAt { get; set; }
+        
+        // Story-level SEO and metadata fields
+        public string? PosterImageUrl { get; set; }
+        public string? MetaDescription { get; set; }
+        public string? MetaKeywords { get; set; }
+        public string? CanonicalUrl { get; set; }
+        public string? PublisherName { get; set; }
+        public string? PublisherLogo { get; set; }
+        
         public List<StorySlideEditViewModel> Slides { get; set; } = new();
     }
 
@@ -58,21 +67,29 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
     {
         public int StorySlideId { get; set; }
         public int SlideId { get; set; }
+        
+        // Core slide fields (matching StorySlide model)
         public string Headline { get; set; } = string.Empty;
         public string Text { get; set; } = string.Empty;
+        public string? Caption { get; set; }
         public string? MediaUrl { get; set; }
         public string? MediaType { get; set; }
+        public int? MediaId { get; set; }
         public int OrderIndex { get; set; }
         public int SlideOrder { get; set; }
         public string SlideType { get; set; } = string.Empty;
         public string? BackgroundColor { get; set; }
-        public string? BackgroundImageUrl { get; set; }
         public string? TextColor { get; set; }
+        public string? FontSize { get; set; }
+        public string? Alignment { get; set; }
         public int Duration { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Content { get; set; } = string.Empty;
-        public string? ImageUrl { get; set; }
-        public string? LinkUrl { get; set; }
+        
+        // Legacy/backward compatibility fields
+        public string Title { get; set; } = string.Empty; // Maps to Headline
+        public string Content { get; set; } = string.Empty; // Maps to Text
+        public string? ImageUrl { get; set; } // Maps to MediaUrl
+        public string? BackgroundImageUrl { get; set; } // Not used in StorySlide, but kept for view compatibility
+        public string? LinkUrl { get; set; } // For links: maps to MediaUrl when MediaType is internal_link/external_link
     }
 
     public class StoriesIndexViewModel

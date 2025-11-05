@@ -162,18 +162,35 @@ namespace discussionspot9.Controllers
                 Description = story.Description ?? "",
                 Status = story.Status ?? "",
                 UpdatedAt = story.UpdatedAt,
+                PosterImageUrl = story.PosterImageUrl,
+                MetaDescription = story.MetaDescription,
+                MetaKeywords = story.MetaKeywords,
+                CanonicalUrl = story.CanonicalUrl,
+                PublisherName = story.PublisherName,
+                PublisherLogo = story.PublisherLogo,
                 Slides = story.Slides.OrderBy(s => s.OrderIndex).Select(s => new StorySlideEditViewModel
                 {
                     StorySlideId = s.StorySlideId,
                     SlideId = s.StorySlideId,
+                    Headline = s.Headline ?? "",
+                    Text = s.Text ?? "",
+                    Caption = s.Caption ?? "",
+                    MediaUrl = s.MediaUrl ?? "",
+                    MediaType = s.MediaType ?? "",
+                    SlideOrder = s.OrderIndex,
+                    OrderIndex = s.OrderIndex,
+                    SlideType = s.SlideType ?? "media",
+                    BackgroundColor = s.BackgroundColor ?? "#667eea",
+                    TextColor = s.TextColor ?? "#ffffff",
+                    FontSize = s.FontSize ?? "18",
+                    Alignment = s.Alignment ?? "center",
+                    Duration = s.Duration,
+                    // For backward compatibility with view
                     Title = s.Headline ?? "",
                     Content = s.Text ?? "",
                     ImageUrl = s.MediaUrl ?? "",
-                    SlideOrder = s.OrderIndex,
-                    SlideType = s.SlideType ?? StoryConstants.SlideTypeMedia,
-                    BackgroundColor = s.BackgroundColor ?? StoryConstants.DefaultBackgroundColor,
-                    BackgroundImageUrl = s.MediaUrl ?? "",
-                    LinkUrl = s.MediaUrl ?? ""
+                    // LinkUrl: Only set if MediaType is a link type
+                    LinkUrl = (s.MediaType == "internal_link" || s.MediaType == "external_link") ? s.MediaUrl : ""
                 }).ToList()
             };
 
@@ -211,27 +228,154 @@ namespace discussionspot9.Controllers
                 story.Description = model.Description;
                 story.Status = model.Status;
                 story.UpdatedAt = DateTime.UtcNow;
+                
+                // Update Story-level SEO and metadata fields
+                if (!string.IsNullOrWhiteSpace(model.PosterImageUrl))
+                {
+                    story.PosterImageUrl = model.PosterImageUrl;
+                }
+                if (!string.IsNullOrWhiteSpace(model.MetaDescription))
+                {
+                    story.MetaDescription = model.MetaDescription;
+                }
+                if (!string.IsNullOrWhiteSpace(model.MetaKeywords))
+                {
+                    story.MetaKeywords = model.MetaKeywords;
+                }
+                if (!string.IsNullOrWhiteSpace(model.CanonicalUrl))
+                {
+                    story.CanonicalUrl = model.CanonicalUrl;
+                }
+                if (!string.IsNullOrWhiteSpace(model.PublisherName))
+                {
+                    story.PublisherName = model.PublisherName;
+                }
+                if (!string.IsNullOrWhiteSpace(model.PublisherLogo))
+                {
+                    story.PublisherLogo = model.PublisherLogo;
+                }
 
                 // Update slides - validate ownership
+                var existingSlideIds = story.Slides.Select(s => s.StorySlideId).ToList();
+                var processedSlideIds = new HashSet<int>();
+                
                 foreach (var slideModel in model.Slides)
                 {
-                    var slide = story.Slides.FirstOrDefault(s => s.StorySlideId == slideModel.SlideId);
-                    if (slide == null && slideModel.SlideId > 0)
+                    StorySlide? slide = null;
+                    
+                    // Find existing slide or create new one
+                    if (slideModel.SlideId > 0 && existingSlideIds.Contains(slideModel.SlideId))
                     {
-                        ModelState.AddModelError("", $"Slide {slideModel.SlideId} does not belong to this story");
-                        return View(model);
+                        slide = story.Slides.FirstOrDefault(s => s.StorySlideId == slideModel.SlideId);
+                        if (slide == null)
+                        {
+                            ModelState.AddModelError("", $"Slide {slideModel.SlideId} does not belong to this story");
+                            return View(model);
+                        }
+                    }
+                    else
+                    {
+                        // Create new slide
+                        slide = new StorySlide
+                        {
+                            StoryId = story.StoryId,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        story.Slides.Add(slide);
                     }
                     
                     if (slide != null)
                     {
-                        slide.Headline = slideModel.Title;
-                        slide.Text = slideModel.Content;
-                        slide.MediaUrl = slideModel.ImageUrl;
-                        slide.OrderIndex = slideModel.SlideOrder;
-                        slide.SlideType = slideModel.SlideType;
+                        // Update all slide fields
+                        slide.Headline = slideModel.Headline ?? slideModel.Title ?? "";
+                        slide.Text = slideModel.Text ?? slideModel.Content ?? "";
+                        slide.Caption = slideModel.Caption ?? "";
+                        slide.MediaUrl = slideModel.MediaUrl ?? slideModel.ImageUrl ?? "";
+                        slide.OrderIndex = slideModel.OrderIndex > 0 ? slideModel.OrderIndex : slideModel.SlideOrder;
+                        slide.SlideType = slideModel.SlideType ?? "media";
+                        slide.BackgroundColor = slideModel.BackgroundColor ?? "#667eea";
+                        slide.TextColor = slideModel.TextColor ?? "#ffffff";
+                        slide.FontSize = slideModel.FontSize ?? "18";
+                        slide.Alignment = slideModel.Alignment ?? "center";
+                        slide.Duration = slideModel.Duration > 0 ? slideModel.Duration : 5000;
                         slide.UpdatedAt = DateTime.UtcNow;
+                        
+                        // Handle LinkUrl - if provided, set MediaType accordingly
+                        if (!string.IsNullOrWhiteSpace(slideModel.LinkUrl))
+                        {
+                            slide.MediaUrl = slideModel.LinkUrl;
+                            // Determine if it's internal or external link
+                            if (slideModel.LinkUrl.StartsWith("http://") || slideModel.LinkUrl.StartsWith("https://"))
+                            {
+                                try
+                                {
+                                    // Check if it's our domain (internal) or external
+                                    var uri = new Uri(slideModel.LinkUrl);
+                                    var host = uri.Host;
+                                    var requestHost = HttpContext.Request.Host.Host;
+                                    if (host.Contains(requestHost) || slideModel.LinkUrl.Contains(requestHost))
+                                    {
+                                        slide.MediaType = "internal_link";
+                                    }
+                                    else
+                                    {
+                                        slide.MediaType = "external_link";
+                                    }
+                                }
+                                catch (UriFormatException)
+                                {
+                                    // Invalid URL format, treat as internal link
+                                    slide.MediaType = "internal_link";
+                                }
+                            }
+                            else
+                            {
+                                // Relative URL - internal link
+                                slide.MediaType = "internal_link";
+                            }
+                        }
+                        else if (!string.IsNullOrWhiteSpace(slideModel.MediaUrl))
+                        {
+                            // If MediaUrl is set but no MediaType, infer from URL
+                            if (string.IsNullOrWhiteSpace(slideModel.MediaType))
+                            {
+                                var url = slideModel.MediaUrl.ToLowerInvariant();
+                                if (url.Contains(".jpg") || url.Contains(".jpeg") || url.Contains(".png") || 
+                                    url.Contains(".gif") || url.Contains(".webp") || url.Contains(".svg"))
+                                {
+                                    slide.MediaType = "image";
+                                }
+                                else if (url.Contains(".mp4") || url.Contains(".webm") || url.Contains(".mov"))
+                                {
+                                    slide.MediaType = "video";
+                                }
+                                else
+                                {
+                                    slide.MediaType = slideModel.MediaType ?? "image";
+                                }
+                            }
+                            else
+                            {
+                                slide.MediaType = slideModel.MediaType;
+                            }
+                        }
+                        
+                        processedSlideIds.Add(slide.StorySlideId);
                     }
                 }
+                
+                // Remove slides that were deleted (not in the submitted list)
+                var slidesToRemove = story.Slides
+                    .Where(s => !processedSlideIds.Contains(s.StorySlideId))
+                    .ToList();
+                foreach (var slideToRemove in slidesToRemove)
+                {
+                    story.Slides.Remove(slideToRemove);
+                }
+                
+                // Update story slide count and duration
+                story.SlideCount = story.Slides.Count;
+                story.TotalDuration = story.Slides.Sum(s => s.Duration);
 
                 await _context.SaveChangesAsync();
 
