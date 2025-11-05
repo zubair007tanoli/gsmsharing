@@ -16,7 +16,7 @@ namespace discussionspot9.Components
             _logger = logger;
         }
 
-        public async Task<IViewComponentResult> InvokeAsync(int count = 20)
+        public async Task<IViewComponentResult> InvokeAsync(int count = 10)
         {
             try
             {
@@ -24,25 +24,57 @@ namespace discussionspot9.Components
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                 
                 // Use AsNoTracking for better performance and to avoid tracking issues
+                // Load random published stories from all users
+                
+                // First, get all published story IDs
+                var allStoryIds = await _db.Stories
+                    .AsNoTracking()
+                    .Where(s => s.Status == "published")
+                    .Select(s => s.StoryId)
+                    .ToListAsync(cts.Token);
+
+                // Shuffle them in memory for true randomization
+                var random = new Random();
+                var randomStoryIds = allStoryIds.OrderBy(_ => random.Next()).Take(count).ToList();
+
+                if (!randomStoryIds.Any())
+                {
+                    _logger?.LogInformation("No published stories found");
+                    return View(new List<StoryStripItem>());
+                }
+
+                // Now fetch the full story data for the random IDs
                 var items = await _db.Stories
                     .AsNoTracking()
                     .Include(s => s.User)
                     .Include(s => s.Slides)
-                    .Where(s => s.Status == "published")
-                    .OrderByDescending(s => s.UpdatedAt)
-                    .Take(count)
+                    .Include(s => s.Post) // Include post for better URL linking
+                        .ThenInclude(p => p.Community)
+                    .Where(s => randomStoryIds.Contains(s.StoryId))
                     .Select(s => new StoryStripItem
                     {
                         StoryId = s.StoryId,
                         Slug = s.Slug ?? string.Empty,
                         Title = s.Title ?? string.Empty,
                         Author = s.User != null ? (s.User.UserName ?? "User") : "User",
-                        CoverUrl = s.Slides.OrderBy(x => x.OrderIndex).Select(x => x.MediaUrl).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty,
+                        // Prioritize: PosterImageUrl > First slide media > Empty string (gradient will be used)
+                        CoverUrl = !string.IsNullOrWhiteSpace(s.PosterImageUrl) 
+                            ? s.PosterImageUrl 
+                            : (s.Slides != null && s.Slides.Any()
+                                ? s.Slides.OrderBy(x => x.OrderIndex).Select(x => x.MediaUrl).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty
+                                : string.Empty),
                         PosterImageUrl = s.PosterImageUrl ?? string.Empty,
-                        PostUrl = s.CanonicalUrl ?? string.Empty
+                        PostUrl = s.Post != null && s.Post.Community != null 
+                            ? $"/r/{s.Post.Community.Slug}/posts/{s.Post.Slug}"
+                            : (s.CanonicalUrl ?? string.Empty),
+                        ViewCount = s.ViewCount
                     })
                     .ToListAsync(cts.Token);
 
+                // Maintain random order
+                items = items.OrderBy(s => randomStoryIds.IndexOf(s.StoryId)).ToList();
+
+                _logger?.LogInformation("Loaded {Count} random stories for StoriesStrip", items.Count);
                 return View(items);
             }
             catch (OperationCanceledException)
@@ -76,6 +108,7 @@ namespace discussionspot9.Components
         public string CoverUrl { get; set; } = string.Empty;
         public string PosterImageUrl { get; set; } = string.Empty;
         public string PostUrl { get; set; } = string.Empty;
+        public int ViewCount { get; set; }
     }
 }
 

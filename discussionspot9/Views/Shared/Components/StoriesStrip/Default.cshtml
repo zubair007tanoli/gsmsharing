@@ -1,42 +1,91 @@
 @model List<discussionspot9.Components.StoryStripItem>
 
-<div class="stories-strip card-style">
-    <div class="stories-track stories-track-cards" id="storiesTrack">
-        @foreach (var item in Model)
-        {
-            // Use story thumbnail or first slide image, fallback to logo or gradient placeholder
-            var thumb = string.IsNullOrWhiteSpace(item.CoverUrl) 
-                ? (string.IsNullOrWhiteSpace(item.PosterImageUrl) 
-                    ? "/Assets/Logo_Auth.png" 
-                    : item.PosterImageUrl)
-                : item.CoverUrl;
-            
-            // If still empty, use a CSS gradient placeholder
-            var hasThumb = !string.IsNullOrWhiteSpace(thumb) && thumb != "/Assets/Logo_Auth.png";
-            var thumbStyle = hasThumb 
-                ? $"background-image:url('{thumb}');" 
-                : "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);";
-            
-            var caption = item.Title?.Length > 48 ? item.Title.Substring(0,48)+"…" : item.Title;
-            <button class="story-tile story-card-tile" data-story-slug="@item.Slug" data-story-title="@item.Title" data-author="@item.Author" data-posturl="@item.PostUrl" title="@item.Title">
-                <div class="story-card-thumb" style="@thumbStyle">
-                    @if (!hasThumb)
-                    {
-                        <div class="story-placeholder-icon">
-                            <i class="fas fa-book-open fa-2x"></i>
+@if (Model != null && Model.Any())
+{
+    <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+                <i class="fas fa-bolt text-warning me-2"></i>
+                <span class="fw-bold">Featured Stories</span>
+                <span class="badge bg-primary ms-2">@Model.Count</span>
+            </h5>
+            <a href="/stories/explore" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-th-large me-1"></i>View All Stories
+            </a>
+        </div>
+
+        <div class="stories-strip card-style">
+            <div class="stories-track stories-track-cards" id="storiesTrack">
+                @foreach (var item in Model)
+                {
+                    // Use story thumbnail or first slide image, fallback to gradient placeholder
+                    var thumb = item.CoverUrl;
+                    
+                    // If empty, use a CSS gradient placeholder (no default logo)
+                    var hasThumb = !string.IsNullOrWhiteSpace(thumb);
+                    var thumbStyle = hasThumb 
+                        ? $"background-image:url('{thumb}'); background-size: cover; background-position: center;" 
+                        : "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);";
+                    
+                    var caption = item.Title?.Length > 48 ? item.Title.Substring(0,48)+"…" : item.Title;
+                    var viewCountFormatted = item.ViewCount > 1000 ? $"{item.ViewCount / 1000.0:F1}K" : item.ViewCount.ToString();
+                    
+                    <button class="story-tile story-card-tile" data-story-slug="@item.Slug" data-story-title="@item.Title" data-author="@item.Author" data-posturl="@item.PostUrl" title="@item.Title by @item.Author">
+                        <div class="story-card-thumb" style="@thumbStyle">
+                            @if (!hasThumb)
+                            {
+                                <div class="story-placeholder-icon">
+                                    <i class="fas fa-book-open fa-2x"></i>
+                                </div>
+                            }
+                            <div class="story-card-overlay">
+                                <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
+                            </div>
+                            @if (item.ViewCount > 0)
+                            {
+                                <div class="story-card-views">
+                                    <i class="fas fa-eye me-1"></i>@viewCountFormatted
+                                </div>
+                            }
                         </div>
-                    }
-                    <div class="story-card-overlay">
-                        <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
+                        <div class="story-card-caption">
+                            <div class="story-card-title">@caption</div>
+                            <div class="story-card-author">
+                                <i class="fas fa-user-circle me-1"></i>@item.Author
+                            </div>
+                        </div>
+                    </button>
+                }
+                
+                <!-- "View More" card at the end -->
+                <a href="/stories/explore" class="story-tile story-card-tile story-view-more" title="View all stories">
+                    <div class="story-card-thumb" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="story-placeholder-icon">
+                            <i class="fas fa-plus-circle fa-3x"></i>
+                        </div>
                     </div>
-                </div>
-                <div class="story-card-caption">@caption</div>
-            </button>
-        }
+                    <div class="story-card-caption">
+                        <div class="story-card-title fw-bold">View More</div>
+                        <div class="story-card-author">
+                            <i class="fas fa-arrow-right me-1"></i>All Stories
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <button class="stories-nav left" type="button" aria-label="Prev" onclick="window.storiesStrip.scrollBy(-1)"><i class="fas fa-chevron-left"></i></button>
+            <button class="stories-nav right" type="button" aria-label="Next" onclick="window.storiesStrip.scrollBy(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
     </div>
-    <button class="stories-nav left" type="button" aria-label="Prev" onclick="window.storiesStrip.scrollBy(-1)"><i class="fas fa-chevron-left"></i></button>
-    <button class="stories-nav right" type="button" aria-label="Next" onclick="window.storiesStrip.scrollBy(1)"><i class="fas fa-chevron-right"></i></button>
-</div>
+}
+else
+{
+    <div class="mb-3">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No stories available yet. <a href="/stories/explore" class="alert-link">Explore stories</a> or <a href="/stories/create" class="alert-link">create your own!</a>
+        </div>
+    </div>
+}
 
 <div id="storiesPlayerModal" class="stories-modal" aria-hidden="true">
     <div class="stories-modal-backdrop" onclick="window.storiesPlayer.close()"></div>
@@ -69,4 +118,3 @@
     </div>
     
 </div>
-

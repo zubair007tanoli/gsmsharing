@@ -142,15 +142,13 @@
     <div class="story-content" id="story-content">
         @if (Model.Slides != null && Model.Slides.Any())
         {
-            @{
-                // CRITICAL: Always determine post URL for internal linking
-                var defaultPostUrl = Model.Post != null 
-                    ? $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.Community?.Slug}/posts/{Model.Post.Slug}"
-                    : "";
-                var orderedSlides = Model.Slides.OrderBy(s => s.OrderIndex).ToList();
-                var slideCount = orderedSlides.Count;
-                var maxOrderIndex = orderedSlides.Any() ? orderedSlides.Max(s => s.OrderIndex) : -1;
-            }
+            // CRITICAL: Always determine post URL for internal linking
+            var defaultPostUrl = Model.Post != null 
+                ? $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.Community?.Slug}/posts/{Model.Post.Slug}"
+                : "";
+            var orderedSlides = Model.Slides.OrderBy(s => s.OrderIndex).ToList();
+            var slideCount = orderedSlides.Count;
+            var maxOrderIndex = orderedSlides.Any() ? orderedSlides.Max(s => s.OrderIndex) : -1;
             
             @foreach (var slide in orderedSlides)
             {
@@ -168,20 +166,20 @@
                     if (slide.MediaType == "internal_link" && !string.IsNullOrEmpty(slide.MediaUrl))
                     {
                         // Internal link - FIX wrong URL format if present
-                        var mediaUrl = slide.MediaUrl;
+                        var internalMediaUrl = slide.MediaUrl;
                         
                         // Fix wrong URL format: /post/communitySlug/postSlug -> /r/communitySlug/posts/postSlug
-                        if (mediaUrl.Contains("/post/") && !mediaUrl.Contains("/posts/"))
+                        if (internalMediaUrl.Contains("/post/") && !internalMediaUrl.Contains("/posts/"))
                         {
-                            mediaUrl = mediaUrl.Replace("/post/", "/r/").Replace("/r/", "/r/", StringComparison.OrdinalIgnoreCase);
+                            internalMediaUrl = internalMediaUrl.Replace("/post/", "/r/").Replace("/r/", "/r/", StringComparison.OrdinalIgnoreCase);
                             // If it doesn't have /posts/, add it
-                            var parts = mediaUrl.Split(new[] { "/r/" }, StringSplitOptions.RemoveEmptyEntries);
+                            var parts = internalMediaUrl.Split(new[] { "/r/" }, StringSplitOptions.RemoveEmptyEntries);
                             if (parts.Length > 1 && !parts[1].StartsWith("posts/"))
                             {
                                 var communityAndPost = parts[1].Split('/');
                                 if (communityAndPost.Length >= 2)
                                 {
-                                    mediaUrl = $"/r/{communityAndPost[0]}/posts/{string.Join("/", communityAndPost.Skip(1))}";
+                                    internalMediaUrl = $"/r/{communityAndPost[0]}/posts/{string.Join("/", communityAndPost.Skip(1))}";
                                 }
                             }
                         }
@@ -194,7 +192,7 @@
                         else
                         {
                             // Fallback: make absolute if relative
-                            linkUrl = mediaUrl.StartsWith("http") ? mediaUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{mediaUrl}";
+                            linkUrl = internalMediaUrl.StartsWith("http") ? internalMediaUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{internalMediaUrl}";
                         }
                     }
                     else if (slide.MediaType == "external_link" && !string.IsNullOrEmpty(slide.MediaUrl))
@@ -710,7 +708,7 @@
     font-size: 1.2em;
 }
 
-@keyframes pulse {
+@@keyframes pulse {
     0%, 100% {
         box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
     }

@@ -578,6 +578,8 @@ namespace discussionspot9.Controllers
                 .Include(s => s.Slides.OrderBy(sl => sl.OrderIndex))
                 .Include(s => s.User)
                 .Include(s => s.Community)
+                .Include(s => s.Post) // Include the post relationship for proper URL generation
+                    .ThenInclude(p => p.Community)
                 .FirstOrDefaultAsync(s => s.Slug == slug);
 
             if (story == null)

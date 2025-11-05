@@ -259,7 +259,7 @@
             var defaultPostUrl = Model.Post != null 
                 ? $"/r/{Model.Post.Community?.Slug}/posts/{Model.Post.Slug}"
                 : "";
-            var orderedSlides = Model.Slides?.OrderBy(s => s.OrderIndex).ToList() ?? new List<StorySlide>();
+            var orderedSlides = Model.Slides?.OrderBy(s => s.OrderIndex).ToList() ?? new List<discussionspot9.Models.Domain.StorySlide>();
             var maxOrderIndex = orderedSlides.Any() ? orderedSlides.Max(s => s.OrderIndex) : -1;
         }
         
@@ -369,9 +369,7 @@
                         else
                         {
                             @* For internal links, use page attachment (swipe up) - make URL absolute *@
-                            @{
-                                var absoluteLinkUrl = linkUrl.StartsWith("http") ? linkUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{linkUrl}";
-                            }
+                            var absoluteLinkUrl = linkUrl.StartsWith("http") ? linkUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{linkUrl}";
                             <amp-story-page-attachment layout="nodisplay" href="@absoluteLinkUrl">
                                 <h3>@(isLink && slide.MediaType == "external_link" ? "Visit External Link" : "View Original Post")</h3>
                                 <p>@(isLink && slide.MediaType == "external_link" ? slide.MediaUrl : (Model.Post != null ? $"Read the full discussion: {Model.Post.Title}" : "Read more on DiscussionSpot"))</p>

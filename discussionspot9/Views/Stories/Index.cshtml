@@ -211,7 +211,11 @@
                                                         <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
                                                     </div>
                                                     <h3 class="preview-title">@story.Title</h3>
-                                                    <p class="preview-description">@(story.Description?.Length > 50 ? story.Description.Substring(0, 50) + "..." : story.Description)</p>
+                                                    @{
+                                                        var plainDesc = System.Text.RegularExpressions.Regex.Replace(story.Description ?? "", "<.*?>", string.Empty);
+                                                        var truncatedDesc = plainDesc.Length > 50 ? plainDesc.Substring(0, 50) + "..." : plainDesc;
+                                                    }
+                                                    <p class="preview-description">@truncatedDesc</p>
                                                 </div>
                                             </div>
                                         }
@@ -223,7 +227,11 @@
                                                         <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>AMP</span>
                                                     </div>
                                                     <h3 class="preview-title">@story.Title</h3>
-                                                    <p class="preview-description">@(story.Description?.Length > 50 ? story.Description.Substring(0, 50) + "..." : story.Description)</p>
+                                                    @{
+                                                        var plainDesc2 = System.Text.RegularExpressions.Regex.Replace(story.Description ?? "", "<.*?>", string.Empty);
+                                                        var truncatedDesc2 = plainDesc2.Length > 50 ? plainDesc2.Substring(0, 50) + "..." : plainDesc2;
+                                                    }
+                                                    <p class="preview-description">@truncatedDesc2</p>
                                                 </div>
                                             </div>
                                         }
@@ -258,7 +266,7 @@
                                         </div>
                                     </div>
                                     
-                                    <p class="story-description">@(story.Description ?? "No description available")</p>
+                                    <p class="story-description">@Html.Raw(story.Description ?? "No description available")</p>
                                     
                                     @if (!string.IsNullOrEmpty(story.PostSlug))
                                     {
