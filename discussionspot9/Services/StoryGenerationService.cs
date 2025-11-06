@@ -1688,6 +1688,7 @@ namespace discussionspot9.Services
                 // Don't fail story creation if validation fails - keep as draft
             }
         }
+    }
 
     public class PostPerformanceData
     {
