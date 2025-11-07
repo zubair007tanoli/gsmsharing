@@ -49,7 +49,7 @@ namespace discussionspot9.Controllers
 
         [HttpGet]
         [Route("communities")]
-        public async Task<IActionResult> Index(string sort = "trending", string category = null, int page = 1)
+        public async Task<IActionResult> Index(string sort = "trending", string? category = null, int page = 1)
         {
             try
             {
@@ -95,7 +95,7 @@ namespace discussionspot9.Controllers
                         IconUrl = c.IconUrl,
                         MemberCount = c.MemberCount,
                         PostCount = c.PostCount,
-                        CategoryName = c.Category != null ? c.Category.Name : null,
+                        CategoryName = c.Category != null ? c.Category.Name : "",
                         IsCurrentUserMember = userId != null &&
                             c.Members.Any(m => m.UserId == userId),
                         CreatedAt = c.CreatedAt
@@ -140,6 +140,7 @@ namespace discussionspot9.Controllers
                 return View(new CommunityListViewModel
                 {
                     Communities = new List<CommunityListItemViewModel>(),
+                    CurrentCategory = category ?? string.Empty,
                     CategoryCounts = new Dictionary<string, int>(),
                     CurrentSort = sort,
                     CurrentPage = page,

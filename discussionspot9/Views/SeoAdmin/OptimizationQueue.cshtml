@@ -1,16 +1,16 @@
-@model List<discussionspot9.Models.Domain.PostSeoQueue>
+@model List<discussionspot9.Controllers.SeoAdminController.PostWithScoreViewModel>
 @{
     ViewData["Title"] = "SEO Optimization Queue";
     ViewData["PageTitle"] = "SEO Queue";
-    ViewData["PageDescription"] = "Manage pending SEO optimizations";
+    ViewData["PageDescription"] = "Manage pending SEO optimizations with comprehensive scoring";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col">
-            <h1 class="h2">📋 Optimization Queue</h1>
-            <p class="text-muted">Posts waiting for SEO optimization</p>
+            <h1 class="h2">📋 SEO Optimization Queue</h1>
+            <p class="text-muted">Posts with SEO scores - identify and optimize low-performing content</p>
         </div>
         <div class="col-auto">
             <form asp-action="PopulateQueue" method="post" class="d-inline me-2" onsubmit="return confirm('This will analyze your posts and add eligible ones to the queue. Continue?');">
@@ -40,109 +40,427 @@
         </div>
     }
 
-    @if (Model == null || !Model.Any())
-    {
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> No posts in queue.
-            <hr class="my-2">
-            <p class="mb-2"><strong>How to populate the queue:</strong></p>
-            <ul class="mb-2">
-                <li><strong>Automatic:</strong> The system automatically selects posts every Sunday at 2 AM</li>
-                <li><strong>Manual:</strong> Click the "Populate Queue" button above to populate now</li>
-            </ul>
-            <p class="mb-0 small text-muted"><strong>Note:</strong> Only posts older than 14 days that haven't been optimized recently will be selected.</p>
-        </div>
-    }
-    else
-    {
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Priority</th>
-                                <th>Post</th>
-                                <th>Reason</th>
-                                <th>Est. Impact</th>
-                                <th>Added</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                var priorityClass = item.Priority == 1 ? "danger" : item.Priority == 2 ? "warning" : "info";
-                                var statusClass = item.Status == "Processing" ? "warning" : "secondary";
-                                
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-@priorityClass">
-                                            @item.Priority
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <strong>@item.Post.Title</strong><br />
-                                        <small class="text-muted">ID: @item.PostId</small>
-                                    </td>
-                                    <td>@item.Reason</td>
-                                    <td>
-                                        @if (item.EstimatedRevenueImpact.HasValue)
-                                        {
-                                            <span class="badge bg-success">$@(item.EstimatedRevenueImpact.Value.ToString("F2"))</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">N/A</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <small>@item.AddedAt.ToString("MMM dd, HH:mm")</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-@statusClass">@item.Status</span>
-                                        @if (item.RequiresApproval)
-                                        {
-                                            <br /><span class="badge bg-warning mt-1">Needs Approval</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (item.RequiresApproval && item.Status == "Pending")
-                                        {
-                                            <form asp-action="ApproveOptimization" asp-route-id="@item.Id" method="post" class="d-inline">
-                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                            </form>
-                                            <form asp-action="RejectOptimization" asp-route-id="@item.Id" method="post" class="d-inline">
-                                                <button type="submit" class="btn btn-sm btn-danger" title="Reject">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Auto-processing</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Score Tier</label>
+                    <select id="tierFilter" class="form-select">
+                        <option value="">All Tiers</option>
+                        <option value="Critical">Critical (&lt;50)</option>
+                        <option value="NeedsImprovement">Needs Improvement (50-79)</option>
+                        <option value="OK">OK (≥80)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Community</label>
+                    <input type="text" id="communityFilter" class="form-control" placeholder="Community slug (optional)">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Options</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="missingMetaFilter">
+                        <label class="form-check-label" for="missingMetaFilter">
+                            Missing Meta Only
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Legend -->
-        <div class="card mt-3">
-            <div class="card-body">
-                <h6>Priority Levels:</h6>
-                <span class="badge bg-danger">1</span> Critical - High traffic, low monetization<br />
-                <span class="badge bg-warning">2</span> High - Revenue declining<br />
-                <span class="badge bg-info">3-4</span> Medium/Low - Improvement opportunities
+    <!-- Posts Table -->
+    <div id="postsContainer">
+        @if (Model == null || !Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No posts found. Click "Populate Queue" to analyze posts.
             </div>
-        </div>
-    }
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Score</th>
+                                    <th>Post</th>
+                                    <th>Google Comp.</th>
+                                    <th>Content</th>
+                                    <th>Meta</th>
+                                    <th>Freshness</th>
+                                    <th>Issues</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="postsTableBody">
+                                @foreach (var post in Model)
+                                {
+                                    <tr data-post-id="@post.PostId">
+                                        <td>
+                                            @{
+                                                var scoreClass = post.Score >= 80 ? "success" : post.Score >= 50 ? "warning" : "danger";
+                                                var tierBadge = post.Tier == "OK" ? "success" : post.Tier == "NeedsImprovement" ? "warning" : "danger";
+                                            }
+                                            <div class="d-flex flex-column">
+                                                <span class="badge bg-@scoreClass fs-6">@post.Score.ToString("F1")</span>
+                                                <small class="text-muted">
+                                                    <span class="badge bg-@tierBadge">@post.Tier</span>
+                                                </small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong>@post.Title</strong><br />
+                                            <small class="text-muted">
+                                                @post.CommunityName | Views: @post.ViewCount | Comments: @post.CommentCount
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar @(post.GoogleCompetitivenessScore >= 50 ? "bg-success" : "bg-warning")" 
+                                                     role="progressbar" 
+                                                     style="width: @post.GoogleCompetitivenessScore%">
+                                                    @post.GoogleCompetitivenessScore.ToString("F0")
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar @(post.ContentQualityScore >= 50 ? "bg-success" : "bg-warning")" 
+                                                     role="progressbar" 
+                                                     style="width: @post.ContentQualityScore%">
+                                                    @post.ContentQualityScore.ToString("F0")
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar @(post.MetaCompletenessScore >= 50 ? "bg-success" : "bg-warning")" 
+                                                     role="progressbar" 
+                                                     style="width: @post.MetaCompletenessScore%">
+                                                    @post.MetaCompletenessScore.ToString("F0")
+                                                </div>
+                                            </div>
+                                            @if (!post.HasMeta)
+                                            {
+                                                <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Missing</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar @(post.FreshnessScore >= 50 ? "bg-success" : "bg-warning")" 
+                                                     role="progressbar" 
+                                                     style="width: @post.FreshnessScore%">
+                                                    @post.FreshnessScore.ToString("F0")
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (post.Issues.Any())
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" 
+                                                        type="button" 
+                                                        data-bs-toggle="popover" 
+                                                        data-bs-placement="left"
+                                                        data-bs-content="@string.Join("<br/>", post.Issues)">
+                                                    <i class="fas fa-exclamation-triangle"></i> @post.Issues.Count
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-success"><i class="fas fa-check"></i> None</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group-vertical btn-group-sm">
+                                                <button class="btn btn-primary" onclick="optimizePost(@post.PostId)" title="Create Optimization Proposal">
+                                                    <i class="fas fa-magic"></i> Optimize
+                                                </button>
+                                                <button class="btn btn-secondary" onclick="rescorePost(@post.PostId)" title="Re-score">
+                                                    <i class="fas fa-sync"></i> Re-score
+                                                </button>
+                                                @if (post.HasPendingProposal && post.ProposalId.HasValue)
+                                                {
+                                                    <button class="btn btn-success" onclick="approveProposal(@post.ProposalId.Value)" title="Approve Proposal">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Load More Button -->
+            <div class="text-center mt-4" id="loadMoreContainer">
+                <button class="btn btn-primary" id="loadMoreBtn" onclick="loadMorePosts()">
+                    <i class="fas fa-arrow-down"></i> Load More Posts
+                </button>
+                <div id="loadingIndicator" class="d-none mt-2">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
+@section Scripts {
+    <script>
+        let currentSkip = @(Model?.Count ?? 10);
+        let currentFilters = {
+            tier: '',
+            communitySlug: '',
+            missingMeta: false
+        };
+
+        function applyFilters() {
+            currentFilters.tier = document.getElementById('tierFilter').value;
+            currentFilters.communitySlug = document.getElementById('communityFilter').value;
+            currentFilters.missingMeta = document.getElementById('missingMetaFilter').checked;
+            currentSkip = 0;
+            
+            loadPosts(true);
+        }
+
+        function loadMorePosts() {
+            loadPosts(false);
+        }
+
+        function loadPosts(reset = false) {
+            if (reset) {
+                currentSkip = 0;
+                document.getElementById('postsTableBody').innerHTML = '';
+            }
+
+            const btn = document.getElementById('loadMoreBtn');
+            const indicator = document.getElementById('loadingIndicator');
+            btn.disabled = true;
+            indicator.classList.remove('d-none');
+
+            const params = new URLSearchParams({
+                skip: currentSkip,
+                take: 10,
+                ...(currentFilters.tier && { tier: currentFilters.tier }),
+                ...(currentFilters.communitySlug && { communitySlug: currentFilters.communitySlug }),
+                ...(currentFilters.missingMeta && { missingMeta: 'true' })
+            });
+
+            fetch(`/admin/seo/api/queue-posts?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.posts) {
+                        appendPosts(data.posts);
+                        currentSkip += data.posts.length;
+                        
+                        if (!data.hasMore) {
+                            document.getElementById('loadMoreContainer').style.display = 'none';
+                        }
+                    } else {
+                        alert('Error loading posts: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading posts');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    indicator.classList.add('d-none');
+                });
+        }
+
+        function appendPosts(posts) {
+            const tbody = document.getElementById('postsTableBody');
+            
+            posts.forEach(post => {
+                const scoreClass = post.score >= 80 ? 'success' : post.score >= 50 ? 'warning' : 'danger';
+                const tierBadge = post.tier === 'OK' ? 'success' : post.tier === 'NeedsImprovement' ? 'warning' : 'danger';
+                
+                const issuesHtml = post.issues && post.issues.length > 0
+                    ? `<button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="${post.issues.join('<br/>')}"><i class="fas fa-exclamation-triangle"></i> ${post.issues.length}</button>`
+                    : '<span class="text-success"><i class="fas fa-check"></i> None</span>';
+
+                const row = `
+                    <tr data-post-id="${post.postId}">
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="badge bg-${scoreClass} fs-6">${post.score.toFixed(1)}</span>
+                                <small class="text-muted"><span class="badge bg-${tierBadge}">${post.tier}</span></small>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>${escapeHtml(post.title)}</strong><br />
+                            <small class="text-muted">${escapeHtml(post.communityName)} | Views: ${post.viewCount} | Comments: ${post.commentCount}</small>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar ${post.googleCompetitivenessScore >= 50 ? 'bg-success' : 'bg-warning'}" 
+                                     role="progressbar" 
+                                     style="width: ${post.googleCompetitivenessScore}%">
+                                    ${post.googleCompetitivenessScore.toFixed(0)}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar ${post.contentQualityScore >= 50 ? 'bg-success' : 'bg-warning'}" 
+                                     role="progressbar" 
+                                     style="width: ${post.contentQualityScore}%">
+                                    ${post.contentQualityScore.toFixed(0)}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar ${post.metaCompletenessScore >= 50 ? 'bg-success' : 'bg-warning'}" 
+                                     role="progressbar" 
+                                     style="width: ${post.metaCompletenessScore}%">
+                                    ${post.metaCompletenessScore.toFixed(0)}
+                                </div>
+                            </div>
+                            ${!post.hasMeta ? '<small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Missing</small>' : ''}
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar ${post.freshnessScore >= 50 ? 'bg-success' : 'bg-warning'}" 
+                                     role="progressbar" 
+                                     style="width: ${post.freshnessScore}%">
+                                    ${post.freshnessScore.toFixed(0)}
+                                </div>
+                            </div>
+                        </td>
+                        <td>${issuesHtml}</td>
+                        <td>
+                            <div class="btn-group-vertical btn-group-sm">
+                                <button class="btn btn-primary" onclick="optimizePost(${post.postId})" title="Create Optimization Proposal">
+                                    <i class="fas fa-magic"></i> Optimize
+                                </button>
+                                <button class="btn btn-secondary" onclick="rescorePost(${post.postId})" title="Re-score">
+                                    <i class="fas fa-sync"></i> Re-score
+                                </button>
+                                ${post.hasPendingProposal && post.proposalId ? 
+                                    `<button class="btn btn-success" onclick="approveProposal(${post.proposalId})" title="Approve Proposal"><i class="fas fa-check"></i> Approve</button>` : 
+                                    ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+
+            // Re-initialize popovers
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+        }
+
+        function optimizePost(postId) {
+            if (!confirm('Create an optimization proposal for this post? This will require approval before applying.')) {
+                return;
+            }
+
+            fetch('/admin/seo/api/create-proposal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ postId: postId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error creating proposal');
+            });
+        }
+
+        function rescorePost(postId) {
+            if (!confirm('Re-score this post? This may take a few seconds.')) {
+                return;
+            }
+
+            fetch('/admin/seo/api/rescore-posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify([postId])
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error re-scoring post');
+            });
+        }
+
+        function approveProposal(proposalId) {
+            if (!confirm('Approve and apply this optimization proposal?')) {
+                return;
+            }
+
+            fetch(`/admin/seo/api/approve-proposal?proposalId=${proposalId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error approving proposal');
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize popovers on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+        });
+    </script>
+}

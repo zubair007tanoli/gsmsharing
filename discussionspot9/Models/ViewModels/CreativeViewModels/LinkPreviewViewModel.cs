@@ -2,13 +2,13 @@
 {
     public class LinkPreviewViewModel
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public string Url { get; set; }
-        public string Domain { get; set; }
-        public string ThumbnailUrl { get; set; }
-        public string FaviconUrl { get; set; }
-        public string ImageUrl { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+        public string Domain { get; set; } = string.Empty;
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public string FaviconUrl { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
 
     }
 }

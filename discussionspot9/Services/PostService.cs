@@ -229,8 +229,9 @@ namespace discussionspot9.Services
                     linkModel.Description = post.Content ?? $"A link to {uri.Host}.";
                     linkModel.Url = post.Url;
                     linkModel.Domain = uri.Host;
-                    linkModel.ThumbnailUrl = null;
+                    linkModel.ThumbnailUrl = string.Empty;
                     linkModel.FaviconUrl = $"{uri.Scheme}://{uri.Host}/favicon.ico";
+                    linkModel.ImageUrl = string.Empty;
                 }
                 catch
                 {
@@ -748,8 +749,9 @@ namespace discussionspot9.Services
                     linkModel.Description = post.Content ?? $"A link to {uri.Host}.";
                     linkModel.Url = post.Url;  // Full URL, not just host
                     linkModel.Domain = uri.Host;
-                    linkModel.ThumbnailUrl = null; // Will be added when we integrate LinkMetadataService
+                    linkModel.ThumbnailUrl = string.Empty; // Will be added when we integrate LinkMetadataService
                     linkModel.FaviconUrl = $"{uri.Scheme}://{uri.Host}/favicon.ico";
+                    linkModel.ImageUrl = string.Empty;
                     
                     _logger.LogInformation("Link preview created for post {PostId}: {Url}", post.PostId, post.Url);
                 }
@@ -881,7 +883,7 @@ namespace discussionspot9.Services
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
 
-            var pollViewModel = new PollViewModel();
+            var pollViewModel = new PollViewModel { Question = string.Empty };
             if (post.HasPoll && post.PollOptions.Any())
             {
                 List<int> userPollVotes = new();

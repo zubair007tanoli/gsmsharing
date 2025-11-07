@@ -3,7 +3,7 @@
     public class PollViewModel
     {
         public int PostId { get; set; }
-        public string Question { get; set; }
+        public string Question { get; set; } = string.Empty;
         public List<PollOptionViewModel> Options { get; set; } = new();
         public bool AllowMultipleChoices { get; set; }
         public bool ShowResultsBeforeVoting { get; set; }

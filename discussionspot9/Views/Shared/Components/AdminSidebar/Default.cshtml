@@ -4,7 +4,7 @@
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
     
-    bool IsActive(string controller, string action = null)
+    bool IsActive(string controller, string? action = null)
     {
         if (action == null)
             return currentController == controller;
@@ -87,10 +87,10 @@
             <i class="fas fa-dollar-sign"></i>
             <span>Revenue Dashboard</span>
         </a>
-        <a href="/admin/seo/queue" class="menu-item @(IsActive("SeoAdmin", "OptimizationQueue") ? "active" : "")">
-            <i class="fas fa-tasks"></i>
-            <span>SEO Queue</span>
-            <span class="badge bg-warning" id="sidebarSeoQueueBadge">5</span>
+        <a href="/admin/seo/unified-optimization" class="menu-item @(IsActive("SeoAdmin", "UnifiedOptimization") || IsActive("SeoAdmin", "OptimizationQueue") || IsActive("SeoAdmin", "AIOptimization") ? "active" : "")">
+            <i class="fas fa-magic"></i>
+            <span>SEO Optimization</span>
+            <span class="badge bg-info">New</span>
         </a>
         <a href="/admin/seo/keywords" class="menu-item @(IsActive("SeoAdmin", "Keywords") ? "active" : "")">
             <i class="fas fa-key"></i>

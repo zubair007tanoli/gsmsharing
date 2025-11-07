@@ -202,6 +202,9 @@ builder.Services.AddScoped<IPostTest, PostTest>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<ISeoAnalyzerService, PythonSeoAnalyzerService>();
 
+// AI-Powered SEO Service
+builder.Services.AddScoped<AISeoService>();
+
 // Add Performance Services (simplified)
 // builder.Services.AddScoped<PerformanceOptimizationService>(); // Commented out for now
 
@@ -210,6 +213,9 @@ builder.Services.Configure<discussionspot9.Models.GoogleSearch.GoogleSearchConfi
     builder.Configuration.GetSection("GoogleSearch"));
 builder.Services.AddHttpClient<discussionspot9.Services.GoogleSearchService>();
 builder.Services.AddScoped<discussionspot9.Services.GoogleSearchSeoService>();
+builder.Services.AddScoped<discussionspot9.Services.HybridSeoService>();
+builder.Services.AddScoped<discussionspot9.Services.EnhancedSeoService>();
+builder.Services.AddScoped<discussionspot9.Services.SeoScoringService>();
 
 // Image SEO Services
 builder.Services.AddScoped<discussionspot9.Services.ImageSeoOptimizer>();
@@ -237,6 +243,7 @@ builder.Services.AddScoped<GoogleKeywordPlannerService>();
 // Background services
 builder.Services.AddHostedService<WeeklySeoOptimizationService>();
 builder.Services.AddHostedService<DailyDataSyncService>();
+builder.Services.AddHostedService<NightlySeoRescoreService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();

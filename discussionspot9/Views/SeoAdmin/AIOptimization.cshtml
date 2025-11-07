@@ -1,0 +1,553 @@
+@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "AI SEO Optimization";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Left Panel: Post Selection -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Select Post to Optimize
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="postSearch" placeholder="Search posts...">
+                </div>
+                <div class="list-group" id="postsList" style="max-height: 600px; overflow-y: auto;">
+                    @foreach (var post in Model)
+                    {
+                        <a href="#" class="list-group-item list-group-item-action post-item" 
+                           data-post-id="@post.PostId"
+                           data-title="@post.Title">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">@post.Title</h6>
+                                <small>@post.ViewCount views</small>
+                            </div>
+                            <p class="mb-1 text-muted small">
+                                <i class="fas fa-users me-1"></i>r/@post.CommunitySlug
+                            </p>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>@post.CreatedAt.ToString("MMM dd, yyyy")
+                            </small>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Optimization Results -->
+    <div class="col-lg-8">
+        <!-- Post Details Card -->
+        <div class="card shadow-sm mb-4" id="postDetailsCard" style="display: none;">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Post Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="postDetailsContent">
+                    <p class="text-muted">Select a post to view details</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optimization Results Card -->
+        <div class="card shadow-sm" id="optimizationCard" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-robot me-2"></i>AI Optimization Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="optimizationContent">
+                    <!-- Results will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="card shadow-sm" id="emptyState">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-robot fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">AI SEO Optimization</h4>
+                <p class="text-muted">Select a post from the left to start optimizing with AI</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let selectedPostId = null;
+        let currentOptimizationData = null;
+
+        // Post selection
+        document.querySelectorAll('.post-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all items
+                document.querySelectorAll('.post-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                selectedPostId = parseInt(this.dataset.postId);
+                loadPostDetails(selectedPostId);
+            });
+        });
+
+        // Search functionality
+        document.getElementById('postSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('.post-item').forEach(item => {
+                const title = item.dataset.title.toLowerCase();
+                if (title.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Load post details
+        async function loadPostDetails(postId) {
+            try {
+                showLoading('postDetailsContent');
+                
+                const response = await fetch(`/admin/seo/api/get-post-details?postId=${postId}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    showError('postDetailsContent', result.error);
+                    return;
+                }
+
+                const post = result.data;
+                document.getElementById('postDetailsCard').style.display = 'block';
+                document.getElementById('emptyState').style.display = 'none';
+                
+                document.getElementById('postDetailsContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>${escapeHtml(post.title)}</h5>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-users me-1"></i>r/${post.communitySlug}
+                                <span class="ms-3"><i class="fas fa-eye me-1"></i>${post.viewCount} views</span>
+                            </p>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Content Preview:</label>
+                                <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                    ${escapeHtml(post.content.substring(0, 500))}${post.content.length > 500 ? '...' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Post Info</h6>
+                                    <p class="mb-1"><strong>Type:</strong> ${post.postType}</p>
+                                    <p class="mb-1"><strong>Created:</strong> ${new Date(post.createdAt).toLocaleDateString()}</p>
+                                    <p class="mb-0"><strong>Slug:</strong> <code>${post.slug}</code></p>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100 mt-3" onclick="optimizePost(${postId})">
+                                <i class="fas fa-magic me-2"></i>Optimize with AI
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading post details:', error);
+                showError('postDetailsContent', 'Failed to load post details');
+            }
+        }
+
+        // Optimize post with AI
+        async function optimizePost(postId) {
+            if (!postId) {
+                alert('Please select a post first');
+                return;
+            }
+
+            try {
+                // Show loading state
+                const optimizeBtn = event.target;
+                const originalText = optimizeBtn.innerHTML;
+                optimizeBtn.disabled = true;
+                optimizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Optimizing...';
+
+                // Show optimization card
+                document.getElementById('optimizationCard').style.display = 'block';
+                document.getElementById('optimizationContent').innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">AI is analyzing and optimizing your content...</p>
+                    </div>
+                `;
+
+                const response = await fetch('/admin/seo/api/ai-optimize-post', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ postId: postId })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    showError('optimizationContent', result.error);
+                    optimizeBtn.disabled = false;
+                    optimizeBtn.innerHTML = originalText;
+                    return;
+                }
+
+                const data = result.data;
+                currentOptimizationData = data;
+                currentOptimizationData.postId = postId; // Store postId for save function
+
+                // Display results
+                displayOptimizationResults(data, postId);
+
+                optimizeBtn.disabled = false;
+                optimizeBtn.innerHTML = originalText;
+            } catch (error) {
+                console.error('Error optimizing post:', error);
+                showError('optimizationContent', 'Failed to optimize post. Please try again.');
+            }
+        }
+
+        // Display optimization results
+        function displayOptimizationResults(data, postId) {
+            const scoreImprovement = data.scoreImprovement.toFixed(1);
+            const improvementColor = scoreImprovement > 0 ? 'success' : 'danger';
+            const improvementIcon = scoreImprovement > 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+            document.getElementById('optimizationContent').innerHTML = `
+                <!-- SEO Score Comparison -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted mb-2">Baseline SEO Score</h6>
+                                <h2 class="mb-0">${data.baselineScore.toFixed(1)}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h6 class="mb-2">Optimized SEO Score</h6>
+                                <h2 class="mb-0">${data.estimatedScore.toFixed(1)}</h2>
+                                <small class="text-white-50">
+                                    <i class="fas ${improvementIcon} me-1"></i>
+                                    ${scoreImprovement > 0 ? '+' : ''}${scoreImprovement} points
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optimized Title -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-heading me-2"></i>Optimized Title
+                    </label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="optimizedTitle" value="${escapeHtml(data.optimizedTitle)}" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('optimizedTitle')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">${data.optimizedTitle.length} characters (Recommended: 50-60)</small>
+                </div>
+
+                <!-- Optimized Content -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-file-alt me-2"></i>Optimized Content
+                    </label>
+                    <textarea class="form-control" id="optimizedContent" rows="10" readonly>${escapeHtml(data.optimizedContent)}</textarea>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('optimizedContent')">
+                            <i class="fas fa-copy me-1"></i>Copy Content
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Meta Description -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-tag me-2"></i>Suggested Meta Description
+                    </label>
+                    <div class="input-group">
+                        <textarea class="form-control" id="metaDescription" rows="3" readonly>${escapeHtml(data.suggestedMetaDescription)}</textarea>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('metaDescription')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">${data.suggestedMetaDescription.length} characters (Recommended: 150-160)</small>
+                </div>
+
+                <!-- Keywords -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-key me-2"></i>Suggested Keywords
+                    </label>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${data.suggestedKeywords.map(kw => `
+                            <span class="badge bg-info">${escapeHtml(kw)}</span>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Improvements Made -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-check-circle me-2"></i>Improvements Made
+                    </label>
+                    <ul class="list-group">
+                        ${data.improvements.map(imp => `
+                            <li class="list-group-item">
+                                <i class="fas fa-check text-success me-2"></i>${escapeHtml(imp)}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+
+                <!-- AI Provider Info -->
+                <div class="alert alert-info">
+                    <i class="fas fa-robot me-2"></i>
+                    <strong>AI Provider:</strong> ${data.aiProvider.toUpperCase()}
+                    <br>
+                    <small>This optimization uses <strong>Hybrid Approach</strong>: Google Search API + Python + C# + AI (OpenAI/Gemini)</small>
+                </div>
+
+                <!-- Save Button -->
+                <div class="mt-4 pt-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Ready to Apply Optimizations?</h6>
+                            <small class="text-muted">This will update the post title, content, and SEO metadata</small>
+                        </div>
+                        <button class="btn btn-success btn-lg" id="saveOptimizationsBtn" onclick="saveOptimizations(${postId})">
+                            <i class="fas fa-save me-2"></i>Save Optimizations
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper functions
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>${escapeHtml(message)}
+                </div>
+            `;
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            element.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy');
+            
+            // Show toast notification
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-success position-fixed';
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 200px;';
+            toast.innerHTML = '<i class="fas fa-check me-2"></i>Copied to clipboard!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Save optimizations to database
+        async function saveOptimizations(postId) {
+            console.log('saveOptimizations called with postId:', postId);
+            
+            if (!postId) {
+                // Try to get from currentOptimizationData
+                postId = currentOptimizationData?.postId || selectedPostId;
+                console.log('PostId resolved to:', postId);
+            }
+            
+            if (!postId || !currentOptimizationData) {
+                alert('No optimization data to save. Please optimize the post first.');
+                console.error('Missing data:', { postId, hasOptimizationData: !!currentOptimizationData });
+                return;
+            }
+
+            if (!confirm('Are you sure you want to apply these optimizations to the post? This will update the title, content, and SEO metadata.')) {
+                return;
+            }
+
+            // Get button element
+            const saveBtn = document.getElementById('saveOptimizationsBtn');
+            if (!saveBtn) {
+                console.error('Save button not found');
+                alert('Error: Save button not found. Please refresh the page.');
+                return;
+            }
+
+            const originalText = saveBtn.innerHTML;
+            const originalClass = saveBtn.className;
+            
+            try {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+                // Get form values
+                const optimizedTitle = document.getElementById('optimizedTitle')?.value || '';
+                const optimizedContent = document.getElementById('optimizedContent')?.value || '';
+                const metaDescription = document.getElementById('metaDescription')?.value || '';
+                const keywords = currentOptimizationData.suggestedKeywords || [];
+
+                console.log('Saving optimizations:', {
+                    postId,
+                    titleLength: optimizedTitle.length,
+                    contentLength: optimizedContent.length,
+                    metaLength: metaDescription.length,
+                    keywordsCount: keywords.length
+                });
+
+                const response = await fetch('/admin/seo/api/save-optimizations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        postId: postId,
+                        optimizedTitle: optimizedTitle,
+                        optimizedContent: optimizedContent,
+                        metaDescription: metaDescription,
+                        keywords: keywords
+                    })
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Save result:', result);
+
+                if (!result.success) {
+                    alert('Error: ' + (result.error || 'Unknown error occurred'));
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.className = originalClass;
+                    return;
+                }
+
+                // Show success message
+                saveBtn.innerHTML = '<i class="fas fa-check me-2"></i>Saved!';
+                saveBtn.classList.remove('btn-success');
+                saveBtn.classList.add('btn-primary');
+                
+                // Show success alert at the top
+                const optimizationContent = document.getElementById('optimizationContent');
+                if (optimizationContent) {
+                    const savedCount = result.savedCount || 0;
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.style.marginBottom = '20px';
+                    alertDiv.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Success!</strong> ${result.message || 'Optimizations have been saved to the post.'}
+                        <br><small>Post title and content have been updated in the database. ${savedCount} entity(ies) saved.</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    optimizationContent.insertBefore(alertDiv, optimizationContent.firstChild);
+                    
+                    // Auto-dismiss after 7 seconds
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 7000);
+                }
+
+                // Update the displayed content to show saved values
+                const titleInput = document.getElementById('optimizedTitle');
+                const contentTextarea = document.getElementById('optimizedContent');
+                const metaTextarea = document.getElementById('metaDescription');
+                
+                if (titleInput) {
+                    titleInput.style.border = '2px solid #28a745';
+                    setTimeout(() => {
+                        titleInput.style.border = '';
+                    }, 2000);
+                }
+                if (contentTextarea) {
+                    contentTextarea.style.border = '2px solid #28a745';
+                    setTimeout(() => {
+                        contentTextarea.style.border = '';
+                    }, 2000);
+                }
+                if (metaTextarea) {
+                    metaTextarea.style.border = '2px solid #28a745';
+                    setTimeout(() => {
+                        metaTextarea.style.border = '';
+                    }, 2000);
+                }
+
+                // Reload post details to show updated content from database
+                setTimeout(() => {
+                    loadPostDetails(postId);
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error saving optimizations:', error);
+                alert('Failed to save optimizations: ' + error.message + '\n\nCheck the browser console for more details.');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                saveBtn.className = originalClass;
+            }
+        }
+    </script>
+}
+

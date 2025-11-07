@@ -40,6 +40,8 @@ namespace discussionspot9.Data.DbContext
         public DbSet<PostPerformanceMetric> PostPerformanceMetrics { get; set; }
         public DbSet<SeoOptimizationLog> SeoOptimizationLogs { get; set; }
         public DbSet<PostSeoQueue> PostSeoQueues { get; set; }
+        public DbSet<SeoScore> SeoScores { get; set; }
+        public DbSet<SeoOptimizationProposal> SeoOptimizationProposals { get; set; }
         public DbSet<AdSenseRevenue> AdSenseRevenues { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
         public DbSet<ContentRecommendation> ContentRecommendations { get; set; }

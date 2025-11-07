@@ -47,7 +47,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
 
         // Poll (if applicable)
         //public PollViewModel? Poll { get; set; }
-        public PollViewModel Poll { get; set; } = new();
+        public PollViewModel Poll { get; set; } = new PollViewModel { Question = string.Empty };
 
         // Awards
         public List<PostAwardViewModel> Awards { get; set; } = new();
@@ -56,7 +56,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
         public int? CurrentUserVote { get; set; }
         public bool IsCurrentUserAuthor { get; set; }
 
-        public LinkPreviewViewModel LinkModel = new();
+        public LinkPreviewViewModel LinkModel = new LinkPreviewViewModel();
    
         public int Score => UpvoteCount - DownvoteCount;   
         

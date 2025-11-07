@@ -26,6 +26,7 @@ namespace discussionspot9.Controllers
         private readonly IBackgroundSeoService _backgroundSeoService;
         private readonly ApplicationDbContext _context;
         private readonly discussionspot9.Services.GoogleSearchSeoService _googleSeoService;
+        private readonly discussionspot9.Services.EnhancedSeoService _enhancedSeoService;
         private readonly IStoryGenerationService _storyGenerationService;
         private readonly IReportService _reportService;
         private readonly IFileStorageService _fileStorageService;
@@ -42,6 +43,7 @@ namespace discussionspot9.Controllers
             ISeoAnalyzerService seoAnalyzerService,
             IBackgroundSeoService backgroundSeoService,
             discussionspot9.Services.GoogleSearchSeoService googleSeoService,
+            discussionspot9.Services.EnhancedSeoService enhancedSeoService,
             IStoryGenerationService storyGenerationService,
             IReportService reportService,
             IFileStorageService fileStorageService)
@@ -57,6 +59,7 @@ namespace discussionspot9.Controllers
             _seoAnalyzerService = seoAnalyzerService;
             _backgroundSeoService = backgroundSeoService;
             _googleSeoService = googleSeoService;
+            _enhancedSeoService = enhancedSeoService;
             _storyGenerationService = storyGenerationService;
             _reportService = reportService;
             _fileStorageService = fileStorageService;
@@ -92,7 +95,9 @@ namespace discussionspot9.Controllers
                 PostSlug = postSlug,
                 Community = communityDetailsTask.Result,
                 Comments = commentsTask.Result,
-                //RelatedPosts = relatedPostsTask.Result
+                category = communityDetailsTask.Result?.CategoryName != null ? await _context.Categories.FirstOrDefaultAsync(c => c.Name == communityDetailsTask.Result.CategoryName) : null,
+                CategorySlug = communityDetailsTask.Result?.CategorySlug ?? string.Empty,
+                RelatedPosts = new List<PostCardViewModel>() // Will be populated later if needed
             };
             ViewBag.PostId = model.Post.PostId;
             
@@ -120,12 +125,13 @@ namespace discussionspot9.Controllers
                         var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
                         model.Post.LinkModel = new LinkPreviewViewModel
                         {
-                            Title = metadata.Title,
-                            Description = metadata.Description,
-                            ThumbnailUrl = metadata.ThumbnailUrl,
-                            Domain = metadata.Domain,
-                            Url = metadata.Url,
-                            FaviconUrl = metadata.FaviconUrl
+                            Title = metadata.Title ?? string.Empty,
+                            Description = metadata.Description ?? string.Empty,
+                            ThumbnailUrl = metadata.ThumbnailUrl ?? string.Empty,
+                            Domain = metadata.Domain ?? string.Empty,
+                            Url = metadata.Url ?? string.Empty,
+                            FaviconUrl = metadata.FaviconUrl ?? string.Empty,
+                            ImageUrl = metadata.ImageUrl ?? string.Empty
                         };
                         _logger.LogInformation("External link metadata fetched for post {PostId}: {Url}", model.Post.PostId, model.Post.Url);
                     }
@@ -148,6 +154,8 @@ namespace discussionspot9.Controllers
                 {
                     postDetails.Poll = new PollViewModel
                     {
+                        PostId = postDetails.PostId,
+                        Question = pollDetails.Question ?? string.Empty,
                         Options = pollDetails.Options.Select(option => new PollOptionViewModel
                         {
                             OptionText = option.OptionText,
@@ -192,6 +200,9 @@ namespace discussionspot9.Controllers
                 PostSlug = postSlug,
                 Community = communityDetailsTask.Result,
                 Comments = commentsTask.Result,
+                category = communityDetailsTask.Result?.CategoryName != null ? await _context.Categories.FirstOrDefaultAsync(c => c.Name == communityDetailsTask.Result.CategoryName) : null,
+                CategorySlug = communityDetailsTask.Result?.CategorySlug ?? string.Empty,
+                RelatedPosts = new List<PostCardViewModel>()
             };
 
             ViewBag.PostId = model.Post.PostId;
@@ -217,12 +228,13 @@ namespace discussionspot9.Controllers
                         var metadata = await _metadataService.GetMetadataAsync(model.Post.Url);
                         model.Post.LinkModel = new LinkPreviewViewModel
                         {
-                            Title = metadata.Title,
-                            Description = metadata.Description,
-                            ThumbnailUrl = metadata.ThumbnailUrl,
-                            Domain = metadata.Domain,
-                            Url = metadata.Url,
-                            FaviconUrl = metadata.FaviconUrl
+                            Title = metadata.Title ?? string.Empty,
+                            Description = metadata.Description ?? string.Empty,
+                            ThumbnailUrl = metadata.ThumbnailUrl ?? string.Empty,
+                            Domain = metadata.Domain ?? string.Empty,
+                            Url = metadata.Url ?? string.Empty,
+                            FaviconUrl = metadata.FaviconUrl ?? string.Empty,
+                            ImageUrl = metadata.ImageUrl ?? string.Empty
                         };
                         _logger.LogInformation("External link metadata fetched for post {PostId}: {Url}", model.Post.PostId, model.Post.Url);
                     }
@@ -245,6 +257,8 @@ namespace discussionspot9.Controllers
                 {
                     postDetails.Poll = new PollViewModel
                     {
+                        PostId = postDetails.PostId,
+                        Question = pollDetails.Question ?? string.Empty,
                         Options = pollDetails.Options.Select(option => new PollOptionViewModel
                         {
                             OptionText = option.OptionText,
@@ -572,7 +586,13 @@ namespace discussionspot9.Controllers
                     Post = post,
                     Comments = comments,
                     CommunitySlug = communitySlug,
-                    PostSlug = postSlug
+                    PostSlug = postSlug,
+                    category = post.CommunityId > 0 ? await _context.Communities
+                        .Where(c => c.CommunityId == post.CommunityId)
+                        .Select(c => c.Category)
+                        .FirstOrDefaultAsync() : null,
+                    CategorySlug = string.Empty,
+                    RelatedPosts = new List<PostCardViewModel>()
                 };
 
                 return View(viewModel);
@@ -831,7 +851,25 @@ namespace discussionspot9.Controllers
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.UserId = userId;
                 
-                // Create post immediately without waiting for SEO
+                // Step 1: Optimize SEO before creating post
+                var seoResult = await _enhancedSeoService.OptimizeOnCreateAsync(model);
+                if (seoResult.Success)
+                {
+                    // Apply optimized values to model
+                    model.Title = seoResult.OptimizedTitle;
+                    if (!string.IsNullOrEmpty(seoResult.OptimizedContent))
+                        model.Content = seoResult.OptimizedContent;
+                    model.Keywords = string.Join(", ", seoResult.Keywords);
+                    model.MetaDescription = seoResult.MetaDescription;
+                    
+                    _logger.LogInformation("✅ SEO optimization completed. Score: {Score}/100", seoResult.SeoScore);
+                }
+                else
+                {
+                    _logger.LogWarning("SEO optimization failed: {Error}", seoResult.ErrorMessage);
+                }
+                
+                // Step 2: Create post with optimized content
                 var result = await _postTest.CreatePostUpdatedAsync(model);
                 //var result = await _postService.CreatePostUpdatedAsync(model);
 
@@ -846,11 +884,18 @@ namespace discussionspot9.Controllers
                     var postSlugForRedirect = result.PostSlug;
                     var communitySlugForRedirect = model.CommunitySlug;
                     
-                    // Queue background tasks WITHOUT accessing _context
-                    // Background service creates its own scoped DbContext
-                    _backgroundSeoService.ProcessPostSeoAsync(postIdForBackground, model, communityIdForBackground);
+                    // Step 3: Save SEO metadata (already optimized above)
+                    if (seoResult.Success)
+                    {
+                        await _enhancedSeoService.SaveSeoMetadataAsync(postIdForBackground, seoResult);
+                    }
+                    else
+                    {
+                        // Fallback: Queue background SEO if real-time optimization failed
+                        _backgroundSeoService.ProcessPostSeoAsync(postIdForBackground, model, communityIdForBackground);
+                    }
                     
-                    _logger.LogInformation("✅ Post {PostId} created successfully, background SEO queued", postIdForBackground);
+                    _logger.LogInformation("✅ Post {PostId} created successfully with SEO optimization", postIdForBackground);
                     
                     // Redirect to return URL if provided and valid, otherwise go to post details
                     if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -1054,9 +1099,32 @@ namespace discussionspot9.Controllers
                     return Forbid();
                 }
 
-                // Update post fields
-                post.Title = model.Title;
-                post.Content = model.Content;
+                // Step 1: Optimize SEO before updating post
+                var seoResult = await _enhancedSeoService.OptimizeOnEditAsync(model, id);
+                if (seoResult.Success)
+                {
+                    // Apply optimized values
+                    post.Title = seoResult.OptimizedTitle;
+                    if (!string.IsNullOrEmpty(seoResult.OptimizedContent))
+                        post.Content = seoResult.OptimizedContent;
+                    post.UpdatedAt = DateTime.UtcNow;
+                    
+                    // Save SEO metadata
+                    await _enhancedSeoService.SaveSeoMetadataAsync(id, seoResult);
+                    
+                    _logger.LogInformation("✅ SEO optimization completed for post {PostId}. Score: {Score}/100", 
+                        id, seoResult.SeoScore);
+                }
+                else
+                {
+                    // Fallback: Update without SEO optimization
+                    post.Title = model.Title;
+                    post.Content = model.Content;
+                    post.UpdatedAt = DateTime.UtcNow;
+                    _logger.LogWarning("SEO optimization failed for post {PostId}: {Error}", id, seoResult.ErrorMessage);
+                }
+                
+                // Update other post fields
                 post.PostType = model.PostType;
                 post.Url = model.Url;
                 post.Status = model.Status ?? "published";
@@ -1064,7 +1132,6 @@ namespace discussionspot9.Controllers
                 post.IsSpoiler = model.IsSpoiler;
                 post.IsPinned = model.IsPinned;
                 post.IsLocked = !model.AllowComments;
-                post.UpdatedAt = DateTime.UtcNow;
 
                 // Handle image actions
                 if (model.ImageAction == "remove")

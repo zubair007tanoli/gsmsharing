@@ -28,7 +28,7 @@ namespace discussionspot9.Models.Domain
         public int PollOptionCount { get; set; }
         public int PollVoteCount { get; set; }
         public DateTime? PollExpiresAt { get; set; }       
-        public UserProfile UserProfile { get; set; }
+        public UserProfile? UserProfile { get; set; }
 
         //public string? Summary { get; set; }      
         //public DateTime? PublicationDate { get; set; }

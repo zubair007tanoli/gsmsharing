@@ -50,7 +50,7 @@ namespace discussionspot9.Controllers
         }
 
         [Route("404")]
-        public IActionResult NotFound()
+        public new IActionResult NotFound()
         {
             Response.StatusCode = 404;
             _logger.LogWarning($"404: {HttpContext.Request.Path}");

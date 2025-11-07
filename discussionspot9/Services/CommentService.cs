@@ -723,12 +723,13 @@ namespace discussionspot9.Services
                         // Use cached data
                         previewModel = new LinkPreviewViewModel
                         {
-                            Url = cachedPreview.Url,
-                            Title = cachedPreview.Title,
-                            Description = cachedPreview.Description,
-                            Domain = cachedPreview.Domain,
+                            Url = cachedPreview.Url ?? string.Empty,
+                            Title = cachedPreview.Title ?? string.Empty,
+                            Description = cachedPreview.Description ?? string.Empty,
+                            Domain = cachedPreview.Domain ?? string.Empty,
                             ThumbnailUrl = cachedPreview.ThumbnailUrl ?? string.Empty,
-                            FaviconUrl = cachedPreview.FaviconUrl ?? string.Empty
+                            FaviconUrl = cachedPreview.FaviconUrl ?? string.Empty,
+                            ImageUrl = cachedPreview.ThumbnailUrl ?? string.Empty // Use ThumbnailUrl as ImageUrl
                         };
                         _logger.LogInformation($"Using cached link preview for: {url}");
                     }
@@ -783,7 +784,8 @@ namespace discussionspot9.Services
                         Description = url,
                         Domain = new Uri(url).Host,
                         ThumbnailUrl = string.Empty,
-                        FaviconUrl = string.Empty
+                        FaviconUrl = string.Empty,
+                        ImageUrl = string.Empty
                     });
                 }
             }
@@ -811,12 +813,13 @@ namespace discussionspot9.Services
 
             return linkPreviews.Select(lp => new LinkPreviewViewModel
             {
-                Url = lp.Url,
-                Title = lp.Title,
-                Description = lp.Description,
-                Domain = lp.Domain,
+                Url = lp.Url ?? string.Empty,
+                Title = lp.Title ?? string.Empty,
+                Description = lp.Description ?? string.Empty,
+                Domain = lp.Domain ?? string.Empty,
                 ThumbnailUrl = lp.ThumbnailUrl ?? string.Empty,
-                FaviconUrl = lp.FaviconUrl ?? string.Empty
+                FaviconUrl = lp.FaviconUrl ?? string.Empty,
+                ImageUrl = lp.ThumbnailUrl ?? string.Empty // Use ThumbnailUrl as ImageUrl
             }).ToList();
         }
     }

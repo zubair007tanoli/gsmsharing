@@ -1,9 +1,12 @@
 using discussionspot9.Data.DbContext;
+using discussionspot9.Models.Domain;
 using discussionspot9.Models.ViewModels.AdminViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Linq;
 
 namespace discussionspot9.Controllers
 {
@@ -20,6 +23,9 @@ namespace discussionspot9.Controllers
         private readonly discussionspot9.Services.GoogleSearchSeoService _googleSeoService;
         private readonly discussionspot9.Services.ImageSeoOptimizer _imageSeoOptimizer;
         private readonly discussionspot9.Services.ImageStructuredDataService _imageStructuredDataService;
+        private readonly discussionspot9.Services.AISeoService _aiSeoService;
+        private readonly discussionspot9.Services.SeoScoringService _seoScoringService;
+        private readonly discussionspot9.Services.EnhancedSeoService _enhancedSeoService;
         private readonly ILogger<SeoAdminController> _logger;
 
         public SeoAdminController(
@@ -32,6 +38,9 @@ namespace discussionspot9.Controllers
             discussionspot9.Services.GoogleSearchSeoService googleSeoService,
             discussionspot9.Services.ImageSeoOptimizer imageSeoOptimizer,
             discussionspot9.Services.ImageStructuredDataService imageStructuredDataService,
+            discussionspot9.Services.AISeoService aiSeoService,
+            discussionspot9.Services.SeoScoringService seoScoringService,
+            discussionspot9.Services.EnhancedSeoService enhancedSeoService,
             ILogger<SeoAdminController> logger)
         {
             _context = context;
@@ -43,6 +52,9 @@ namespace discussionspot9.Controllers
             _googleSeoService = googleSeoService;
             _imageSeoOptimizer = imageSeoOptimizer;
             _imageStructuredDataService = imageStructuredDataService;
+            _aiSeoService = aiSeoService;
+            _seoScoringService = seoScoringService;
+            _enhancedSeoService = enhancedSeoService;
             _logger = logger;
         }
 
@@ -113,14 +125,902 @@ namespace discussionspot9.Controllers
         [HttpGet("queue")]
         public async Task<IActionResult> OptimizationQueue()
         {
-            var queue = await _context.PostSeoQueues
-                .Include(q => q.Post)
-                .Where(q => q.Status == "Pending" || q.Status == "Processing")
-                .OrderBy(q => q.Priority)
-                .ThenByDescending(q => q.EstimatedRevenueImpact)
+            if (!IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
+            // Redirect to unified optimization page
+            return RedirectToAction("UnifiedOptimization");
+        }
+
+        /// <summary>
+        /// Unified SEO Optimization page (combines queue and AI optimization)
+        /// </summary>
+        [HttpGet("unified-optimization")]
+        public async Task<IActionResult> UnifiedOptimization()
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
+            // Get posts with scores for display
+            var postsWithScores = await GetPostsWithScoresAsync(0, 10);
+            
+            ViewBag.TotalPosts = await _context.Posts.CountAsync(p => p.Status == "published");
+            ViewBag.HasMore = postsWithScores.Count == 10;
+
+            return View("UnifiedSeoOptimization", postsWithScores);
+        }
+
+        /// <summary>
+        /// Get posts with SEO scores (batch loading)
+        /// </summary>
+        /// <summary>
+        /// Get posts for AI optimization tab (limited initial load)
+        /// </summary>
+        [HttpGet("api/optimization-posts")]
+        public async Task<IActionResult> GetOptimizationPosts(int skip = 0, int take = 10)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var posts = await GetPostsWithScoresAsync(skip, take, null, null, null);
+                var totalCount = await GetTotalPostsCountAsync(null, null, null);
+
+                return Json(new
+                {
+                    success = true,
+                    posts = posts.Select(p => new
+                    {
+                        postId = p.PostId,
+                        title = p.Title,
+                        communityName = p.CommunityName,
+                        score = p.Score,
+                        tier = p.Tier,
+                        viewCount = p.ViewCount,
+                        commentCount = p.CommentCount,
+                        issues = p.Issues,
+                        hasPendingProposal = p.HasPendingProposal,
+                        proposalId = p.ProposalId,
+                        proposalStatus = p.ProposalStatus,
+                        proposalCreatedAt = p.ProposalCreatedAt,
+                        proposalCreatedBy = p.ProposalCreatedBy
+                    }),
+                    hasMore = (skip + take) < totalCount,
+                    totalCount = totalCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting optimization posts");
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpGet("api/queue-posts")]
+        public async Task<IActionResult> GetQueuePosts(int skip = 0, int take = 10, 
+            string? tier = null, string? communitySlug = null, bool? missingMeta = null)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var posts = await GetPostsWithScoresAsync(skip, take, tier, communitySlug, missingMeta);
+                var totalCount = await GetTotalPostsCountAsync(tier, communitySlug, missingMeta);
+
+                return Json(new
+                {
+                    success = true,
+                    posts = posts,
+                    hasMore = (skip + take) < totalCount,
+                    totalCount = totalCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting queue posts");
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Re-score selected posts
+        /// </summary>
+        [HttpPost("api/rescore-posts")]
+        public async Task<IActionResult> ReScorePosts([FromBody] List<int> postIds)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                if (postIds == null || !postIds.Any())
+                {
+                    return Json(new { success = false, error = "No post IDs provided" });
+                }
+
+                // Limit to 10 posts at a time for performance
+                var postsToScore = postIds.Take(10).ToList();
+                
+                var results = await _seoScoringService.BatchCalculateScoresAsync(postsToScore);
+                
+                var successCount = results.Count(r => r.Success);
+                var failedCount = results.Count(r => !r.Success);
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Re-scored {successCount} post(s)." + (failedCount > 0 ? $" {failedCount} failed." : ""),
+                    results = results.Where(r => r.Success).Select(r => new
+                    {
+                        postId = r.PostId,
+                        score = r.Score,
+                        tier = r.Tier,
+                        googleCompetitivenessScore = r.GoogleCompetitivenessScore,
+                        contentQualityScore = r.ContentQualityScore,
+                        metaCompletenessScore = r.MetaCompletenessScore,
+                        freshnessScore = r.FreshnessScore
+                    }).ToList()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error re-scoring posts");
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Create optimization proposal (requires approval)
+        /// </summary>
+        [HttpPost("api/create-proposal")]
+        public async Task<IActionResult> CreateOptimizationProposal([FromBody] CreateProposalRequest request)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == request.PostId);
+
+                if (post == null)
+                {
+                    return Json(new { success = false, error = "Post not found" });
+                }
+
+                // Get current score
+                var currentScore = await _context.SeoScores
+                    .FirstOrDefaultAsync(s => s.PostId == request.PostId);
+
+                // Optimize using enhanced SEO service
+                var model = new discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+                {
+                    Title = post.Title,
+                    Content = post.Content ?? "",
+                    CommunitySlug = post.Community?.Slug ?? "",
+                    PostType = post.PostType
+                };
+
+                var seoResult = await _enhancedSeoService.OptimizeOnCreateAsync(model);
+                
+                if (!seoResult.Success)
+                {
+                    return Json(new { success = false, error = "Optimization failed" });
+                }
+
+                var currentScoreValue = currentScore?.Score ?? 0m;
+                var expectedScore = currentScore != null ?
+                    Math.Min(100m, currentScoreValue + 15m) :
+                    (decimal)Math.Min(100d, seoResult.SeoScore);
+
+                var proposalResult = await CreateProposalEntityAsync(
+                    post,
+                    seoResult.OptimizedTitle,
+                    seoResult.OptimizedContent,
+                    seoResult.MetaDescription,
+                    seoResult.Keywords,
+                    currentScoreValue,
+                    expectedScore,
+                    "Hybrid",
+                    User.Identity?.Name,
+                    seoResult.Improvements);
+
+                if (!proposalResult.Success || proposalResult.Proposal == null)
+                {
+                    return Json(new { success = false, error = proposalResult.Error ?? "Failed to create proposal" });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    proposalId = proposalResult.Proposal.Id,
+                    message = "Optimization proposal created. Requires approval."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating optimization proposal");
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        private async Task<(bool Success, string? Error, SeoOptimizationProposal? Proposal)> CreateProposalEntityAsync(
+            Post post,
+            string? optimizedTitle,
+            string? optimizedContent,
+            string? metaDescription,
+            IEnumerable<string>? keywords,
+            decimal currentScore,
+            decimal expectedScore,
+            string source,
+            string? createdBy,
+            IEnumerable<string>? improvements)
+        {
+            var hasPending = await _context.SeoOptimizationProposals
+                .AnyAsync(p => p.PostId == post.PostId && p.Status == "Pending");
+
+            if (hasPending)
+            {
+                return (false, "A pending proposal already exists for this post.", null);
+            }
+
+            var keywordList = keywords?
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .Select(k => k.Trim())
+                .Where(k => !string.IsNullOrEmpty(k))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+
+            var improvementList = improvements?
+                .Where(i => !string.IsNullOrWhiteSpace(i))
+                .ToList() ?? new List<string>();
+
+            expectedScore = Math.Min(100m, Math.Max(expectedScore, currentScore));
+
+            var proposal = new SeoOptimizationProposal
+            {
+                PostId = post.PostId,
+                ProposedTitle = optimizedTitle,
+                ProposedContent = optimizedContent,
+                ProposedMetaDescription = metaDescription,
+                ProposedKeywords = keywordList.Any() ? string.Join(", ", keywordList) : null,
+                CurrentScore = currentScore,
+                ExpectedScore = expectedScore,
+                ExpectedScoreDelta = expectedScore - currentScore,
+                Status = "Pending",
+                CreatedBy = createdBy,
+                CreatedAt = DateTime.UtcNow,
+                Source = source,
+                ChangesSummary = JsonSerializer.Serialize(new
+                {
+                    titleChanged = !string.Equals(post.Title, optimizedTitle, StringComparison.Ordinal),
+                    contentChanged = !string.Equals(post.Content ?? string.Empty, optimizedContent ?? string.Empty, StringComparison.Ordinal),
+                    keywordsAdded = keywordList.Count,
+                    improvements = improvementList
+                })
+            };
+
+            _context.SeoOptimizationProposals.Add(proposal);
+            await _context.SaveChangesAsync();
+
+            return (true, null, proposal);
+        }
+
+        /// <summary>
+        /// Create proposal from AI preview payload
+        /// </summary>
+        [HttpPost("api/create-proposal-from-preview")]
+        public async Task<IActionResult> CreateProposalFromPreview([FromBody] CreateProposalFromPreviewRequest request)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                if (request == null || request.PostId <= 0)
+                {
+                    return Json(new { success = false, error = "Invalid request" });
+                }
+
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == request.PostId);
+
+                if (post == null)
+                {
+                    return Json(new { success = false, error = "Post not found" });
+                }
+
+                var currentScore = await _context.SeoScores
+                    .FirstOrDefaultAsync(s => s.PostId == request.PostId);
+
+                var baselineScore = request.BaselineScore ?? currentScore?.Score ?? 0m;
+                var estimatedScore = request.EstimatedScore ?? Math.Min(100m, baselineScore + 15m);
+
+                var proposalResult = await CreateProposalEntityAsync(
+                    post,
+                    request.OptimizedTitle,
+                    request.OptimizedContent,
+                    request.MetaDescription,
+                    request.Keywords,
+                    baselineScore,
+                    estimatedScore,
+                    request.Source ?? "AI Preview",
+                    User.Identity?.Name,
+                    request.Improvements);
+
+                if (!proposalResult.Success || proposalResult.Proposal == null)
+                {
+                    return Json(new { success = false, error = proposalResult.Error ?? "Failed to create proposal" });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    proposalId = proposalResult.Proposal.Id,
+                    message = "Optimization proposal created and queued for approval."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating proposal from preview for post {PostId}", request?.PostId ?? 0);
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// List proposals filtered by status
+        /// </summary>
+        [HttpGet("api/pending-proposals")]
+        public async Task<IActionResult> GetPendingProposals(string? status = "Pending", int skip = 0, int take = 10)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            take = Math.Clamp(take, 1, 50);
+
+            var query = _context.SeoOptimizationProposals
+                .Include(p => p.Post)
+                    .ThenInclude(p => p.Community)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(p => p.Status == status);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var proposals = await query
+                .OrderBy(p => p.Status == "Pending" ? 0 : p.Status == "Approved" ? 1 : 2)
+                .ThenByDescending(p => p.CreatedAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(p => new
+                {
+                    proposalId = p.Id,
+                    postId = p.PostId,
+                    postTitle = p.Post.Title,
+                    communityName = p.Post.Community != null ? p.Post.Community.Name : string.Empty,
+                    communitySlug = p.Post.Community != null ? p.Post.Community.Slug : string.Empty,
+                    currentScore = p.CurrentScore,
+                    expectedScore = p.ExpectedScore,
+                    expectedScoreDelta = p.ExpectedScoreDelta,
+                    status = p.Status,
+                    createdAt = p.CreatedAt,
+                    createdBy = p.CreatedBy,
+                    reviewedAt = p.ReviewedAt,
+                    reviewedBy = p.ReviewedBy,
+                    source = p.Source,
+                    proposedTitle = p.ProposedTitle,
+                    proposedMetaDescription = p.ProposedMetaDescription,
+                    proposedKeywords = p.ProposedKeywords,
+                    proposedContent = p.ProposedContent
+                })
                 .ToListAsync();
 
-            return View(queue);
+            return Json(new
+            {
+                success = true,
+                proposals,
+                totalCount,
+                hasMore = (skip + proposals.Count) < totalCount
+            });
+        }
+
+        /// <summary>
+        /// Automatically generate proposals for low-score posts
+        /// </summary>
+        [HttpPost("api/auto-generate-proposals")]
+        public async Task<IActionResult> AutoGenerateProposals(int limit = 5)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            limit = Math.Clamp(limit, 1, 20);
+
+            var created = new List<int>();
+            var skipped = new List<int>();
+            var failures = new List<object>();
+
+            try
+            {
+                var candidates = await _selectorService.SelectPostsForOptimizationAsync(limit * 2);
+
+                foreach (var candidate in candidates)
+                {
+                    if (created.Count >= limit)
+                    {
+                        break;
+                    }
+
+                    var post = await _context.Posts
+                        .Include(p => p.Community)
+                        .FirstOrDefaultAsync(p => p.PostId == candidate.PostId);
+
+                    if (post == null)
+                    {
+                        skipped.Add(candidate.PostId);
+                        continue;
+                    }
+
+                    var hasPending = await _context.SeoOptimizationProposals
+                        .AnyAsync(p => p.PostId == post.PostId && p.Status == "Pending");
+
+                    if (hasPending)
+                    {
+                        skipped.Add(post.PostId);
+                        continue;
+                    }
+
+                    var currentScore = await _context.SeoScores
+                        .FirstOrDefaultAsync(s => s.PostId == post.PostId);
+
+                    var model = new discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+                    {
+                        Title = post.Title,
+                        Content = post.Content ?? string.Empty,
+                        CommunitySlug = post.Community?.Slug ?? string.Empty,
+                        PostType = post.PostType
+                    };
+
+                    var seoResult = await _enhancedSeoService.OptimizeOnCreateAsync(model);
+
+                    if (!seoResult.Success)
+                    {
+                        failures.Add(new { postId = post.PostId, reason = "AI optimization failed" });
+                        continue;
+                    }
+
+                    var baselineScore = currentScore?.Score ?? (decimal)seoResult.BaselineScore;
+                    var expectedScore = (decimal)Math.Min(100d, seoResult.SeoScore);
+                    if (expectedScore < baselineScore)
+                    {
+                        expectedScore = baselineScore;
+                    }
+
+                    var proposalResult = await CreateProposalEntityAsync(
+                        post,
+                        seoResult.OptimizedTitle,
+                        seoResult.OptimizedContent,
+                        seoResult.MetaDescription,
+                        seoResult.Keywords,
+                        baselineScore,
+                        expectedScore,
+                        "AutoBatch",
+                        User.Identity?.Name,
+                        seoResult.Improvements);
+
+                    if (!proposalResult.Success)
+                    {
+                        failures.Add(new { postId = post.PostId, reason = proposalResult.Error ?? "Unknown" });
+                        continue;
+                    }
+
+                    created.Add(post.PostId);
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    createdCount = created.Count,
+                    createdPostIds = created,
+                    skippedPostIds = skipped,
+                    failures
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error auto-generating proposals");
+                return Json(new { success = false, error = ex.Message, createdCount = created.Count, failures });
+            }
+        }
+
+        /// <summary>
+        /// Approve optimization proposal
+        /// </summary>
+        [HttpPost("api/approve-proposal")]
+        public async Task<IActionResult> ApproveProposal(int proposalId)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var proposal = await _context.SeoOptimizationProposals
+                    .Include(p => p.Post)
+                    .FirstOrDefaultAsync(p => p.Id == proposalId);
+
+                if (proposal == null)
+                {
+                    return Json(new { success = false, error = "Proposal not found" });
+                }
+
+                if (proposal.Status != "Pending")
+                {
+                    return Json(new { success = false, error = $"Proposal is already {proposal.Status}" });
+                }
+
+                // Apply optimizations to post
+                var post = proposal.Post;
+                post.Title = proposal.ProposedTitle ?? post.Title;
+                post.Content = proposal.ProposedContent ?? post.Content;
+                post.UpdatedAt = DateTime.UtcNow;
+
+                // Update SEO metadata
+                var seoMetadata = await _context.SeoMetadata
+                    .FirstOrDefaultAsync(s => s.EntityType == "post" && s.EntityId == post.PostId);
+
+                if (seoMetadata == null)
+                {
+                    seoMetadata = new SeoMetadata
+                    {
+                        EntityType = "post",
+                        EntityId = post.PostId,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.SeoMetadata.Add(seoMetadata);
+                }
+
+                seoMetadata.MetaTitle = proposal.ProposedTitle ?? post.Title;
+                seoMetadata.MetaDescription = proposal.ProposedMetaDescription ?? "";
+                seoMetadata.Keywords = proposal.ProposedKeywords ?? "";
+                seoMetadata.OgTitle = proposal.ProposedTitle ?? post.Title;
+                seoMetadata.OgDescription = proposal.ProposedMetaDescription ?? "";
+                seoMetadata.TwitterTitle = proposal.ProposedTitle ?? post.Title;
+                seoMetadata.TwitterDescription = proposal.ProposedMetaDescription ?? "";
+                seoMetadata.UpdatedAt = DateTime.UtcNow;
+
+                // Update proposal status
+                proposal.Status = "Approved";
+                proposal.ReviewedBy = User.Identity?.Name;
+                proposal.ReviewedAt = DateTime.UtcNow;
+                proposal.AppliedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // Re-score the post after applying optimizations
+                var scoreResult = await _seoScoringService.CalculateScoreAsync(post.PostId);
+                if (scoreResult.Success)
+                {
+                    await _seoScoringService.SaveScoreAsync(scoreResult);
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Proposal approved and applied successfully. Score updated.",
+                    newScore = scoreResult.Success ? scoreResult.Score : (decimal?)null,
+                    newTier = scoreResult.Success ? scoreResult.Tier : null
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving proposal {ProposalId}", proposalId);
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Reject optimization proposal
+        /// </summary>
+        [HttpPost("api/reject-proposal")]
+        public async Task<IActionResult> RejectProposal(int proposalId, string? reason = null)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var proposal = await _context.SeoOptimizationProposals
+                    .FirstOrDefaultAsync(p => p.Id == proposalId);
+
+                if (proposal == null)
+                {
+                    return Json(new { success = false, error = "Proposal not found" });
+                }
+
+                proposal.Status = "Rejected";
+                proposal.ReviewedBy = User.Identity?.Name;
+                proposal.ReviewedAt = DateTime.UtcNow;
+                proposal.RejectionReason = reason;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Proposal rejected"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting proposal {ProposalId}", proposalId);
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get proposal details for approval modal
+        /// </summary>
+        [HttpGet("api/get-proposal-details")]
+        public async Task<IActionResult> GetProposalDetails(int proposalId)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var proposal = await _context.SeoOptimizationProposals
+                    .Include(p => p.Post)
+                    .FirstOrDefaultAsync(p => p.Id == proposalId);
+
+                if (proposal == null)
+                {
+                    return Json(new { success = false, error = "Proposal not found" });
+                }
+
+                // Format changes summary for display
+                string changesSummaryText = "";
+                if (!string.IsNullOrEmpty(proposal.ChangesSummary))
+                {
+                    try
+                    {
+                        var changes = JsonSerializer.Deserialize<Dictionary<string, object>>(proposal.ChangesSummary);
+                        var summaryParts = new List<string>();
+                        
+                        if (changes.ContainsKey("titleChanged") && changes["titleChanged"].ToString() == "True")
+                            summaryParts.Add("Title updated");
+                        if (changes.ContainsKey("contentChanged") && changes["contentChanged"].ToString() == "True")
+                            summaryParts.Add("Content optimized");
+                        if (changes.ContainsKey("keywordsAdded"))
+                            summaryParts.Add($"{changes["keywordsAdded"]} keywords added");
+                        
+                        if (changes.ContainsKey("improvements"))
+                        {
+                            if (changes["improvements"] is JsonElement improvementsElement && improvementsElement.ValueKind == JsonValueKind.Array)
+                            {
+                                var improvements = improvementsElement.EnumerateArray().Select(e => e.GetString()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+                                if (improvements.Any())
+                                {
+                                    summaryParts.Add($"Improvements: {string.Join(", ", improvements.Take(3))}");
+                                }
+                            }
+                        }
+                        
+                        changesSummaryText = summaryParts.Any() ? string.Join(" • ", summaryParts) : "Content optimized for SEO";
+                    }
+                    catch
+                    {
+                        changesSummaryText = proposal.ChangesSummary;
+                    }
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        proposalId = proposal.Id,
+                        postId = proposal.PostId,
+                        proposedTitle = proposal.ProposedTitle,
+                        proposedContent = proposal.ProposedContent,
+                        proposedMetaDescription = proposal.ProposedMetaDescription,
+                        proposedKeywords = proposal.ProposedKeywords,
+                        currentScore = proposal.CurrentScore,
+                        expectedScore = proposal.ExpectedScore,
+                        expectedScoreDelta = proposal.ExpectedScoreDelta,
+                        changesSummary = changesSummaryText,
+                        status = proposal.Status,
+                        createdAt = proposal.CreatedAt,
+                        createdBy = proposal.CreatedBy
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting proposal details for {ProposalId}", proposalId);
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Helper: Get posts with scores
+        /// </summary>
+        private async Task<List<PostWithScoreViewModel>> GetPostsWithScoresAsync(
+            int skip = 0, int take = 10, 
+            string? tier = null, 
+            string? communitySlug = null, 
+            bool? missingMeta = null)
+        {
+            var query = _context.Posts
+                .Include(p => p.Community)
+                .Include(p => p.PostTags)
+                    .ThenInclude(pt => pt.Tag)
+                .Where(p => p.Status == "published")
+                .AsQueryable();
+
+            // Filter by community
+            if (!string.IsNullOrEmpty(communitySlug))
+            {
+                query = query.Where(p => p.Community != null && p.Community.Slug == communitySlug);
+            }
+
+            // Filter by missing meta
+            if (missingMeta == true)
+            {
+                var postsWithMeta = _context.SeoMetadata
+                    .Where(s => s.EntityType == "post")
+                    .Select(s => s.EntityId);
+                query = query.Where(p => !postsWithMeta.Contains(p.PostId));
+            }
+
+            var posts = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync();
+
+            var result = new List<PostWithScoreViewModel>();
+
+            foreach (var post in posts)
+            {
+                var score = await _context.SeoScores
+                    .FirstOrDefaultAsync(s => s.PostId == post.PostId);
+
+                // If no score exists or needs refresh, calculate it
+                if (score == null || (DateTime.UtcNow - score.ScoredAt).TotalDays > 7)
+                {
+                    var scoreResult = await _seoScoringService.CalculateScoreAsync(post.PostId);
+                    if (scoreResult.Success)
+                    {
+                        await _seoScoringService.SaveScoreAsync(scoreResult);
+                        score = await _context.SeoScores
+                            .FirstOrDefaultAsync(s => s.PostId == post.PostId);
+                    }
+                }
+
+                // Filter by tier if specified
+                if (!string.IsNullOrEmpty(tier) && score != null && score.Tier != tier)
+                {
+                    continue;
+                }
+
+                var seoMetadata = await _context.SeoMetadata
+                    .FirstOrDefaultAsync(s => s.EntityType == "post" && s.EntityId == post.PostId);
+
+                var proposal = await _context.SeoOptimizationProposals
+                    .Where(p => p.PostId == post.PostId)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .FirstOrDefaultAsync(p => p.Status == "Pending");
+
+                var issues = score?.Issues != null ? 
+                    JsonSerializer.Deserialize<List<string>>(score.Issues) ?? new List<string>() : 
+                    new List<string>();
+
+                result.Add(new PostWithScoreViewModel
+                {
+                    PostId = post.PostId,
+                    Title = post.Title,
+                    Content = post.Content ?? "",
+                    CommunitySlug = post.Community?.Slug ?? "",
+                    CommunityName = post.Community?.Name ?? "",
+                    Score = score?.Score ?? 0,
+                    Tier = score?.Tier ?? "Critical",
+                    GoogleCompetitivenessScore = score?.GoogleCompetitivenessScore ?? 0,
+                    ContentQualityScore = score?.ContentQualityScore ?? 0,
+                    MetaCompletenessScore = score?.MetaCompletenessScore ?? 0,
+                    FreshnessScore = score?.FreshnessScore ?? 0,
+                    Issues = issues,
+                    RecommendedKeywords = score?.RecommendedKeywords != null ?
+                        JsonSerializer.Deserialize<List<string>>(score.RecommendedKeywords) ?? new List<string>() :
+                        new List<string>(),
+                    TopCompetitors = score?.TopCompetitors != null ?
+                        JsonSerializer.Deserialize<List<string>>(score.TopCompetitors) ?? new List<string>() :
+                        new List<string>(),
+                    PriorityRank = score?.PriorityRank ?? 0,
+                    ScoredAt = score?.ScoredAt ?? DateTime.UtcNow,
+                    ViewCount = post.ViewCount,
+                    CommentCount = post.CommentCount,
+                    CreatedAt = post.CreatedAt,
+                    UpdatedAt = post.UpdatedAt,
+                    HasMeta = seoMetadata != null,
+                    HasPendingProposal = proposal?.Status == "Pending",
+                    ProposalId = proposal?.Status == "Pending" ? proposal.Id : (int?)null,
+                    ProposalStatus = proposal?.Status,
+                    ProposalCreatedAt = proposal?.CreatedAt,
+                    ProposalCreatedBy = proposal?.CreatedBy,
+                    ProposalSource = proposal?.Source
+                });
+            }
+
+            // Sort by priority rank (highest first)
+            return result.OrderByDescending(r => r.PriorityRank).ToList();
+        }
+
+        /// <summary>
+        /// Helper: Get total posts count with filters
+        /// </summary>
+        private async Task<int> GetTotalPostsCountAsync(
+            string? tier = null, 
+            string? communitySlug = null, 
+            bool? missingMeta = null)
+        {
+            var query = _context.Posts
+                .Where(p => p.Status == "published")
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(communitySlug))
+            {
+                query = query.Where(p => p.Community != null && p.Community.Slug == communitySlug);
+            }
+
+            if (missingMeta == true)
+            {
+                var postsWithMeta = _context.SeoMetadata
+                    .Where(s => s.EntityType == "post")
+                    .Select(s => s.EntityId);
+                query = query.Where(p => !postsWithMeta.Contains(p.PostId));
+            }
+
+            if (!string.IsNullOrEmpty(tier))
+            {
+                var postIdsWithTier = _context.SeoScores
+                    .Where(s => s.Tier == tier)
+                    .Select(s => s.PostId);
+                query = query.Where(p => postIdsWithTier.Contains(p.PostId));
+            }
+
+            return await query.CountAsync();
         }
 
         [HttpGet("history")]
@@ -759,6 +1659,550 @@ namespace discussionspot9.Controllers
         }
 
         #endregion
+
+        #region AI SEO Optimization
+
+        /// <summary>
+        /// AI SEO Optimization page
+        /// </summary>
+        [HttpGet("ai-optimization")]
+        public async Task<IActionResult> AIOptimization()
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
+            // Get recent posts for selection
+            var recentPosts = await _context.Posts
+                .Include(p => p.Community)
+                .Where(p => p.Status == "published")
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(50)
+                .Select(p => new
+                {
+                    PostId = p.PostId,
+                    Title = p.Title,
+                    Slug = p.Slug,
+                    CommunitySlug = p.Community != null ? p.Community.Slug : "",
+                    CreatedAt = p.CreatedAt,
+                    ViewCount = p.ViewCount
+                })
+                .ToListAsync();
+
+            ViewData["Title"] = "AI SEO Optimization";
+            ViewData["PageTitle"] = "AI-Powered SEO Optimization";
+            ViewData["PageDescription"] = "Optimize your content with AI-powered SEO suggestions";
+            ViewData["Breadcrumb"] = "<li class=\"breadcrumb-item active\">AI SEO</li>";
+
+            return View(recentPosts);
+        }
+
+        /// <summary>
+        /// Optimize a post with AI (API endpoint)
+        /// </summary>
+        [HttpPost("api/ai-optimize-post")]
+        public async Task<IActionResult> OptimizePostWithAI([FromBody] OptimizePostRequest request)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                if (request == null || request.PostId == 0)
+                {
+                    return Json(new { success = false, error = "Post ID is required" });
+                }
+
+                // Use Enhanced SEO Service which includes Google Search API + Python + C# + AI (Hybrid Approach)
+                var enhancedSeoService = HttpContext.RequestServices.GetRequiredService<discussionspot9.Services.EnhancedSeoService>();
+                
+                // Get post to create view model
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == request.PostId);
+
+                if (post == null)
+                {
+                    return Json(new { success = false, error = "Post not found" });
+                }
+
+                // Get current SEO score and issues from queue to pass to optimization
+                var currentScore = await _context.SeoScores
+                    .FirstOrDefaultAsync(s => s.PostId == request.PostId);
+
+                var issues = currentScore?.Issues != null ?
+                    System.Text.Json.JsonSerializer.Deserialize<List<string>>(currentScore.Issues) ?? new List<string>() :
+                    new List<string>();
+
+                // Create view model for optimization
+                var model = new discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+                {
+                    Title = post.Title,
+                    Content = post.Content ?? "",
+                    CommunitySlug = post.Community?.Slug ?? "",
+                    PostType = post.PostType
+                };
+
+                // Optimize using hybrid approach (Google Search API + Python + C# + AI)
+                // Pass issues to optimization so AI can address them
+                var seoResult = await enhancedSeoService.OptimizeOnCreateAsync(model);
+                
+                // If we have issues, enhance the optimization result to address them
+                if (issues.Any() && seoResult.Success)
+                {
+                    _logger.LogInformation("Optimizing post {PostId} with {IssueCount} issues to address", 
+                        request.PostId, issues.Count);
+                }
+                
+                if (!seoResult.Success)
+                {
+                    // Fallback to AI service if enhanced fails
+                    var result = await _aiSeoService.OptimizePostWithAIAsync(request.PostId);
+                    
+                    if (!result.Success)
+                    {
+                        return Json(new { success = false, error = result.ErrorMessage });
+                    }
+
+                    return Json(new
+                    {
+                        success = true,
+                        data = new
+                        {
+                            postId = result.PostId,
+                            baselineScore = result.BaselineScore,
+                            optimizedTitle = result.OptimizedTitle,
+                            optimizedContent = result.OptimizedContent,
+                            suggestedMetaDescription = result.SuggestedMetaDescription,
+                            suggestedKeywords = result.SuggestedKeywords,
+                            estimatedScore = result.EstimatedScore,
+                            improvements = result.Improvements,
+                            aiProvider = result.AiProvider,
+                            scoreImprovement = result.EstimatedScore - result.BaselineScore
+                        }
+                    });
+                }
+
+                // Return enhanced SEO result (uses Google Search API + Python + C# + AI)
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        postId = request.PostId,
+                        baselineScore = seoResult.BaselineScore,
+                        optimizedTitle = seoResult.OptimizedTitle,
+                        optimizedContent = seoResult.OptimizedContent ?? post.Content,
+                        suggestedMetaDescription = seoResult.MetaDescription,
+                        suggestedKeywords = seoResult.Keywords,
+                        estimatedScore = seoResult.SeoScore,
+                        improvements = seoResult.Improvements,
+                        aiProvider = "Hybrid (Google Search + Python + C# + AI)",
+                        scoreImprovement = seoResult.SeoScore - seoResult.BaselineScore,
+                        googleKeywords = seoResult.GoogleRelatedKeywords,
+                        topCompetitors = seoResult.TopCompetitors
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error optimizing post with AI");
+                return Json(new { success = false, error = "Error during optimization: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Preview optimization before applying (shows what will be optimized)
+        /// </summary>
+        [HttpPost("api/preview-optimization")]
+        public async Task<IActionResult> PreviewOptimization([FromBody] OptimizePostRequest request)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                if (request == null || request.PostId == 0)
+                {
+                    return Json(new { success = false, error = "Post ID is required" });
+                }
+
+                // Get post and current SEO score/issues
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == request.PostId);
+
+                if (post == null)
+                {
+                    return Json(new { success = false, error = "Post not found" });
+                }
+
+                // Get current SEO score and issues from queue
+                var currentScore = await _context.SeoScores
+                    .FirstOrDefaultAsync(s => s.PostId == request.PostId);
+
+                var issues = currentScore?.Issues != null ?
+                    System.Text.Json.JsonSerializer.Deserialize<List<string>>(currentScore.Issues) ?? new List<string>() :
+                    new List<string>();
+
+                // Get existing SEO metadata
+                var seoMetadata = await _context.SeoMetadata
+                    .FirstOrDefaultAsync(s => s.EntityType == "post" && s.EntityId == request.PostId);
+
+                // Use Enhanced SEO Service for preview (doesn't save)
+                var enhancedSeoService = HttpContext.RequestServices.GetRequiredService<discussionspot9.Services.EnhancedSeoService>();
+                
+                var model = new discussionspot9.Models.ViewModels.CreativeViewModels.CreatePostViewModel
+                {
+                    Title = post.Title,
+                    Content = post.Content ?? "",
+                    CommunitySlug = post.Community?.Slug ?? "",
+                    PostType = post.PostType
+                };
+
+                // Optimize (preview only - doesn't save)
+                var seoResult = await enhancedSeoService.OptimizeOnCreateAsync(model);
+                
+                if (!seoResult.Success)
+                {
+                    return Json(new { success = false, error = "Optimization preview failed" });
+                }
+
+                // Ensure meta description is populated (fallback if empty)
+                var metaDescription = seoResult.MetaDescription;
+                if (string.IsNullOrWhiteSpace(metaDescription))
+                {
+                    // Fallback: Generate from optimized content or title
+                    var contentToUse = seoResult.OptimizedContent ?? post.Content ?? "";
+                    if (contentToUse.Length > 160)
+                    {
+                        metaDescription = contentToUse.Substring(0, 157) + "...";
+                    }
+                    else if (!string.IsNullOrEmpty(contentToUse))
+                    {
+                        metaDescription = contentToUse;
+                    }
+                    else
+                    {
+                        metaDescription = seoResult.OptimizedTitle ?? post.Title;
+                    }
+                    _logger.LogInformation("Generated fallback meta description for post {PostId}", request.PostId);
+                }
+
+                // Ensure keywords are populated (fallback if empty)
+                var keywords = seoResult.Keywords ?? new List<string>();
+                if (keywords.Count == 0)
+                {
+                    // Fallback: Extract keywords from title
+                    var titleWords = (seoResult.OptimizedTitle ?? post.Title)
+                        .Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Where(w => w.Length > 3)
+                        .Take(5)
+                        .ToList();
+                    keywords = titleWords;
+                    _logger.LogInformation("Generated fallback keywords for post {PostId}: {Keywords}", 
+                        request.PostId, string.Join(", ", keywords));
+                }
+
+                // Calculate expected score using same method as queue
+                var expectedScoreResult = await _seoScoringService.CalculateScoreAsync(request.PostId);
+                var expectedScore = expectedScoreResult.Success ? (double)expectedScoreResult.Score : seoResult.SeoScore;
+
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        postId = request.PostId,
+                        currentTitle = post.Title,
+                        currentContent = post.Content,
+                        currentMetaDescription = seoMetadata?.MetaDescription ?? "",
+                        currentKeywords = seoMetadata?.Keywords?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(k => k.Trim()).ToList() ?? new List<string>(),
+                        currentScore = currentScore?.Score ?? 0,
+                        currentTier = currentScore?.Tier ?? "Critical",
+                        currentIssues = issues,
+                        optimizedTitle = seoResult.OptimizedTitle,
+                        optimizedContent = seoResult.OptimizedContent ?? post.Content,
+                        optimizedMetaDescription = metaDescription,
+                        optimizedKeywords = keywords,
+                        optimizedOgTitle = seoResult.OptimizedTitle,
+                        optimizedOgDescription = metaDescription,
+                        optimizedTwitterTitle = seoResult.OptimizedTitle,
+                        optimizedTwitterDescription = metaDescription,
+                        googleKeywords = seoResult.GoogleRelatedKeywords ?? new List<string>(),
+                        estimatedScore = seoResult.SeoScore,
+                        expectedScore = expectedScore,
+                        scoreImprovement = seoResult.SeoScore - (double)(currentScore?.Score ?? 0),
+                        improvements = seoResult.Improvements,
+                        topCompetitors = seoResult.TopCompetitors ?? new List<string>(),
+                        baselineScore = seoResult.BaselineScore
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error previewing optimization");
+                return Json(new { success = false, error = "Error during preview: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get post details for optimization
+        /// </summary>
+        [HttpGet("api/get-post-details")]
+        public async Task<IActionResult> GetPostDetails(int postId)
+        {
+            if (!IsCurrentUserAdmin())
+            {
+                return Json(new { success = false, error = "Unauthorized" });
+            }
+
+            try
+            {
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == postId);
+
+                if (post == null)
+                {
+                    return Json(new { success = false, error = "Post not found" });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        postId = post.PostId,
+                        title = post.Title,
+                        content = post.Content ?? "",
+                        slug = post.Slug,
+                        communitySlug = post.Community?.Slug ?? "",
+                        communityName = post.Community?.Name ?? "",
+                        createdAt = post.CreatedAt,
+                        viewCount = post.ViewCount,
+                        postType = post.PostType
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting post details for {PostId}", postId);
+                return Json(new { success = false, error = "Error retrieving post details" });
+            }
+        }
+
+        /// <summary>
+        /// Save optimized content to post
+        /// </summary>
+        [HttpPost("api/save-optimizations")]
+        public async Task<IActionResult> SaveOptimizations([FromBody] SaveOptimizationsRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("SaveOptimizations called for post {PostId}", request?.PostId ?? 0);
+                
+                if (!IsCurrentUserAdmin())
+                {
+                    _logger.LogWarning("Unauthorized attempt to save optimizations");
+                    return Json(new { success = false, error = "Unauthorized" });
+                }
+
+                if (request == null)
+                {
+                    _logger.LogWarning("SaveOptimizations called with null request");
+                    return Json(new { success = false, error = "Request is required" });
+                }
+
+                if (request.PostId <= 0)
+                {
+                    return Json(new { success = false, error = "Invalid post ID" });
+                }
+
+                var post = await _context.Posts
+                    .Include(p => p.Community)
+                    .FirstOrDefaultAsync(p => p.PostId == request.PostId);
+
+                if (post == null)
+                {
+                    return Json(new { success = false, error = "Post not found" });
+                }
+
+                // Update post with optimized content
+                var originalTitle = post.Title;
+                var originalContent = post.Content;
+                
+                post.Title = !string.IsNullOrWhiteSpace(request.OptimizedTitle) ? request.OptimizedTitle : post.Title;
+                post.Content = !string.IsNullOrWhiteSpace(request.OptimizedContent) ? request.OptimizedContent : post.Content;
+                post.UpdatedAt = DateTime.UtcNow;
+
+                // Explicitly mark post as modified to ensure EF tracks changes
+                _context.Entry(post).Property(p => p.Title).IsModified = true;
+                _context.Entry(post).Property(p => p.Content).IsModified = true;
+                _context.Entry(post).Property(p => p.UpdatedAt).IsModified = true;
+
+                _logger.LogInformation("Updating post {PostId}: Title changed: {TitleChanged}, Content changed: {ContentChanged}", 
+                    request.PostId, 
+                    originalTitle != post.Title, 
+                    originalContent != post.Content);
+
+                // Update or create SEO metadata
+                var seoMetadata = await _context.SeoMetadata
+                    .FirstOrDefaultAsync(s => s.EntityType == "post" && s.EntityId == request.PostId);
+
+                if (seoMetadata == null)
+                {
+                    seoMetadata = new Models.Domain.SeoMetadata
+                    {
+                        EntityType = "post",
+                        EntityId = request.PostId,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.SeoMetadata.Add(seoMetadata);
+                    _logger.LogInformation("Creating new SEO metadata for post {PostId}", request.PostId);
+                }
+                else
+                {
+                    _logger.LogInformation("Updating existing SEO metadata for post {PostId}", request.PostId);
+                }
+
+                seoMetadata.MetaTitle = !string.IsNullOrWhiteSpace(request.OptimizedTitle) ? request.OptimizedTitle : post.Title;
+                seoMetadata.MetaDescription = !string.IsNullOrWhiteSpace(request.MetaDescription) ? request.MetaDescription : "";
+                seoMetadata.Keywords = request.Keywords != null && request.Keywords.Any() ? string.Join(", ", request.Keywords) : "";
+                seoMetadata.OgTitle = !string.IsNullOrWhiteSpace(request.OptimizedTitle) ? request.OptimizedTitle : post.Title;
+                seoMetadata.OgDescription = !string.IsNullOrWhiteSpace(request.MetaDescription) ? request.MetaDescription : "";
+                seoMetadata.TwitterTitle = !string.IsNullOrWhiteSpace(request.OptimizedTitle) ? request.OptimizedTitle : post.Title;
+                seoMetadata.TwitterDescription = !string.IsNullOrWhiteSpace(request.MetaDescription) ? request.MetaDescription : "";
+                seoMetadata.UpdatedAt = DateTime.UtcNow;
+
+                // Save changes
+                var savedCount = await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("✅ Optimizations saved for post {PostId}. Entities updated: {SavedCount}", 
+                    request.PostId, savedCount);
+                
+                if (savedCount == 0)
+                {
+                    _logger.LogWarning("⚠️ No entities were saved. This might indicate no changes were detected.");
+                }
+
+                // Re-score the post after saving optimizations
+                var scoreResult = await _seoScoringService.CalculateScoreAsync(request.PostId);
+                decimal? newScore = null;
+                string? newTier = null;
+                
+                if (scoreResult.Success)
+                {
+                    await _seoScoringService.SaveScoreAsync(scoreResult);
+                    newScore = scoreResult.Score;
+                    newTier = scoreResult.Tier;
+                    _logger.LogInformation("✅ Post {PostId} re-scored. New score: {Score} ({Tier})", 
+                        request.PostId, scoreResult.Score, scoreResult.Tier);
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Optimizations saved successfully. {savedCount} entity(ies) updated." + 
+                              (newScore.HasValue ? $" New SEO score: {newScore:F1} ({newTier})" : ""),
+                    postId = request.PostId,
+                    updatedPost = new
+                    {
+                        title = post.Title,
+                        content = post.Content?.Substring(0, Math.Min(100, post.Content?.Length ?? 0)) + (post.Content?.Length > 100 ? "..." : ""),
+                        updatedAt = post.UpdatedAt
+                    },
+                    savedCount = savedCount,
+                    newScore = newScore,
+                    newTier = newTier
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving optimizations for post {PostId}", request?.PostId ?? 0);
+                return Json(new { 
+                    success = false, 
+                    error = $"Error saving optimizations: {ex.Message}",
+                    details = ex.ToString()
+                });
+            }
+        }
+
+        #endregion
+
+        // Request model for AI optimization
+        public class OptimizePostRequest
+        {
+            public int PostId { get; set; }
+        }
+
+        // Request model for saving optimizations
+        public class SaveOptimizationsRequest
+        {
+            public int PostId { get; set; }
+            public string? OptimizedTitle { get; set; }
+            public string? OptimizedContent { get; set; }
+            public string? MetaDescription { get; set; }
+            public List<string>? Keywords { get; set; }
+        }
+
+        // Request model for creating proposal
+        public class CreateProposalRequest
+        {
+            public int PostId { get; set; }
+        }
+
+        // Request model for creating proposal from preview payload
+        public class CreateProposalFromPreviewRequest
+        {
+            public int PostId { get; set; }
+            public string? OptimizedTitle { get; set; }
+            public string? OptimizedContent { get; set; }
+            public string? MetaDescription { get; set; }
+            public List<string>? Keywords { get; set; }
+            public decimal? BaselineScore { get; set; }
+            public decimal? EstimatedScore { get; set; }
+            public List<string>? Improvements { get; set; }
+            public string? Source { get; set; }
+        }
+
+        // View model for posts with scores
+        public class PostWithScoreViewModel
+        {
+            public int PostId { get; set; }
+            public string Title { get; set; } = string.Empty;
+            public string Content { get; set; } = string.Empty;
+            public string CommunitySlug { get; set; } = string.Empty;
+            public string CommunityName { get; set; } = string.Empty;
+            public decimal Score { get; set; }
+            public string Tier { get; set; } = "Critical";
+            public decimal GoogleCompetitivenessScore { get; set; }
+            public decimal ContentQualityScore { get; set; }
+            public decimal MetaCompletenessScore { get; set; }
+            public decimal FreshnessScore { get; set; }
+            public List<string> Issues { get; set; } = new();
+            public List<string> RecommendedKeywords { get; set; } = new();
+            public List<string> TopCompetitors { get; set; } = new();
+            public int PriorityRank { get; set; }
+            public DateTime ScoredAt { get; set; }
+            public int ViewCount { get; set; }
+            public int CommentCount { get; set; }
+            public DateTime CreatedAt { get; set; }
+            public DateTime UpdatedAt { get; set; }
+            public bool HasMeta { get; set; }
+            public bool HasPendingProposal { get; set; }
+            public int? ProposalId { get; set; }
+            public string? ProposalStatus { get; set; }
+            public DateTime? ProposalCreatedAt { get; set; }
+            public string? ProposalCreatedBy { get; set; }
+            public string? ProposalSource { get; set; }
+        }
     }
 }
 

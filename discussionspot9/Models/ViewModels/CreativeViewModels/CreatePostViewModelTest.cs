@@ -72,7 +72,7 @@ namespace discussionspot9.Models.ViewModels.CreativeViewModels
 
         // --- Poll Configuration (Relevant if PostType includes "Poll") ---
         [Display(Name = "Poll")]
-        public PollViewModel Poll { get; set; } = new PollViewModel();
+        public PollViewModel Poll { get; set; } = new PollViewModel { Question = string.Empty };
 
         [Display(Name = "Poll Options")]
         public List<PollOptionViewModel> PollOptions { get; set; } = new();

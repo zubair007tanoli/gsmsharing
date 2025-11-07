@@ -239,7 +239,7 @@ namespace discussionspot9.Services
         public long FileSize { get; set; }
         public string MediaType { get; set; } = string.Empty;
         public string ErrorMessage { get; set; } = string.Empty;
-        public MediaInfo MediaInfo { get; set; }
+        public MediaInfo? MediaInfo { get; set; }
     }
 
     public class FileValidationResult

@@ -27,8 +27,8 @@ namespace discussionspot9.Components
                 .Select(c => new CategoryNavItem
                 {
                     Name = c.Name,
-                    Slug = c.Slug
-                   /* Icon = c.Icon ?? GetDefaultIcon(c.Name)*/ // Assuming you add an Icon property
+                    Slug = c.Slug,
+                    Icon = GetDefaultIcon(c.Name)
                 })
                 .ToListAsync(); // This now works because of the added using directive
         }
@@ -51,8 +51,8 @@ namespace discussionspot9.Components
     }
     public class CategoryNavItem
     {
-        public string Name { get; set; }
-        public string Slug { get; set; }
-        public string Icon { get; set; }
+        public required string Name { get; set; }
+        public required string Slug { get; set; }
+        public required string Icon { get; set; }
     }
 }

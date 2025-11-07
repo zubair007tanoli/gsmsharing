@@ -167,6 +167,8 @@ namespace discussionspot9.Services
                 Rules = community.Rules,
                 IsNSFW = community.IsNSFW,
                 CommunityType = community.CommunityType,
+                ThemeColor = community.ThemeColor ?? "#667eea",
+                ShortDescription = community.ShortDescription ?? string.Empty,
                 CategoryName = community.Category?.Name,
                 CategorySlug = community.Category?.Slug,
                 CreatorId = community.CreatorId,

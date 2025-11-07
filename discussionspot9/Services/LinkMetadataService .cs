@@ -95,6 +95,9 @@ namespace discussionspot9.Services
                 metadata.FaviconUrl = !string.IsNullOrEmpty(metadata.FaviconUrl) 
                     ? CleanUrl(metadata.FaviconUrl, uri) 
                     : string.Empty;
+                
+                // Set ImageUrl (same as ThumbnailUrl for compatibility)
+                metadata.ImageUrl = metadata.ThumbnailUrl;
 
                 // Trim metadata
                 metadata.Title = TrimMetadata(metadata.Title, 200);
