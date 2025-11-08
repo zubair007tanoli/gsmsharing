@@ -134,4 +134,20 @@ namespace discussionspot9.Models.GoogleSearch
         public List<string> CompetitorTitles { get; set; } = new();
         public string SuggestedMetaDescription { get; set; } = string.Empty;
     }
+
+    /// <summary>
+    /// Aggregated topic insights from a Google search query.
+    /// </summary>
+    public class TopicSeoInsights
+    {
+        public bool Success { get; set; }
+        public string Topic { get; set; } = string.Empty;
+        public List<string> RelatedKeywords { get; set; } = new();
+        public List<string> TopRankingDomains { get; set; } = new();
+        public List<string> CommonTitlePatterns { get; set; } = new();
+        public List<string> CommonDescriptionPatterns { get; set; } = new();
+        public int AverageTitleLength { get; set; }
+        public int AverageDescriptionLength { get; set; }
+        public List<string> SuggestedKeywords { get; set; } = new();
+    }
 }

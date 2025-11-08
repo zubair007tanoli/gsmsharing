@@ -1,10 +1,11 @@
 using discussionspot9.Models.GoogleSearch;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
+using System.Globalization;
+using System.Net.Http;
 using System.Text.Json;
 using System.Web;
-using System.Collections;
-using Newtonsoft.Json.Linq;
 using SerpApi;
 
 namespace discussionspot9.Services
@@ -351,38 +352,49 @@ namespace discussionspot9.Services
         private async Task<GoogleSearchResponse?> SearchWithSerpApiAsync(string query, int limit, bool includeRelatedKeywords)
         {
             var attempts = Math.Max(1, _config.SerpApiRetryCount);
-            var retryDelay = TimeSpan.FromMilliseconds(500);
+            var timeout = TimeSpan.FromSeconds(Math.Max(5, _config.SerpApiTimeoutSeconds));
 
             for (var attempt = 1; attempt <= attempts; attempt++)
             {
                 try
                 {
-                    var parameters = new Hashtable
+                    var parameters = new Dictionary<string, string?>
                     {
-                        { "engine", _config.SerpApiEngine },
-                        { "q", query },
-                        { "num", limit },
-                        { "google_domain", _config.SerpApiGoogleDomain },
-                        { "gl", _config.SerpApiGl },
-                        { "hl", _config.SerpApiHl }
+                        ["engine"] = _config.SerpApiEngine,
+                        ["q"] = query,
+                        ["num"] = limit.ToString(CultureInfo.InvariantCulture),
+                        ["google_domain"] = _config.SerpApiGoogleDomain,
+                        ["gl"] = _config.SerpApiGl,
+                        ["hl"] = _config.SerpApiHl,
+                        ["location"] = _config.SerpApiLocation,
+                        ["api_key"] = _config.SerpApiKey
                     };
 
-                    if (!string.IsNullOrWhiteSpace(_config.SerpApiLocation))
+                    var queryString = string.Join("&", parameters
+                        .Where(kvp => !string.IsNullOrWhiteSpace(kvp.Value))
+                        .Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value!)}"));
+
+                    using var httpClient = new HttpClient { Timeout = timeout };
+                    var response = await httpClient.GetAsync($"https://serpapi.com/search.json?{queryString}");
+
+                    if (!response.IsSuccessStatusCode)
                     {
-                        parameters["location"] = _config.SerpApiLocation;
+                        _logger.LogWarning("SerpApi returned {StatusCode} for {Query} on attempt {Attempt}/{Attempts}",
+                            response.StatusCode, query, attempt, attempts);
+
+                        if (attempt == attempts)
+                        {
+                            return null;
+                        }
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(500));
+                        continue;
                     }
 
-                    var serpClient = new GoogleSearch(parameters, _config.SerpApiKey);
+                    var json = await response.Content.ReadAsStringAsync();
+                    var data = JObject.Parse(json);
 
-                    JObject data = await Task.Run(() => serpClient.GetJson());
-
-                    if (data == null)
-                    {
-                        _logger.LogWarning("SerpApi returned null data for query: {Query}", query);
-                        return null;
-                    }
-
-                    var response = new GoogleSearchResponse
+                    var result = new GoogleSearchResponse
                     {
                         SearchTerm = query,
                         Results = MapSerpApiResults(data, limit).ToList()
@@ -390,34 +402,25 @@ namespace discussionspot9.Services
 
                     if (includeRelatedKeywords)
                     {
-                        response.RelatedKeywords = new RelatedKeywords
+                        result.RelatedKeywords = new RelatedKeywords
                         {
                             Keywords = MapSerpApiRelatedKeywords(data, limit).ToList()
                         };
                     }
 
-                    return response;
-                }
-                catch (SerpApiSearchException ex)
-                {
-                    _logger.LogWarning(ex, "SerpApi responded with an error on attempt {Attempt} of {Total} for query: {Query}", attempt, attempts, query);
-
-                    if (attempt == attempts)
-                    {
-                        return null;
-                    }
+                    return result;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unhandled error while calling SerpApi on attempt {Attempt} of {Total} for query: {Query}", attempt, attempts, query);
-
                     if (attempt == attempts)
                     {
+                        _logger.LogError(ex, "SerpApi request failed for query: {Query}", query);
                         return null;
                     }
-                }
 
-                await Task.Delay(retryDelay);
+                    _logger.LogWarning(ex, "SerpApi request failed on attempt {Attempt}/{Attempts} for {Query}", attempt, attempts, query);
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
             }
 
             return null;
@@ -516,19 +519,4 @@ namespace discussionspot9.Services
         public List<string> TopCompetitorDescriptions { get; set; } = new();
     }
 
-    /// <summary>
-    /// Topic SEO insights
-    /// </summary>
-    public class TopicSeoInsights
-    {
-        public bool Success { get; set; }
-        public string Topic { get; set; } = string.Empty;
-        public List<string> RelatedKeywords { get; set; } = new();
-        public List<string> TopRankingDomains { get; set; } = new();
-        public List<string> CommonTitlePatterns { get; set; } = new();
-        public List<string> CommonDescriptionPatterns { get; set; } = new();
-        public int AverageTitleLength { get; set; }
-        public int AverageDescriptionLength { get; set; }
-        public List<string> SuggestedKeywords { get; set; } = new();
-    }
 }

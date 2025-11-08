@@ -84,30 +84,44 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 builder.Services.AddAuthentication()
     .AddGoogle(options =>
     {
-        var googleAuthPath = Path.Combine(builder.Environment.WebRootPath, "GoogleApiAccess", "AuthKeys.json");
+        var defaultSecretsPath = Path.Combine(builder.Environment.ContentRootPath, "Secrets", "AuthKeys.json");
+        var configuredPath = builder.Configuration["Authentication:Google:CredentialsPath"];
+        var googleAuthPath = string.IsNullOrWhiteSpace(configuredPath)
+            ? defaultSecretsPath
+            : (Path.IsPathRooted(configuredPath)
+                ? configuredPath
+                : Path.Combine(builder.Environment.ContentRootPath, configuredPath));
+
         if (File.Exists(googleAuthPath))
         {
             var jsonString = File.ReadAllText(googleAuthPath);
             var googleAuth = System.Text.Json.JsonSerializer.Deserialize<discussionspot9.Models.GoogleAuthConfig>(
                 jsonString,
-                new System.Text.Json.JsonSerializerOptions 
-                { 
+                new System.Text.Json.JsonSerializerOptions
+                {
                     PropertyNameCaseInsensitive = true,
                     PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower
                 });
-            
+
             if (googleAuth?.Web != null)
             {
-                options.ClientId = googleAuth.Web.ClientId ?? "";
-                options.ClientSecret = googleAuth.Web.ClientSecret ?? "";
+                options.ClientId = googleAuth.Web.ClientId ?? string.Empty;
+                options.ClientSecret = googleAuth.Web.ClientSecret ?? string.Empty;
             }
         }
         else
         {
             // Fallback: try to get from configuration
-            options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "";
-            options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "";
+            options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? string.Empty;
+            options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(options.ClientId) || string.IsNullOrWhiteSpace(options.ClientSecret))
+            {
+                var logger = builder.Logging.CreateLogger("Startup");
+                logger.LogWarning("Google OAuth credentials not found. Provide a secrets file at {Path} or set Authentication:Google:ClientId and ClientSecret.", googleAuthPath);
+            }
         }
+
         options.CallbackPath = "/signin-google";
         options.SaveTokens = true;
     });
