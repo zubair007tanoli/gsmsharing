@@ -676,6 +676,10 @@ namespace discussionspot9.Controllers
                     .Include(p => p.Post)
                     .FirstOrDefaultAsync(p => p.Id == proposalId);
 
+                var seoScore = proposal != null
+                    ? await _context.SeoScores.FirstOrDefaultAsync(s => s.PostId == proposal.PostId)
+                    : null;
+
                 if (proposal == null)
                 {
                     return Json(new { success = false, error = "Proposal not found" });
@@ -800,9 +804,15 @@ namespace discussionspot9.Controllers
 
             try
             {
+                SeoScore? seoScore = null;
                 var proposal = await _context.SeoOptimizationProposals
                     .Include(p => p.Post)
                     .FirstOrDefaultAsync(p => p.Id == proposalId);
+                if (proposal != null)
+                {
+                    seoScore = await _context.SeoScores
+                        .FirstOrDefaultAsync(s => s.PostId == proposal.PostId);
+                }
 
                 if (proposal == null)
                 {
@@ -862,7 +872,22 @@ namespace discussionspot9.Controllers
                         changesSummary = changesSummaryText,
                         status = proposal.Status,
                         createdAt = proposal.CreatedAt,
-                        createdBy = proposal.CreatedBy
+                        createdBy = proposal.CreatedBy,
+                        scoreDetails = seoScore != null ? new
+                        {
+                            googleCompetitivenessScore = seoScore.GoogleCompetitivenessScore,
+                            contentQualityScore = seoScore.ContentQualityScore,
+                            metaCompletenessScore = seoScore.MetaCompletenessScore,
+                            freshnessScore = seoScore.FreshnessScore,
+                            rankingProbability = CalculateRankingProbability(seoScore.GoogleCompetitivenessScore, proposal.ExpectedScoreDelta),
+                            recommendedKeywords = !string.IsNullOrWhiteSpace(seoScore.RecommendedKeywords)
+                                ? JsonSerializer.Deserialize<List<string>>(seoScore.RecommendedKeywords) ?? new List<string>()
+                                : new List<string>(),
+                            topCompetitors = !string.IsNullOrWhiteSpace(seoScore.TopCompetitors)
+                                ? JsonSerializer.Deserialize<List<string>>(seoScore.TopCompetitors) ?? new List<string>()
+                                : new List<string>(),
+                            scoredAt = seoScore.ScoredAt
+                        } : null
                     }
                 });
             }
@@ -1021,6 +1046,14 @@ namespace discussionspot9.Controllers
             }
 
             return await query.CountAsync();
+        }
+
+        private double CalculateRankingProbability(decimal googleCompetitivenessScore, decimal expectedScoreDelta)
+        {
+            var baseProbability = Math.Clamp((double)(googleCompetitivenessScore / 100m), 0.05, 0.9);
+            var deltaImpact = Math.Clamp((double)(expectedScoreDelta / 25m), -0.15, 0.25);
+            var probability = Math.Clamp(baseProbability + deltaImpact, 0.05, 0.98);
+            return Math.Round(probability, 2);
         }
 
         [HttpGet("history")]

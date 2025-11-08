@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     /* Primary & Secondary */
     --primary-color: #4f46e5; /* modern indigo */
     --primary-hover: #4338ca;
@@ -298,6 +298,25 @@ body {
     .auth-btns .btn i {
         margin-right: 5px;
     }
+
+@media (max-width: 576px) {
+    .navbar .dropdown.user-dropdown .dropdown-menu {
+        position: fixed;
+        top: calc(var(--header-height, 64px) + 0.5rem);
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        max-height: calc(100vh - 6rem);
+        overflow-y: auto;
+        transform: none !important;
+        margin-top: 0;
+        z-index: 1055;
+    }
+
+    .navbar .dropdown.user-dropdown.show > .dropdown-menu {
+        display: block;
+    }
+}
 
 /* Responsive Adjustments - Improved */
 @media (max-width: 1199px) {

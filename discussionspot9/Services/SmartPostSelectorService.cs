@@ -29,7 +29,7 @@ namespace discussionspot9.Services
             _logger.LogInformation("🎯 Selecting posts for optimization...");
 
             var candidates = new List<PostOptimizationCandidate>();
-            var cutoffDate = DateTime.UtcNow.AddDays(-14); // Posts must be at least 14 days old
+            var cutoffDate = DateTime.UtcNow.AddDays(-10); // Posts must be at least 10 days old
 
             // Get posts with performance data
             var posts = await _context.Posts

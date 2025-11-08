@@ -1,6 +1,7 @@
 using discussionspot9.Data.DbContext;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
+using discussionspot9.Models.Seo;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -22,17 +23,20 @@ namespace discussionspot9.Services
         private readonly string? _anthropicApiKey;
         private readonly string? _geminiApiKey;
         private readonly string _aiProvider;
+        private readonly SearchContentAggregator _searchContentAggregator;
 
         public AISeoService(
             ISeoAnalyzerService pythonAnalyzer,
             ApplicationDbContext context,
             ILogger<AISeoService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            SearchContentAggregator searchContentAggregator)
         {
             _pythonAnalyzer = pythonAnalyzer;
             _context = context;
             _logger = logger;
             _configuration = configuration;
+            _searchContentAggregator = searchContentAggregator;
             
             _openAiApiKey = _configuration["AI:OpenAI:ApiKey"];
             _anthropicApiKey = _configuration["AI:Anthropic:ApiKey"];
@@ -47,16 +51,48 @@ namespace discussionspot9.Services
             string title,
             string content,
             string community,
-            SeoAnalysisResult baseline)
+            SeoAnalysisResult baseline,
+            SearchContentAggregationResult? searchContext = null)
         {
             try
             {
+                // Build search context if missing competitor data
+                if (searchContext == null || searchContext.AnalysisContext == null)
+                {
+                    if (baseline.CompetitorContentInsights == null || baseline.CompetitorContentInsights.Count == 0)
+                    {
+                        searchContext = await _searchContentAggregator.AggregateAsync(title, content);
+
+                        if (searchContext?.AnalysisContext != null)
+                        {
+                            // Refresh baseline with Google data for richer insights
+                            baseline = await _pythonAnalyzer.AnalyzePostAsync(new CreatePostViewModel
+                            {
+                                Title = title,
+                                Content = content,
+                                CommunitySlug = community,
+                                PostType = "text"
+                            }, new SeoAnalysisContext
+                            {
+                                GoogleSearchData = searchContext.AnalysisContext
+                            });
+                        }
+                    }
+                }
+
+                if (baseline.CompetitorContentInsights.Count == 0 &&
+                    searchContext?.AnalysisContext?.Competitors != null)
+                {
+                    baseline.CompetitorContentInsights = searchContext.AnalysisContext.Competitors;
+                }
+
                 // AI-powered optimization
                 var aiOptimizations = await OptimizeWithAIAsync(
                     title,
                     content,
                     community,
-                    baseline
+                    baseline,
+                    searchContext
                 );
 
                 // Determine which provider was actually used
@@ -77,7 +113,12 @@ namespace discussionspot9.Services
                     SuggestedKeywords = aiOptimizations.Keywords ?? baseline.SuggestedKeywords,
                     EstimatedScore = aiOptimizations.EstimatedScore,
                     Improvements = aiOptimizations.Improvements,
-                    AiProvider = actualProvider
+                    AiProvider = actualProvider,
+                    PrimaryKeyword = searchContext?.PrimaryKeyword ?? baseline.SuggestedKeywords.FirstOrDefault() ?? title,
+                    GoogleRelatedKeywords = searchContext?.AnalysisContext?.RelatedKeywords ?? baseline.SuggestedKeywords,
+                    CompetitorInsights = baseline.CompetitorContentInsights,
+                    ContentGaps = baseline.ContentGaps,
+                    AuthoritySignals = baseline.AuthoritySignals
                 };
             }
             catch (Exception ex)
@@ -114,12 +155,19 @@ namespace discussionspot9.Services
                 }
 
                 // Step 1: Get baseline SEO analysis (existing Python analyzer)
+                var searchContext = await _searchContentAggregator.AggregateAsync(
+                    post.Title,
+                    post.Content ?? string.Empty);
+
                 var baselineAnalysis = await _pythonAnalyzer.AnalyzePostAsync(new CreatePostViewModel
                 {
                     Title = post.Title,
                     Content = post.Content ?? "",
                     CommunitySlug = post.Community?.Slug ?? "",
                     PostType = post.PostType
+                }, new SeoAnalysisContext
+                {
+                    GoogleSearchData = searchContext?.AnalysisContext
                 });
 
                 // Step 2: AI-powered optimization
@@ -127,7 +175,8 @@ namespace discussionspot9.Services
                     post.Title,
                     post.Content ?? "",
                     post.Community?.Name ?? "",
-                    baselineAnalysis
+                    baselineAnalysis,
+                    searchContext
                 );
 
                 // Determine which provider was actually used
@@ -150,7 +199,12 @@ namespace discussionspot9.Services
                     SuggestedKeywords = aiOptimizations.Keywords ?? baselineAnalysis.SuggestedKeywords,
                     EstimatedScore = aiOptimizations.EstimatedScore,
                     Improvements = aiOptimizations.Improvements,
-                    AiProvider = actualProvider
+                    AiProvider = actualProvider,
+                    PrimaryKeyword = searchContext?.PrimaryKeyword ?? baselineAnalysis.SuggestedKeywords.FirstOrDefault() ?? post.Title,
+                    GoogleRelatedKeywords = searchContext?.AnalysisContext?.RelatedKeywords ?? baselineAnalysis.SuggestedKeywords,
+                    CompetitorInsights = baselineAnalysis.CompetitorContentInsights,
+                    ContentGaps = baselineAnalysis.ContentGaps,
+                    AuthoritySignals = baselineAnalysis.AuthoritySignals
                 };
             }
             catch (Exception ex)
@@ -171,13 +225,14 @@ namespace discussionspot9.Services
             string title,
             string content,
             string community,
-            SeoAnalysisResult baseline)
+            SeoAnalysisResult baseline,
+            SearchContentAggregationResult? searchContext)
         {
             if (_aiProvider == "openai" && !string.IsNullOrEmpty(_openAiApiKey))
             {
                 try
                 {
-                    return await OptimizeWithOpenAIAsync(title, content, community, baseline);
+                    return await OptimizeWithOpenAIAsync(title, content, community, baseline, searchContext);
                 }
                 catch (Exception ex)
                 {
@@ -185,7 +240,7 @@ namespace discussionspot9.Services
                     // Fallback to Gemini if OpenAI fails
                     if (!string.IsNullOrEmpty(_geminiApiKey))
                     {
-                        return await OptimizeWithGeminiAsync(title, content, community, baseline);
+                        return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
                     }
                     throw;
                 }
@@ -194,7 +249,7 @@ namespace discussionspot9.Services
             {
                 try
                 {
-                    return await OptimizeWithAnthropicAsync(title, content, community, baseline);
+                    return await OptimizeWithAnthropicAsync(title, content, community, baseline, searchContext);
                 }
                 catch (Exception ex)
                 {
@@ -202,20 +257,20 @@ namespace discussionspot9.Services
                     // Fallback to Gemini if Anthropic fails
                     if (!string.IsNullOrEmpty(_geminiApiKey))
                     {
-                        return await OptimizeWithGeminiAsync(title, content, community, baseline);
+                        return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
                     }
                     throw;
                 }
             }
             else if (_aiProvider == "gemini" && !string.IsNullOrEmpty(_geminiApiKey))
             {
-                return await OptimizeWithGeminiAsync(title, content, community, baseline);
+                return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
             }
             else if (!string.IsNullOrEmpty(_geminiApiKey))
             {
                 // Use Gemini as default fallback
                 _logger.LogInformation("Using Gemini as fallback AI provider");
-                return await OptimizeWithGeminiAsync(title, content, community, baseline);
+                return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
             }
             else
             {
@@ -240,7 +295,8 @@ namespace discussionspot9.Services
             string title,
             string content,
             string community,
-            SeoAnalysisResult baseline)
+            SeoAnalysisResult baseline,
+            SearchContentAggregationResult? searchContext)
         {
             try
             {
@@ -253,7 +309,7 @@ namespace discussionspot9.Services
                 var maxTokens = int.Parse(_configuration["AI:OpenAI:MaxTokens"] ?? "2000");
 
                 // Build optimization prompt
-                var prompt = BuildOptimizationPrompt(title, content, community, baseline);
+                var prompt = BuildOptimizationPrompt(title, content, community, baseline, searchContext);
 
                 var requestBody = new
                 {
@@ -286,7 +342,7 @@ namespace discussionspot9.Services
                         _logger.LogWarning("Model {Model} not found, trying fallback gpt-3.5-turbo", model);
                         try
                         {
-                            return await OptimizeWithOpenAIAsyncFallback(title, content, community, baseline, "gpt-3.5-turbo");
+                            return await OptimizeWithOpenAIAsyncFallback(title, content, community, baseline, "gpt-3.5-turbo", searchContext);
                         }
                         catch
                         {
@@ -294,7 +350,7 @@ namespace discussionspot9.Services
                             if (!string.IsNullOrEmpty(_geminiApiKey))
                             {
                                 _logger.LogWarning("OpenAI fallback failed, trying Gemini");
-                                return await OptimizeWithGeminiAsync(title, content, community, baseline);
+                                return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
                             }
                             throw;
                         }
@@ -304,7 +360,7 @@ namespace discussionspot9.Services
                     if (!string.IsNullOrEmpty(_geminiApiKey))
                     {
                         _logger.LogWarning("OpenAI API error, trying Gemini fallback");
-                        return await OptimizeWithGeminiAsync(title, content, community, baseline);
+                        return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
                     }
                     
                     // Try to parse error message
@@ -348,7 +404,8 @@ namespace discussionspot9.Services
             string content,
             string community,
             SeoAnalysisResult baseline,
-            string fallbackModel)
+            string fallbackModel,
+            SearchContentAggregationResult? searchContext)
         {
             try
             {
@@ -356,7 +413,7 @@ namespace discussionspot9.Services
                 httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_openAiApiKey}");
 
                 var maxTokens = int.Parse(_configuration["AI:OpenAI:MaxTokens"] ?? "2000");
-                var prompt = BuildOptimizationPrompt(title, content, community, baseline);
+                var prompt = BuildOptimizationPrompt(title, content, community, baseline, searchContext);
 
                 var requestBody = new
                 {
@@ -408,7 +465,8 @@ namespace discussionspot9.Services
             string title,
             string content,
             string community,
-            SeoAnalysisResult baseline)
+            SeoAnalysisResult baseline,
+            SearchContentAggregationResult? searchContext)
         {
             try
             {
@@ -419,7 +477,7 @@ namespace discussionspot9.Services
                 var model = _configuration["AI:Anthropic:Model"] ?? "claude-3-opus-20240229";
                 var maxTokens = int.Parse(_configuration["AI:Anthropic:MaxTokens"] ?? "2000");
 
-                var prompt = BuildOptimizationPrompt(title, content, community, baseline);
+                var prompt = BuildOptimizationPrompt(title, content, community, baseline, searchContext);
 
                 var requestBody = new
                 {
@@ -462,7 +520,8 @@ namespace discussionspot9.Services
             string title,
             string content,
             string community,
-            SeoAnalysisResult baseline)
+            SeoAnalysisResult baseline,
+            SearchContentAggregationResult? searchContext)
         {
             try
             {
@@ -472,7 +531,7 @@ namespace discussionspot9.Services
                 var model = _configuration["AI:GoogleGemini:Model"] ?? "gemini-2.5-flash";
                 var maxTokens = int.Parse(_configuration["AI:GoogleGemini:MaxTokens"] ?? "2000");
 
-                var prompt = BuildOptimizationPrompt(title, content, community, baseline);
+                var prompt = BuildOptimizationPrompt(title, content, community, baseline, searchContext);
 
                 // Gemini API uses v1beta endpoint with x-goog-api-key header
                 var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
@@ -645,7 +704,12 @@ namespace discussionspot9.Services
         /// <summary>
         /// Build optimization prompt for AI
         /// </summary>
-        private string BuildOptimizationPrompt(string title, string content, string community, SeoAnalysisResult baseline)
+        private string BuildOptimizationPrompt(
+            string title,
+            string content,
+            string community,
+            SeoAnalysisResult baseline,
+            SearchContentAggregationResult? searchContext)
         {
             // Limit content length to avoid token limits (keep first 2000 chars)
             var truncatedContent = content.Length > 2000 ? content.Substring(0, 2000) + "..." : content;
@@ -661,10 +725,91 @@ namespace discussionspot9.Services
             {
                 sb.AppendLine($"Issues: {string.Join(", ", topIssues)}");
             }
+            var targetKeywords = searchContext?.AnalysisContext?.RelatedKeywords ?? baseline.SuggestedKeywords;
+            if (targetKeywords.Any())
+            {
+                sb.AppendLine($"Target Keywords: {string.Join(", ", targetKeywords.Take(10))}");
+            }
+
+            if (baseline.ContentGaps.Any())
+            {
+                sb.AppendLine($"Content Gaps Detected: {string.Join(", ", baseline.ContentGaps.Take(6))}");
+            }
+            else if (searchContext?.AnalysisContext?.Competitors != null)
+            {
+                var competitorPhrases = searchContext.AnalysisContext.Competitors
+                    .SelectMany(c => c.KeyPhrases)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .Take(6)
+                    .ToList();
+                if (competitorPhrases.Any())
+                {
+                    sb.AppendLine($"Competitor Key Phrases: {string.Join(", ", competitorPhrases)}");
+                }
+            }
+
+            if (baseline.AuthoritySignals.Any())
+            {
+                sb.AppendLine($"Authority Signals to emulate: {string.Join(", ", baseline.AuthoritySignals.Take(5))}");
+            }
+
             sb.AppendLine();
             sb.AppendLine($"Title: {title}");
             sb.AppendLine($"Content: {truncatedContent}");
             sb.AppendLine();
+
+            var competitorInsights = baseline.CompetitorContentInsights.Any()
+                ? baseline.CompetitorContentInsights
+                : searchContext?.AnalysisContext?.Competitors ?? new List<CompetitorContentInsight>();
+
+            if (competitorInsights.Any())
+            {
+                sb.AppendLine("Top-ranking competitor highlights:");
+                foreach (var competitor in competitorInsights.Take(3))
+                {
+                    sb.AppendLine($"- {competitor.Domain} (Authority {competitor.EstimatedDomainAuthority:F0})");
+                    if (!string.IsNullOrWhiteSpace(competitor.Title))
+                    {
+                        sb.AppendLine($"  Title: {competitor.Title}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(competitor.ContentSnippet))
+                    {
+                        var summary = competitor.ContentSnippet.Length > 220
+                            ? competitor.ContentSnippet.Substring(0, 220) + "..."
+                            : competitor.ContentSnippet;
+                        sb.AppendLine($"  Summary: {summary}");
+                    }
+                    if (competitor.KeyPhrases.Any())
+                    {
+                        sb.AppendLine($"  Key phrases: {string.Join(", ", competitor.KeyPhrases.Take(5))}");
+                    }
+                }
+                sb.AppendLine();
+            }
+
+            if (searchContext?.TopicInsights?.Success == true)
+            {
+                sb.AppendLine("Competitor structural patterns:");
+                if (searchContext.TopicInsights.AverageTitleLength > 0)
+                {
+                    sb.AppendLine($"- Avg title length: {searchContext.TopicInsights.AverageTitleLength}");
+                }
+                if (searchContext.TopicInsights.AverageDescriptionLength > 0)
+                {
+                    sb.AppendLine($"- Avg description length: {searchContext.TopicInsights.AverageDescriptionLength}");
+                }
+                if (searchContext.TopicInsights.CommonTitlePatterns.Any())
+                {
+                    sb.AppendLine($"- Common title patterns: {string.Join(", ", searchContext.TopicInsights.CommonTitlePatterns.Take(5))}");
+                }
+                if (searchContext.TopicInsights.CommonDescriptionPatterns.Any())
+                {
+                    sb.AppendLine($"- Common description patterns: {string.Join(", ", searchContext.TopicInsights.CommonDescriptionPatterns.Take(5))}");
+                }
+                sb.AppendLine();
+            }
+
             sb.AppendLine("Provide JSON:");
             sb.AppendLine("{");
             sb.AppendLine("  \"optimizedTitle\": \"...\",");
@@ -744,6 +889,11 @@ namespace discussionspot9.Services
         public double EstimatedScore { get; set; }
         public List<string> Improvements { get; set; } = new();
         public string AiProvider { get; set; } = string.Empty;
+        public string PrimaryKeyword { get; set; } = string.Empty;
+        public List<string> GoogleRelatedKeywords { get; set; } = new();
+        public List<CompetitorContentInsight> CompetitorInsights { get; set; } = new();
+        public List<string> ContentGaps { get; set; } = new();
+        public List<string> AuthoritySignals { get; set; } = new();
     }
 
     internal class AIOptimizationResult

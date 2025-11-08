@@ -1,3 +1,4 @@
+using discussionspot9.Models.Seo;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 
 namespace discussionspot9.Interfaces
@@ -10,7 +11,7 @@ namespace discussionspot9.Interfaces
         /// <summary>
         /// Analyzes a post and returns SEO optimization suggestions
         /// </summary>
-        Task<SeoAnalysisResult> AnalyzePostAsync(CreatePostViewModel model);
+        Task<SeoAnalysisResult> AnalyzePostAsync(CreatePostViewModel model, SeoAnalysisContext? context = null);
         
         /// <summary>
         /// Analyzes and automatically applies SEO optimizations to a post
@@ -34,8 +35,16 @@ namespace discussionspot9.Interfaces
         public List<string> ImprovementsMade { get; set; } = new List<string>();
         public bool TitleChanged { get; set; }
         public bool ContentChanged { get; set; }
+        public List<CompetitorContentInsight> CompetitorContentInsights { get; set; } = new();
+        public List<string> ContentGaps { get; set; } = new();
+        public List<string> AuthoritySignals { get; set; } = new();
         public bool Error { get; set; }
         public string? Message { get; set; }
+    }
+
+    public class SeoAnalysisContext
+    {
+        public GoogleSearchAnalysisContext? GoogleSearchData { get; set; }
     }
 }
 

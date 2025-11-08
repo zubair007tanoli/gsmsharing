@@ -27,6 +27,9 @@ class SeoAnalysisResult:
     semrush_enhanced_keywords: List[str]
     keyword_opportunities: List[Dict[str, Any]]
     competitive_insights: Dict[str, Any]
+    competitor_content: List[Dict[str, Any]]
+    content_gaps: List[str]
+    authority_signals: List[str]
 
 
 class SeoAnalyzer:
@@ -73,7 +76,7 @@ class SeoAnalyzer:
         
         # Process keyword data (Semrush or Google Search)
         keyword_data = google_search_data if google_search_data else semrush_data
-        semrush_enhanced_keywords, keyword_opportunities, competitive_insights = self._process_keyword_data(
+        semrush_enhanced_keywords, keyword_opportunities, competitive_insights, competitor_content, content_gaps, authority_signals = self._process_keyword_data(
             keywords, keyword_data, optimized_title, optimized_content
         )
         
@@ -81,6 +84,11 @@ class SeoAnalyzer:
         seo_score = self._calculate_enhanced_seo_score(
             optimized_title, optimized_content, len(issues), keyword_data
         )
+        
+        if content_gaps:
+            improvements.append(f"Cover missing search topics: {', '.join(content_gaps[:3])}")
+        if authority_signals:
+            improvements.append(f"Include authority signals: {', '.join(authority_signals[:3])}")
         
         return SeoAnalysisResult(
             original_title=title,
@@ -96,7 +104,10 @@ class SeoAnalyzer:
             content_changed=(content != optimized_content),
             semrush_enhanced_keywords=semrush_enhanced_keywords,
             keyword_opportunities=keyword_opportunities,
-            competitive_insights=competitive_insights
+            competitive_insights=competitive_insights,
+            competitor_content=competitor_content,
+            content_gaps=content_gaps,
+            authority_signals=authority_signals
         )
     
     def _optimize_title(self, title: str, community: str) -> tuple:
@@ -283,9 +294,12 @@ class SeoAnalyzer:
             'average_difficulty': 0.0,
             'total_search_volume': 0
         }
+        competitor_content = []
+        content_gaps = []
+        authority_signals: List[str] = []
         
         if not keyword_data:
-            return semrush_enhanced_keywords, keyword_opportunities, competitive_insights
+            return semrush_enhanced_keywords, keyword_opportunities, competitive_insights, competitor_content, content_gaps, authority_signals
         
         # Check if this is Google Search data or Semrush data
         is_google_search = 'related_keywords' in keyword_data or 'search_results' in keyword_data
@@ -342,7 +356,7 @@ class SeoAnalyzer:
         # Sort by opportunity score
         keyword_opportunities.sort(key=lambda x: x['opportunity_score'], reverse=True)
         
-        return semrush_enhanced_keywords, keyword_opportunities, competitive_insights
+        return semrush_enhanced_keywords, keyword_opportunities, competitive_insights, competitor_content, content_gaps, authority_signals
     
     def _calculate_opportunity_score(self, search_volume: int, difficulty: float) -> float:
         """Calculate opportunity score for a keyword"""
@@ -380,35 +394,67 @@ class SeoAnalyzer:
             'avg_title_length': 0,
             'avg_description_length': 0
         }
+        competitor_content: List[Dict[str, Any]] = []
+        aggregated_phrases: List[str] = []
+        authority_signals: set[str] = set()
+        content_lower = (title + " " + content).lower()
         
         # Extract related keywords from Google Search
-        if 'related_keywords' in google_data and isinstance(google_data['related_keywords'], list):
-            related = google_data['related_keywords']
+        related = google_data.get('related_keywords') or google_data.get('relatedKeywords') or []
+        if isinstance(related, list):
             competitive_insights['related_keywords'] = related[:10]
             enhanced_keywords.extend(related[:5])
         
         # Extract competitor data from search results
-        if 'search_results' in google_data and isinstance(google_data['search_results'], list):
-            results = google_data['search_results']
-            
-            # Analyze top competitors
+        competitors = google_data.get('competitors') or google_data.get('search_results') or google_data.get('searchResults') or []
+        if not isinstance(competitors, list):
+            competitors = []
+
+        if competitors:
             top_domains = []
             title_lengths = []
             desc_lengths = []
-            
-            for result in results[:5]:
-                if isinstance(result, dict):
-                    url = result.get('url', '')
-                    if url:
-                        domain = self._extract_domain(url)
-                        top_domains.append(domain)
-                    
-                    title_len = len(result.get('title', ''))
-                    desc_len = len(result.get('description', ''))
-                    title_lengths.append(title_len)
-                    desc_lengths.append(desc_len)
-            
-            competitive_insights['top_competitors'] = list(set(top_domains))
+
+            for result in competitors[:5]:
+                if not isinstance(result, dict):
+                    continue
+
+                url = result.get('url', '')
+                summary = result.get('contentSnippet') or result.get('description') or ''
+                domain = result.get('domain') or self._extract_domain(url)
+                key_phrases = result.get('keyPhrases') or []
+
+                if url:
+                    top_domains.append(domain)
+
+                title_text = result.get('title', '')
+                if title_text:
+                    title_lengths.append(len(title_text))
+                if summary:
+                    desc_lengths.append(len(summary))
+
+                if key_phrases:
+                    aggregated_phrases.extend([phrase for phrase in key_phrases if isinstance(phrase, str)])
+
+                snippet_lower = summary.lower()
+                if any(token in snippet_lower for token in ['study', 'research', 'report', 'data']):
+                    authority_signals.add("Reference authoritative research/data")
+                if any(char.isdigit() for char in snippet_lower):
+                    authority_signals.add("Include statistics or numerical evidence")
+                if any(year in snippet_lower for year in ['2023', '2024', '2025']):
+                    authority_signals.add("Highlight recent updates or timelines")
+
+                competitor_content.append({
+                    "domain": domain,
+                    "url": url,
+                    "title": title_text,
+                    "summary": summary[:320] if summary else "",
+                    "key_phrases": key_phrases[:10] if isinstance(key_phrases, list) else [],
+                    "estimated_domain_authority": result.get('estimatedDomainAuthority', 0),
+                    "estimated_url_authority": result.get('estimatedUrlAuthority', 0)
+                })
+
+            competitive_insights['top_competitors'] = list(dict.fromkeys(top_domains))
             competitive_insights['avg_title_length'] = sum(title_lengths) / len(title_lengths) if title_lengths else 0
             competitive_insights['avg_description_length'] = sum(desc_lengths) / len(desc_lengths) if desc_lengths else 0
         
@@ -420,8 +466,18 @@ class SeoAnalyzer:
                 'recommendation': 'Related keyword from Google Search',
                 'opportunity_score': 75  # Google related keywords are high value
             })
+
+        content_gaps: List[str] = []
+        if aggregated_phrases:
+            for phrase in aggregated_phrases:
+                if isinstance(phrase, str):
+                    phrase_lower = phrase.lower()
+                    if phrase_lower not in content_lower:
+                        content_gaps.append(phrase)
+            content_gaps = list(dict.fromkeys(content_gaps))[:10]
+            competitive_insights['common_patterns'] = list(dict.fromkeys(aggregated_phrases))[:10]
         
-        return enhanced_keywords, keyword_opportunities, competitive_insights
+        return enhanced_keywords, keyword_opportunities, competitive_insights, competitor_content, content_gaps, list(authority_signals)
     
     def _extract_domain(self, url: str) -> str:
         """Extract domain from URL"""
@@ -519,7 +575,10 @@ def main():
             'content_changed': False,
             'semrush_enhanced_keywords': [],
             'keyword_opportunities': [],
-            'competitive_insights': {}
+            'competitive_insights': {},
+            'competitor_content': [],
+            'content_gaps': [],
+            'authority_signals': []
         }
         print(json.dumps(error_result, indent=2))
         return 1

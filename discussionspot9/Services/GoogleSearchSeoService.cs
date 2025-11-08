@@ -2,6 +2,7 @@ using discussionspot9.Data.DbContext;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
 using discussionspot9.Models.GoogleSearch;
+using discussionspot9.Models.Seo;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -17,16 +18,19 @@ namespace discussionspot9.Services
         private readonly ISeoAnalyzerService _pythonAnalyzer;
         private readonly ApplicationDbContext _context;
         private readonly ILogger<GoogleSearchSeoService> _logger;
+        private readonly SearchContentAggregator _searchContentAggregator;
 
         public GoogleSearchSeoService(
             GoogleSearchService googleSearchService,
             ISeoAnalyzerService pythonAnalyzer,
             ApplicationDbContext context,
+            SearchContentAggregator searchContentAggregator,
             ILogger<GoogleSearchSeoService> logger)
         {
             _googleSearchService = googleSearchService;
             _pythonAnalyzer = pythonAnalyzer;
             _context = context;
+            _searchContentAggregator = searchContentAggregator;
             _logger = logger;
         }
 
@@ -57,20 +61,23 @@ namespace discussionspot9.Services
                 var initialKeywords = ExtractKeywords(post.Title, post.Content ?? "");
                 var topKeyword = initialKeywords.FirstOrDefault() ?? post.Title;
 
-                // Step 3: Call Google Search API (C# - FAST with caching)
-                var googleSearchResult = await _googleSearchService.SearchAsync(topKeyword, limit: 10, includeRelatedKeywords: true);
-                
-                if (googleSearchResult == null)
+                // Step 3: Build Google Search + competitor context
+                var searchAggregation = await _searchContentAggregator.AggregateAsync(
+                    post.Title,
+                    post.Content ?? string.Empty,
+                    initialKeywords);
+
+                if (searchAggregation?.SearchResponse == null)
                 {
                     return new GoogleSeoOptimizationResult
                     {
                         Success = false,
-                        ErrorMessage = "Failed to fetch data from Google Search API"
+                        ErrorMessage = "Failed to fetch Google Search insights"
                     };
                 }
 
-                // Step 4: Get topic insights
-                var topicInsights = await _googleSearchService.GetTopicInsightsAsync(topKeyword);
+                var googleSearchResult = searchAggregation.SearchResponse;
+                var topicInsights = searchAggregation.TopicInsights ?? new TopicSeoInsights { Success = false };
 
                 // Step 5: Prepare data for Python analyzer (AI processing)
                 var pythonInput = new CreatePostViewModel
@@ -82,17 +89,29 @@ namespace discussionspot9.Services
                 };
 
                 // Step 6: Call Python SEO Analyzer (AI-powered analysis)
-                var pythonResult = await _pythonAnalyzer.AnalyzePostAsync(pythonInput);
+                var pythonResult = await _pythonAnalyzer.AnalyzePostAsync(
+                    pythonInput,
+                    new SeoAnalysisContext
+                    {
+                        GoogleSearchData = searchAggregation.AnalysisContext
+                    });
 
                 // Step 7: Combine Google Search data with Python analysis
                 var optimizedKeywords = CombineKeywords(
                     initialKeywords,
                     googleSearchResult.RelatedKeywords?.Keywords.Select(k => k.Keyword).ToList() ?? new(),
-                    pythonResult.SuggestedKeywords
+                    pythonResult.SuggestedKeywords,
+                    searchAggregation.AnalysisContext?.Competitors.SelectMany(c => c.KeyPhrases).ToList()
                 );
 
                 // Step 8: Update SeoMetadata (C# - FAST database operation)
-                await UpdateSeoMetadata(postId, optimizedKeywords, googleSearchResult, topicInsights, pythonResult);
+                await UpdateSeoMetadata(
+                    postId,
+                    optimizedKeywords,
+                    googleSearchResult,
+                    topicInsights,
+                    pythonResult,
+                    searchAggregation.AnalysisContext);
 
                 // Step 9: Update post tags
                 await UpdatePostTags(post, optimizedKeywords.Take(5).ToList());
@@ -108,8 +127,16 @@ namespace discussionspot9.Services
                     OptimizedKeywords = optimizedKeywords,
                     SeoScore = (float)pythonResult.SeoScore,
                     MetaDescription = pythonResult.SuggestedMetaDescription,
-                    TopCompetitors = topicInsights.TopRankingDomains,
-                    ImprovementsMade = pythonResult.ImprovementsMade
+                    TopCompetitors = searchAggregation.AnalysisContext?.Competitors
+                        .Select(c => c.Domain)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Take(10)
+                        .ToList() ?? topicInsights.TopRankingDomains,
+                    ImprovementsMade = pythonResult.ImprovementsMade,
+                    PrimaryKeyword = searchAggregation.PrimaryKeyword,
+                    CompetitorInsights = searchAggregation.AnalysisContext?.Competitors ?? new List<CompetitorContentInsight>(),
+                    ContentGaps = pythonResult.ContentGaps,
+                    AuthoritySignals = pythonResult.AuthoritySignals
                 };
             }
             catch (Exception ex)
@@ -146,7 +173,7 @@ namespace discussionspot9.Services
                 .ToList();
         }
 
-        private List<string> CombineKeywords(List<string> initial, List<string> google, List<string> python)
+        private List<string> CombineKeywords(List<string> initial, List<string> google, List<string> python, List<string>? competitorPhrases)
         {
             var combined = new HashSet<string>();
             
@@ -161,12 +188,20 @@ namespace discussionspot9.Services
             // Add initial keywords if space remains
             foreach (var k in initial.Take(2))
                 combined.Add(k);
+
+            if (competitorPhrases != null)
+            {
+                foreach (var phrase in competitorPhrases.Take(5))
+                {
+                    combined.Add(phrase);
+                }
+            }
             
             return combined.Take(10).ToList();
         }
 
         private async Task UpdateSeoMetadata(int postId, List<string> keywords, 
-            GoogleSearchResponse googleData, TopicSeoInsights insights, SeoAnalysisResult pythonResult)
+            GoogleSearchResponse googleData, TopicSeoInsights insights, SeoAnalysisResult pythonResult, GoogleSearchAnalysisContext? analysisContext)
         {
             var seoMetadata = await _context.SeoMetadata
                 .FirstOrDefaultAsync(s => s.EntityType == "post" && s.EntityId == postId);
@@ -199,7 +234,20 @@ namespace discussionspot9.Services
                     avg_title_length = insights.AverageTitleLength,
                     avg_description_length = insights.AverageDescriptionLength,
                     common_title_patterns = insights.CommonTitlePatterns,
-                    analyzed_at = DateTime.UtcNow
+                    analyzed_at = DateTime.UtcNow,
+                    competitor_content = analysisContext?.Competitors.Select(c => new
+                    {
+                        c.Position,
+                        c.Domain,
+                        c.Title,
+                        c.Url,
+                        c.EstimatedDomainAuthority,
+                        c.EstimatedUrlAuthority,
+                        c.ContentSnippet,
+                        c.KeyPhrases
+                    }).ToList(),
+                    authority_signals = pythonResult.AuthoritySignals,
+                    content_gaps = pythonResult.ContentGaps
                 },
                 python_analysis = new
                 {
@@ -276,5 +324,9 @@ namespace discussionspot9.Services
         public string MetaDescription { get; set; } = string.Empty;
         public List<string> TopCompetitors { get; set; } = new();
         public List<string> ImprovementsMade { get; set; } = new();
+        public string PrimaryKeyword { get; set; } = string.Empty;
+        public List<CompetitorContentInsight> CompetitorInsights { get; set; } = new();
+        public List<string> ContentGaps { get; set; } = new();
+        public List<string> AuthoritySignals { get; set; } = new();
     }
 }

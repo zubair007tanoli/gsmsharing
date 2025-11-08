@@ -94,10 +94,30 @@ namespace discussionspot9.Models.GoogleSearch
         public string ApiKey { get; set; } = string.Empty;
         public string BaseUrl { get; set; } = "https://google-search74.p.rapidapi.com";
         public string Host { get; set; } = "google-search74.p.rapidapi.com";
+        public bool EnableRapidApi { get; set; } = true;
+        public bool EnableSerpApiFallback { get; set; } = false;
+        public string SerpApiKey { get; set; } = string.Empty;
+        public int SerpApiTimeoutSeconds { get; set; } = 30;
+        public int SerpApiRetryCount { get; set; } = 1;
+        public string SerpApiEngine { get; set; } = "google";
+        public string SerpApiLocation { get; set; } = "Austin, Texas, United States";
+        public string SerpApiGoogleDomain { get; set; } = "google.com";
+        public string SerpApiGl { get; set; } = "us";
+        public string SerpApiHl { get; set; } = "en";
+        public CompetitorContentConfig CompetitorContent { get; set; } = new();
         public int DefaultLimit { get; set; } = 10;
         public bool IncludeRelatedKeywords { get; set; } = true;
         public int TimeoutSeconds { get; set; } = 30;
         public int CacheDurationHours { get; set; } = 24;
+    }
+
+    public class CompetitorContentConfig
+    {
+        public bool Enabled { get; set; } = true;
+        public int MaxResults { get; set; } = 5;
+        public int MaxContentLength { get; set; } = 2000;
+        public int RequestTimeoutSeconds { get; set; } = 12;
+        public bool IncludeFullContent { get; set; } = false;
     }
 
     /// <summary>

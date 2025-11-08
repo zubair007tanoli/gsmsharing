@@ -3,6 +3,9 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Web;
+using System.Collections;
+using Newtonsoft.Json.Linq;
+using SerpApi;
 
 namespace discussionspot9.Services
 {
@@ -16,6 +19,8 @@ namespace discussionspot9.Services
         private readonly IMemoryCache _cache;
         private readonly ILogger<GoogleSearchService> _logger;
 
+        private const string CacheKeyTemplate = "google_search_{0}_{1}_{2}";
+
         public GoogleSearchService(
             HttpClient httpClient,
             IOptions<GoogleSearchConfig> config,
@@ -28,10 +33,13 @@ namespace discussionspot9.Services
             _logger = logger;
 
             // Configure HTTP client
-            _httpClient.BaseAddress = new Uri(_config.BaseUrl);
-            _httpClient.Timeout = TimeSpan.FromSeconds(_config.TimeoutSeconds);
-            _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", _config.ApiKey);
-            _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", _config.Host);
+            if (_config.EnableRapidApi)
+            {
+                _httpClient.BaseAddress = new Uri(_config.BaseUrl);
+                _httpClient.Timeout = TimeSpan.FromSeconds(_config.TimeoutSeconds);
+                _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", _config.ApiKey);
+                _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", _config.Host);
+            }
         }
 
         /// <summary>
@@ -42,7 +50,9 @@ namespace discussionspot9.Services
             try
             {
                 // Check cache first (avoid API calls)
-                var cacheKey = $"google_search_{query}_{limit}_{includeRelatedKeywords}";
+                var effectiveLimit = limit > 0 ? limit : _config.DefaultLimit;
+                var includeRelated = includeRelatedKeywords && _config.IncludeRelatedKeywords;
+                var cacheKey = string.Format(CacheKeyTemplate, query, effectiveLimit, includeRelated);
                 
                 if (_cache.TryGetValue(cacheKey, out GoogleSearchResponse? cachedResult))
                 {
@@ -50,28 +60,19 @@ namespace discussionspot9.Services
                     return cachedResult;
                 }
 
-                // Build request URL
-                var queryParams = $"?query={HttpUtility.UrlEncode(query)}&limit={limit}&related_keywords={includeRelatedKeywords.ToString().ToLower()}";
-                
-                _logger.LogInformation("Calling Google Search API for: {Query}", query);
+                GoogleSearchResponse? result = null;
 
-                // Make API call
-                var response = await _httpClient.GetAsync(queryParams);
-                
-                if (!response.IsSuccessStatusCode)
+                if (_config.EnableRapidApi)
                 {
-                    _logger.LogWarning("Google Search API returned {StatusCode} for query: {Query}", 
-                        response.StatusCode, query);
-                    return null;
+                    result = await SearchWithRapidApiAsync(query, effectiveLimit, includeRelated);
                 }
 
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<GoogleSearchResponse>(content, new JsonSerializerOptions
+                if (result == null && _config.EnableSerpApiFallback && !string.IsNullOrWhiteSpace(_config.SerpApiKey))
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    _logger.LogInformation("Falling back to SerpApi for query: {Query}", query);
+                    result = await SearchWithSerpApiAsync(query, effectiveLimit, includeRelated);
+                }
 
-                // Cache result for 24 hours (avoid API rate limits)
                 if (result != null)
                 {
                     _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
@@ -79,11 +80,11 @@ namespace discussionspot9.Services
                         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_config.CacheDurationHours),
                         Priority = CacheItemPriority.Normal
                     });
+
+                    _logger.LogInformation("Retrieved {Count} results for query: {Query}",
+                        result.Results.Count, query);
                 }
 
-                _logger.LogInformation("Retrieved {Count} results for query: {Query}", 
-                    result?.Results.Count ?? 0, query);
-                
                 return result;
             }
             catch (Exception ex)
@@ -315,6 +316,171 @@ namespace discussionspot9.Services
                 .Take(5)
                 .Select(g => g.Key)
                 .ToList();
+        }
+
+        private async Task<GoogleSearchResponse?> SearchWithRapidApiAsync(string query, int limit, bool includeRelatedKeywords)
+        {
+            try
+            {
+                var queryParams = $"?query={HttpUtility.UrlEncode(query)}&limit={limit}&related_keywords={includeRelatedKeywords.ToString().ToLower()}";
+
+                _logger.LogInformation("Calling RapidAPI Google Search for: {Query}", query);
+
+                var response = await _httpClient.GetAsync(queryParams);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("RapidAPI Google Search returned {StatusCode} for query: {Query}",
+                        response.StatusCode, query);
+                    return null;
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<GoogleSearchResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "RapidAPI Google Search failed for query: {Query}", query);
+                return null;
+            }
+        }
+
+        private async Task<GoogleSearchResponse?> SearchWithSerpApiAsync(string query, int limit, bool includeRelatedKeywords)
+        {
+            var attempts = Math.Max(1, _config.SerpApiRetryCount);
+            var retryDelay = TimeSpan.FromMilliseconds(500);
+
+            for (var attempt = 1; attempt <= attempts; attempt++)
+            {
+                try
+                {
+                    var parameters = new Hashtable
+                    {
+                        { "engine", _config.SerpApiEngine },
+                        { "q", query },
+                        { "num", limit },
+                        { "google_domain", _config.SerpApiGoogleDomain },
+                        { "gl", _config.SerpApiGl },
+                        { "hl", _config.SerpApiHl }
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(_config.SerpApiLocation))
+                    {
+                        parameters["location"] = _config.SerpApiLocation;
+                    }
+
+                    var serpClient = new GoogleSearch(parameters, _config.SerpApiKey);
+
+                    JObject data = await Task.Run(() => serpClient.GetJson());
+
+                    if (data == null)
+                    {
+                        _logger.LogWarning("SerpApi returned null data for query: {Query}", query);
+                        return null;
+                    }
+
+                    var response = new GoogleSearchResponse
+                    {
+                        SearchTerm = query,
+                        Results = MapSerpApiResults(data, limit).ToList()
+                    };
+
+                    if (includeRelatedKeywords)
+                    {
+                        response.RelatedKeywords = new RelatedKeywords
+                        {
+                            Keywords = MapSerpApiRelatedKeywords(data, limit).ToList()
+                        };
+                    }
+
+                    return response;
+                }
+                catch (SerpApiSearchException ex)
+                {
+                    _logger.LogWarning(ex, "SerpApi responded with an error on attempt {Attempt} of {Total} for query: {Query}", attempt, attempts, query);
+
+                    if (attempt == attempts)
+                    {
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unhandled error while calling SerpApi on attempt {Attempt} of {Total} for query: {Query}", attempt, attempts, query);
+
+                    if (attempt == attempts)
+                    {
+                        return null;
+                    }
+                }
+
+                await Task.Delay(retryDelay);
+            }
+
+            return null;
+        }
+
+        private IEnumerable<SearchResult> MapSerpApiResults(JObject data, int limit)
+        {
+            if (data["organic_results"] is not JArray organicResults)
+            {
+                yield break;
+            }
+
+            var position = 1;
+
+            foreach (var item in organicResults.Take(limit))
+            {
+                var fallbackPosition = position++;
+
+                var title = item.Value<string>("title") ?? string.Empty;
+                var snippet = item.Value<string>("snippet") ??
+                              item.Value<string>("description") ??
+                              string.Empty;
+                var link = item.Value<string>("link") ??
+                           item.Value<string>("url") ??
+                           string.Empty;
+
+                yield return new SearchResult
+                {
+                    Position = item.Value<int?>("position") ?? fallbackPosition,
+                    Title = title,
+                    Description = snippet,
+                    Url = link
+                };
+            }
+        }
+
+        private IEnumerable<KeywordItem> MapSerpApiRelatedKeywords(JObject data, int limit)
+        {
+            if (data["related_searches"] is not JArray relatedSearches)
+            {
+                yield break;
+            }
+
+            var index = 1;
+
+            foreach (var item in relatedSearches.Take(limit))
+            {
+                var keyword = item.Value<string>("query") ??
+                              item.Value<string>("title") ??
+                              item.Value<string>("keyword") ??
+                              string.Empty;
+
+                if (string.IsNullOrWhiteSpace(keyword))
+                {
+                    continue;
+                }
+
+                yield return new KeywordItem
+                {
+                    Position = index++,
+                    Keyword = keyword
+                };
+            }
         }
     }
 

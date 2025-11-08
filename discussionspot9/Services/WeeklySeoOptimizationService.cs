@@ -27,6 +27,16 @@ namespace discussionspot9.Services
         {
             _logger.LogInformation("🚀 Weekly SEO Optimization Service started");
 
+            // Run an initial cycle so freshly started instances don't wait a full week
+            try
+            {
+                await RunOptimizationCycleAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Initial weekly optimization cycle failed");
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try

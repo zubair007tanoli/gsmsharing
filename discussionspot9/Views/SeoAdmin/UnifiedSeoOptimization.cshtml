@@ -1130,6 +1130,68 @@
                 showToast('Error saving optimizations', 'error');
             }
         }
+        async function sendProposalForApproval(postId) {
+            if (!currentPreviewData) {
+                showToast('Preview the optimization before sending to approval.', 'error');
+                return;
+            }
+
+            showToast('Sending optimization for approval...', 'info', 2500);
+
+            const metaField = document.getElementById('previewMetaDescription');
+            const keywordsField = document.getElementById('previewKeywords');
+
+            const optimizedTitle = currentPreviewData.optimizedTitle || currentPreviewData.currentTitle || '';
+            const optimizedContent = currentPreviewData.optimizedContent || currentPreviewData.currentContent || '';
+            const metaDescription = metaField?.value?.trim() ||
+                currentPreviewData.optimizedMetaDescription ||
+                currentPreviewData.metaDescription ||
+                '';
+
+            let keywords = [];
+            if (keywordsField && keywordsField.value.trim()) {
+                keywords = keywordsField.value.split(',').map(k => k.trim()).filter(Boolean);
+            } else if (Array.isArray(currentPreviewData.optimizedKeywords) && currentPreviewData.optimizedKeywords.length) {
+                keywords = currentPreviewData.optimizedKeywords;
+            } else if (Array.isArray(currentPreviewData.suggestedKeywords) && currentPreviewData.suggestedKeywords.length) {
+                keywords = currentPreviewData.suggestedKeywords;
+            } else if (Array.isArray(currentPreviewData.googleKeywords) && currentPreviewData.googleKeywords.length) {
+                keywords = currentPreviewData.googleKeywords.slice(0, 10);
+            }
+
+            const payload = {
+                postId: postId,
+                optimizedTitle,
+                optimizedContent,
+                metaDescription,
+                keywords,
+                baselineScore: currentPreviewData.currentScore ?? currentPreviewData.baselineScore ?? null,
+                estimatedScore: currentPreviewData.estimatedScore ?? currentPreviewData.seoScore ?? currentPreviewData.expectedScore ?? null,
+                improvements: currentPreviewData.improvements ?? [],
+                source: 'ManualPreview'
+            };
+
+            try {
+                const response = await fetch('/admin/seo/api/create-proposal-from-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('✅ Optimization sent to approval queue.', 'success', 6000);
+                    scheduleApprovalsReload(true);
+                } else {
+                    showToast(`❌ Failed to create proposal: ${result.error || 'Unknown error'}`, 'error', 6000);
+                }
+            } catch (error) {
+                console.error('Error creating proposal:', error);
+                showToast('❌ Error sending optimization for approval. Check console for details.', 'error');
+            }
+        }
+        window.sendProposalForApproval = sendProposalForApproval;
         async function autoGenerateProposals(limit = 5) {
             const btn = document.getElementById('autoGenerateBtn');
             let originalText = '';
@@ -1393,28 +1455,97 @@
                 }
                 
                 const proposal = result.data;
+                const scoreDetails = proposal.scoreDetails || null;
+                const rankingPercent = scoreDetails ? Math.round((scoreDetails.rankingProbability || 0) * 100) : null;
                 const modalBody = document.getElementById('approvalModalBody');
                 
                 modalBody.innerHTML = `
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <div class="card bg-light">
+                            <div class="card bg-light h-100">
                                 <div class="card-body">
-                                    <h6>Current Score</h6>
-                                    <h3>${proposal.currentScore.toFixed(1)}</h3>
+                                    <h6 class="text-muted text-uppercase small mb-1">Current Score</h6>
+                                    <h3 class="mb-0">${Number(proposal.currentScore ?? 0).toFixed(1)}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card bg-primary text-white">
+                            <div class="card bg-primary text-white h-100">
                                 <div class="card-body">
-                                    <h6>Expected Score</h6>
-                                    <h3>${proposal.expectedScore.toFixed(1)}</h3>
-                                    <small>+${proposal.expectedScoreDelta.toFixed(1)} points</small>
+                                    <h6 class="text-uppercase small mb-1">Expected Score</h6>
+                                    <h3 class="mb-1">${Number(proposal.expectedScore ?? 0).toFixed(1)}</h3>
+                                    <small>${proposal.expectedScoreDelta !== null && proposal.expectedScoreDelta !== undefined ? (proposal.expectedScoreDelta >= 0 ? '+' : '') + Number(proposal.expectedScoreDelta).toFixed(1) + ' points' : 'Projected lift unavailable'}</small>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
+                    ${scoreDetails ? `
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="text-muted small mb-1">Google Competitiveness</div>
+                                    <h4 class="mb-0">${(scoreDetails.googleCompetitivenessScore ?? 0).toFixed(1)}</h4>
+                                    <small class="text-muted">Lower competition = better</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="text-muted small mb-1">Content Quality</div>
+                                    <h4 class="mb-0">${(scoreDetails.contentQualityScore ?? 0).toFixed(1)}</h4>
+                                    <small class="text-muted">Structure & readability</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="text-muted small mb-1">Meta Completeness</div>
+                                    <h4 class="mb-0">${(scoreDetails.metaCompletenessScore ?? 0).toFixed(1)}</h4>
+                                    <small class="text-muted">Title, description & tags</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="text-muted small mb-1">Freshness</div>
+                                    <h4 class="mb-0">${(scoreDetails.freshnessScore ?? 0).toFixed(1)}</h4>
+                                    <small class="text-muted">Recency & engagement</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card border-success mb-3">
+                        <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <div>
+                                <h6 class="text-success text-uppercase small mb-1">Projected Ranking Probability</h6>
+                                <h3 class="mb-1 text-success">${rankingPercent !== null ? rankingPercent + '%' : 'N/A'}</h3>
+                                <small class="text-muted">Based on competitiveness and improvement potential</small>
+                            </div>
+                            <div class="text-muted small">
+                                Last scored: ${scoreDetails.scoredAt ? new Date(scoreDetails.scoredAt).toLocaleString() : 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                    ${scoreDetails.recommendedKeywords && scoreDetails.recommendedKeywords.length ? `
+                    <div class="mb-3">
+                        <h6 class="text-muted text-uppercase small mb-2"><i class="fas fa-bullseye me-2"></i>Recommended Keywords</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            ${scoreDetails.recommendedKeywords.map(k => `<span class="badge bg-primary-subtle text-primary">${escapeHtml(k)}</span>`).join('')}
+                        </div>
+                    </div>` : ''}
+                    ${scoreDetails.topCompetitors && scoreDetails.topCompetitors.length ? `
+                    <div class="mb-3">
+                        <h6 class="text-muted text-uppercase small mb-2"><i class="fas fa-chart-line me-2"></i>Top Competitors</h6>
+                        <ul class="list-group list-group-flush small">
+                            ${scoreDetails.topCompetitors.map(domain => `<li class="list-group-item"><i class="fas fa-globe-americas me-2 text-muted"></i>${escapeHtml(domain)}</li>`).join('')}
+                        </ul>
+                    </div>` : ''}
+                    ` : ''}
                     
                     <div class="mb-3">
                         <label class="form-label fw-bold">Proposed Title</label>

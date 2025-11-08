@@ -28,6 +28,16 @@ namespace discussionspot9.Services
         {
             _logger.LogInformation("🌙 Nightly SEO Re-score Service started. Will run at {RunTime} server time.", _runTime);
 
+            // Perform an initial pass so new deployments don't wait a full day
+            try
+            {
+                await PerformRescoreAsync(stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Initial nightly SEO re-score failed");
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try

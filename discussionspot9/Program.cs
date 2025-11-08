@@ -1,4 +1,6 @@
 
+using System;
+using System.Linq;
 using discussionspot9.Data.DbContext;
 using discussionspot9.Helpers;
 using discussionspot9.Hubs;
@@ -212,6 +214,13 @@ builder.Services.AddScoped<AISeoService>();
 builder.Services.Configure<discussionspot9.Models.GoogleSearch.GoogleSearchConfig>(
     builder.Configuration.GetSection("GoogleSearch"));
 builder.Services.AddHttpClient<discussionspot9.Services.GoogleSearchService>();
+builder.Services.AddHttpClient("CompetitorContent");
+builder.Services.AddHttpClient("AdSenseApi", client =>
+{
+    client.BaseAddress = new Uri("https://adsense.googleapis.com/v2/");
+    client.Timeout = TimeSpan.FromSeconds(100);
+});
+builder.Services.AddScoped<discussionspot9.Services.SearchContentAggregator>();
 builder.Services.AddScoped<discussionspot9.Services.GoogleSearchSeoService>();
 builder.Services.AddScoped<discussionspot9.Services.HybridSeoService>();
 builder.Services.AddScoped<discussionspot9.Services.EnhancedSeoService>();
@@ -272,6 +281,26 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 
 var app = builder.Build();
+
+// Ensure database is up-to-date (covers new chat tables in production)
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var pending = dbContext.Database.GetPendingMigrations();
+        if (pending.Any())
+        {
+            dbContext.Database.Migrate();
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+        logger.LogError(ex, "Failed to apply database migrations on startup.");
+        throw;
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

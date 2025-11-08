@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -29,6 +29,8 @@
 
   <ItemGroup>
     <PackageReference Include="bootstrap" Version="5.3.6" />
+    <PackageReference Include="Google.Apis.Adsense.v2" Version="1.59.0.3239" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.59.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />

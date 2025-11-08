@@ -1,4 +1,5 @@
 using discussionspot9.Interfaces;
+using discussionspot9.Models.Seo;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using System.Diagnostics;
 using System.Text;
@@ -34,7 +35,14 @@ namespace discussionspot9.Services
             _logger.LogInformation("Python SEO Analyzer initialized. Script path: {ScriptPath}", _pythonScriptPath);
         }
 
-        public async Task<SeoAnalysisResult> AnalyzePostAsync(CreatePostViewModel model)
+        private static readonly JsonSerializerOptions SerializerOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = false
+        };
+
+        public async Task<SeoAnalysisResult> AnalyzePostAsync(CreatePostViewModel model, SeoAnalysisContext? context = null)
         {
             try
             {
@@ -46,10 +54,11 @@ namespace discussionspot9.Services
                     title = model.Title ?? string.Empty,
                     content = model.Content ?? string.Empty,
                     communitySlug = model.CommunitySlug ?? string.Empty,
-                    postType = model.PostType ?? "text"
+                    postType = model.PostType ?? "text",
+                    googleSearchData = context?.GoogleSearchData
                 };
 
-                var inputJson = JsonSerializer.Serialize(inputData);
+                var inputJson = JsonSerializer.Serialize(inputData, SerializerOptions);
                 
                 // Run Python script
                 var outputJson = await RunPythonScriptAsync(inputJson);
