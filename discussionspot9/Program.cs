@@ -1,6 +1,9 @@
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using discussionspot9.Data.DbContext;
 using discussionspot9.Helpers;
 using discussionspot9.Hubs;
@@ -16,6 +19,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var primaryConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(primaryConnectionString))
+{
+    primaryConnectionString = builder.Configuration.GetConnectionString("LocalDB");
+}
+
+if (string.IsNullOrWhiteSpace(primaryConnectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured. Set ConnectionStrings:DefaultConnection via configuration or environment variables.");
+}
 
 // =============================================
 // PERFORMANCE OPTIMIZATIONS
@@ -34,10 +48,8 @@ var builder = WebApplication.CreateBuilder(args);
 // CRITICAL FIX: Use PooledDbContextFactory to avoid service lifetime conflicts
 builder.Services.AddPooledDbContextFactory<ApplicationDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    
     // Add performance optimizations with remote server resilience
-    options.UseSqlServer(connectionString, sqlOptions =>
+    options.UseSqlServer(primaryConnectionString, sqlOptions =>
     {
         sqlOptions.CommandTimeout(120); // Increased for remote server
         // Enhanced retry on transient failures (SSL errors, network issues, connection drops)
@@ -80,51 +92,173 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Add Google Authentication
-builder.Services.AddAuthentication()
-    .AddGoogle(options =>
+string? missingGoogleAuthPath = null;
+var googleCredentialWarnings = new List<string>();
+
+// Determine Google OAuth credentials (supports Secrets/AuthKeys.json, wwwroot/GoogleApiAccess/AuthKeys.json, configuration, or environment variables)
+var defaultGoogleSecretsPath = Path.Combine(builder.Environment.ContentRootPath, "Secrets", "AuthKeys.json");
+var configuredGoogleSecretsPath = builder.Configuration["Authentication:Google:CredentialsPath"];
+var envGoogleSecretsPath = Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CREDENTIALS_PATH");
+if (!string.IsNullOrWhiteSpace(envGoogleSecretsPath))
+{
+    configuredGoogleSecretsPath = envGoogleSecretsPath;
+}
+
+var resolvedGoogleSecretsPath = string.IsNullOrWhiteSpace(configuredGoogleSecretsPath)
+    ? defaultGoogleSecretsPath
+    : (Path.IsPathRooted(configuredGoogleSecretsPath)
+        ? configuredGoogleSecretsPath
+        : Path.Combine(builder.Environment.ContentRootPath, configuredGoogleSecretsPath));
+
+var wwwrootGoogleSecretsPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "GoogleApiAccess", "AuthKeys.json");
+
+string? googleClientId = FirstNonEmpty(
+    builder.Configuration["Authentication:Google:ClientId"],
+    Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_ID"));
+
+string? googleClientSecret = FirstNonEmpty(
+    builder.Configuration["Authentication:Google:ClientSecret"],
+    Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET"));
+
+var googleCredentialsJson = Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CREDENTIALS_JSON");
+if (string.IsNullOrWhiteSpace(googleCredentialsJson))
+{
+    var googleCredentialsBase64 = Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CREDENTIALS_BASE64");
+    if (!string.IsNullOrWhiteSpace(googleCredentialsBase64))
     {
-        var defaultSecretsPath = Path.Combine(builder.Environment.ContentRootPath, "Secrets", "AuthKeys.json");
-        var configuredPath = builder.Configuration["Authentication:Google:CredentialsPath"];
-        var googleAuthPath = string.IsNullOrWhiteSpace(configuredPath)
-            ? defaultSecretsPath
-            : (Path.IsPathRooted(configuredPath)
-                ? configuredPath
-                : Path.Combine(builder.Environment.ContentRootPath, configuredPath));
-
-        if (File.Exists(googleAuthPath))
+        try
         {
-            var jsonString = File.ReadAllText(googleAuthPath);
-            var googleAuth = System.Text.Json.JsonSerializer.Deserialize<discussionspot9.Models.GoogleAuthConfig>(
-                jsonString,
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower
-                });
+            googleCredentialsJson = Encoding.UTF8.GetString(Convert.FromBase64String(googleCredentialsBase64));
+        }
+        catch (FormatException ex)
+        {
+            googleCredentialWarnings.Add($"GOOGLE_OAUTH_CREDENTIALS_BASE64 is not valid base64: {ex.Message}");
+        }
+    }
+}
 
-            if (googleAuth?.Web != null)
+if (!string.IsNullOrWhiteSpace(googleCredentialsJson))
+{
+    try
+    {
+        using var doc = JsonDocument.Parse(googleCredentialsJson);
+        if (doc.RootElement.TryGetProperty("web", out var webElement))
+        {
+            var candidateClientId = webElement.TryGetProperty("client_id", out var clientIdElement)
+                ? clientIdElement.GetString()
+                : webElement.TryGetProperty("clientId", out var clientIdCamelElement)
+                    ? clientIdCamelElement.GetString()
+                    : null;
+
+            var candidateClientSecret = webElement.TryGetProperty("client_secret", out var clientSecretElement)
+                ? clientSecretElement.GetString()
+                : webElement.TryGetProperty("clientSecret", out var clientSecretCamelElement)
+                    ? clientSecretCamelElement.GetString()
+                    : null;
+
+            if (!string.IsNullOrWhiteSpace(candidateClientId) &&
+                !string.IsNullOrWhiteSpace(candidateClientSecret))
             {
-                options.ClientId = googleAuth.Web.ClientId ?? string.Empty;
-                options.ClientSecret = googleAuth.Web.ClientSecret ?? string.Empty;
+                googleClientId ??= candidateClientId;
+                googleClientSecret ??= candidateClientSecret;
+                missingGoogleAuthPath = null;
             }
         }
-        else
-        {
-            // Fallback: try to get from configuration
-            options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? string.Empty;
-            options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? string.Empty;
+    }
+    catch (JsonException ex)
+    {
+        googleCredentialWarnings.Add($"GOOGLE_OAUTH_CREDENTIALS_JSON contains invalid JSON: {ex.Message}");
+    }
+}
 
-            if (string.IsNullOrWhiteSpace(options.ClientId) || string.IsNullOrWhiteSpace(options.ClientSecret))
+var candidatePaths = new[]
+{
+    resolvedGoogleSecretsPath,
+    wwwrootGoogleSecretsPath
+}.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct();
+
+foreach (var candidatePath in candidatePaths)
+{
+    if (!File.Exists(candidatePath))
+    {
+        continue;
+    }
+
+    try
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(candidatePath));
+
+        if (doc.RootElement.TryGetProperty("web", out var webElement))
+        {
+            var candidateClientId = webElement.TryGetProperty("client_id", out var clientIdElement)
+                ? clientIdElement.GetString()
+                : webElement.TryGetProperty("clientId", out var clientIdCamelElement)
+                    ? clientIdCamelElement.GetString()
+                    : null;
+
+            var candidateClientSecret = webElement.TryGetProperty("client_secret", out var clientSecretElement)
+                ? clientSecretElement.GetString()
+                : webElement.TryGetProperty("clientSecret", out var clientSecretCamelElement)
+                    ? clientSecretCamelElement.GetString()
+                    : null;
+
+            if (!string.IsNullOrWhiteSpace(candidateClientId) &&
+                !string.IsNullOrWhiteSpace(candidateClientSecret))
             {
-                var logger = builder.Logging.CreateLogger("Startup");
-                logger.LogWarning("Google OAuth credentials not found. Provide a secrets file at {Path} or set Authentication:Google:ClientId and ClientSecret.", googleAuthPath);
+                googleClientId ??= candidateClientId;
+                googleClientSecret ??= candidateClientSecret;
+                missingGoogleAuthPath = null;
+                break;
             }
         }
+    }
+    catch (JsonException ex)
+    {
+        googleCredentialWarnings.Add($"Failed to parse Google OAuth credentials at {candidatePath}: {ex.Message}");
+        googleClientId = null;
+        googleClientSecret = null;
+    }
+}
 
+if (string.IsNullOrWhiteSpace(googleClientId) || string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    googleClientId = FirstNonEmpty(
+        googleClientId,
+        builder.Configuration["Authentication:Google:ClientId"],
+        Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_ID"));
+
+    googleClientSecret = FirstNonEmpty(
+        googleClientSecret,
+        builder.Configuration["Authentication:Google:ClientSecret"],
+        Environment.GetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET"));
+
+    if (string.IsNullOrWhiteSpace(googleClientId) || string.IsNullOrWhiteSpace(googleClientSecret))
+    {
+        missingGoogleAuthPath ??= resolvedGoogleSecretsPath;
+    }
+}
+
+var authenticationBuilder = builder.Services.AddAuthentication();
+
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authenticationBuilder.AddGoogle(options =>
+    {
+        options.ClientId = googleClientId!;
+        options.ClientSecret = googleClientSecret!;
         options.CallbackPath = "/signin-google";
         options.SaveTokens = true;
     });
+}
+else if (string.IsNullOrWhiteSpace(missingGoogleAuthPath))
+{
+    missingGoogleAuthPath = resolvedGoogleSecretsPath;
+}
+
+builder.Services.AddSingleton(new discussionspot9.Models.Configuration.GoogleOAuthRuntimeState(
+    googleClientId,
+    googleClientSecret,
+    missingGoogleAuthPath));
 // ADD THIS SECTION:
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -225,8 +359,47 @@ builder.Services.AddScoped<AISeoService>();
 // builder.Services.AddScoped<PerformanceOptimizationService>(); // Commented out for now
 
 // Google Search API Services (Primary SEO Engine)
-builder.Services.Configure<discussionspot9.Models.GoogleSearch.GoogleSearchConfig>(
-    builder.Configuration.GetSection("GoogleSearch"));
+var googleSearchOptionsBuilder = builder.Services
+    .AddOptions<discussionspot9.Models.GoogleSearch.GoogleSearchConfig>()
+    .Bind(builder.Configuration.GetSection("GoogleSearch"))
+    .PostConfigure(options =>
+    {
+        options.ApiKey = FirstNonEmpty(
+            options.ApiKey,
+            builder.Configuration["GoogleSearch:ApiKey"],
+            Environment.GetEnvironmentVariable("RAPIDAPI_GOOGLE_SEARCH_KEY"),
+            Environment.GetEnvironmentVariable("GOOGLE_SEARCH_RAPIDAPI_KEY"));
+
+        options.SerpApiKey = FirstNonEmpty(
+            options.SerpApiKey,
+            builder.Configuration["SerpApi:ApiKey"],
+            Environment.GetEnvironmentVariable("SERPAPI_API_KEY"),
+            Environment.GetEnvironmentVariable("SERP_API_KEY")) ?? string.Empty;
+
+        if (options.EnableSerpApiFallback && string.IsNullOrWhiteSpace(options.SerpApiKey))
+        {
+            options.EnableSerpApiFallback = false;
+            googleCredentialWarnings.Add("SerpApi fallback disabled because SERPAPI_API_KEY was not provided.");
+        }
+
+        if (options.EnableRapidApi && string.IsNullOrWhiteSpace(options.ApiKey))
+        {
+            googleCredentialWarnings.Add("RapidAPI Google Search is enabled but RAPIDAPI_GOOGLE_SEARCH_KEY was not provided.");
+        }
+    });
+
+if (!builder.Environment.IsDevelopment())
+{
+    googleSearchOptionsBuilder
+        .Validate(
+            options => !options.EnableSerpApiFallback || !string.IsNullOrWhiteSpace(options.SerpApiKey),
+            "SerpApi fallback is enabled but no SerpApi key was provided.")
+        .Validate(
+            options => !options.EnableRapidApi || !string.IsNullOrWhiteSpace(options.ApiKey),
+            "RapidAPI Google Search is enabled but no API key was provided.")
+        .ValidateOnStart();
+}
+
 builder.Services.AddHttpClient<discussionspot9.Services.GoogleSearchService>();
 builder.Services.AddHttpClient("CompetitorContent");
 builder.Services.AddHttpClient("AdSenseApi", client =>
@@ -254,14 +427,64 @@ builder.Services.AddScoped<EmailNotificationService>();
 builder.Services.AddScoped<EnhancedHomeService>();
 
 // Enhanced SEO & Multi-Site Revenue Services
-builder.Services.Configure<discussionspot9.Models.Configuration.AdSenseConfiguration>(
-    builder.Configuration.GetSection("GoogleAdSense"));
+var adSenseOptionsBuilder = builder.Services
+    .AddOptions<discussionspot9.Models.Configuration.AdSenseConfiguration>()
+    .Bind(builder.Configuration.GetSection("GoogleAdSense"))
+    .PostConfigure(options =>
+    {
+        options.ServiceAccountKeyEnvironmentVariable = FirstNonEmpty(
+            options.ServiceAccountKeyEnvironmentVariable,
+            builder.Configuration["GoogleAdSense:ServiceAccountKeyEnvironmentVariable"],
+            "GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY") ?? "GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY";
+
+        options.ServiceAccountKeyBase64 = FirstNonEmpty(
+            options.ServiceAccountKeyBase64,
+            builder.Configuration["AdSense:ServiceAccountKeyBase64"],
+            Environment.GetEnvironmentVariable("GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY_BASE64")) ?? string.Empty;
+
+        options.ServiceAccountKeyJson = FirstNonEmpty(
+            options.ServiceAccountKeyJson,
+            builder.Configuration["AdSense:ServiceAccountKeyJson"],
+            Environment.GetEnvironmentVariable("GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY_JSON")) ?? string.Empty;
+    });
+
+if (!builder.Environment.IsDevelopment())
+{
+    adSenseOptionsBuilder
+        .Validate(options =>
+        {
+            if (!options.UseServiceAccount)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.ServiceAccountKeyJson) ||
+                !string.IsNullOrWhiteSpace(options.ServiceAccountKeyBase64) ||
+                !string.IsNullOrWhiteSpace(options.ServiceAccountKeyPath))
+            {
+                return true;
+            }
+
+            var environmentCandidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(options.ServiceAccountKeyEnvironmentVariable))
+            {
+                environmentCandidates.Add(options.ServiceAccountKeyEnvironmentVariable);
+            }
+            environmentCandidates.Add("GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY");
+
+            return environmentCandidates.Any(name =>
+                !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(name)));
+        }, "AdSense service account is enabled but no credentials were provided.")
+        .ValidateOnStart();
+}
+
 builder.Services.Configure<discussionspot9.Models.Configuration.GoogleAdsConfiguration>(
     builder.Configuration.GetSection("GoogleAds"));
-builder.Services.Configure<discussionspot9.Models.Configuration.AdSenseConfiguration>(
-    builder.Configuration.GetSection("AdSense"));
 builder.Services.AddScoped<MultiSiteAdSenseService>();
 builder.Services.AddScoped<GoogleKeywordPlannerService>();
+
+builder.Services.AddHealthChecks()
+    .AddCheck<discussionspot9.Services.HealthChecks.GoogleIntegrationsHealthCheck>("google_integrations");
 
 // Background services
 builder.Services.AddHostedService<WeeklySeoOptimizationService>();
@@ -295,6 +518,19 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 
 var app = builder.Build();
+
+if (googleCredentialWarnings.Count > 0)
+{
+    foreach (var warning in googleCredentialWarnings)
+    {
+        app.Logger.LogWarning(warning);
+    }
+}
+
+if (!string.IsNullOrWhiteSpace(missingGoogleAuthPath))
+{
+    app.Logger.LogWarning("Google OAuth credentials not found. Provide credentials at {Path} or set GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET environment variables.", missingGoogleAuthPath);
+}
 
 // Ensure database is up-to-date (covers new chat tables in production)
 using (var scope = app.Services.CreateScope())
@@ -382,6 +618,7 @@ app.MapHub<ChatHub>("/chatHub");
 app.MapHub<PresenceHub>("/presenceHub");
 
 app.MapRazorPages();
+app.MapHealthChecks("/healthz/google");
 // Authentication Routes
 app.MapControllerRoute(
     name: "auth_combined",
@@ -617,3 +854,16 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+static string? FirstNonEmpty(params string?[] values)
+{
+    foreach (var value in values)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+    }
+
+    return null;
+}

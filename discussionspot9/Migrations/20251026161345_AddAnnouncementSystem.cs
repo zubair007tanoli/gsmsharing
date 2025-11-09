@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,518 +11,527 @@ namespace discussionspot9.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "BanExpiresAt",
-                table: "UserProfiles",
-                type: "datetime2",
-                nullable: true);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.UserProfiles', 'BanExpiresAt') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[UserProfiles] ADD [BanExpiresAt] datetime2 NULL;
+END
+");
 
-            migrationBuilder.AddColumn<string>(
-                name: "BanReason",
-                table: "UserProfiles",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.UserProfiles', 'BanReason') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[UserProfiles] ADD [BanReason] nvarchar(max) NULL;
+END
+");
 
-            migrationBuilder.AddColumn<bool>(
-                name: "IsBanned",
-                table: "UserProfiles",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.UserProfiles', 'IsBanned') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[UserProfiles] ADD [IsBanned] bit NOT NULL CONSTRAINT DF_UserProfiles_IsBanned DEFAULT(0);
+    ALTER TABLE [dbo].[UserProfiles] DROP CONSTRAINT DF_UserProfiles_IsBanned;
+END
+");
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "EditedAt",
-                table: "Comments",
-                type: "datetime2",
-                nullable: true);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Comments', 'EditedAt') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[Comments] ADD [EditedAt] datetime2 NULL;
+END
+");
 
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPinned",
-                table: "Comments",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Comments', 'IsPinned') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[Comments] ADD [IsPinned] bit NOT NULL CONSTRAINT DF_Comments_IsPinned DEFAULT(0);
+    ALTER TABLE [dbo].[Comments] DROP CONSTRAINT DF_Comments_IsPinned;
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "Announcements",
-                columns: table => new
-                {
-                    AnnouncementId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Type = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "info"),
-                    Icon = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "fa-info-circle"),
-                    LinkUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    LinkText = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    IsDismissible = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    Priority = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    CreatedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Announcements", x => x.AnnouncementId);
-                    table.CheckConstraint("CK_Announcement_Type", "Type IN ('info', 'success', 'warning', 'danger')");
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[Announcements]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Announcements] (
+        [AnnouncementId] int NOT NULL IDENTITY,
+        [Title] nvarchar(200) NOT NULL,
+        [Message] nvarchar(500) NOT NULL,
+        [Type] nvarchar(20) NOT NULL DEFAULT N'info',
+        [Icon] nvarchar(50) NOT NULL DEFAULT N'fa-info-circle',
+        [LinkUrl] nvarchar(500) NULL,
+        [LinkText] nvarchar(100) NULL,
+        [IsActive] bit NOT NULL DEFAULT CAST(1 AS bit),
+        [IsDismissible] bit NOT NULL DEFAULT CAST(1 AS bit),
+        [Priority] int NOT NULL DEFAULT 0,
+        [StartDate] datetime2 NULL,
+        [EndDate] datetime2 NULL,
+        [CreatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [UpdatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [CreatedByUserId] nvarchar(450) NULL,
+        CONSTRAINT [PK_Announcements] PRIMARY KEY ([AnnouncementId]),
+        CONSTRAINT [CK_Announcement_Type] CHECK ([Type] IN ('info', 'success', 'warning', 'danger'))
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "ModerationLogs",
-                columns: table => new
-                {
-                    LogId = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ModeratorId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    TargetUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CommunityId = table.Column<int>(type: "int", nullable: true),
-                    ActionType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EntityType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EntityId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Reason = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PerformedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    OldValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    NewValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ModeratorIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Metadata = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ModerationLogs", x => x.LogId);
-                    table.ForeignKey(
-                        name: "FK_ModerationLogs_AspNetUsers_ModeratorId",
-                        column: x => x.ModeratorId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ModerationLogs_AspNetUsers_TargetUserId",
-                        column: x => x.TargetUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ModerationLogs_Communities_CommunityId",
-                        column: x => x.CommunityId,
-                        principalTable: "Communities",
-                        principalColumn: "CommunityId");
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[ModerationLogs]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[ModerationLogs] (
+        [LogId] bigint NOT NULL IDENTITY,
+        [ModeratorId] nvarchar(450) NOT NULL,
+        [TargetUserId] nvarchar(450) NOT NULL,
+        [CommunityId] int NULL,
+        [ActionType] nvarchar(max) NOT NULL,
+        [EntityType] nvarchar(max) NOT NULL,
+        [EntityId] nvarchar(max) NULL,
+        [Reason] nvarchar(max) NOT NULL,
+        [PerformedAt] datetime2 NOT NULL,
+        [OldValue] nvarchar(max) NULL,
+        [NewValue] nvarchar(max) NULL,
+        [ModeratorIp] nvarchar(max) NULL,
+        [Metadata] nvarchar(max) NULL,
+        CONSTRAINT [PK_ModerationLogs] PRIMARY KEY ([LogId]),
+        CONSTRAINT [FK_ModerationLogs_AspNetUsers_ModeratorId] FOREIGN KEY ([ModeratorId]) REFERENCES [AspNetUsers]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_ModerationLogs_AspNetUsers_TargetUserId] FOREIGN KEY ([TargetUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_ModerationLogs_Communities_CommunityId] FOREIGN KEY ([CommunityId]) REFERENCES [Communities]([CommunityId])
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "PostReports",
-                columns: table => new
-                {
-                    ReportId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PostId = table.Column<int>(type: "int", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Details = table.Column<string>(type: "NVARCHAR(MAX)", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "pending"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReviewedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
-                    AdminNotes = table.Column<string>(type: "NVARCHAR(MAX)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PostReports", x => x.ReportId);
-                    table.CheckConstraint("CK_PostReport_Status", "Status IN ('pending', 'reviewed', 'resolved', 'dismissed')");
-                    table.ForeignKey(
-                        name: "FK_PostReports_AspNetUsers_ReviewedByUserId",
-                        column: x => x.ReviewedByUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_PostReports_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_PostReports_Posts_PostId",
-                        column: x => x.PostId,
-                        principalTable: "Posts",
-                        principalColumn: "PostId",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[PostReports]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[PostReports] (
+        [ReportId] int NOT NULL IDENTITY,
+        [PostId] int NOT NULL,
+        [UserId] nvarchar(450) NOT NULL,
+        [Reason] nvarchar(200) NOT NULL,
+        [Details] NVARCHAR(MAX) NULL,
+        [Status] nvarchar(50) NOT NULL DEFAULT N'pending',
+        [CreatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [ReviewedAt] datetime2 NULL,
+        [ReviewedByUserId] nvarchar(450) NULL,
+        [AdminNotes] NVARCHAR(MAX) NULL,
+        CONSTRAINT [PK_PostReports] PRIMARY KEY ([ReportId]),
+        CONSTRAINT [CK_PostReport_Status] CHECK ([Status] IN ('pending', 'reviewed', 'resolved', 'dismissed')),
+        CONSTRAINT [FK_PostReports_AspNetUsers_ReviewedByUserId] FOREIGN KEY ([ReviewedByUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE SET NULL,
+        CONSTRAINT [FK_PostReports_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_PostReports_Posts_PostId] FOREIGN KEY ([PostId]) REFERENCES [Posts]([PostId]) ON DELETE CASCADE
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "ShareActivities",
-                columns: table => new
-                {
-                    ShareId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ContentType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    ContentId = table.Column<int>(type: "int", nullable: false),
-                    Platform = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SharedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IpAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    ReferrerUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
-                    CountryCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    City = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BrowserName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    OsName = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShareActivities", x => x.ShareId);
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[ShareActivities]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[ShareActivities] (
+        [ShareId] int NOT NULL IDENTITY,
+        [ContentType] nvarchar(50) NOT NULL,
+        [ContentId] int NOT NULL,
+        [Platform] nvarchar(50) NOT NULL,
+        [UserId] nvarchar(max) NULL,
+        [SharedAt] datetime2 NOT NULL,
+        [IpAddress] nvarchar(50) NULL,
+        [UserAgent] nvarchar(500) NULL,
+        [ReferrerUrl] nvarchar(2048) NULL,
+        [CountryCode] nvarchar(max) NULL,
+        [City] nvarchar(max) NULL,
+        [DeviceType] nvarchar(max) NULL,
+        [BrowserName] nvarchar(max) NULL,
+        [OsName] nvarchar(max) NULL,
+        CONSTRAINT [PK_ShareActivities] PRIMARY KEY ([ShareId])
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "SiteRoles",
-                columns: table => new
-                {
-                    RoleId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
-                    RoleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    AssignedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    AssignedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    Notes = table.Column<string>(type: "NVARCHAR(MAX)", nullable: true),
-                    RemovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RemovedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SiteRoles", x => x.RoleId);
-                    table.CheckConstraint("CK_SiteRole_RoleName", "RoleName IN ('SiteAdmin', 'Moderator', 'Verified', 'Partner')");
-                    table.ForeignKey(
-                        name: "FK_SiteRoles_AspNetUsers_AssignedByUserId",
-                        column: x => x.AssignedByUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SiteRoles_AspNetUsers_RemovedByUserId",
-                        column: x => x.RemovedByUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_SiteRoles_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[SiteRoles]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[SiteRoles] (
+        [RoleId] int NOT NULL IDENTITY,
+        [UserId] nvarchar(450) NOT NULL,
+        [RoleName] nvarchar(50) NOT NULL,
+        [AssignedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [AssignedByUserId] nvarchar(450) NOT NULL,
+        [IsActive] bit NOT NULL DEFAULT CAST(1 AS bit),
+        [Notes] NVARCHAR(MAX) NULL,
+        [RemovedAt] datetime2 NULL,
+        [RemovedByUserId] nvarchar(450) NULL,
+        CONSTRAINT [PK_SiteRoles] PRIMARY KEY ([RoleId]),
+        CONSTRAINT [CK_SiteRole_RoleName] CHECK ([RoleName] IN ('SiteAdmin', 'Moderator', 'Verified', 'Partner')),
+        CONSTRAINT [FK_SiteRoles_AspNetUsers_AssignedByUserId] FOREIGN KEY ([AssignedByUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_SiteRoles_AspNetUsers_RemovedByUserId] FOREIGN KEY ([RemovedByUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE SET NULL,
+        CONSTRAINT [FK_SiteRoles_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE NO ACTION
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "Stories",
-                columns: table => new
-                {
-                    StoryId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
-                    CommunityId = table.Column<int>(type: "int", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "draft"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    PublishedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    ViewCount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    SlideCount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    TotalDuration = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    PosterImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
-                    PublisherLogo = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
-                    PublisherName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    IsAmpEnabled = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    CanonicalUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
-                    MetaDescription = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    MetaKeywords = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Stories", x => x.StoryId);
-                    table.CheckConstraint("CK_Story_Status", "Status IN ('draft', 'published', 'archived')");
-                    table.ForeignKey(
-                        name: "FK_Stories_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_Stories_Communities_CommunityId",
-                        column: x => x.CommunityId,
-                        principalTable: "Communities",
-                        principalColumn: "CommunityId",
-                        onDelete: ReferentialAction.SetNull);
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[Stories]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Stories] (
+        [StoryId] int NOT NULL IDENTITY,
+        [Title] nvarchar(300) NOT NULL,
+        [Slug] nvarchar(320) NOT NULL,
+        [Description] nvarchar(1000) NULL,
+        [UserId] nvarchar(450) NULL,
+        [CommunityId] int NULL,
+        [Status] nvarchar(20) NOT NULL DEFAULT N'draft',
+        [CreatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [PublishedAt] datetime2 NULL,
+        [UpdatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [ViewCount] int NOT NULL DEFAULT 0,
+        [SlideCount] int NOT NULL DEFAULT 0,
+        [TotalDuration] int NOT NULL DEFAULT 0,
+        [PosterImageUrl] nvarchar(2048) NULL,
+        [PublisherLogo] nvarchar(2048) NULL,
+        [PublisherName] nvarchar(200) NULL,
+        [IsAmpEnabled] bit NOT NULL DEFAULT CAST(1 AS bit),
+        [CanonicalUrl] nvarchar(2048) NULL,
+        [MetaDescription] nvarchar(500) NULL,
+        [MetaKeywords] nvarchar(500) NULL,
+        CONSTRAINT [PK_Stories] PRIMARY KEY ([StoryId]),
+        CONSTRAINT [CK_Story_Status] CHECK ([Status] IN ('draft', 'published', 'archived')),
+        CONSTRAINT [FK_Stories_AspNetUsers_UserId] FOREIGN KEY ([UserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE SET NULL,
+        CONSTRAINT [FK_Stories_Communities_CommunityId] FOREIGN KEY ([CommunityId]) REFERENCES [Communities]([CommunityId]) ON DELETE SET NULL
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "UserBans",
-                columns: table => new
-                {
-                    BanId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CommunityId = table.Column<int>(type: "int", nullable: true),
-                    BannedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    BannedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsPermanent = table.Column<bool>(type: "bit", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    BanType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ModeratorNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LiftedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LiftedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    LiftReason = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BannedUserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserBans", x => x.BanId);
-                    table.ForeignKey(
-                        name: "FK_UserBans_AspNetUsers_BannedByUserId",
-                        column: x => x.BannedByUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserBans_AspNetUsers_BannedUserId",
-                        column: x => x.BannedUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_UserBans_AspNetUsers_LiftedByUserId",
-                        column: x => x.LiftedByUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_UserBans_Communities_CommunityId",
-                        column: x => x.CommunityId,
-                        principalTable: "Communities",
-                        principalColumn: "CommunityId");
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[UserBans]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[UserBans] (
+        [BanId] int NOT NULL IDENTITY,
+        [UserId] nvarchar(max) NOT NULL,
+        [CommunityId] int NULL,
+        [BannedByUserId] nvarchar(450) NOT NULL,
+        [Reason] nvarchar(max) NOT NULL,
+        [BannedAt] datetime2 NOT NULL,
+        [ExpiresAt] datetime2 NULL,
+        [IsPermanent] bit NOT NULL,
+        [IsActive] bit NOT NULL,
+        [BanType] nvarchar(max) NOT NULL,
+        [ModeratorNotes] nvarchar(max) NULL,
+        [LiftedAt] datetime2 NULL,
+        [LiftedByUserId] nvarchar(450) NULL,
+        [LiftReason] nvarchar(max) NULL,
+        [BannedUserId] nvarchar(450) NULL,
+        CONSTRAINT [PK_UserBans] PRIMARY KEY ([BanId]),
+        CONSTRAINT [FK_UserBans_AspNetUsers_BannedByUserId] FOREIGN KEY ([BannedByUserId]) REFERENCES [AspNetUsers]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_UserBans_AspNetUsers_BannedUserId] FOREIGN KEY ([BannedUserId]) REFERENCES [AspNetUsers]([Id]),
+        CONSTRAINT [FK_UserBans_AspNetUsers_LiftedByUserId] FOREIGN KEY ([LiftedByUserId]) REFERENCES [AspNetUsers]([Id]),
+        CONSTRAINT [FK_UserBans_Communities_CommunityId] FOREIGN KEY ([CommunityId]) REFERENCES [Communities]([CommunityId])
+    );
+END
+");
 
-            migrationBuilder.CreateTable(
-                name: "StorySlides",
-                columns: table => new
-                {
-                    StorySlideId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    StoryId = table.Column<int>(type: "int", nullable: false),
-                    MediaId = table.Column<int>(type: "int", nullable: true),
-                    Caption = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    Headline = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Text = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
-                    Duration = table.Column<int>(type: "int", nullable: false, defaultValue: 5000),
-                    OrderIndex = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    SlideType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "media"),
-                    BackgroundColor = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    TextColor = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    FontSize = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    Alignment = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true, defaultValue: "center"),
-                    MediaUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    MediaType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_StorySlides", x => x.StorySlideId);
-                    table.CheckConstraint("CK_StorySlide_Type", "SlideType IN ('media', 'text', 'video', 'image')");
-                    table.ForeignKey(
-                        name: "FK_StorySlides_Media_MediaId",
-                        column: x => x.MediaId,
-                        principalTable: "Media",
-                        principalColumn: "MediaId",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_StorySlides_Stories_StoryId",
-                        column: x => x.StoryId,
-                        principalTable: "Stories",
-                        principalColumn: "StoryId",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[StorySlides]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[StorySlides] (
+        [StorySlideId] int NOT NULL IDENTITY,
+        [StoryId] int NOT NULL,
+        [MediaId] int NULL,
+        [Caption] nvarchar(1000) NULL,
+        [Headline] nvarchar(200) NULL,
+        [Text] nvarchar(2000) NULL,
+        [Duration] int NOT NULL DEFAULT 5000,
+        [OrderIndex] int NOT NULL DEFAULT 0,
+        [SlideType] nvarchar(20) NOT NULL DEFAULT N'media',
+        [BackgroundColor] nvarchar(20) NULL,
+        [TextColor] nvarchar(20) NULL,
+        [FontSize] nvarchar(20) NULL,
+        [Alignment] nvarchar(20) NULL DEFAULT N'center',
+        [MediaUrl] nvarchar(500) NULL,
+        [MediaType] nvarchar(50) NULL,
+        [CreatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        [UpdatedAt] datetime2 NOT NULL DEFAULT (GETDATE()),
+        CONSTRAINT [PK_StorySlides] PRIMARY KEY ([StorySlideId]),
+        CONSTRAINT [CK_StorySlide_Type] CHECK ([SlideType] IN ('media', 'text', 'video', 'image')),
+        CONSTRAINT [FK_StorySlides_Media_MediaId] FOREIGN KEY ([MediaId]) REFERENCES [Media]([MediaId]) ON DELETE SET NULL,
+        CONSTRAINT [FK_StorySlides_Stories_StoryId] FOREIGN KEY ([StoryId]) REFERENCES [Stories]([StoryId]) ON DELETE CASCADE
+    );
+END
+");
 
-            migrationBuilder.UpdateData(
-                table: "UserProfiles",
-                keyColumn: "UserId",
-                keyValue: "4d5e6f7g-8h9i-0j1k-2l3m-n4o5p6q7r8s9",
-                columns: new[] { "BanExpiresAt", "BanReason", "IsBanned" },
-                values: new object[] { null, null, false });
+            migrationBuilder.Sql(@"
+IF EXISTS (
+    SELECT 1
+    FROM [dbo].[UserProfiles]
+    WHERE [UserId] = '4d5e6f7g-8h9i-0j1k-2l3m-n4o5p6q7r8s9'
+)
+BEGIN
+    UPDATE [dbo].[UserProfiles]
+    SET [BanExpiresAt] = NULL,
+        [BanReason] = NULL,
+        [IsBanned] = 0
+    WHERE [UserId] = '4d5e6f7g-8h9i-0j1k-2l3m-n4o5p6q7r8s9';
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Announcements_IsActive_Priority",
-                table: "Announcements",
-                columns: new[] { "IsActive", "Priority" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Announcements_IsActive_Priority' AND object_id = OBJECT_ID(N'[dbo].[Announcements]'))
+BEGIN
+    CREATE INDEX [IX_Announcements_IsActive_Priority] ON [dbo].[Announcements] ([IsActive], [Priority]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Announcements_StartDate_EndDate",
-                table: "Announcements",
-                columns: new[] { "StartDate", "EndDate" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Announcements_StartDate_EndDate' AND object_id = OBJECT_ID(N'[dbo].[Announcements]'))
+BEGIN
+    CREATE INDEX [IX_Announcements_StartDate_EndDate] ON [dbo].[Announcements] ([StartDate], [EndDate]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_ModerationLogs_CommunityId",
-                table: "ModerationLogs",
-                column: "CommunityId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ModerationLogs_CommunityId' AND object_id = OBJECT_ID(N'[dbo].[ModerationLogs]'))
+BEGIN
+    CREATE INDEX [IX_ModerationLogs_CommunityId] ON [dbo].[ModerationLogs] ([CommunityId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_ModerationLogs_ModeratorId",
-                table: "ModerationLogs",
-                column: "ModeratorId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ModerationLogs_ModeratorId' AND object_id = OBJECT_ID(N'[dbo].[ModerationLogs]'))
+BEGIN
+    CREATE INDEX [IX_ModerationLogs_ModeratorId] ON [dbo].[ModerationLogs] ([ModeratorId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_ModerationLogs_TargetUserId",
-                table: "ModerationLogs",
-                column: "TargetUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ModerationLogs_TargetUserId' AND object_id = OBJECT_ID(N'[dbo].[ModerationLogs]'))
+BEGIN
+    CREATE INDEX [IX_ModerationLogs_TargetUserId] ON [dbo].[ModerationLogs] ([TargetUserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_PostReports_PostId",
-                table: "PostReports",
-                column: "PostId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PostReports_PostId' AND object_id = OBJECT_ID(N'[dbo].[PostReports]'))
+BEGIN
+    CREATE INDEX [IX_PostReports_PostId] ON [dbo].[PostReports] ([PostId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_PostReports_ReviewedByUserId",
-                table: "PostReports",
-                column: "ReviewedByUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PostReports_ReviewedByUserId' AND object_id = OBJECT_ID(N'[dbo].[PostReports]'))
+BEGIN
+    CREATE INDEX [IX_PostReports_ReviewedByUserId] ON [dbo].[PostReports] ([ReviewedByUserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_PostReports_Status_CreatedAt",
-                table: "PostReports",
-                columns: new[] { "Status", "CreatedAt" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PostReports_Status_CreatedAt' AND object_id = OBJECT_ID(N'[dbo].[PostReports]'))
+BEGIN
+    CREATE INDEX [IX_PostReports_Status_CreatedAt] ON [dbo].[PostReports] ([Status], [CreatedAt]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_PostReports_UserId",
-                table: "PostReports",
-                column: "UserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PostReports_UserId' AND object_id = OBJECT_ID(N'[dbo].[PostReports]'))
+BEGIN
+    CREATE INDEX [IX_PostReports_UserId] ON [dbo].[PostReports] ([UserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_SiteRoles_AssignedByUserId",
-                table: "SiteRoles",
-                column: "AssignedByUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SiteRoles_AssignedByUserId' AND object_id = OBJECT_ID(N'[dbo].[SiteRoles]'))
+BEGIN
+    CREATE INDEX [IX_SiteRoles_AssignedByUserId] ON [dbo].[SiteRoles] ([AssignedByUserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_SiteRoles_RemovedByUserId",
-                table: "SiteRoles",
-                column: "RemovedByUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SiteRoles_RemovedByUserId' AND object_id = OBJECT_ID(N'[dbo].[SiteRoles]'))
+BEGIN
+    CREATE INDEX [IX_SiteRoles_RemovedByUserId] ON [dbo].[SiteRoles] ([RemovedByUserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_SiteRoles_RoleName",
-                table: "SiteRoles",
-                column: "RoleName");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SiteRoles_RoleName' AND object_id = OBJECT_ID(N'[dbo].[SiteRoles]'))
+BEGIN
+    CREATE INDEX [IX_SiteRoles_RoleName] ON [dbo].[SiteRoles] ([RoleName]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_SiteRoles_UserId_RoleName_IsActive",
-                table: "SiteRoles",
-                columns: new[] { "UserId", "RoleName", "IsActive" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SiteRoles_UserId_RoleName_IsActive' AND object_id = OBJECT_ID(N'[dbo].[SiteRoles]'))
+BEGIN
+    CREATE INDEX [IX_SiteRoles_UserId_RoleName_IsActive] ON [dbo].[SiteRoles] ([UserId], [RoleName], [IsActive]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Stories_CommunityId",
-                table: "Stories",
-                column: "CommunityId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Stories_CommunityId' AND object_id = OBJECT_ID(N'[dbo].[Stories]'))
+BEGIN
+    CREATE INDEX [IX_Stories_CommunityId] ON [dbo].[Stories] ([CommunityId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Stories_Slug",
-                table: "Stories",
-                column: "Slug");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Stories_Slug' AND object_id = OBJECT_ID(N'[dbo].[Stories]'))
+BEGIN
+    CREATE INDEX [IX_Stories_Slug] ON [dbo].[Stories] ([Slug]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Stories_Slug_CommunityId",
-                table: "Stories",
-                columns: new[] { "Slug", "CommunityId" },
-                unique: true,
-                filter: "[CommunityId] IS NOT NULL");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Stories_Slug_CommunityId' AND object_id = OBJECT_ID(N'[dbo].[Stories]'))
+BEGIN
+    CREATE UNIQUE INDEX [IX_Stories_Slug_CommunityId] ON [dbo].[Stories] ([Slug], [CommunityId]) WHERE [CommunityId] IS NOT NULL;
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Stories_Status_PublishedAt",
-                table: "Stories",
-                columns: new[] { "Status", "PublishedAt" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Stories_Status_PublishedAt' AND object_id = OBJECT_ID(N'[dbo].[Stories]'))
+BEGIN
+    CREATE INDEX [IX_Stories_Status_PublishedAt] ON [dbo].[Stories] ([Status], [PublishedAt]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Stories_UserId_CreatedAt",
-                table: "Stories",
-                columns: new[] { "UserId", "CreatedAt" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Stories_UserId_CreatedAt' AND object_id = OBJECT_ID(N'[dbo].[Stories]'))
+BEGIN
+    CREATE INDEX [IX_Stories_UserId_CreatedAt] ON [dbo].[Stories] ([UserId], [CreatedAt]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_StorySlides_MediaId",
-                table: "StorySlides",
-                column: "MediaId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_StorySlides_MediaId' AND object_id = OBJECT_ID(N'[dbo].[StorySlides]'))
+BEGIN
+    CREATE INDEX [IX_StorySlides_MediaId] ON [dbo].[StorySlides] ([MediaId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_StorySlides_StoryId_OrderIndex",
-                table: "StorySlides",
-                columns: new[] { "StoryId", "OrderIndex" });
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_StorySlides_StoryId_OrderIndex' AND object_id = OBJECT_ID(N'[dbo].[StorySlides]'))
+BEGIN
+    CREATE INDEX [IX_StorySlides_StoryId_OrderIndex] ON [dbo].[StorySlides] ([StoryId], [OrderIndex]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_UserBans_BannedByUserId",
-                table: "UserBans",
-                column: "BannedByUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserBans_BannedByUserId' AND object_id = OBJECT_ID(N'[dbo].[UserBans]'))
+BEGIN
+    CREATE INDEX [IX_UserBans_BannedByUserId] ON [dbo].[UserBans] ([BannedByUserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_UserBans_BannedUserId",
-                table: "UserBans",
-                column: "BannedUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserBans_BannedUserId' AND object_id = OBJECT_ID(N'[dbo].[UserBans]'))
+BEGIN
+    CREATE INDEX [IX_UserBans_BannedUserId] ON [dbo].[UserBans] ([BannedUserId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_UserBans_CommunityId",
-                table: "UserBans",
-                column: "CommunityId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserBans_CommunityId' AND object_id = OBJECT_ID(N'[dbo].[UserBans]'))
+BEGIN
+    CREATE INDEX [IX_UserBans_CommunityId] ON [dbo].[UserBans] ([CommunityId]);
+END
+");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_UserBans_LiftedByUserId",
-                table: "UserBans",
-                column: "LiftedByUserId");
+            migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserBans_LiftedByUserId' AND object_id = OBJECT_ID(N'[dbo].[UserBans]'))
+BEGIN
+    CREATE INDEX [IX_UserBans_LiftedByUserId] ON [dbo].[UserBans] ([LiftedByUserId]);
+END
+");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Announcements");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[StorySlides]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[StorySlides];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "ModerationLogs");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[UserBans]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[UserBans];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "PostReports");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[Stories]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[Stories];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "ShareActivities");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[SiteRoles]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[SiteRoles];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "SiteRoles");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[ShareActivities]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[ShareActivities];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "StorySlides");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[PostReports]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[PostReports];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "UserBans");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[ModerationLogs]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[ModerationLogs];
+END
+");
 
-            migrationBuilder.DropTable(
-                name: "Stories");
+            migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[dbo].[Announcements]', N'U') IS NOT NULL
+BEGIN
+    DROP TABLE [dbo].[Announcements];
+END
+");
 
-            migrationBuilder.DropColumn(
-                name: "BanExpiresAt",
-                table: "UserProfiles");
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.UserProfiles', 'BanExpiresAt') IS NOT NULL
+BEGIN
+    ALTER TABLE [dbo].[UserProfiles] DROP COLUMN [BanExpiresAt];
+END
+");
 
-            migrationBuilder.DropColumn(
-                name: "BanReason",
-                table: "UserProfiles");
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.UserProfiles', 'BanReason') IS NOT NULL
+BEGIN
+    ALTER TABLE [dbo].[UserProfiles] DROP COLUMN [BanReason];
+END
+");
 
-            migrationBuilder.DropColumn(
-                name: "IsBanned",
-                table: "UserProfiles");
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.UserProfiles', 'IsBanned') IS NOT NULL
+BEGIN
+    ALTER TABLE [dbo].[UserProfiles] DROP COLUMN [IsBanned];
+END
+");
 
-            migrationBuilder.DropColumn(
-                name: "EditedAt",
-                table: "Comments");
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Comments', 'EditedAt') IS NOT NULL
+BEGIN
+    ALTER TABLE [dbo].[Comments] DROP COLUMN [EditedAt];
+END
+");
 
-            migrationBuilder.DropColumn(
-                name: "IsPinned",
-                table: "Comments");
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Comments', 'IsPinned') IS NOT NULL
+BEGIN
+    ALTER TABLE [dbo].[Comments] DROP COLUMN [IsPinned];
+END
+");
         }
     }
 }

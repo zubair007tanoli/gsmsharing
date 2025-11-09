@@ -15,6 +15,9 @@ namespace discussionspot9.Models.Configuration
         public bool UseServiceAccount { get; set; } = false;
         public string ServiceAccountEmail { get; set; } = string.Empty;
         public string ServiceAccountKeyPath { get; set; } = string.Empty;
+        public string ServiceAccountKeyEnvironmentVariable { get; set; } = "GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY";
+        public string ServiceAccountKeyBase64 { get; set; } = string.Empty;
+        public string ServiceAccountKeyJson { get; set; } = string.Empty;
         public string ApiKey { get; set; } = string.Empty;
         public string OAuthClientId { get; set; } = string.Empty;
         public string OAuthClientSecret { get; set; } = string.Empty;

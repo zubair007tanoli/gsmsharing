@@ -18,11 +18,12 @@ namespace discussionspot9.Migrations
             //     type: "nvarchar(max)",
             //     nullable: true);
 
-            migrationBuilder.AddColumn<int>(
-                name: "PostId",
-                table: "Stories",
-                type: "int",
-                nullable: true);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Stories', 'PostId') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[Stories] ADD [PostId] INT NULL;
+END
+");
 
             migrationBuilder.CreateTable(
                 name: "Badges",
@@ -198,10 +199,18 @@ namespace discussionspot9.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Stories_PostId",
-                table: "Stories",
-                column: "PostId");
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Stories', 'PostId') IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1
+       FROM sys.indexes
+       WHERE name = 'IX_Stories_PostId'
+         AND object_id = OBJECT_ID(N'[dbo].[Stories]')
+   )
+BEGIN
+    CREATE INDEX [IX_Stories_PostId] ON [dbo].[Stories]([PostId]);
+END
+");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BadgeRequirements_BadgeId",
@@ -233,13 +242,20 @@ namespace discussionspot9.Migrations
                 table: "UserBadges",
                 column: "BadgeId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Stories_Posts_PostId",
-                table: "Stories",
-                column: "PostId",
-                principalTable: "Posts",
-                principalColumn: "PostId",
-                onDelete: ReferentialAction.SetNull);
+            migrationBuilder.Sql(@"
+IF COL_LENGTH('dbo.Stories', 'PostId') IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1
+       FROM sys.foreign_keys
+       WHERE name = 'FK_Stories_Posts_PostId'
+         AND parent_object_id = OBJECT_ID(N'[dbo].[Stories]')
+   )
+BEGIN
+    ALTER TABLE [dbo].[Stories] WITH CHECK
+        ADD CONSTRAINT [FK_Stories_Posts_PostId]
+        FOREIGN KEY([PostId]) REFERENCES [dbo].[Posts]([PostId]) ON DELETE SET NULL;
+END
+");
         }
 
         /// <inheritdoc />

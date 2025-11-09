@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,59 +11,94 @@ namespace discussionspot9.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "ActorAvatarUrl",
-                table: "Notifications",
-                type: "nvarchar(2048)",
-                maxLength: 2048,
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ActorAvatarUrl'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [ActorAvatarUrl] NVARCHAR(2048) NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<string>(
-                name: "ActorDisplayName",
-                table: "Notifications",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ActorDisplayName'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [ActorDisplayName] NVARCHAR(100) NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<string>(
-                name: "ActorUserId",
-                table: "Notifications",
-                type: "nvarchar(450)",
-                maxLength: 450,
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ActorUserId'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [ActorUserId] NVARCHAR(450) NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<bool>(
-                name: "EmailSent",
-                table: "Notifications",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'EmailSent'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [EmailSent] BIT NOT NULL CONSTRAINT [DF_Notifications_EmailSent] DEFAULT 0;
+    UPDATE [dbo].[Notifications] SET [EmailSent] = 0 WHERE [EmailSent] IS NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "EmailSentAt",
-                table: "Notifications",
-                type: "datetime2",
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'EmailSentAt'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [EmailSentAt] DATETIME2 NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<string>(
-                name: "GroupId",
-                table: "Notifications",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'GroupId'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [GroupId] NVARCHAR(100) NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ReadAt",
-                table: "Notifications",
-                type: "datetime2",
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ReadAt'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [ReadAt] DATETIME2 NULL;
+END
+""");
 
-            migrationBuilder.AddColumn<string>(
-                name: "Url",
-                table: "Notifications",
-                type: "nvarchar(2048)",
-                maxLength: 2048,
-                nullable: true);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'Url'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] ADD [Url] NVARCHAR(2048) NULL;
+END
+""");
 
             migrationBuilder.CreateTable(
                 name: "EmailQueues",
@@ -184,20 +219,32 @@ namespace discussionspot9.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Notifications_ActorUserId",
-                table: "Notifications",
-                column: "ActorUserId");
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Notifications_ActorUserId'
+      AND object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    CREATE INDEX [IX_Notifications_ActorUserId] ON [dbo].[Notifications] ([ActorUserId]);
+""");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Notifications_CreatedAt",
-                table: "Notifications",
-                column: "CreatedAt");
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Notifications_CreatedAt'
+      AND object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    CREATE INDEX [IX_Notifications_CreatedAt] ON [dbo].[Notifications] ([CreatedAt]);
+""");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Notifications_UserId_Type_IsRead",
-                table: "Notifications",
-                columns: new[] { "UserId", "Type", "IsRead" });
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Notifications_UserId_Type_IsRead'
+      AND object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    CREATE INDEX [IX_Notifications_UserId_Type_IsRead] ON [dbo].[Notifications] ([UserId], [Type], [IsRead]);
+""");
 
             migrationBuilder.CreateIndex(
                 name: "IX_EmailQueues_CreatedAt",
@@ -251,21 +298,29 @@ namespace discussionspot9.Migrations
                 columns: new[] { "FollowerId", "FollowedId" },
                 unique: true);
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Notifications_AspNetUsers_ActorUserId",
-                table: "Notifications",
-                column: "ActorUserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+            migrationBuilder.Sql("""
+IF NOT EXISTS (
+    SELECT 1 FROM sys.foreign_keys
+    WHERE name = 'FK_Notifications_AspNetUsers_ActorUserId'
+      AND parent_object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    ALTER TABLE [dbo].[Notifications] WITH CHECK
+        ADD CONSTRAINT [FK_Notifications_AspNetUsers_ActorUserId]
+        FOREIGN KEY ([ActorUserId]) REFERENCES [dbo].[AspNetUsers]([Id]) ON DELETE SET NULL;
+""");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Notifications_AspNetUsers_ActorUserId",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.foreign_keys
+    WHERE name = 'FK_Notifications_AspNetUsers_ActorUserId'
+      AND parent_object_id = OBJECT_ID(N'[dbo].[Notifications]')
+)
+    ALTER TABLE [dbo].[Notifications] DROP CONSTRAINT [FK_Notifications_AspNetUsers_ActorUserId];
+""");
 
             migrationBuilder.DropTable(
                 name: "EmailQueues");
@@ -279,49 +334,128 @@ namespace discussionspot9.Migrations
             migrationBuilder.DropTable(
                 name: "UserNotificationSettings");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Notifications_ActorUserId",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Notifications_ActorUserId'
+      AND object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    DROP INDEX [IX_Notifications_ActorUserId] ON [dbo].[Notifications];
+""");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Notifications_CreatedAt",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Notifications_CreatedAt'
+      AND object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    DROP INDEX [IX_Notifications_CreatedAt] ON [dbo].[Notifications];
+""");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Notifications_UserId_Type_IsRead",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'IX_Notifications_UserId_Type_IsRead'
+      AND object_id = OBJECT_ID(N'dbo.Notifications')
+)
+    DROP INDEX [IX_Notifications_UserId_Type_IsRead] ON [dbo].[Notifications];
+""");
 
-            migrationBuilder.DropColumn(
-                name: "ActorAvatarUrl",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ActorAvatarUrl'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [ActorAvatarUrl];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "ActorDisplayName",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ActorDisplayName'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [ActorDisplayName];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "ActorUserId",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ActorUserId'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [ActorUserId];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "EmailSent",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'EmailSent'
+      AND [object_id] = OBJECT_ID(N'[dbo].[Notifications]')
+)
+BEGIN
+    DECLARE @constraintName NVARCHAR(128);
+    SELECT @constraintName = df.name
+    FROM sys.default_constraints df
+    INNER JOIN sys.columns c ON c.default_object_id = df.object_id
+    WHERE df.parent_object_id = OBJECT_ID(N'dbo.Notifications')
+      AND c.name = N'EmailSent';
+    IF @constraintName IS NOT NULL
+        EXEC(N'ALTER TABLE [dbo].[Notifications] DROP CONSTRAINT ' + QUOTENAME(@constraintName) + ';');
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [EmailSent];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "EmailSentAt",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'EmailSentAt'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [EmailSentAt];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "GroupId",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'GroupId'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [GroupId];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "ReadAt",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'ReadAt'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [ReadAt];
+END
+""");
 
-            migrationBuilder.DropColumn(
-                name: "Url",
-                table: "Notifications");
+            migrationBuilder.Sql("""
+IF EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE [name] = N'Url'
+      AND [object_id] = OBJECT_ID(N'dbo.Notifications')
+)
+BEGIN
+    ALTER TABLE [dbo].[Notifications] DROP COLUMN [Url];
+END
+""");
         }
     }
 }

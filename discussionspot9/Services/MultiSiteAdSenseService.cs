@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -148,7 +149,7 @@ namespace discussionspot9.Services
                 TotalRpm = summaryMetrics.TotalRpm,
                 TotalCtr = summaryMetrics.TotalCtr,
                 TotalCpc = summaryMetrics.TotalCpc,
-                TotalActiveViewViewableImpressions = summaryMetrics.TotalActiveViewImpressions,
+                TotalActiveViewViewableImpressions = (int)Math.Round(summaryMetrics.TotalActiveViewImpressions),
                 UrlRevenueData = urlRows,
                 Source = "AdSense",
                 SyncedAt = DateTime.UtcNow
@@ -439,19 +440,37 @@ namespace discussionspot9.Services
                     return _accessTokenFactory != null || !string.IsNullOrWhiteSpace(_config.ApiKey);
                 }
 
-                if (_config.UseServiceAccount && !string.IsNullOrWhiteSpace(_config.ServiceAccountKeyPath))
+                if (_config.UseServiceAccount)
                 {
-                    var resolvedPath = ResolvePath(_config.ServiceAccountKeyPath);
-                    if (!File.Exists(resolvedPath))
+                    var serviceAccount = ResolveServiceAccountCredentialStream();
+                    if (serviceAccount.Stream != null)
                     {
-                        _logger.LogError("AdSense service account key not found at {Path}", resolvedPath);
+                        using (serviceAccount.Stream)
+                        {
+                            var credential = GoogleCredential.FromStream(serviceAccount.Stream).CreateScoped(RequiredScopes);
+                            _accessTokenFactory = () => ((ITokenAccess)credential).GetAccessTokenForRequestAsync();
+                        }
+
+                        var sourceDescription = string.IsNullOrWhiteSpace(serviceAccount.Source)
+                            ? _config.ServiceAccountEmail
+                            : $"{_config.ServiceAccountEmail} via {serviceAccount.Source}";
+
+                        _logger.LogInformation("Initialized AdSense client with service account credentials ({Source})", sourceDescription);
                     }
                     else
                     {
-                        using var stream = new FileStream(resolvedPath, FileMode.Open, FileAccess.Read);
-                        var credential = GoogleCredential.FromStream(stream).CreateScoped(RequiredScopes);
-                        _accessTokenFactory = () => credential.GetAccessTokenForRequestAsync();
-                        _logger.LogInformation("Initialized AdSense client with service account credentials ({Email})", _config.ServiceAccountEmail);
+                        if (!string.IsNullOrWhiteSpace(serviceAccount.Error))
+                        {
+                            _logger.LogError("AdSense service account initialization failed: {Message}", serviceAccount.Error);
+                        }
+                        else
+                        {
+                            var attemptedPath = string.IsNullOrWhiteSpace(_config.ServiceAccountKeyPath)
+                                ? "no path configured"
+                                : ResolvePath(_config.ServiceAccountKeyPath);
+                            
+                            _logger.LogError("AdSense service account key not found. Checked environment variables and {Path}", attemptedPath);
+                        }
                     }
                 }
 
@@ -482,7 +501,7 @@ namespace discussionspot9.Services
                     }
                     else
                     {
-                        _accessTokenFactory = () => credential.GetAccessTokenForRequestAsync();
+                        _accessTokenFactory = () => ((ITokenAccess)credential).GetAccessTokenForRequestAsync();
                         _logger.LogInformation("Initialized AdSense client with OAuth credentials for {User}", userId);
                     }
                 }
@@ -616,6 +635,140 @@ namespace discussionspot9.Services
 
             var baseDirectory = AppContext.BaseDirectory;
             return Path.Combine(baseDirectory, path);
+        }
+
+        private (Stream? Stream, string? Source, string? Error) ResolveServiceAccountCredentialStream()
+        {
+            var inlineJson = TryCreateStreamFromJson(_config.ServiceAccountKeyJson, "AdSenseConfiguration.ServiceAccountKeyJson");
+            if (inlineJson.Stream != null || !string.IsNullOrWhiteSpace(inlineJson.Error))
+            {
+                return inlineJson;
+            }
+
+            var environmentCandidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(_config.ServiceAccountKeyEnvironmentVariable))
+            {
+                environmentCandidates.Add(_config.ServiceAccountKeyEnvironmentVariable);
+            }
+            environmentCandidates.Add("GOOGLE_ADSENSE_SERVICE_ACCOUNT_KEY");
+
+            foreach (var envName in environmentCandidates)
+            {
+                var envValue = Environment.GetEnvironmentVariable(envName);
+                if (string.IsNullOrWhiteSpace(envValue))
+                {
+                    continue;
+                }
+
+                var envStream = TryCreateStreamFromDynamicValue(envValue, $"Environment:{envName}");
+                if (envStream.Stream != null || !string.IsNullOrWhiteSpace(envStream.Error))
+                {
+                    return envStream;
+                }
+            }
+
+            var base64Config = TryCreateStreamFromBase64(_config.ServiceAccountKeyBase64, "AdSenseConfiguration.ServiceAccountKeyBase64");
+            if (base64Config.Stream != null || !string.IsNullOrWhiteSpace(base64Config.Error))
+            {
+                return base64Config;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_config.ServiceAccountKeyPath))
+            {
+                var resolvedPath = ResolvePath(_config.ServiceAccountKeyPath);
+                if (File.Exists(resolvedPath))
+                {
+                    return (File.OpenRead(resolvedPath), $"File:{resolvedPath}", null);
+                }
+
+                return (null, null, $"AdSense service account key not found at {resolvedPath}");
+            }
+
+            return (null, null, null);
+        }
+
+        private (Stream? Stream, string? Source, string? Error) TryCreateStreamFromDynamicValue(string value, string sourceLabel)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return (null, null, null);
+            }
+
+            var trimmed = value.Trim();
+
+            if (trimmed.StartsWith("{", StringComparison.Ordinal))
+            {
+                return TryCreateStreamFromJson(trimmed, $"{sourceLabel} (json)");
+            }
+
+            try
+            {
+                var resolvedPath = ResolvePath(trimmed);
+                if (File.Exists(resolvedPath))
+                {
+                    return (File.OpenRead(resolvedPath), $"{sourceLabel} (file:{resolvedPath})", null);
+                }
+            }
+            catch
+            {
+                // Ignore path resolution errors and continue attempting other formats.
+            }
+
+            var base64Attempt = TryCreateStreamFromBase64(trimmed, $"{sourceLabel} (base64)");
+            if (base64Attempt.Stream != null || !string.IsNullOrWhiteSpace(base64Attempt.Error))
+            {
+                return base64Attempt;
+            }
+
+            return TryCreateStreamFromJson(trimmed, $"{sourceLabel} (json)");
+        }
+
+        private static (Stream? Stream, string? Source, string? Error) TryCreateStreamFromBase64(string base64, string sourceLabel)
+        {
+            if (string.IsNullOrWhiteSpace(base64))
+            {
+                return (null, null, null);
+            }
+
+            try
+            {
+                var decodedBytes = Convert.FromBase64String(base64);
+                var json = Encoding.UTF8.GetString(decodedBytes);
+
+                using (JsonDocument.Parse(json))
+                {
+                    return (new MemoryStream(decodedBytes), sourceLabel, null);
+                }
+            }
+            catch (FormatException)
+            {
+                return (null, null, null);
+            }
+            catch (JsonException ex)
+            {
+                return (null, null, $"{sourceLabel} contains invalid JSON: {ex.Message}");
+            }
+        }
+
+        private static (Stream? Stream, string? Source, string? Error) TryCreateStreamFromJson(string json, string sourceLabel)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return (null, null, null);
+            }
+
+            try
+            {
+                using (JsonDocument.Parse(json))
+                {
+                    var bytes = Encoding.UTF8.GetBytes(json);
+                    return (new MemoryStream(bytes), sourceLabel, null);
+                }
+            }
+            catch (JsonException ex)
+            {
+                return (null, null, $"{sourceLabel} contains invalid JSON: {ex.Message}");
+            }
         }
 
         private SiteRevenueData GeneratePlaceholderRevenue(AdSenseSite site, DateTime date)

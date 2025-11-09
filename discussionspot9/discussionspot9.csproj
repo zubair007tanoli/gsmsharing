@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Secrets\AdsenseAds.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="bootstrap" Version="5.3.6" />
     <PackageReference Include="Google.Apis.Adsense.v2" Version="1.60.0.2890" />
     <PackageReference Include="Google.Apis.Auth" Version="1.60.0" />
@@ -56,6 +60,7 @@
     <Folder Include="Data\Repositories\" />
     <Folder Include="NewFolder\" />
     <Folder Include="wwwroot\css\CustomStyles\v2\" />
+    <Folder Include="wwwroot\GoogleApiAccess\" />
   </ItemGroup>
 
   <ItemGroup>

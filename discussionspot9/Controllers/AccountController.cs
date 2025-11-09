@@ -1,4 +1,4 @@
-﻿using discussionspot9.Models.ViewModels;
+using discussionspot9.Models.ViewModels;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -490,8 +490,18 @@ namespace DiscussionSpot9.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        public async Task<IActionResult> ExternalLogin(string provider, string? returnUrl = null)
         {
+            var schemes = await _signInManager.GetExternalAuthenticationSchemesAsync();
+            var selectedScheme = schemes.FirstOrDefault(
+                s => string.Equals(s.Name, provider, StringComparison.OrdinalIgnoreCase));
+
+            if (selectedScheme == null)
+            {
+                TempData["ErrorMessage"] = $"{provider} login is currently unavailable. Please try again later or use email/password.";
+                return RedirectToAction("Auth", new { returnUrl });
+            }
+
             var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new { returnUrl });
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return new ChallengeResult(provider, properties);

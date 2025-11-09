@@ -6,7 +6,6 @@ using System.Globalization;
 using System.Net.Http;
 using System.Text.Json;
 using System.Web;
-using SerpApi;
 
 namespace discussionspot9.Services
 {
