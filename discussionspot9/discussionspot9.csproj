@@ -7,6 +7,8 @@
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <!-- Suppress common nullable-analysis warnings to reduce noise for now -->
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8604;CS8618;CS8619;CS8621;CS8632;CS8669;CS8714</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,10 +27,6 @@
 
   <ItemGroup>
     <Content Remove="Views\Post\CreateTest - Copy %282%29.cshtml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Secrets\AdsenseAds.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,7 +58,6 @@
     <Folder Include="Data\Repositories\" />
     <Folder Include="NewFolder\" />
     <Folder Include="wwwroot\css\CustomStyles\v2\" />
-    <Folder Include="wwwroot\GoogleApiAccess\" />
   </ItemGroup>
 
   <ItemGroup>

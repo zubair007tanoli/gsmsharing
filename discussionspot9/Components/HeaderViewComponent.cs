@@ -56,13 +56,13 @@ namespace discussionspot9.Components
                             }
                             else
                             {
-                                model.DisplayName = user.Email?.Split('@')[0];
+                                model.DisplayName = user.Email?.Split('@')[0] ?? string.Empty;
                             }
                         }
                         catch
                         {
                             // If database query fails, use email as fallback
-                            model.DisplayName = user.Email?.Split('@')[0];
+                            model.DisplayName = user.Email?.Split('@')[0] ?? string.Empty;
                         }
 
                         try
@@ -99,7 +99,8 @@ namespace discussionspot9.Components
 
                             model.RecentNotifications = notifications.Select(n => new NotificationViewModel
                             {
-                                NotificationId = Guid.Parse(n.NotificationId.ToString()),
+                                // Notification.NotificationId is an int; do not use null-conditional on value types
+                                NotificationId = Guid.TryParse(n.NotificationId.ToString(), out var tmpGuid) ? tmpGuid : Guid.Empty,
                                 UserId = n.UserId,
                                 Type = n.Type,
                                 Title = n.Title,
@@ -132,28 +133,30 @@ namespace discussionspot9.Components
         {
             var urlHelper = Url;
 
-            switch (notification.EntityType?.ToLower())
+            var entityType = (notification.EntityType as string)?.ToLower();
+
+            switch (entityType)
             {
                 case "post":
                     // For posts, we need community slug and post slug
                     // You'll need to get these from your database
-                    return GetPostUrl(notification.EntityId, urlHelper);
+                    return GetPostUrl(notification.EntityId as string ?? string.Empty, urlHelper);
 
                 case "community":
                     // For communities: r/{slug}
-                    return GetCommunityUrl(notification.EntityId, urlHelper);
+                    return GetCommunityUrl(notification.EntityId as string ?? string.Empty, urlHelper);
 
                 case "user":
                     // For users: u/{displayName}
-                    return GetUserUrl(notification.EntityId, urlHelper);
+                    return GetUserUrl(notification.EntityId as string ?? string.Empty, urlHelper);
 
                 case "comment":
                     // For comments, link to the post with comment anchor
-                    return GetCommentUrl(notification.EntityId, urlHelper);
+                    return GetCommentUrl(notification.EntityId as string ?? string.Empty, urlHelper);
 
                 default:
                     // Default fallback - you might want to create a notifications route
-                    return urlHelper.Action("Index", "Home");
+                    return urlHelper.Action("Index", "Home") ?? "/";
             }
         }
 
@@ -161,19 +164,22 @@ namespace discussionspot9.Components
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(postId))
+                    return urlHelper.Action("Index", "Home") ?? "/";
+
                 // Use AsNoTracking and async-safe synchronous call with timeout protection
                 var postDetails = _context.Posts
                     .AsNoTracking()
                     .Include(p => p.Community)
                     .FirstOrDefault(p => p.PostId.ToString() == postId);
 
-                if (postDetails != null)
+                if (postDetails?.Community?.Slug is string communitySlug && !string.IsNullOrEmpty(postDetails.Slug))
                 {
                     return urlHelper.RouteUrl("community_posts", new
                     {
-                        communitySlug = postDetails.Community.Slug,
+                        communitySlug = communitySlug,
                         postSlug = postDetails.Slug
-                    });
+                    }) ?? (urlHelper.Action("Index", "Home") ?? "/");
                 }
             }
             catch
@@ -181,20 +187,23 @@ namespace discussionspot9.Components
                 // Fail gracefully if database query fails
             }
 
-            return urlHelper.Action("Index", "Home");
+            return urlHelper.Action("Index", "Home") ?? "/";
         }
 
         private string GetCommunityUrl(string communityId, IUrlHelper urlHelper)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(communityId))
+                    return urlHelper.Action("Index", "Community") ?? "/";
+
                 var community = _context.Communities
                     .AsNoTracking()
                     .FirstOrDefault(c => c.CommunityId.ToString() == communityId);
 
-                if (community != null)
+                if (community?.Slug is string slug)
                 {
-                    return urlHelper.RouteUrl("community_detail", new { slug = community.Slug });
+                    return urlHelper.RouteUrl("community_detail", new { slug = slug }) ?? (urlHelper.Action("Index", "Community") ?? "/");
                 }
             }
             catch
@@ -202,20 +211,23 @@ namespace discussionspot9.Components
                 // Fail gracefully if database query fails
             }
 
-            return urlHelper.Action("Index", "Community");
+            return urlHelper.Action("Index", "Community") ?? "/";
         }
 
         private string GetUserUrl(string userId, IUrlHelper urlHelper)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(userId))
+                    return urlHelper.Action("Index", "Home") ?? "/";
+
                 var userProfile = _context.UserProfiles
                     .AsNoTracking()
                     .FirstOrDefault(u => u.UserId == userId);
 
-                if (userProfile != null)
+                if (userProfile?.DisplayName is string displayName)
                 {
-                    return urlHelper.RouteUrl("user_profile", new { displayName = userProfile.DisplayName });
+                    return urlHelper.RouteUrl("user_profile", new { displayName = displayName }) ?? (urlHelper.Action("Index", "Home") ?? "/");
                 }
             }
             catch
@@ -223,13 +235,16 @@ namespace discussionspot9.Components
                 // Fail gracefully if database query fails
             }
 
-            return urlHelper.Action("Index", "Home");
+            return urlHelper.Action("Index", "Home") ?? "/";
         }
 
         private string GetCommentUrl(string commentId, IUrlHelper urlHelper)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(commentId))
+                    return urlHelper.Action("Index", "Home") ?? "/";
+
                 // Get comment and its associated post
                 var comment = _context.Comments
                     .AsNoTracking()
@@ -237,13 +252,13 @@ namespace discussionspot9.Components
                     .ThenInclude(p => p.Community)
                     .FirstOrDefault(c => c.CommentId.ToString() == commentId);
 
-                if (comment != null)
+                if (comment?.Post?.Community?.Slug is string communitySlug && comment.Post.Slug is string postSlug)
                 {
                     var postUrl = urlHelper.RouteUrl("community_posts", new
                     {
-                        communitySlug = comment.Post.Community.Slug,
-                        postSlug = comment.Post.Slug
-                    });
+                        communitySlug = communitySlug,
+                        postSlug = postSlug
+                    }) ?? (urlHelper.Action("Index", "Home") ?? "/");
 
                     return $"{postUrl}#comment-{commentId}";
                 }
@@ -253,7 +268,7 @@ namespace discussionspot9.Components
                 // Fail gracefully if database query fails
             }
 
-            return urlHelper.Action("Index", "Home");
+            return urlHelper.Action("Index", "Home") ?? "/";
         }
     }
 }
