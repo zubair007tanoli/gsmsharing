@@ -24,104 +24,199 @@ namespace discussionspot9.Services
 
         public async Task<ChatMessageViewModel> SendDirectMessageAsync(string senderId, string receiverId, string content, string? attachmentUrl = null)
         {
-            var message = new ChatMessage
+            try
             {
-                SenderId = senderId,
-                ReceiverId = receiverId,
-                Content = content,
-                AttachmentUrl = attachmentUrl,
-                SentAt = DateTime.UtcNow,
-                IsRead = false,
-                IsDeleted = false
-            };
+                var message = new ChatMessage
+                {
+                    SenderId = senderId,
+                    ReceiverId = receiverId,
+                    Content = content,
+                    AttachmentUrl = attachmentUrl,
+                    SentAt = DateTime.UtcNow,
+                    IsRead = false,
+                    IsDeleted = false
+                };
 
-            var savedMessage = await _chatRepository.AddMessageAsync(message);
-            
-            // Get sender info
-            var sender = await _context.UserProfiles.FindAsync(senderId);
-            
-            return MapToViewModel(savedMessage, senderId, sender?.DisplayName ?? "Unknown");
+                var savedMessage = await _chatRepository.AddMessageAsync(message);
+                
+                // Get sender info from UserProfiles (query by UserId, not primary key)
+                var sender = await _context.UserProfiles
+                    .FirstOrDefaultAsync(p => p.UserId == senderId);
+                
+                // Get sender display name
+                var senderName = sender?.DisplayName ?? "Unknown";
+                
+                _logger.LogInformation($"Direct message saved: MessageId={savedMessage.MessageId}, SenderId={senderId}, ReceiverId={receiverId}");
+                
+                return MapToViewModel(savedMessage, senderId, senderName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error sending direct message from {senderId} to {receiverId}");
+                throw;
+            }
         }
 
         public async Task<ChatMessageViewModel> SendRoomMessageAsync(string senderId, int roomId, string content, string? attachmentUrl = null)
         {
-            // Check if user is in room
-            var isInRoom = await _chatRepository.IsUserInRoomAsync(roomId, senderId);
-            if (!isInRoom)
+            try
             {
-                throw new UnauthorizedAccessException("User is not a member of this room");
+                // Check if user is in room
+                var isInRoom = await _chatRepository.IsUserInRoomAsync(roomId, senderId);
+                if (!isInRoom)
+                {
+                    _logger.LogWarning($"User {senderId} is not a member of room {roomId}");
+                    throw new UnauthorizedAccessException("User is not a member of this room");
+                }
+
+                var message = new ChatMessage
+                {
+                    SenderId = senderId,
+                    ChatRoomId = roomId,
+                    ReceiverId = null, // Room messages don't have a receiver
+                    Content = content,
+                    AttachmentUrl = attachmentUrl,
+                    SentAt = DateTime.UtcNow,
+                    IsRead = false, // Room messages are always considered read when sent
+                    IsDeleted = false
+                };
+
+                var savedMessage = await _chatRepository.AddMessageAsync(message);
+                
+                // Get sender info from UserProfiles
+                var sender = await _context.UserProfiles
+                    .FirstOrDefaultAsync(p => p.UserId == senderId);
+                
+                // Get sender display name
+                var senderName = sender?.DisplayName ?? "Unknown";
+                
+                _logger.LogInformation($"Room message saved: MessageId={savedMessage.MessageId}, SenderId={senderId}, RoomId={roomId}");
+                
+                return MapToViewModel(savedMessage, senderId, senderName);
             }
-
-            var message = new ChatMessage
+            catch (Exception ex)
             {
-                SenderId = senderId,
-                ChatRoomId = roomId,
-                Content = content,
-                AttachmentUrl = attachmentUrl,
-                SentAt = DateTime.UtcNow,
-                IsDeleted = false
-            };
-
-            var savedMessage = await _chatRepository.AddMessageAsync(message);
-            
-            // Get sender info
-            var sender = await _context.UserProfiles.FindAsync(senderId);
-            
-            return MapToViewModel(savedMessage, senderId, sender?.DisplayName ?? "Unknown");
+                _logger.LogError(ex, $"Error sending room message from {senderId} to room {roomId}");
+                throw;
+            }
         }
 
         public async Task<List<ChatMessageViewModel>> GetDirectChatHistoryAsync(string userId, string otherUserId, int page = 1, int pageSize = 50)
         {
-            var skip = (page - 1) * pageSize;
-            var messages = await _chatRepository.GetDirectMessagesAsync(userId, otherUserId, skip, pageSize);
-            
-            return messages.Select(m => MapToViewModel(m, userId, m.Sender?.UserName ?? "Unknown")).Reverse().ToList();
+            try
+            {
+                var skip = (page - 1) * pageSize;
+                var messages = await _chatRepository.GetDirectMessagesAsync(userId, otherUserId, skip, pageSize);
+                
+                // Get user profiles for sender names
+                var userIds = messages.Select(m => m.SenderId).Distinct().ToList();
+                var userProfiles = await _context.UserProfiles
+                    .Where(p => userIds.Contains(p.UserId))
+                    .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                
+                var viewModels = messages.Select(m => 
+                {
+                    var senderName = userProfiles.GetValueOrDefault(m.SenderId, "Unknown");
+                    return MapToViewModel(m, userId, senderName);
+                }).Reverse().ToList();
+                
+                return viewModels;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting direct chat history for {userId} and {otherUserId}");
+                return new List<ChatMessageViewModel>();
+            }
         }
 
         public async Task<List<ChatMessageViewModel>> GetRoomChatHistoryAsync(int roomId, int page = 1, int pageSize = 50)
         {
-            var skip = (page - 1) * pageSize;
-            var messages = await _chatRepository.GetRoomMessagesAsync(roomId, skip, pageSize);
-            
-            return messages.Select(m => MapToViewModel(m, m.SenderId, m.Sender?.UserName ?? "Unknown")).Reverse().ToList();
+            try
+            {
+                var skip = (page - 1) * pageSize;
+                var messages = await _chatRepository.GetRoomMessagesAsync(roomId, skip, pageSize);
+                
+                // Get user profiles for sender names
+                var userIds = messages.Select(m => m.SenderId).Distinct().ToList();
+                var userProfiles = await _context.UserProfiles
+                    .Where(p => userIds.Contains(p.UserId))
+                    .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                
+                var viewModels = messages.Select(m => 
+                {
+                    var senderName = userProfiles.GetValueOrDefault(m.SenderId, "Unknown");
+                    return MapToViewModel(m, m.SenderId, senderName);
+                }).Reverse().ToList();
+                
+                return viewModels;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting room chat history for room {roomId}");
+                return new List<ChatMessageViewModel>();
+            }
         }
 
         public async Task<List<DirectChatViewModel>> GetUserDirectChatsAsync(string userId)
         {
-            // Get all messages where user is sender or receiver
-            var recentChats = await _context.ChatMessages
-                .Where(m => (m.SenderId == userId || m.ReceiverId == userId) && !m.IsDeleted && m.ChatRoomId == null)
-                .Include(m => m.Sender)
-                .Include(m => m.Receiver)
-                .GroupBy(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
-                .Select(g => new
-                {
-                    OtherUserId = g.Key,
-                    LastMessage = g.OrderByDescending(m => m.SentAt).FirstOrDefault(),
-                    UnreadCount = g.Count(m => m.ReceiverId == userId && !m.IsRead)
-                })
-                .ToListAsync();
-
-            var chats = new List<DirectChatViewModel>();
-            foreach (var chat in recentChats)
+            try
             {
-                if (string.IsNullOrEmpty(chat.OtherUserId)) continue;
-                
-                var otherUser = await _context.UserProfiles.FindAsync(chat.OtherUserId);
-                if (otherUser == null) continue;
+                // Get all messages where user is sender or receiver
+                var recentChats = await _context.ChatMessages
+                    .Where(m => (m.SenderId == userId || m.ReceiverId == userId) && !m.IsDeleted && m.ChatRoomId == null)
+                    .Include(m => m.Sender)
+                    .Include(m => m.Receiver)
+                    .GroupBy(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
+                    .Select(g => new
+                    {
+                        OtherUserId = g.Key,
+                        LastMessage = g.OrderByDescending(m => m.SentAt).FirstOrDefault(),
+                        UnreadCount = g.Count(m => m.ReceiverId == userId && !m.IsRead)
+                    })
+                    .ToListAsync();
 
-                chats.Add(new DirectChatViewModel
+                // Get all user profiles for the other users
+                var otherUserIds = recentChats.Where(c => !string.IsNullOrEmpty(c.OtherUserId)).Select(c => c.OtherUserId!).ToList();
+                var userProfiles = await _context.UserProfiles
+                    .Where(p => otherUserIds.Contains(p.UserId))
+                    .ToDictionaryAsync(p => p.UserId, p => p);
+
+                var chats = new List<DirectChatViewModel>();
+                foreach (var chat in recentChats)
                 {
-                    UserId = chat.OtherUserId,
-                    DisplayName = otherUser.DisplayName,
-                    AvatarUrl = otherUser.AvatarUrl ?? "/images/default-avatar.png",
-                    Status = "online", // Will be updated by PresenceService
-                    UnreadCount = chat.UnreadCount,
-                    LastMessage = chat.LastMessage != null ? MapToViewModel(chat.LastMessage, userId, chat.LastMessage.Sender?.UserName ?? "Unknown") : null
-                });
-            }
+                    if (string.IsNullOrEmpty(chat.OtherUserId)) continue;
+                    
+                    if (!userProfiles.TryGetValue(chat.OtherUserId, out var otherUser)) continue;
 
-            return chats.OrderByDescending(c => c.LastMessage?.SentAt ?? DateTime.MinValue).ToList();
+                    // Get sender name for last message
+                    string lastMessageSenderName = "Unknown";
+                    if (chat.LastMessage != null)
+                    {
+                        var senderId = chat.LastMessage.SenderId;
+                        if (userProfiles.TryGetValue(senderId, out var senderProfile))
+                        {
+                            lastMessageSenderName = senderProfile.DisplayName;
+                        }
+                    }
+
+                    chats.Add(new DirectChatViewModel
+                    {
+                        UserId = chat.OtherUserId,
+                        DisplayName = otherUser.DisplayName,
+                        AvatarUrl = otherUser.AvatarUrl ?? "/images/default-avatar.png",
+                        Status = "online", // Will be updated by PresenceService
+                        UnreadCount = chat.UnreadCount,
+                        LastMessage = chat.LastMessage != null ? MapToViewModel(chat.LastMessage, userId, lastMessageSenderName) : null
+                    });
+                }
+
+                return chats.OrderByDescending(c => c.LastMessage?.SentAt ?? DateTime.MinValue).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting user direct chats for {userId}");
+                return new List<DirectChatViewModel>();
+            }
         }
 
         public async Task<List<ChatRoomViewModel>> GetUserChatRoomsAsync(string userId)
@@ -222,7 +317,7 @@ namespace discussionspot9.Services
                 SenderName = senderName,
                 SenderAvatar = "/images/default-avatar.png", // TODO: Get from UserProfile
                 ReceiverId = message.ReceiverId,
-                Content = message.Content,
+                Content = message.Content ?? "",
                 AttachmentUrl = message.AttachmentUrl,
                 AttachmentType = message.AttachmentType,
                 SentAt = message.SentAt,

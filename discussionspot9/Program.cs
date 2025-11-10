@@ -264,8 +264,19 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "DiscussionSpot9Auth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    // Use secure, cross-site compatible settings for external providers
+    if (builder.Environment.IsDevelopment())
+    {
+        // In development, use Lax for localhost (works with HTTP)
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // allow http on localhost
+        options.Cookie.SameSite = SameSiteMode.Lax; // Lax works with HTTP in development
+    }
+    else
+    {
+        // In production, use None for external logins (requires HTTPS)
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.None; // required for external login redirects
+    }
     options.LoginPath = "/Account/Auth";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
@@ -275,6 +286,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.IsEssential = true;
 });
 
+// Ensure the external cookie also allows cross-site redirects
+builder.Services.ConfigureExternalCookie(options =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax; // Lax works with HTTP in development
+    }
+    else
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.None; // None requires HTTPS
+    }
+});
 // ADD DATA PROTECTION:
 builder.Services.AddDataProtection()
     .SetApplicationName("DiscussionSpot9");

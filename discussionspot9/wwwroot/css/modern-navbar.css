@@ -352,6 +352,30 @@
     width: 20px;
 }
 
+/* User menu dropdown (dark theme) */
+.main-header .dropdown-menu.user-menu {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    color: #f8f9fa;
+}
+
+.main-header .dropdown-menu.user-menu .dropdown-item {
+    color: #f8f9fa;
+}
+
+.main-header .dropdown-menu.user-menu .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.main-header .dropdown-menu.user-menu .dropdown-divider {
+    border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.main-header .dropdown-menu.user-menu .dropdown-header {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
 /* Admin Link Special Styling */
 .main-header .dropdown-item.text-warning {
     background: rgba(255, 193, 7, 0.1);

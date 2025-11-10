@@ -98,6 +98,39 @@ class ChatController {
      * Handle incoming message
      */
     handleIncomingMessage(message) {
+        // Get current user ID from window or data attribute
+        const currentUserId = window.currentUserId || document.body.getAttribute('data-user-id') || null;
+        
+        // Determine IsMine if not set by server (for room messages)
+        if (message.IsMine === undefined && currentUserId && message.SenderId) {
+            message.IsMine = message.SenderId === currentUserId;
+        }
+        
+        // Check if message already exists (prevent duplicates from optimistic updates)
+        const existingMessage = document.querySelector(`[data-message-id="${message.MessageId}"]`);
+        if (existingMessage) {
+            // Update existing message with server data
+            console.log('📝 Updating existing message:', message.MessageId);
+            return;
+        }
+        
+        // Remove optimistic message if it exists (temporary messages have Date.now() as ID)
+        const optimisticMessages = document.querySelectorAll('[data-message-id]');
+        optimisticMessages.forEach(el => {
+            const msgId = parseInt(el.getAttribute('data-message-id'));
+            // If it's a temporary ID (very large number from Date.now()) and content matches, remove it
+            if (msgId > 1000000000000 && el.textContent.includes(message.Content)) {
+                el.remove();
+            }
+        });
+        
+        console.log('📨 Adding message to UI:', {
+            MessageId: message.MessageId,
+            SenderId: message.SenderId,
+            Content: message.Content?.substring(0, 50),
+            IsMine: message.IsMine
+        });
+        
         // Add message to UI
         this.chatUI.addMessage(message);
         
@@ -109,8 +142,9 @@ class ChatController {
             this.showChatAd();
         }
 
-        // Mark as read if chat is open
-        if (message.SenderId === this.currentChatUserId && !message.IsMine) {
+        // Mark as read if chat is open and message is for current user (direct messages only)
+        const chatUserId = window.currentChatUserId || this.currentChatUserId;
+        if (message.ReceiverId && message.ReceiverId === chatUserId && !message.IsMine && message.MessageId) {
             this.chatService.markAsRead(message.MessageId);
         }
 
@@ -149,14 +183,25 @@ class ChatController {
      */
     async sendDirectMessage(content) {
         const userId = window.currentChatUserId || this.currentChatUserId;
-        if (!userId) return;
+        if (!userId) {
+            console.error('❌ Cannot send: No recipient selected');
+            return;
+        }
 
+        if (!content || !content.trim()) {
+            console.warn('⚠️ Cannot send: Empty message');
+            return;
+        }
+
+        // Store temporary message ID for removal later
+        const tempMessageId = Date.now();
+        
         // Optimistic UI update
         const optimisticMessage = {
-            MessageId: Date.now(),
+            MessageId: tempMessageId,
             SenderId: 'current-user',
             SenderName: 'You',
-            Content: content,
+            Content: content.trim(),
             SentAt: new Date(),
             IsMine: true,
             TimeAgo: 'just now',
@@ -166,11 +211,22 @@ class ChatController {
         this.chatUI.addMessage(optimisticMessage);
         this.chatUI.scrollToBottom();
 
-        // Send to server
-        const success = await this.chatService.sendDirectMessage(userId, content);
-        
-        if (!success) {
-            console.error('❌ Failed to send message');
+        try {
+            // Send to server
+            const success = await this.chatService.sendDirectMessage(userId, content.trim());
+            
+            if (!success) {
+                console.error('❌ Failed to send message');
+                // Remove optimistic message on failure
+                const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
+                if (tempMsg) tempMsg.remove();
+                this.chatUI.showError('Failed to send message. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error sending message:', error);
+            // Remove optimistic message on error
+            const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
+            if (tempMsg) tempMsg.remove();
             this.chatUI.showError('Failed to send message. Please try again.');
         }
     }
@@ -180,14 +236,25 @@ class ChatController {
      */
     async sendRoomMessage(content) {
         const roomId = window.currentChatRoomId || this.currentChatRoomId;
-        if (!roomId) return;
+        if (!roomId) {
+            console.error('❌ Cannot send: No room selected');
+            return;
+        }
 
+        if (!content || !content.trim()) {
+            console.warn('⚠️ Cannot send: Empty message');
+            return;
+        }
+
+        // Store temporary message ID for removal later
+        const tempMessageId = Date.now();
+        
         // Optimistic UI update
         const optimisticMessage = {
-            MessageId: Date.now(),
+            MessageId: tempMessageId,
             SenderId: 'current-user',
             SenderName: 'You',
-            Content: content,
+            Content: content.trim(),
             SentAt: new Date(),
             IsMine: true,
             TimeAgo: 'just now',
@@ -197,11 +264,22 @@ class ChatController {
         this.chatUI.addMessage(optimisticMessage);
         this.chatUI.scrollToBottom();
 
-        // Send to server
-        const success = await this.chatService.sendRoomMessage(roomId, content);
-        
-        if (!success) {
-            console.error('❌ Failed to send room message');
+        try {
+            // Send to server
+            const success = await this.chatService.sendRoomMessage(roomId, content.trim());
+            
+            if (!success) {
+                console.error('❌ Failed to send room message');
+                // Remove optimistic message on failure
+                const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
+                if (tempMsg) tempMsg.remove();
+                this.chatUI.showError('Failed to send message. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error sending room message:', error);
+            // Remove optimistic message on error
+            const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
+            if (tempMsg) tempMsg.remove();
             this.chatUI.showError('Failed to send message. Please try again.');
         }
     }

@@ -2,6 +2,7 @@ using discussionspot9.Data.DbContext;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace discussionspot9.Repositories
 {
@@ -16,10 +17,47 @@ namespace discussionspot9.Repositories
 
         public async Task<ChatMessage> AddMessageAsync(ChatMessage message)
         {
-            message.SentAt = DateTime.UtcNow;
-            _context.ChatMessages.Add(message);
-            await _context.SaveChangesAsync();
-            return message;
+            try
+            {
+                // Ensure required fields are set
+                if (string.IsNullOrEmpty(message.SenderId))
+                {
+                    throw new ArgumentException("SenderId cannot be null or empty");
+                }
+                
+                if (string.IsNullOrWhiteSpace(message.Content))
+                {
+                    throw new ArgumentException("Content cannot be null or empty");
+                }
+                
+                // Set sent time if not already set
+                if (message.SentAt == default)
+                {
+                    message.SentAt = DateTime.UtcNow;
+                }
+                
+                // Ensure IsDeleted is set (defaults to false)
+                // IsDeleted is a bool, so it defaults to false already
+                
+                _context.ChatMessages.Add(message);
+                await _context.SaveChangesAsync();
+                
+                // Reload with navigation properties for proper serialization
+                var savedMessage = await _context.ChatMessages
+                    .Include(m => m.Sender)
+                    .Include(m => m.Receiver)
+                    .FirstOrDefaultAsync(m => m.MessageId == message.MessageId);
+                
+                return savedMessage ?? message;
+            }
+            catch (DbUpdateException dbEx)
+            {
+                throw new InvalidOperationException($"Database error saving message: {dbEx.Message}", dbEx);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to save message: {ex.Message}", ex);
+            }
         }
 
         public async Task<List<ChatMessage>> GetDirectMessagesAsync(string userId1, string userId2, int skip, int take)

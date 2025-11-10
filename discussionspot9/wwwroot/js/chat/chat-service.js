@@ -57,12 +57,6 @@ class ChatService {
             this.callbacks.onMessageReceived.forEach(cb => cb(message));
         });
 
-        // Message sent confirmation
-        this.connection.on('MessageSent', (message) => {
-            console.log('✅ Message sent confirmation:', message);
-            this.callbacks.onMessageReceived.forEach(cb => cb(message));
-        });
-
         // User typing indicator
         this.connection.on('UserTyping', (userId, isTyping) => {
             console.log('⌨️ User typing:', userId, isTyping);

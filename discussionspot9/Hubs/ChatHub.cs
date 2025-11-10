@@ -27,13 +27,21 @@ namespace discussionspot9.Hubs
             var userId = Context.UserIdentifier;
             if (!string.IsNullOrEmpty(userId))
             {
-                // TEMPORARILY DISABLED: UserPresences table doesn't exist - blocking SignalR
-                // await _presenceService.UserConnectedAsync(userId, Context.ConnectionId);
-                
-                // Notify all users about this user coming online
-                await Clients.Others.SendAsync("UserOnline", userId);
-                
-                _logger.LogInformation($"User {userId} connected to ChatHub with connection {Context.ConnectionId}");
+                try
+                {
+                    // Track user presence for online users
+                    await _presenceService.UserConnectedAsync(userId, Context.ConnectionId);
+                    
+                    // Notify all users about this user coming online
+                    await Clients.Others.SendAsync("UserOnline", userId);
+                    
+                    _logger.LogInformation($"User {userId} connected to ChatHub with connection {Context.ConnectionId}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error tracking user presence for {userId} in ChatHub");
+                    // Continue even if presence tracking fails - don't block SignalR connection
+                }
             }
             
             await base.OnConnectedAsync();
@@ -44,13 +52,24 @@ namespace discussionspot9.Hubs
             var userId = Context.UserIdentifier;
             if (!string.IsNullOrEmpty(userId))
             {
-                // TEMPORARILY DISABLED: UserPresences table doesn't exist - blocking SignalR
-                // await _presenceService.UserDisconnectedAsync(userId, Context.ConnectionId);
-                
-                // Notify all users about this user going offline
-                await Clients.Others.SendAsync("UserOffline", userId);
-                
-                _logger.LogInformation($"User {userId} disconnected from ChatHub");
+                try
+                {
+                    // Remove user presence tracking
+                    var isStillOnline = await _presenceService.UserDisconnectedAsync(userId, Context.ConnectionId);
+                    
+                    // Only notify if user is completely offline (no other connections)
+                    if (!isStillOnline)
+                    {
+                        await Clients.Others.SendAsync("UserOffline", userId);
+                    }
+                    
+                    _logger.LogInformation($"User {userId} disconnected from ChatHub");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error removing user presence for {userId} in ChatHub");
+                    // Continue even if presence tracking fails
+                }
             }
             
             await base.OnDisconnectedAsync(exception);
@@ -70,20 +89,65 @@ namespace discussionspot9.Hubs
                     return;
                 }
 
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    await Clients.Caller.SendAsync("Error", "Message content cannot be empty");
+                    return;
+                }
+
+                _logger.LogInformation($"Sending direct message from {senderId} to {receiverId}: {content.Substring(0, Math.Min(50, content.Length))}...");
+
                 var message = await _chatService.SendDirectMessageAsync(senderId, receiverId, content);
 
-                // Send to receiver
-                await Clients.User(receiverId).SendAsync("ReceiveDirectMessage", message);
-                
-                // Send back to sender (for confirmation)
-                await Clients.Caller.SendAsync("MessageSent", message);
+                _logger.LogInformation($"Message saved with ID: {message.MessageId}, Content: {message.Content?.Substring(0, Math.Min(50, message.Content?.Length ?? 0))}");
 
-                _logger.LogInformation($"Direct message sent from {senderId} to {receiverId}");
+                // Create message copies with proper IsMine flag for each recipient
+                var messageForReceiver = new
+                {
+                    message.MessageId,
+                    message.SenderId,
+                    message.SenderName,
+                    message.SenderAvatar,
+                    message.ReceiverId,
+                    message.Content,
+                    message.AttachmentUrl,
+                    message.AttachmentType,
+                    message.SentAt,
+                    message.IsRead,
+                    IsMine = false, // Receiver didn't send this
+                    message.TimeAgo,
+                    message.FormattedTime
+                };
+                
+                var messageForSender = new
+                {
+                    message.MessageId,
+                    message.SenderId,
+                    message.SenderName,
+                    message.SenderAvatar,
+                    message.ReceiverId,
+                    message.Content,
+                    message.AttachmentUrl,
+                    message.AttachmentType,
+                    message.SentAt,
+                    message.IsRead,
+                    IsMine = true, // Sender sent this
+                    message.TimeAgo,
+                    message.FormattedTime
+                };
+
+                // Send to receiver (if they're connected)
+                await Clients.User(receiverId).SendAsync("ReceiveDirectMessage", messageForReceiver);
+                
+                // Send back to sender (for confirmation and real-time update)
+                await Clients.Caller.SendAsync("ReceiveDirectMessage", messageForSender);
+
+                _logger.LogInformation($"Direct message sent from {senderId} to {receiverId} successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending direct message");
-                await Clients.Caller.SendAsync("Error", "Failed to send message");
+                _logger.LogError(ex, $"Error sending direct message from {Context.UserIdentifier} to {receiverId}: {ex.Message}");
+                await Clients.Caller.SendAsync("Error", $"Failed to send message: {ex.Message}");
             }
         }
 
@@ -101,17 +165,52 @@ namespace discussionspot9.Hubs
                     return;
                 }
 
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    await Clients.Caller.SendAsync("Error", "Message content cannot be empty");
+                    return;
+                }
+
+                _logger.LogInformation($"Sending room message from {senderId} to room {roomId}: {content.Substring(0, Math.Min(50, content.Length))}...");
+
                 var message = await _chatService.SendRoomMessageAsync(senderId, roomId, content);
 
-                // Send to all room members
-                await Clients.Group($"room_{roomId}").SendAsync("ReceiveRoomMessage", message);
+                _logger.LogInformation($"Room message saved with ID: {message.MessageId}, Content: {message.Content?.Substring(0, Math.Min(50, message.Content?.Length ?? 0))}");
 
-                _logger.LogInformation($"Room message sent by {senderId} to room {roomId}");
+                // Prepare message for all room members
+                // Note: Each client will determine IsMine based on their own user ID vs SenderId
+                var roomMessage = new
+                {
+                    message.MessageId,
+                    message.SenderId,
+                    message.SenderName,
+                    message.SenderAvatar,
+                    message.ReceiverId,
+                    message.Content,
+                    message.AttachmentUrl,
+                    message.AttachmentType,
+                    message.SentAt,
+                    message.IsRead,
+                    // Don't set IsMine here - client will determine based on SenderId
+                    message.TimeAgo,
+                    message.FormattedTime
+                };
+
+                // Send to all room members (including sender)
+                // Each client receives the message and determines IsMine client-side
+                await Clients.Group($"room_{roomId}").SendAsync("ReceiveRoomMessage", roomMessage);
+
+                _logger.LogInformation($"Room message sent by {senderId} to room {roomId} successfully");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning($"Unauthorized: {ex.Message}");
+                await Clients.Caller.SendAsync("Error", "You are not a member of this room");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error sending room message to room {roomId}");
-                await Clients.Caller.SendAsync("Error", "Failed to send message to room");
+                _logger.LogError(ex, $"Error sending room message to room {roomId}: {ex.Message}");
+                await Clients.Caller.SendAsync("Error", $"Failed to send message: {ex.Message}");
             }
         }
 

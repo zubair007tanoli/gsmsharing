@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using discussionspot9.Data.DbContext;
 using discussionspot9.Models.Domain;
 using discussionspot9.Interfaces;
+using Microsoft.AspNetCore.Http;
 
 namespace DiscussionSpot9.Controllers
 {
@@ -176,10 +177,12 @@ namespace DiscussionSpot9.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _userService.LogoutUserAsync();
+            // Sign out from all authentication schemes - this automatically clears cookies
+            await _signInManager.SignOutAsync();
+            
             // Don't set TempData message - it shows on wrong page after redirect
             // User will see they're logged out from navbar (no user menu)
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Auth", "Account");
         }
         #endregion
 

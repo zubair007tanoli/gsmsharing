@@ -380,7 +380,7 @@
                                              style="border-radius: 50%; width: 40px; height: 40px; object-fit: cover;" />
                                     }
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
+                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark text-light user-menu">
                                     <li class="dropdown-header">
                                         <strong>@Model.DisplayName</strong>
                                         @if (Model.IsVerified)
@@ -417,8 +417,9 @@
                                     
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form asp-action="Logout" asp-controller="Account" method="post" class="d-inline">
-                                            <button type="submit" class="dropdown-item">
+                                        <form method="post" class="d-inline" action="@Url.Action("Logout", "Account")">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item text-light">
                                                 <i class="fas fa-sign-out-alt me-2"></i>Logout
                                             </button>
                                         </form>
