@@ -110,7 +110,7 @@ var resolvedGoogleSecretsPath = string.IsNullOrWhiteSpace(configuredGoogleSecret
         ? configuredGoogleSecretsPath
         : Path.Combine(builder.Environment.ContentRootPath, configuredGoogleSecretsPath));
 
-var wwwrootGoogleSecretsPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "GoogleApiAccess", "AuthKeys.json");
+var wwwrootGoogleSecretsPath = Path.Combine(builder.Environment.ContentRootPath, "Secrets", "GoogleApiAccess", "AuthKeys.json");
 
 string? googleClientId = FirstNonEmpty(
     builder.Configuration["Authentication:Google:ClientId"],
