@@ -1,0 +1,253 @@
+@{
+    ViewData["Title"] = "MCP Server Status";
+    ViewData["PageTitle"] = "MCP Server Status";
+    ViewData["PageDescription"] = "Monitor MCP server health and status";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    
+    var status = ViewBag.McpStatus as dynamic;
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">🖥️ MCP Server Status</h1>
+            <p class="text-muted">Monitor the health and status of MCP (Multi-Cloud Platform) servers</p>
+        </div>
+        <div class="col-auto">
+            <button onclick="refreshStatus()" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Refresh Status
+            </button>
+            <button onclick="loadDiagnostics()" class="btn btn-info">
+                <i class="fas fa-stethoscope"></i> Diagnostics
+            </button>
+            <button onclick="startServer('SeoAutomation')" class="btn btn-success" id="startSeoBtn">
+                <i class="fas fa-play"></i> Start SEO Server
+            </button>
+            <a href="/admin/manage/users" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Server Status Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card @(status?.SeoAutomation?.IsOnline == true ? "border-success" : "border-danger")">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-search text-primary"></i> SEO Automation
+                        </h5>
+                        <span class="badge @(status?.SeoAutomation?.IsOnline == true ? "bg-success" : "bg-danger")">
+                            @(status?.SeoAutomation?.IsOnline == true ? "Online" : "Offline")
+                        </span>
+                    </div>
+                    <p class="mb-1"><strong>Endpoint:</strong> <code>http://localhost:5001</code></p>
+                    <p class="mb-1"><strong>Status:</strong> @(status?.SeoAutomation?.Message ?? "Unknown")</p>
+                    @if (status?.SeoAutomation?.ResponseTimeMs != null)
+                    {
+                        <p class="mb-1"><strong>Response Time:</strong> <span class="badge @(status?.SeoAutomation?.ResponseTimeMs < 100 ? "bg-success" : status?.SeoAutomation?.ResponseTimeMs < 500 ? "bg-warning" : "bg-danger")">@(status?.SeoAutomation?.ResponseTimeMs)ms</span></p>
+                    }
+                    <p class="mb-0"><strong>Last Checked:</strong> @(status?.LastChecked?.ToString("HH:mm:ss") ?? "Never")</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card @(status?.Performance?.IsOnline == true ? "border-success" : "border-danger")">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tachometer-alt text-warning"></i> Performance
+                        </h5>
+                        <span class="badge @(status?.Performance?.IsOnline == true ? "bg-success" : "bg-danger")">
+                            @(status?.Performance?.IsOnline == true ? "Online" : "Offline")
+                        </span>
+                    </div>
+                    <p class="mb-1"><strong>Endpoint:</strong> <code>@(status?.Performance?.Endpoint ?? "http://localhost:5002")</code></p>
+                    <p class="mb-1"><strong>Status:</strong> @(status?.Performance?.Message ?? "Unknown")</p>
+                    @if (status?.Performance?.ResponseTimeMs != null)
+                    {
+                        <p class="mb-1"><strong>Response Time:</strong> <span class="badge @(status?.Performance?.ResponseTimeMs < 100 ? "bg-success" : status?.Performance?.ResponseTimeMs < 500 ? "bg-warning" : "bg-danger")">@(status?.Performance?.ResponseTimeMs)ms</span></p>
+                    }
+                    <p class="mb-0"><strong>Last Checked:</strong> @(status?.LastChecked?.ToString("HH:mm:ss") ?? "Never")</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card @(status?.UserPreferences?.IsOnline == true ? "border-success" : "border-danger")">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-cog text-info"></i> User Preferences
+                        </h5>
+                        <span class="badge @(status?.UserPreferences?.IsOnline == true ? "bg-success" : "bg-danger")">
+                            @(status?.UserPreferences?.IsOnline == true ? "Online" : "Offline")
+                        </span>
+                    </div>
+                    <p class="mb-1"><strong>Endpoint:</strong> <code>@(status?.UserPreferences?.Endpoint ?? "http://localhost:5003")</code></p>
+                    <p class="mb-1"><strong>Status:</strong> @(status?.UserPreferences?.Message ?? "Unknown")</p>
+                    @if (status?.UserPreferences?.ResponseTimeMs != null)
+                    {
+                        <p class="mb-1"><strong>Response Time:</strong> <span class="badge @(status?.UserPreferences?.ResponseTimeMs < 100 ? "bg-success" : status?.UserPreferences?.ResponseTimeMs < 500 ? "bg-warning" : "bg-danger")">@(status?.UserPreferences?.ResponseTimeMs)ms</span></p>
+                    }
+                    <p class="mb-0"><strong>Last Checked:</strong> @(status?.LastChecked?.ToString("HH:mm:ss") ?? "Never")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostics Card -->
+    @if (ViewBag.Diagnostics != null)
+    {
+        var diagnostics = ViewBag.Diagnostics as dynamic;
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-stethoscope"></i> Diagnostics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Auto-Start Enabled:</strong> 
+                            <span class="badge @(diagnostics?.AutoStartEnabled == true ? "bg-success" : "bg-danger")">
+                                @(diagnostics?.AutoStartEnabled == true ? "Yes" : "No")
+                            </span>
+                        </p>
+                        <p><strong>Python Path:</strong> <code>@(diagnostics?.PythonPath ?? "Not configured")</code></p>
+                        <p><strong>SEO Server Enabled:</strong> 
+                            <span class="badge @(diagnostics?.SeoServerEnabled == true ? "bg-success" : "bg-danger")">
+                                @(diagnostics?.SeoServerEnabled == true ? "Yes" : "No")
+                            </span>
+                        </p>
+                        <p><strong>Manager Available:</strong> 
+                            <span class="badge @(diagnostics?.ManagerAvailable == true ? "bg-success" : "bg-danger")">
+                                @(diagnostics?.ManagerAvailable == true ? "Yes" : "No")
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Information Card -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle"></i> MCP Server Information
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>What are MCP Servers?</strong><br>
+                MCP (Multi-Cloud Platform) servers are microservices that handle:
+                <ul class="mb-0 mt-2">
+                    <li><strong>SEO Automation (Port 5001):</strong> Automated SEO optimization, keyword research, and content analysis</li>
+                    <li><strong>Performance (Port 5002):</strong> Real-time performance monitoring, caching, and optimization</li>
+                    <li><strong>User Preferences (Port 5003):</strong> User preference management, personalization, and recommendations</li>
+                </ul>
+            </div>
+            
+            <h6>Setup Instructions:</h6>
+            <ol>
+                <li>MCP servers are Python FastAPI services that should run on ports 5001, 5002, and 5003</li>
+                <li>Each server should have a <code>/health</code> endpoint that returns HTTP 200 when healthy</li>
+                <li>Start the servers using: <code>python -m uvicorn main:app --port 5001</code> (for each server)</li>
+                <li>Status is checked automatically when you visit this page</li>
+                <li>See <code>docs/MCP_SERVER_IMPLEMENTATION_GUIDE.md</code> for detailed setup instructions</li>
+            </ol>
+            
+            <div class="alert alert-warning mt-3">
+                <strong>Note:</strong> If all servers show as "Offline", they may not be running yet. 
+                MCP servers are optional and the application will work without them, but some features may be limited.
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <strong>Quick Test:</strong> To verify the health check is working, you can create a simple test server:
+                <pre class="mt-2"><code># Python test server (run in separate terminal)
+python -c "from http.server import HTTPServer, BaseHTTPRequestHandler; class H(BaseHTTPRequestHandler): 
+    def do_GET(self): 
+        self.send_response(200); 
+        self.end_headers(); 
+        self.wfile.write(b'{\"status\":\"healthy\"}'); 
+HTTPServer(('localhost', 5001), H).serve_forever()"</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStatus() {
+    window.location.reload();
+}
+
+async function loadDiagnostics() {
+    try {
+        const response = await fetch('/admin/mcp-status/diagnostics');
+        const data = await response.json();
+        
+        let message = '📊 Diagnostics:\n\n';
+        message += `Python Installed: ${data.pythonInstalled ? '✅ Yes' : '❌ No'}\n`;
+        message += `Python Version: ${data.pythonVersion || 'Unknown'}\n`;
+        message += `Server Script Exists: ${data.serverScriptExists ? '✅ Yes' : '❌ No'}\n`;
+        message += `Script Path: ${data.serverScriptPath || 'Not found'}\n`;
+        message += `Auto-Start Enabled: ${data.autoStartEnabled ? '✅ Yes' : '❌ No'}\n`;
+        message += `SEO Server Enabled: ${data.seoServerEnabled ? '✅ Yes' : '❌ No'}\n`;
+        message += `Google Auth Configured: ${data.googleAuthConfigured ? '✅ Yes' : '❌ No'}\n\n`;
+        message += `Content Root: ${data.contentRootPath || 'Unknown'}\n`;
+        message += `Base Directory: ${data.baseDirectory || 'Unknown'}\n`;
+        message += `Current Directory: ${data.currentDirectory || 'Unknown'}`;
+        
+        alert(message);
+    } catch (error) {
+        alert('❌ Error loading diagnostics: ' + error.message);
+    }
+}
+
+async function startServer(serverName) {
+    const btn = document.getElementById('start' + serverName + 'Btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    }
+
+    try {
+        const response = await fetch('/admin/mcp-status/start-server', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            },
+            body: JSON.stringify({ serverName: serverName })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            setTimeout(() => refreshStatus(), 2000);
+        } else {
+            alert('❌ ' + result.message);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i> Start ' + serverName + ' Server';
+            }
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> Start ' + serverName + ' Server';
+        }
+    }
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    refreshStatus();
+}, 30000);
+</script>
+

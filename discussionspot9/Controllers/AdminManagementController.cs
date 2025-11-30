@@ -733,6 +733,76 @@ namespace discussionspot9.Controllers
                 message = result.Success ? "Report dismissed" : result.ErrorMessage
             });
         }
+        
+        // ===============================================
+        // USER ACTIVITIES
+        // ===============================================
+        
+        /// <summary>
+        /// View user activities
+        /// </summary>
+        [HttpGet("user-activities")]
+        public async Task<IActionResult> UserActivities(int page = 1, int days = 30, string? userId = null)
+        {
+            if (!await IsCurrentUserAdmin())
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
+            const int pageSize = 50;
+            var startDate = DateTime.UtcNow.AddDays(-days);
+            
+            // Get activities directly from context
+            var query = _context.UserActivities
+                .Include(a => a.Post)
+                .Include(a => a.Community)
+                .AsQueryable();
+            
+            if (!string.IsNullOrEmpty(userId))
+            {
+                query = query.Where(a => a.UserId == userId);
+            }
+            
+            query = query.Where(a => a.ActivityAt >= startDate);
+            
+            var totalCount = await query.CountAsync();
+            var activities = await query
+                .OrderByDescending(a => a.ActivityAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            
+            // Get activity stats
+            var activityStats = await _context.UserActivities
+                .Where(a => a.ActivityAt >= startDate)
+                .GroupBy(a => a.ActivityType)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Type, x => x.Count);
+            
+            // Get top active users
+            var topActiveUsers = await _context.UserActivities
+                .Where(a => a.UserId != null && a.ActivityAt >= startDate)
+                .GroupBy(a => a.UserId!)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    ActivityCount = g.Count(),
+                    LastActivity = g.Max(a => a.ActivityAt)
+                })
+                .OrderByDescending(u => u.ActivityCount)
+                .Take(10)
+                .ToListAsync();
+            
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            ViewBag.Days = days;
+            ViewBag.UserId = userId;
+            ViewBag.ActivityStats = activityStats;
+            ViewBag.TopActiveUsers = topActiveUsers;
+            
+            return View(activities);
+        }
     }
 }
 

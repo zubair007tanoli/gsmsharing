@@ -19,15 +19,18 @@ namespace discussionspot9.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<StoriesController> _logger;
         private readonly IStoryGenerationService _storyGenerationService;
+        private readonly IWebStoryOptimizationService? _optimizationService;
 
         public StoriesController(
             ApplicationDbContext context,
             ILogger<StoriesController> logger,
-            IStoryGenerationService storyGenerationService)
+            IStoryGenerationService storyGenerationService,
+            IWebStoryOptimizationService? optimizationService = null)
         {
             _context = context;
             _logger = logger;
             _storyGenerationService = storyGenerationService;
+            _optimizationService = optimizationService;
         }
 
         [HttpGet]
@@ -961,6 +964,67 @@ namespace discussionspot9.Controllers
                 _logger.LogError(ex, "Error publishing story {StoryId}", id);
                 return StatusCode(500, new { success = false, message = "Error publishing story" });
             }
+        }
+
+        [HttpPost]
+        [Route("stories/{storySlug}/optimize")]
+        public async Task<IActionResult> OptimizeStory(string storySlug)
+        {
+            var story = await _context.Stories
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
+
+            if (story == null)
+            {
+                return NotFound();
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (story.UserId != userId && !User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+
+            if (_optimizationService == null)
+            {
+                return Json(new { success = false, message = "Optimization service not available" });
+            }
+
+            var result = await _optimizationService.OptimizeStoryAsync(story.StoryId);
+
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Success ? "Story optimized successfully" : result.ErrorMessage,
+                improvements = result.Improvements,
+                warnings = result.Warnings
+            });
+        }
+
+        [HttpGet]
+        [Route("stories/{storySlug}/validate")]
+        public async Task<IActionResult> ValidateStory(string storySlug)
+        {
+            var story = await _context.Stories
+                .FirstOrDefaultAsync(s => s.Slug == storySlug);
+
+            if (story == null)
+            {
+                return NotFound();
+            }
+
+            if (_optimizationService == null)
+            {
+                return Json(new { success = false, message = "Validation service not available" });
+            }
+
+            var result = await _optimizationService.ValidateStoryAsync(story.StoryId);
+
+            return Json(new
+            {
+                isValid = result.IsValid,
+                errors = result.Errors,
+                warnings = result.Warnings
+            });
         }
     }
 

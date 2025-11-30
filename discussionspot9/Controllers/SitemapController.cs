@@ -1,4 +1,5 @@
 using discussionspot9.Data.DbContext;
+using discussionspot9.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -9,107 +10,51 @@ namespace discussionspot9.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SitemapController> _logger;
+        private readonly ISitemapService _sitemapService;
 
-        public SitemapController(ApplicationDbContext context, ILogger<SitemapController> logger)
+        public SitemapController(
+            ApplicationDbContext context, 
+            ILogger<SitemapController> logger,
+            ISitemapService sitemapService)
         {
             _context = context;
             _logger = logger;
+            _sitemapService = sitemapService;
         }
 
         [HttpGet]
         [Route("sitemap.xml")]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)] // Cache for 1 hour
         public async Task<IActionResult> Sitemap()
         {
-            var sitemap = new StringBuilder();
-            sitemap.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            sitemap.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"");
-            sitemap.AppendLine("        xmlns:image=\"http://www.google.com/schemas/sitemap-image/1.1\"");
-            sitemap.AppendLine("        xmlns:news=\"http://www.google.com/schemas/sitemap-news/0.9\">");
-
-            // Home page
-            sitemap.AppendLine("  <url>");
-            sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}</loc>");
-            sitemap.AppendLine("    <changefreq>daily</changefreq>");
-            sitemap.AppendLine("    <priority>1.0</priority>");
-            sitemap.AppendLine("  </url>");
-
-            // Stories index
-            sitemap.AppendLine("  <url>");
-            sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}/stories</loc>");
-            sitemap.AppendLine("    <changefreq>daily</changefreq>");
-            sitemap.AppendLine("    <priority>0.9</priority>");
-            sitemap.AppendLine("  </url>");
-
-            // Individual stories (use non-AMP viewer as canonical)
-            var stories = await _context.Stories
-                .Where(s => s.Status == "published")
-                .OrderByDescending(s => s.PublishedAt)
-                .Take(1000) // Limit to 1000 most recent stories
-                .ToListAsync();
-
-            foreach (var story in stories)
+            try
             {
-                sitemap.AppendLine("  <url>");
-                sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}/stories/viewer/{story.Slug}</loc>");
-                sitemap.AppendLine($"    <lastmod>{story.UpdatedAt:yyyy-MM-dd}</lastmod>");
-                sitemap.AppendLine("    <changefreq>weekly</changefreq>");
-                sitemap.AppendLine("    <priority>0.8</priority>");
-                
-                if (!string.IsNullOrEmpty(story.PosterImageUrl))
-                {
-                    sitemap.AppendLine("    <image:image>");
-                    sitemap.AppendLine($"      <image:loc>{story.PosterImageUrl}</image:loc>");
-                    sitemap.AppendLine($"      <image:title>{story.Title}</image:title>");
-                    sitemap.AppendLine($"      <image:caption>{story.Description}</image:caption>");
-                    sitemap.AppendLine("    </image:image>");
-                }
-                
-                sitemap.AppendLine("  </url>");
+                var sitemapXml = await _sitemapService.GenerateSitemapAsync(Request.Scheme, Request.Host.ToString());
+                return Content(sitemapXml, "application/xml", Encoding.UTF8);
             }
-
-            // AMP Stories
-            var ampStories = stories.Where(s => s.IsAmpEnabled).Take(100);
-            foreach (var story in ampStories)
+            catch (Exception ex)
             {
-                sitemap.AppendLine("  <url>");
-                sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}/stories/amp/{story.Slug}</loc>");
-                sitemap.AppendLine($"    <lastmod>{story.UpdatedAt:yyyy-MM-dd}</lastmod>");
-                sitemap.AppendLine("    <changefreq>weekly</changefreq>");
-                sitemap.AppendLine("    <priority>0.7</priority>");
-                sitemap.AppendLine("  </url>");
+                _logger.LogError(ex, "Error generating sitemap");
+                return StatusCode(500, "Error generating sitemap");
             }
-
-            sitemap.AppendLine("</urlset>");
-
-            return Content(sitemap.ToString(), "application/xml");
         }
 
         [HttpGet]
-        [Route("sitemap-stories.xml")]
-        public async Task<IActionResult> StoriesSitemap()
+        [Route("sitemap-index.xml")]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
+        public async Task<IActionResult> SitemapIndex()
         {
-            var sitemap = new StringBuilder();
-            sitemap.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            sitemap.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
-
-            var stories = await _context.Stories
-                .Where(s => s.Status == "published")
-                .OrderByDescending(s => s.PublishedAt)
-                .ToListAsync();
-
-            foreach (var story in stories)
+            try
             {
-                sitemap.AppendLine("  <url>");
-                sitemap.AppendLine($"    <loc>{Request.Scheme}://{Request.Host}/stories/{story.Slug}</loc>");
-                sitemap.AppendLine($"    <lastmod>{story.UpdatedAt:yyyy-MM-dd}</lastmod>");
-                sitemap.AppendLine("    <changefreq>weekly</changefreq>");
-                sitemap.AppendLine("    <priority>0.8</priority>");
-                sitemap.AppendLine("  </url>");
+                var sitemapIndexXml = await _sitemapService.GenerateSitemapIndexAsync(Request.Scheme, Request.Host.ToString());
+                return Content(sitemapIndexXml, "application/xml", Encoding.UTF8);
             }
-
-            sitemap.AppendLine("</urlset>");
-
-            return Content(sitemap.ToString(), "application/xml");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating sitemap index");
+                return StatusCode(500, "Error generating sitemap index");
+            }
         }
+
     }
 }

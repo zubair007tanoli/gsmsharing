@@ -643,18 +643,25 @@ namespace discussionspot9.Controllers
         {
             try
             {
-                var categories = await _context.Categories
+                var categoriesData = await _context.Categories
                     .Where(c => c.IsActive)
                     .OrderBy(c => c.DisplayOrder)
                     .ThenBy(c => c.Name)
-                    .Select(c => new CategoryDropdownItem
+                    .Select(c => new
                     {
-                        CategoryId = c.CategoryId,
-                        Name = c.Name,
-                        Icon = GetCategoryIcon(c.Name), // Auto-assign icons based on name
-                        Description = c.Description
+                        c.CategoryId,
+                        c.Name,
+                        c.Description
                     })
                     .ToListAsync();
+
+                var categories = categoriesData.Select(c => new CategoryDropdownItem
+                {
+                    CategoryId = c.CategoryId,
+                    Name = c.Name,
+                    Icon = GetCategoryIcon(c.Name), // Auto-assign icons based on name
+                    Description = c.Description
+                }).ToList();
 
                 model.AvailableCategories = categories;
             }

@@ -299,6 +299,9 @@ builder.Services.ConfigureExternalCookie(options =>
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.None; // None requires HTTPS
     }
+    options.Cookie.Name = "DiscussionSpot9ExternalAuth";
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(5); // Short expiry for external auth
 });
 // ADD DATA PROTECTION:
 builder.Services.AddDataProtection()
@@ -531,6 +534,45 @@ builder.Services.AddScoped<IChatAdService, ChatAdService>();
 // FILE STORAGE SERVICE
 // =============================================
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+
+// =============================================
+// LOCAL AI SERVICE (FREE - No API Costs!)
+// =============================================
+builder.Services.AddHttpClient("LocalAI", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+builder.Services.AddScoped<discussionspot9.Services.ILocalAIService, discussionspot9.Services.LocalAIService>();
+
+// =============================================
+// MCP CLIENT SERVICE
+// =============================================
+builder.Services.AddHttpClient("McpClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<discussionspot9.Services.MCP.IMcpClientService, discussionspot9.Services.MCP.McpClientService>();
+
+// =============================================
+// WEB STORY OPTIMIZATION SERVICE
+// =============================================
+builder.Services.AddScoped<discussionspot9.Services.IWebStoryOptimizationService, discussionspot9.Services.WebStoryOptimizationService>();
+
+// =============================================
+// SITEMAP SERVICE
+// =============================================
+builder.Services.AddScoped<discussionspot9.Services.ISitemapService, discussionspot9.Services.SitemapService>();
+
+// =============================================
+// MCP SERVER MANAGER (Auto-Start & Monitoring)
+// =============================================
+builder.Services.AddHttpClient("McpServerManager", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+builder.Services.AddSingleton<discussionspot9.Services.MCP.IMcpServerManager, discussionspot9.Services.MCP.McpServerManager>();
+builder.Services.AddHostedService<discussionspot9.Services.MCP.McpServerManager>(sp => 
+    (discussionspot9.Services.MCP.McpServerManager)sp.GetRequiredService<discussionspot9.Services.MCP.IMcpServerManager>());
 
 // =============================================
 // ADMIN & MODERATION SYSTEM

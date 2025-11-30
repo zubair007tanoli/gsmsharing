@@ -22,6 +22,7 @@ namespace discussionspot9.Services
         private readonly HybridSeoService _hybridSeoService;
         private readonly ImageSeoOptimizer _imageSeoOptimizer;
         private readonly ImageStructuredDataService _imageStructuredDataService;
+        private readonly ILocalAIService? _localAI;
         private readonly ApplicationDbContext _context;
         private readonly ILogger<EnhancedSeoService> _logger;
 
@@ -34,7 +35,8 @@ namespace discussionspot9.Services
             ImageSeoOptimizer imageSeoOptimizer,
             ImageStructuredDataService imageStructuredDataService,
             ApplicationDbContext context,
-            ILogger<EnhancedSeoService> logger)
+            ILogger<EnhancedSeoService> logger,
+            ILocalAIService? localAI = null)
         {
             _googleSearchService = googleSearchService;
             _aiSeoService = aiSeoService;
@@ -43,6 +45,7 @@ namespace discussionspot9.Services
             _hybridSeoService = hybridSeoService;
             _imageSeoOptimizer = imageSeoOptimizer;
             _imageStructuredDataService = imageStructuredDataService;
+            _localAI = localAI;
             _context = context;
             _logger = logger;
         }
@@ -104,7 +107,7 @@ namespace discussionspot9.Services
                 // Python Analyzer - Baseline SEO analysis
                 var pythonResult = await _pythonAnalyzer.AnalyzePostAsync(model);
 
-                // AI Service - Content optimization
+                // AI Service - Content optimization (try paid AI first, fallback to free local AI)
                 AISeoOptimizationResult? aiResult = null;
                 try
                 {
@@ -125,7 +128,49 @@ namespace discussionspot9.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "AI optimization failed, continuing with other optimizations");
+                    _logger.LogWarning(ex, "Paid AI optimization failed, trying free local AI");
+                    
+                    // Fallback to FREE local AI (Ollama)
+                    if (_localAI != null && await _localAI.IsAvailableAsync())
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Using FREE local AI for optimization");
+                            
+                            var optimizedTitle = await _localAI.OptimizeTitleAsync(model.Title, model.CommunitySlug);
+                            var optimizedContent = await _localAI.OptimizeContentAsync(model.Content ?? "", model.Title);
+                            var metaDescription = await _localAI.GenerateMetaDescriptionAsync(model.Content ?? "", model.Title);
+                            var keywords = await _localAI.ExtractKeywordsAsync(model.Content ?? "", 10);
+                            
+                            // Create AI result from local AI
+                            aiResult = new AISeoOptimizationResult
+                            {
+                                Success = true,
+                                OptimizedTitle = optimizedTitle ?? model.Title,
+                                OptimizedContent = optimizedContent ?? model.Content,
+                                SuggestedMetaDescription = metaDescription,
+                                SuggestedKeywords = keywords,
+                                EstimatedScore = 75, // Default score for local AI
+                                Improvements = new List<string> 
+                                { 
+                                    "Optimized using free local AI (Ollama)",
+                                    "Title optimized for SEO",
+                                    "Content structure improved",
+                                    "Keywords extracted automatically"
+                                }
+                            };
+                            
+                            _logger.LogInformation("✅ FREE local AI optimization completed successfully");
+                        }
+                        catch (Exception localAIEx)
+                        {
+                            _logger.LogWarning(localAIEx, "Local AI also failed, continuing without AI optimization");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Local AI not available, continuing with other optimizations");
+                    }
                 }
 
                 // Step 5: Combine all results
@@ -136,14 +181,34 @@ namespace discussionspot9.Services
                     aiResult?.SuggestedKeywords ?? new()
                 );
 
-                var optimizedTitle = aiResult?.OptimizedTitle ?? pythonResult.OptimizedTitle ?? model.Title;
-                var optimizedContent = aiResult?.OptimizedContent ?? model.Content;
-                var metaDescription = aiResult?.SuggestedMetaDescription 
-                    ?? pythonResult.SuggestedMetaDescription 
-                    ?? GenerateMetaDescription(model.Title, model.Content ?? "");
+                // Get optimized title and content
+                var finalOptimizedTitle = aiResult?.OptimizedTitle ?? pythonResult.OptimizedTitle ?? model.Title;
+                var finalOptimizedContent = aiResult?.OptimizedContent ?? model.Content;
+                
+                // Generate meta description with fallback chain: AI -> Python -> Local AI -> Manual
+                var finalMetaDescription = aiResult?.SuggestedMetaDescription 
+                    ?? pythonResult.SuggestedMetaDescription;
+                
+                // Try local AI for meta description if still missing
+                if (string.IsNullOrWhiteSpace(finalMetaDescription) && _localAI != null && await _localAI.IsAvailableAsync())
+                {
+                    try
+                    {
+                        finalMetaDescription = await _localAI.GenerateMetaDescriptionAsync(model.Content ?? "", finalOptimizedTitle);
+                    }
+                    catch
+                    {
+                        // Fallback to manual generation
+                        finalMetaDescription = GenerateMetaDescription(finalOptimizedTitle, finalOptimizedContent ?? "");
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(finalMetaDescription))
+                {
+                    finalMetaDescription = GenerateMetaDescription(finalOptimizedTitle, finalOptimizedContent ?? "");
+                }
 
                 // Step 6: Optimize content structure (H1/H2/H3, keyword placement)
-                optimizedContent = OptimizeContentStructure(optimizedContent, optimizedTitle, optimizedKeywords);
+                finalOptimizedContent = OptimizeContentStructure(finalOptimizedContent, finalOptimizedTitle, optimizedKeywords);
 
                 // Step 7: Calculate final SEO score
                 var seoScore = CalculateFinalSeoScore(
@@ -151,21 +216,21 @@ namespace discussionspot9.Services
                     aiResult?.EstimatedScore ?? 0,
                     googleSearchResult != null,
                     optimizedKeywords.Count,
-                    optimizedContent
+                    finalOptimizedContent
                 );
 
                 var improvements = CombineImprovements(pythonResult.ImprovementsMade, aiResult?.Improvements ?? new());
                 
                 // Add content structure improvements
-                var structureImprovements = AnalyzeContentStructure(optimizedContent, optimizedTitle, optimizedKeywords);
+                var structureImprovements = AnalyzeContentStructure(finalOptimizedContent, finalOptimizedTitle, optimizedKeywords);
                 improvements.AddRange(structureImprovements);
 
                 return new SeoOptimizationResult
                 {
                     Success = true,
-                    OptimizedTitle = optimizedTitle,
-                    OptimizedContent = optimizedContent,
-                    MetaDescription = metaDescription,
+                    OptimizedTitle = finalOptimizedTitle,
+                    OptimizedContent = finalOptimizedContent,
+                    MetaDescription = finalMetaDescription,
                     Keywords = optimizedKeywords,
                     SeoScore = seoScore,
                     GoogleRelatedKeywords = googleSearchResult?.RelatedKeywords?.Keywords.Select(k => k.Keyword).ToList() ?? new(),
@@ -173,9 +238,9 @@ namespace discussionspot9.Services
                     Improvements = improvements,
                     BaselineScore = pythonResult.SeoScore,
                     EstimatedScore = seoScore,
-                    ContentStructureScore = CalculateContentStructureScore(optimizedContent, optimizedTitle),
-                    KeywordDensity = CalculateKeywordDensity(optimizedContent, optimizedKeywords),
-                    InternalLinksCount = CountInternalLinks(optimizedContent)
+                    ContentStructureScore = CalculateContentStructureScore(finalOptimizedContent, finalOptimizedTitle),
+                    KeywordDensity = CalculateKeywordDensity(finalOptimizedContent, optimizedKeywords),
+                    InternalLinksCount = CountInternalLinks(finalOptimizedContent)
                 };
             }
             catch (Exception ex)

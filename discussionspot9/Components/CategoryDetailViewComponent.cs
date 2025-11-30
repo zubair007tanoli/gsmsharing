@@ -1,6 +1,6 @@
-﻿using discussionspot9.Data.DbContext;
+using discussionspot9.Data.DbContext;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // Add this using directive
+using Microsoft.EntityFrameworkCore;
 
 namespace discussionspot9.Components
 {
@@ -21,19 +21,21 @@ namespace discussionspot9.Components
 
         private async Task<List<CategoryNavItem>> GetNavigationCategories()
         {
-            return await _context.Categories
+            var categories = await _context.Categories
                 .Where(c => c.ParentCategoryId == null && c.IsActive)
                 .OrderBy(c => c.DisplayOrder)
-                .Select(c => new CategoryNavItem
-                {
-                    Name = c.Name,
-                    Slug = c.Slug,
-                    Icon = GetDefaultIcon(c.Name)
-                })
-                .ToListAsync(); // This now works because of the added using directive
+                .Select(c => new { c.Name, c.Slug })
+                .ToListAsync();
+            
+            return categories.Select(c => new CategoryNavItem
+            {
+                Name = c.Name,
+                Slug = c.Slug,
+                Icon = GetDefaultIcon(c.Name)
+            }).ToList();
         }
 
-        private string GetDefaultIcon(string categoryName)
+        private static string GetDefaultIcon(string categoryName)
         {
             return categoryName.ToLower() switch
             {

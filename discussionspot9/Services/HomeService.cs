@@ -120,16 +120,15 @@ namespace discussionspot9.Services
             try
             {
                 await using var context = await _contextFactory.CreateDbContextAsync();
-                var categories = await context.Categories
+                var categoriesData = await context.Categories
                     .Where(c => c.IsActive && c.ParentCategoryId == null)
                     .AsNoTracking()
-                    .Select(c => new CategoryViewModel
+                    .Select(c => new
                     {
-                        CategoryId = c.CategoryId,
-                        Name = c.Name,
-                        Slug = c.Slug,
-                        Description = c.Description ?? "",
-                        IconClass = GetCategoryIcon(c.Name),
+                        c.CategoryId,
+                        c.Name,
+                        c.Slug,
+                        c.Description,
                         TopicCount = c.Communities.Count,
                         PostCount = c.Communities.Sum(comm => comm.PostCount),
                         LastActivity = c.Communities
@@ -139,6 +138,18 @@ namespace discussionspot9.Services
                     })
                     .OrderBy(c => c.Name)
                     .ToListAsync();
+
+                var categories = categoriesData.Select(c => new CategoryViewModel
+                {
+                    CategoryId = c.CategoryId,
+                    Name = c.Name,
+                    Slug = c.Slug,
+                    Description = c.Description ?? "",
+                    IconClass = GetCategoryIcon(c.Name),
+                    TopicCount = c.TopicCount,
+                    PostCount = c.PostCount,
+                    LastActivity = c.LastActivity
+                }).ToList();
 
                 var oneHourAgo = DateTime.UtcNow.AddHours(-1);
                 foreach (var category in categories)

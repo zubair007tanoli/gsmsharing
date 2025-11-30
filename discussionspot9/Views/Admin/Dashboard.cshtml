@@ -262,6 +262,93 @@
     </div>
 </div>
 
+<!-- Navigation Cards Section -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-compass me-2"></i>Admin Navigation</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/users" class="btn btn-outline-primary w-100 text-start py-3">
+                            <i class="fas fa-users me-2"></i><strong>All Users</strong>
+                            <br><small class="text-muted">Manage user accounts</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/posts" class="btn btn-outline-success w-100 text-start py-3">
+                            <i class="fas fa-newspaper me-2"></i><strong>All Posts</strong>
+                            <br><small class="text-muted">Manage posts</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/reports" class="btn btn-outline-danger w-100 text-start py-3">
+                            <i class="fas fa-flag me-2"></i><strong>Reported Posts</strong>
+                            <br><small class="text-muted"><span class="badge bg-danger" id="navPendingReports">0</span> pending</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/communities" class="btn btn-outline-warning w-100 text-start py-3">
+                            <i class="fas fa-users-cog me-2"></i><strong>Communities</strong>
+                            <br><small class="text-muted">Manage communities</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/user-activities" class="btn btn-outline-info w-100 text-start py-3">
+                            <i class="fas fa-chart-line me-2"></i><strong>User Activities</strong>
+                            <br><small class="text-muted">Track user behavior</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/database" class="btn btn-outline-primary w-100 text-start py-3">
+                            <i class="fas fa-database me-2"></i><strong>Database</strong>
+                            <br><small class="text-muted">View database stats</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/mcp-status" class="btn btn-outline-secondary w-100 text-start py-3">
+                            <i class="fas fa-server me-2"></i><strong>MCP Server Status</strong>
+                            <br><small class="text-muted">Monitor MCP servers</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/seo/unified-optimization" class="btn btn-outline-info w-100 text-start py-3">
+                            <i class="fas fa-magic me-2"></i><strong>SEO Optimization</strong>
+                            <br><small class="text-muted">Optimize content</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/analytics" class="btn btn-outline-success w-100 text-start py-3">
+                            <i class="fas fa-chart-bar me-2"></i><strong>Analytics</strong>
+                            <br><small class="text-muted">View statistics</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/seo/revenue" class="btn btn-outline-warning w-100 text-start py-3">
+                            <i class="fas fa-dollar-sign me-2"></i><strong>Revenue Dashboard</strong>
+                            <br><small class="text-muted">View revenue</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/moderators" class="btn btn-outline-primary w-100 text-start py-3">
+                            <i class="fas fa-user-shield me-2"></i><strong>Moderators</strong>
+                            <br><small class="text-muted">Manage moderators</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="/admin/manage/banned" class="btn btn-outline-danger w-100 text-start py-3">
+                            <i class="fas fa-user-slash me-2"></i><strong>Banned Users</strong>
+                            <br><small class="text-muted">View banned users</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- System Status -->
 <div class="row g-4">
     <div class="col-12">
@@ -361,6 +448,12 @@
                 // Update quick actions badges
                 document.getElementById('quickPendingReports').textContent = data.pendingReports || 0;
                 document.getElementById('quickSeoQueue').textContent = data.seoQueueCount || 0;
+                
+                // Update navigation badge
+                const navBadge = document.getElementById('navPendingReports');
+                if (navBadge) {
+                    navBadge.textContent = data.pendingReports || 0;
+                }
                 
                 // Update growth indicators
                 updateGrowthIndicator('userGrowth', data.userGrowth || 0);

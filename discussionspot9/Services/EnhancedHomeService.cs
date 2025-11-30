@@ -130,49 +130,68 @@ namespace discussionspot9.Services
         private async Task<List<RecentPostViewModel>> GetRecentPostsAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Posts
+            var posts = await context.Posts
                 .Where(p => p.Status == "published")
                 .Include(p => p.Community).ThenInclude(c => c.Category)
                 .Include(p => p.UserProfile)
                 .Include(p => p.PostTags).ThenInclude(pt => pt.Tag)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(10)
-                .Select(p => new RecentPostViewModel
+                .Select(p => new
                 {
-                    PostId = p.PostId,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Content = p.Content ?? "",
+                    p.PostId,
+                    p.Title,
+                    p.Slug,
+                    p.Content,
                     CategoryName = p.Community.Category.Name,
                     CategorySlug = p.Community.Category.Slug,
                     CommunitySlug = p.Community.Slug,
                     AuthorDisplayName = p.UserProfile != null ? p.UserProfile.DisplayName : "Unknown",
-                    AuthorInitials = p.UserProfile != null ? GetInitials(p.UserProfile.DisplayName) : "?",
                     VoteCount = p.UpvoteCount - p.DownvoteCount,
-                    CommentCount = p.CommentCount,
-                    ViewCount = p.ViewCount,
-                    CreatedAt = p.CreatedAt,
-                    PostType = p.PostType,
-                    IsPinned = p.IsPinned,
-                    IsLocked = p.IsLocked,
+                    p.CommentCount,
+                    p.ViewCount,
+                    p.CreatedAt,
+                    p.PostType,
+                    p.IsPinned,
+                    p.IsLocked,
                     Tags = p.PostTags.Select(pt => pt.Tag.Name).ToList()
                 })
                 .ToListAsync();
+            
+            return posts.Select(p => new RecentPostViewModel
+            {
+                PostId = p.PostId,
+                Title = p.Title,
+                Slug = p.Slug,
+                Content = p.Content ?? "",
+                CategoryName = p.CategoryName,
+                CategorySlug = p.CategorySlug,
+                CommunitySlug = p.CommunitySlug,
+                AuthorDisplayName = p.AuthorDisplayName,
+                AuthorInitials = GetInitials(p.AuthorDisplayName),
+                VoteCount = p.VoteCount,
+                CommentCount = p.CommentCount,
+                ViewCount = p.ViewCount,
+                CreatedAt = p.CreatedAt,
+                PostType = p.PostType,
+                IsPinned = p.IsPinned,
+                IsLocked = p.IsLocked,
+                Tags = p.Tags
+            }).ToList();
         }
 
         private async Task<List<CategoryViewModel>> GetCategoriesAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Categories
+            var categories = await context.Categories
                 .Where(c => c.IsActive && c.ParentCategoryId == null)
                 .AsNoTracking()
-                .Select(c => new CategoryViewModel
+                .Select(c => new
                 {
-                    CategoryId = c.CategoryId,
-                    Name = c.Name,
-                    Slug = c.Slug,
-                    Description = c.Description ?? "",
-                    IconClass = GetCategoryIcon(c.Name),
+                    c.CategoryId,
+                    c.Name,
+                    c.Slug,
+                    c.Description,
                     TopicCount = c.Communities.Count,
                     PostCount = c.Communities.Sum(comm => comm.PostCount),
                     LastActivity = c.Communities.SelectMany(comm => comm.Posts)
@@ -180,6 +199,18 @@ namespace discussionspot9.Services
                         .Max(p => (DateTime?)p.CreatedAt)
                 })
                 .ToListAsync();
+            
+            return categories.Select(c => new CategoryViewModel
+            {
+                CategoryId = c.CategoryId,
+                Name = c.Name,
+                Slug = c.Slug,
+                Description = c.Description ?? "",
+                IconClass = GetCategoryIcon(c.Name),
+                TopicCount = c.TopicCount,
+                PostCount = c.PostCount,
+                LastActivity = c.LastActivity
+            }).ToList();
         }
 
         private async Task<LiveActivityFeed> GetLiveActivityFeedAsync()

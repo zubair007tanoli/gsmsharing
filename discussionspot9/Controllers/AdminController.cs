@@ -16,17 +16,26 @@ namespace discussionspot9.Controllers
         private readonly ILogger<AdminController> _logger;
         private readonly IAnnouncementRepository _announcementRepository;
         private readonly IPresenceService _presenceService;
+        private readonly IConfiguration _configuration;
+        private readonly Services.MCP.IMcpServerManager? _mcpServerManager;
+        private readonly IWebHostEnvironment? _environment;
 
         public AdminController(
             ApplicationDbContext context, 
             ILogger<AdminController> logger,
             IAnnouncementRepository announcementRepository,
-            IPresenceService presenceService)
+            IPresenceService presenceService,
+            IConfiguration configuration,
+            Services.MCP.IMcpServerManager? mcpServerManager = null,
+            IWebHostEnvironment? environment = null)
         {
             _context = context;
             _logger = logger;
             _announcementRepository = announcementRepository;
             _presenceService = presenceService;
+            _configuration = configuration;
+            _mcpServerManager = mcpServerManager;
+            _environment = environment;
         }
 
         [HttpGet("dashboard")]
@@ -658,6 +667,400 @@ namespace discussionspot9.Controllers
         }
 
         #endregion
+        
+        // ===============================================
+        // DATABASE MANAGEMENT
+        // ===============================================
+        
+        [HttpGet("database")]
+        public async Task<IActionResult> Database()
+        {
+            // Check if user is admin
+            var userEmail = User.Identity?.Name;
+            if (!User.IsInRole("Admin") && userEmail != "zubair007tanoli@gmail.com")
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
+            try
+            {
+                // Get database statistics
+                var stats = new
+                {
+                    TotalUsers = await _context.UserProfiles.CountAsync(),
+                    TotalPosts = await _context.Posts.CountAsync(),
+                    TotalComments = await _context.Comments.CountAsync(),
+                    TotalCommunities = await _context.Communities.CountAsync(),
+                    TotalReports = await _context.PostReports.CountAsync(),
+                    TotalActivities = await _context.UserActivities.CountAsync(),
+                    TotalNotifications = await _context.Notifications.CountAsync(),
+                    TotalMedia = await _context.Media.CountAsync(),
+                    DatabaseName = _context.Database.GetDbConnection().Database,
+                    ServerName = _context.Database.GetDbConnection().DataSource,
+                    ConnectionState = _context.Database.GetDbConnection().State.ToString()
+                };
+                
+                // Get table sizes
+                var tableSizes = new Dictionary<string, long>
+                {
+                    { "Posts", stats.TotalPosts },
+                    { "Comments", stats.TotalComments },
+                    { "UserProfiles", stats.TotalUsers },
+                    { "Communities", stats.TotalCommunities },
+                    { "UserActivities", stats.TotalActivities },
+                    { "Notifications", stats.TotalNotifications },
+                    { "Media", stats.TotalMedia },
+                    { "PostReports", stats.TotalReports }
+                };
+                
+                ViewBag.Stats = stats;
+                ViewBag.TableSizes = tableSizes;
+                ViewData["Title"] = "Database Management";
+                ViewData["PageTitle"] = "Database Management";
+                ViewData["PageDescription"] = "View database statistics and manage database operations";
+                
+                return View("~/Views/AdminManagement/Database.cshtml");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading database page");
+                TempData["ErrorMessage"] = $"Error loading database information: {ex.Message}";
+                return RedirectToAction("Dashboard");
+            }
+        }
+        
+        // ===============================================
+        // MCP SERVER STATUS
+        // ===============================================
+        
+        [HttpGet("mcp-status")]
+        public async Task<IActionResult> McpStatus()
+        {
+            // Check if user is admin
+            var userEmail = User.Identity?.Name;
+            if (!User.IsInRole("Admin") && userEmail != "zubair007tanoli@gmail.com")
+            {
+                TempData["ErrorMessage"] = "You don't have permission to access this page.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            
+            // Get endpoints from configuration
+            var seoEndpoint = _configuration["MCP:Servers:SeoAutomation:Endpoint"] ?? "http://localhost:5001";
+            var perfEndpoint = _configuration["MCP:Servers:Performance:Endpoint"] ?? "http://localhost:5002";
+            var prefsEndpoint = _configuration["MCP:Servers:UserPreferences:Endpoint"] ?? "http://localhost:5003";
+            
+            var seoStatus = await CheckMcpServerStatusAsync($"{seoEndpoint}/health");
+            var perfStatus = await CheckMcpServerStatusAsync($"{perfEndpoint}/health");
+            var prefsStatus = await CheckMcpServerStatusAsync($"{prefsEndpoint}/health");
+            
+            var status = new
+            {
+                SeoAutomation = new { 
+                    seoStatus.IsOnline, 
+                    seoStatus.StatusCode, 
+                    seoStatus.ResponseTime, 
+                    seoStatus.ResponseTimeMs,
+                    seoStatus.Message,
+                    Endpoint = seoEndpoint
+                },
+                Performance = new { 
+                    perfStatus.IsOnline, 
+                    perfStatus.StatusCode, 
+                    perfStatus.ResponseTime, 
+                    perfStatus.ResponseTimeMs,
+                    perfStatus.Message,
+                    Endpoint = perfEndpoint
+                },
+                UserPreferences = new { 
+                    prefsStatus.IsOnline, 
+                    prefsStatus.StatusCode, 
+                    prefsStatus.ResponseTime, 
+                    prefsStatus.ResponseTimeMs,
+                    prefsStatus.Message,
+                    Endpoint = prefsEndpoint
+                },
+                LastChecked = DateTime.UtcNow
+            };
+            
+            // Get diagnostic information
+            var diagnostics = new
+            {
+                AutoStartEnabled = _configuration.GetValue<bool>("MCP:AutoStart:Enabled", true),
+                PythonPath = _configuration["Python:ExecutablePath"] ?? "python",
+                SeoServerEnabled = _configuration.GetValue<bool>("MCP:Servers:SeoAutomation:Enabled", true),
+                ManagerAvailable = _mcpServerManager != null
+            };
+
+            ViewBag.McpStatus = status;
+            ViewBag.Diagnostics = diagnostics;
+            ViewData["Title"] = "MCP Server Status";
+            ViewData["PageTitle"] = "MCP Server Status";
+            ViewData["PageDescription"] = "Monitor MCP server health and status";
+            
+            return View("~/Views/AdminManagement/McpStatus.cshtml");
+        }
+
+        [HttpPost("mcp-status/start-server")]
+        public async Task<IActionResult> StartMcpServer([FromBody] StartServerRequest request)
+        {
+            // Check if user is admin
+            var userEmail = User.Identity?.Name;
+            if (!User.IsInRole("Admin") && userEmail != "zubair007tanoli@gmail.com")
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            if (_mcpServerManager == null)
+            {
+                return Json(new { success = false, message = "MCP Server Manager not available" });
+            }
+
+            string serverName = string.Empty;
+            try
+            {
+                var servers = new Dictionary<string, (string Script, int Port)>
+                {
+                    { "SeoAutomation", ("seo-automation/main.py", 5001) }
+                };
+
+                serverName = request?.ServerName ?? string.Empty;
+                if (string.IsNullOrEmpty(serverName))
+                {
+                    return Json(new { success = false, message = "Server name is required" });
+                }
+
+                if (!servers.ContainsKey(serverName))
+                {
+                    return Json(new { success = false, message = $"Unknown server: {serverName}" });
+                }
+
+                var (script, port) = servers[serverName];
+                
+                // Try multiple possible paths (including parent directories)
+                var possiblePaths = new List<string>
+                {
+                    Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script)
+                };
+
+                // Try parent directories if we're in bin/Debug or bin/Release
+                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                if (baseDir.Contains("bin"))
+                {
+                    var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.FullName;
+                    if (!string.IsNullOrEmpty(projectRoot))
+                    {
+                        possiblePaths.Add(Path.Combine(projectRoot, "mcp-servers", script));
+                    }
+                }
+
+                // Try ContentRootPath
+                if (_environment != null)
+                {
+                    possiblePaths.Add(Path.Combine(_environment.ContentRootPath, "mcp-servers", script));
+                    var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
+                    if (!string.IsNullOrEmpty(contentRootParent))
+                    {
+                        possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", script));
+                    }
+                }
+
+                string? scriptPath = null;
+                foreach (var path in possiblePaths)
+                {
+                    if (System.IO.File.Exists(path))
+                    {
+                        scriptPath = path;
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(scriptPath))
+                {
+                    return Json(new { success = false, message = $"Server script not found. Searched: {string.Join(", ", possiblePaths)}" });
+                }
+
+                var result = await _mcpServerManager.StartServerAsync(serverName, scriptPath, port);
+                
+                if (result)
+                {
+                    return Json(new { success = true, message = $"{serverName} started successfully" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = $"Failed to start {serverName}. Check logs for details." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting MCP server {ServerName}", serverName ?? "Unknown");
+                return Json(new { success = false, message = $"Error: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("mcp-status/diagnostics")]
+        public IActionResult McpDiagnostics()
+        {
+            // Check if user is admin
+            var userEmail = User.Identity?.Name;
+            if (!User.IsInRole("Admin") && userEmail != "zubair007tanoli@gmail.com")
+            {
+                return Json(new { success = false, message = "Unauthorized" });
+            }
+
+            var diagnostics = new
+            {
+                PythonInstalled = CheckPythonInstalled(),
+                PythonVersion = GetPythonVersion(),
+                ServerScriptExists = System.IO.File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", "seo-automation", "main.py")),
+                ServerScriptPath = Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", "seo-automation", "main.py"),
+                ContentRootPath = _environment?.ContentRootPath,
+                BaseDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                CurrentDirectory = Directory.GetCurrentDirectory(),
+                AutoStartEnabled = _configuration.GetValue<bool>("MCP:AutoStart:Enabled", true),
+                SeoServerEnabled = _configuration.GetValue<bool>("MCP:Servers:SeoAutomation:Enabled", true),
+                GoogleAuthConfigured = !string.IsNullOrEmpty(_configuration["Authentication:Google:ClientId"]) || 
+                                      System.IO.File.Exists(Path.Combine(_environment?.ContentRootPath ?? "", "Secrets", "AuthKeys.json"))
+            };
+
+            return Json(diagnostics);
+        }
+
+        private bool CheckPythonInstalled()
+        {
+            try
+            {
+                var pythonExe = _configuration["Python:ExecutablePath"] ?? "python";
+                var process = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = pythonExe,
+                        Arguments = "--version",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true
+                    }
+                };
+                process.Start();
+                process.WaitForExit(2000);
+                return process.ExitCode == 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string GetPythonVersion()
+        {
+            try
+            {
+                var pythonExe = _configuration["Python:ExecutablePath"] ?? "python";
+                var process = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = pythonExe,
+                        Arguments = "--version",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true
+                    }
+                };
+                process.Start();
+                var version = process.StandardOutput.ReadToEnd();
+                process.WaitForExit(2000);
+                return version.Trim();
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+        
+        private async Task<McpServerStatus> CheckMcpServerStatusAsync(string endpoint)
+        {
+            var startTime = DateTime.UtcNow;
+            try
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                var response = await client.GetAsync(endpoint);
+                var responseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                
+                string message;
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    message = $"Online ({responseTime:F0}ms)";
+                }
+                else
+                {
+                    message = $"Error: {response.StatusCode} ({responseTime:F0}ms)";
+                }
+                
+                return new McpServerStatus
+                {
+                    IsOnline = response.IsSuccessStatusCode,
+                    StatusCode = (int)response.StatusCode,
+                    ResponseTime = DateTime.UtcNow,
+                    ResponseTimeMs = (int)responseTime,
+                    Message = message
+                };
+            }
+            catch (TaskCanceledException)
+            {
+                var responseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                return new McpServerStatus
+                {
+                    IsOnline = false,
+                    StatusCode = 0,
+                    ResponseTime = DateTime.UtcNow,
+                    ResponseTimeMs = (int)responseTime,
+                    Message = $"Timeout after {responseTime:F0}ms"
+                };
+            }
+            catch (HttpRequestException ex)
+            {
+                var responseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                return new McpServerStatus
+                {
+                    IsOnline = false,
+                    StatusCode = 0,
+                    ResponseTime = DateTime.UtcNow,
+                    ResponseTimeMs = (int)responseTime,
+                    Message = $"Connection failed: {ex.Message}"
+                };
+            }
+            catch (Exception ex)
+            {
+                var responseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                return new McpServerStatus
+                {
+                    IsOnline = false,
+                    StatusCode = 0,
+                    ResponseTime = DateTime.UtcNow,
+                    ResponseTimeMs = (int)responseTime,
+                    Message = $"Error: {ex.GetType().Name} - {ex.Message}"
+                };
+            }
+        }
+        
+        public class McpServerStatus
+        {
+            public bool IsOnline { get; set; }
+            public int StatusCode { get; set; }
+            public DateTime ResponseTime { get; set; }
+            public int ResponseTimeMs { get; set; }
+            public string Message { get; set; } = string.Empty;
+        }
+
+        public class StartServerRequest
+        {
+            public string ServerName { get; set; } = string.Empty;
+        }
     }
 }
 

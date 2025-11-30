@@ -12,10 +12,11 @@
 }
 
 <!DOCTYPE html>
-<html amp>
+<html ⚡ lang="en">
 <head>
     <meta charset="utf-8">
     <script async src="https://cdn.ampproject.org/v0.js"></script>
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
     <title>@Model.Title</title>
     <link rel="canonical" href="@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
     <meta name="description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
@@ -245,7 +246,7 @@
             .FirstOrDefault() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
         var publisherLogo = MakeAbsolute(Model.PublisherLogo) ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
     }
-    <amp-story standalone 
+    <amp-story standalone="standalone" 
                title="@System.Net.WebUtility.HtmlEncode(Model.Title)"
                publisher="@(Model.PublisherName ?? "DiscussionSpot")"
                publisher-logo-src="@publisherLogo"
@@ -369,10 +370,15 @@
                         else
                         {
                             @* For internal links, use page attachment (swipe up) - make URL absolute *@
+                            @* CRITICAL: amp-story-page-attachment must have a single root element with proper HTML structure *@
                             var absoluteLinkUrl = linkUrl.StartsWith("http") ? linkUrl : $"{Context.Request.Scheme}://{Context.Request.Host}{linkUrl}";
-                            <amp-story-page-attachment layout="nodisplay" href="@absoluteLinkUrl">
-                                <h3>@(isLink && slide.MediaType == "external_link" ? "Visit External Link" : "View Original Post")</h3>
-                                <p>@(isLink && slide.MediaType == "external_link" ? slide.MediaUrl : (Model.Post != null ? $"Read the full discussion: {Model.Post.Title}" : "Read more on DiscussionSpot"))</p>
+                            var attachmentTitle = isLink && slide.MediaType == "external_link" ? "Visit External Link" : "View Original Post";
+                            var attachmentText = isLink && slide.MediaType == "external_link" 
+                                ? (slide.MediaUrl ?? "Visit link") 
+                                : (Model.Post != null ? $"Read the full discussion: {Model.Post.Title}" : "Read more on DiscussionSpot");
+                            <amp-story-page-attachment layout="nodisplay" href="@absoluteLinkUrl" theme="dark">
+                                <h1>@attachmentTitle</h1>
+                                <p>@attachmentText</p>
                             </amp-story-page-attachment>
                         }
                     }
@@ -392,20 +398,7 @@
             </amp-story-page>
         }
         
-        <!-- Story Bookend -->
-        <amp-story-bookend layout="nodisplay">
-            <script type="application/json">
-            {
-                "bookendVersion": "v1.0",
-                "shareProviders": [
-                    { "provider": "facebook" },
-                    { "provider": "twitter" }
-                ],
-                "components": @(ViewBag.BookendComponents ?? "[]")
-            }
-            </script>
-        </amp-story-bookend>
-
+        @* CRITICAL: amp-analytics must come BEFORE amp-story-bookend *@
         <amp-analytics type="googleanalytics">
           <script type="application/json">
           {
@@ -418,6 +411,20 @@
           }
           </script>
         </amp-analytics>
+
+        @* CRITICAL: amp-story-bookend MUST be the LAST child of amp-story *@
+        <amp-story-bookend layout="nodisplay">
+            <script type="application/json">
+            {
+                "bookendVersion": "v1.0",
+                "shareProviders": [
+                    { "provider": "facebook" },
+                    { "provider": "twitter" }
+                ],
+                "components": @(ViewBag.BookendComponents ?? "[]")
+            }
+            </script>
+        </amp-story-bookend>
     </amp-story>
 </body>
 </html>
