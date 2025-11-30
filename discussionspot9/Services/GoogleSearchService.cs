@@ -33,12 +33,18 @@ namespace discussionspot9.Services
             _logger = logger;
 
             // Configure HTTP client
-            if (_config.EnableRapidApi)
+            if (_config.EnableRapidApi && !string.IsNullOrWhiteSpace(_config.ApiKey))
             {
                 _httpClient.BaseAddress = new Uri(_config.BaseUrl);
                 _httpClient.Timeout = TimeSpan.FromSeconds(_config.TimeoutSeconds);
                 _httpClient.DefaultRequestHeaders.Add("x-rapidapi-key", _config.ApiKey);
                 _httpClient.DefaultRequestHeaders.Add("x-rapidapi-host", _config.Host);
+            }
+            else if (_config.EnableRapidApi && string.IsNullOrWhiteSpace(_config.ApiKey))
+            {
+                // RapidAPI is enabled but no API key - disable it gracefully
+                _logger.LogWarning("RapidAPI Google Search is enabled but no API key is configured. Disabling RapidAPI features.");
+                _config.EnableRapidApi = false;
             }
         }
 
@@ -62,15 +68,26 @@ namespace discussionspot9.Services
 
                 GoogleSearchResponse? result = null;
 
-                if (_config.EnableRapidApi)
+                // Only use RapidAPI if enabled AND API key is configured
+                if (_config.EnableRapidApi && !string.IsNullOrWhiteSpace(_config.ApiKey))
                 {
                     result = await SearchWithRapidApiAsync(query, effectiveLimit, includeRelated);
+                }
+                else if (_config.EnableRapidApi && string.IsNullOrWhiteSpace(_config.ApiKey))
+                {
+                    _logger.LogWarning("RapidAPI is enabled but API key is missing. Skipping RapidAPI search.");
                 }
 
                 if (result == null && _config.EnableSerpApiFallback && !string.IsNullOrWhiteSpace(_config.SerpApiKey))
                 {
                     _logger.LogInformation("Falling back to SerpApi for query: {Query}", query);
                     result = await SearchWithSerpApiAsync(query, effectiveLimit, includeRelated);
+                }
+                
+                // If no result and no APIs available, return null gracefully
+                if (result == null && !_config.EnableRapidApi && !_config.EnableSerpApiFallback)
+                {
+                    _logger.LogInformation("No Google Search API available. Returning null for query: {Query}", query);
                 }
 
                 if (result != null)
@@ -320,6 +337,13 @@ namespace discussionspot9.Services
 
         private async Task<GoogleSearchResponse?> SearchWithRapidApiAsync(string query, int limit, bool includeRelatedKeywords)
         {
+            // Double-check API key before making request
+            if (string.IsNullOrWhiteSpace(_config.ApiKey))
+            {
+                _logger.LogWarning("Cannot call RapidAPI: API key is missing");
+                return null;
+            }
+            
             try
             {
                 var queryParams = $"?query={HttpUtility.UrlEncode(query)}&limit={limit}&related_keywords={includeRelatedKeywords.ToString().ToLower()}";

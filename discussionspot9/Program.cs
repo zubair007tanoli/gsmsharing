@@ -412,21 +412,15 @@ var googleSearchOptionsBuilder = builder.Services
 
         if (options.EnableRapidApi && string.IsNullOrWhiteSpace(options.ApiKey))
         {
-            googleCredentialWarnings.Add("RapidAPI Google Search is enabled but RAPIDAPI_GOOGLE_SEARCH_KEY was not provided.");
+            googleCredentialWarnings.Add("RapidAPI Google Search is enabled but RAPIDAPI_GOOGLE_SEARCH_KEY was not provided. Disabling RapidAPI features.");
+            // Automatically disable RapidAPI if no key is provided - don't crash the service
+            options.EnableRapidApi = false;
         }
     });
 
-if (!builder.Environment.IsDevelopment())
-{
-    googleSearchOptionsBuilder
-        .Validate(
-            options => !options.EnableSerpApiFallback || !string.IsNullOrWhiteSpace(options.SerpApiKey),
-            "SerpApi fallback is enabled but no SerpApi key was provided.")
-        .Validate(
-            options => !options.EnableRapidApi || !string.IsNullOrWhiteSpace(options.ApiKey),
-            "RapidAPI Google Search is enabled but no API key was provided.")
-        .ValidateOnStart();
-}
+// REMOVED ValidateOnStart() - Don't crash service if API keys are missing
+// The services will handle missing keys gracefully at runtime
+// Services will automatically disable features if keys are missing
 
 builder.Services.AddHttpClient<discussionspot9.Services.GoogleSearchService>();
 builder.Services.AddHttpClient("CompetitorContent");
