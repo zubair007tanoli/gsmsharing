@@ -174,7 +174,12 @@ if (!string.IsNullOrWhiteSpace(googleCredentialsJson))
 var candidatePaths = new[]
 {
     resolvedGoogleSecretsPath,
-    wwwrootGoogleSecretsPath
+    wwwrootGoogleSecretsPath,
+    // Also try common production paths
+    Path.Combine(builder.Environment.ContentRootPath, "Secrets", "AuthKeys.json"),
+    Path.Combine(builder.Environment.WebRootPath ?? "", "Secrets", "AuthKeys.json"),
+    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Secrets", "AuthKeys.json"),
+    Path.Combine(Directory.GetCurrentDirectory(), "Secrets", "AuthKeys.json")
 }.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct();
 
 foreach (var candidatePath in candidatePaths)
@@ -186,21 +191,27 @@ foreach (var candidatePath in candidatePaths)
 
     try
     {
-        using var doc = JsonDocument.Parse(File.ReadAllText(candidatePath));
+        var fileContent = File.ReadAllText(candidatePath);
+        using var doc = JsonDocument.Parse(fileContent);
 
         if (doc.RootElement.TryGetProperty("web", out var webElement))
         {
+            // Try both snake_case, camelCase, and PascalCase
             var candidateClientId = webElement.TryGetProperty("client_id", out var clientIdElement)
                 ? clientIdElement.GetString()
                 : webElement.TryGetProperty("clientId", out var clientIdCamelElement)
                     ? clientIdCamelElement.GetString()
-                    : null;
+                    : webElement.TryGetProperty("ClientId", out var clientIdPascalElement)
+                        ? clientIdPascalElement.GetString()
+                        : null;
 
             var candidateClientSecret = webElement.TryGetProperty("client_secret", out var clientSecretElement)
                 ? clientSecretElement.GetString()
                 : webElement.TryGetProperty("clientSecret", out var clientSecretCamelElement)
                     ? clientSecretCamelElement.GetString()
-                    : null;
+                    : webElement.TryGetProperty("ClientSecret", out var clientSecretPascalElement)
+                        ? clientSecretPascalElement.GetString()
+                        : null;
 
             if (!string.IsNullOrWhiteSpace(candidateClientId) &&
                 !string.IsNullOrWhiteSpace(candidateClientSecret))
@@ -215,8 +226,13 @@ foreach (var candidatePath in candidatePaths)
     catch (JsonException ex)
     {
         googleCredentialWarnings.Add($"Failed to parse Google OAuth credentials at {candidatePath}: {ex.Message}");
-        googleClientId = null;
-        googleClientSecret = null;
+        // Don't nullify credentials if they were already loaded - just log the warning
+        // This allows credentials to be loaded from other sources even if one file fails
+    }
+    catch (Exception ex)
+    {
+        googleCredentialWarnings.Add($"Error reading Google OAuth credentials from {candidatePath}: {ex.Message}");
+        // Don't nullify credentials - continue trying other paths
     }
 }
 
@@ -579,6 +595,27 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 
 var app = builder.Build();
+
+// Log Google OAuth configuration status
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    app.Logger.LogInformation("✅ Google OAuth authentication configured successfully. ClientId: {ClientId}", 
+        googleClientId.Length > 20 ? googleClientId.Substring(0, 20) + "..." : googleClientId);
+}
+else
+{
+    var reasons = new List<string>();
+    if (string.IsNullOrWhiteSpace(googleClientId)) reasons.Add("ClientId is missing");
+    if (string.IsNullOrWhiteSpace(googleClientSecret)) reasons.Add("ClientSecret is missing");
+    
+    app.Logger.LogWarning("⚠️ Google OAuth authentication NOT configured. Reasons: {Reasons}", 
+        string.Join(", ", reasons));
+    
+    if (!string.IsNullOrWhiteSpace(missingGoogleAuthPath))
+    {
+        app.Logger.LogWarning("Expected credentials file at: {Path}", missingGoogleAuthPath);
+    }
+}
 
 if (googleCredentialWarnings.Count > 0)
 {

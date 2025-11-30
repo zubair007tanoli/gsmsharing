@@ -10,16 +10,18 @@ using discussionspot9.Data.DbContext;
 using discussionspot9.Models.Domain;
 using discussionspot9.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace DiscussionSpot9.Controllers
 {
-    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ApplicationDbContext context, IFollowService followService) : Controller
+    public class AccountController(IUserService userService, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ApplicationDbContext context, IFollowService followService, ILogger<AccountController> logger) : Controller
     {
         private readonly IUserService _userService = userService;
         private readonly UserManager<IdentityUser> _userManager = userManager;
         private readonly SignInManager<IdentityUser> _signInManager = signInManager;
         private readonly ApplicationDbContext _context = context;
         private readonly IFollowService _followService = followService;
+        private readonly ILogger<AccountController> _logger = logger;
 
         [HttpGet]
         [AllowAnonymous]
@@ -501,6 +503,11 @@ namespace DiscussionSpot9.Controllers
 
             if (selectedScheme == null)
             {
+                // Log available schemes for debugging
+                var availableSchemes = string.Join(", ", schemes.Select(s => s.Name));
+                _logger.LogWarning("Google login requested but Google authentication scheme not found. Available schemes: {Schemes}", 
+                    string.IsNullOrEmpty(availableSchemes) ? "None" : availableSchemes);
+                
                 TempData["ErrorMessage"] = $"{provider} login is currently unavailable. Please try again later or use email/password.";
                 return RedirectToAction("Auth", new { returnUrl });
             }
