@@ -72,60 +72,74 @@
     <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style><noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
     
     <script type="application/ld+json">
-    {
-      "@@context": "https://schema.org",
-      "@@type": "Article",
-      "@@id": "@Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)",
-      "headline": "@System.Text.Json.JsonSerializer.Serialize(Model.Title ?? "")",
-      "description": "@System.Text.Json.JsonSerializer.Serialize(Model.Description ?? Model.MetaDescription ?? $"Read {Model.Title} on DiscussionSpot")",
-      "datePublished": "@Model.CreatedAt.ToString("o")",
-      "dateModified": "@Model.UpdatedAt.ToString("o")",
-      "author": {
-        "@@type": "Person",
-        "name": "@(Model.User?.UserName ?? "DiscussionSpot")",
-        "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}/user/{Model.User?.UserName ?? ""}")"
-      },
-      "publisher": {
-        "@@type": "Organization",
-        "name": "@(Model.PublisherName ?? "DiscussionSpot")",
-        "logo": {
-          "@@type": "ImageObject",
-          "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")"
+    @{
+        var imageUrls = Model.Slides != null && Model.Slides.Any()
+            ? Model.Slides.OrderBy(s => s.OrderIndex)
+                .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
+                .Select(s => MakeAbsolute(s.MediaUrl))
+                .Take(5)
+                .ToList()
+            : new List<string>();
+        
+        if (!imageUrls.Any())
+        {
+            imageUrls.Add(MakeAbsolute("/Assets/Logo_Auth.png"));
         }
-      },
-      "mainEntityOfPage": {
-        "@@type": "WebPage",
-        "@@id": "@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)"
-      },
-      "image": [
-        @{
-            var imageUrls = Model.Slides != null && Model.Slides.Any()
-                ? Model.Slides.OrderBy(s => s.OrderIndex)
-                    .Where(s => !string.IsNullOrEmpty(s.MediaUrl) && !IsVideoFile(s.MediaUrl))
-                    .Select(s => MakeAbsolute(s.MediaUrl))
-                    .Take(5)
-                    .ToList()
-                : new List<string>();
-            
-            if (!imageUrls.Any())
+        
+        // Build JSON-LD using Dictionary to properly handle @ symbols
+        var jsonLd = new Dictionary<string, object>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "Article",
+            ["@id"] = Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme),
+            ["headline"] = Model.Title ?? "",
+            ["description"] = Model.Description ?? Model.MetaDescription ?? $"Read {Model.Title} on DiscussionSpot",
+            ["datePublished"] = Model.CreatedAt.ToString("o"),
+            ["dateModified"] = Model.UpdatedAt.ToString("o"),
+            ["author"] = new Dictionary<string, object>
             {
-                imageUrls.Add(MakeAbsolute("/Assets/Logo_Auth.png"));
+                ["@type"] = "Person",
+                ["name"] = Model.User?.UserName ?? "DiscussionSpot",
+                ["url"] = $"{Context.Request.Scheme}://{Context.Request.Host}/user/{Model.User?.UserName ?? ""}"
+            },
+            ["publisher"] = new Dictionary<string, object>
+            {
+                ["@type"] = "Organization",
+                ["name"] = Model.PublisherName ?? "DiscussionSpot",
+                ["logo"] = new Dictionary<string, object>
+                {
+                    ["@type"] = "ImageObject",
+                    ["url"] = $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png"
+                }
+            },
+            ["mainEntityOfPage"] = new Dictionary<string, object>
+            {
+                ["@type"] = "WebPage",
+                ["@id"] = Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)
+            },
+            ["image"] = imageUrls,
+            ["keywords"] = Model.MetaKeywords ?? ExtractKeywords(Model.Title),
+            ["articleSection"] = Model.Community?.Title ?? "General",
+            ["inLanguage"] = "en-US",
+            ["isAccessibleForFree"] = true,
+            ["copyrightYear"] = DateTime.Now.Year.ToString(),
+            ["copyrightHolder"] = new Dictionary<string, object>
+            {
+                ["@type"] = "Organization",
+                ["name"] = "DiscussionSpot"
             }
-            
-            var imageJson = System.Text.Json.JsonSerializer.Serialize(imageUrls);
-            @Html.Raw(imageJson.Replace("[", "").Replace("]", "")) // Remove array brackets, keep commas
-        }
-      ],
-      "keywords": "@(Model.MetaKeywords ?? ExtractKeywords(Model.Title))",
-      "articleSection": "@(Model.Community?.Title ?? "General")",
-      "inLanguage": "en-US",
-      "isAccessibleForFree": true,
-      "copyrightYear": "@DateTime.Now.Year",
-      "copyrightHolder": {
-        "@@type": "Organization",
-        "name": "DiscussionSpot"
-      }
+        };
+        
+        var jsonOptions = new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = false,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        
+        // Serialize to JSON - this will properly escape all values
+        var jsonString = System.Text.Json.JsonSerializer.Serialize(jsonLd, jsonOptions);
     }
+    @Html.Raw(jsonString)
     </script>
 
     <!-- AMP Custom Styles - Inline for AMP validation -->
@@ -377,8 +391,10 @@
                                 ? (slide.MediaUrl ?? "Visit link") 
                                 : (Model.Post != null ? $"Read the full discussion: {Model.Post.Title}" : "Read more on DiscussionSpot");
                             <amp-story-page-attachment layout="nodisplay" href="@absoluteLinkUrl" theme="dark">
-                                <h1>@attachmentTitle</h1>
-                                <p>@attachmentText</p>
+                                <div>
+                                    <h1>@attachmentTitle</h1>
+                                    <p>@attachmentText</p>
+                                </div>
                             </amp-story-page-attachment>
                         }
                     }
@@ -415,14 +431,27 @@
         @* CRITICAL: amp-story-bookend MUST be the LAST child of amp-story *@
         <amp-story-bookend layout="nodisplay">
             <script type="application/json">
-            {
-                "bookendVersion": "v1.0",
-                "shareProviders": [
-                    { "provider": "facebook" },
-                    { "provider": "twitter" }
-                ],
-                "components": @(ViewBag.BookendComponents ?? "[]")
+            @{
+                // Parse the bookend components JSON string and build proper JSON object
+                var bookendComponentsJson = ViewBag.BookendComponents?.ToString() ?? "[]";
+                var bookendJson = new Dictionary<string, object>
+                {
+                    ["bookendVersion"] = "v1.0",
+                    ["shareProviders"] = new[]
+                    {
+                        new Dictionary<string, object> { ["provider"] = "facebook" },
+                        new Dictionary<string, object> { ["provider"] = "twitter" }
+                    },
+                    ["components"] = System.Text.Json.JsonSerializer.Deserialize<object[]>(bookendComponentsJson) ?? Array.Empty<object>()
+                };
+                
+                var bookendJsonString = System.Text.Json.JsonSerializer.Serialize(bookendJson, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = false,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
             }
+            @Html.Raw(bookendJsonString)
             </script>
         </amp-story-bookend>
     </amp-story>
