@@ -40,7 +40,13 @@ namespace discussionspot9.Repositories
                 // IsDeleted is a bool, so it defaults to false already
                 
                 _context.ChatMessages.Add(message);
-                await _context.SaveChangesAsync();
+                var saveResult = await _context.SaveChangesAsync();
+                
+                // Verify message was saved
+                if (saveResult == 0)
+                {
+                    throw new InvalidOperationException("Failed to save message to database - no rows affected");
+                }
                 
                 // Reload with navigation properties for proper serialization
                 var savedMessage = await _context.ChatMessages
@@ -48,15 +54,20 @@ namespace discussionspot9.Repositories
                     .Include(m => m.Receiver)
                     .FirstOrDefaultAsync(m => m.MessageId == message.MessageId);
                 
-                return savedMessage ?? message;
+                if (savedMessage == null)
+                {
+                    throw new InvalidOperationException($"Message was saved but could not be retrieved. MessageId: {message.MessageId}");
+                }
+                
+                return savedMessage;
             }
             catch (DbUpdateException dbEx)
             {
-                throw new InvalidOperationException($"Database error saving message: {dbEx.Message}", dbEx);
+                throw new InvalidOperationException($"[ChatRepository] Database error saving message: {dbEx.Message}", dbEx);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to save message: {ex.Message}", ex);
+                throw new InvalidOperationException($"[ChatRepository] Failed to save message: {ex.Message}", ex);
             }
         }
 

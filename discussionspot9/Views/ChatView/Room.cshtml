@@ -105,18 +105,37 @@
 <script src="~/js/chat/chat-service.js"></script>
 <script src="~/js/chat/chat-controller.js"></script>
 <script src="~/js/chat/chat-ui.js"></script>
+<script src="~/js/chat/chat-debug.js"></script>
 
 <script>
     let chatController = null;
     const roomId = @Model.Room.ChatRoomId;
+    
+    // Set current user ID for chat controller (required for IsMine detection)
+    @if (User.Identity.IsAuthenticated)
+    {
+        <text>
+        window.currentUserId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+        </text>
+    }
 
     document.addEventListener('DOMContentLoaded', async function() {
         // Initialize chat
         chatController = new ChatController();
+        window.chatController = chatController; // Expose for debugging
         await chatController.initialize();
+        
+        // Set current chat room ID
+        window.currentChatRoomId = roomId;
+        window.currentChatUserId = null;
         
         // Load room conversation
         await chatController.loadRoomHistory(roomId);
+        
+        // Debug: Check system status
+        if (window.ChatDebug) {
+            window.ChatDebug.checkSystemStatus();
+        }
 
         // Setup input handlers
         const input = document.getElementById('messageInput');

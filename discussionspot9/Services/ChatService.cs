@@ -46,13 +46,13 @@ namespace discussionspot9.Services
                 // Get sender display name
                 var senderName = sender?.DisplayName ?? "Unknown";
                 
-                _logger.LogInformation($"Direct message saved: MessageId={savedMessage.MessageId}, SenderId={senderId}, ReceiverId={receiverId}");
+                _logger.LogInformation($"[ChatService] Direct message saved - MessageId: {savedMessage.MessageId}, SenderId: {senderId}, ReceiverId: {receiverId}");
                 
                 return MapToViewModel(savedMessage, senderId, senderName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error sending direct message from {senderId} to {receiverId}");
+                _logger.LogError(ex, $"[ChatService] Error sending direct message from {senderId} to {receiverId}: {ex.Message}");
                 throw;
             }
         }
@@ -65,7 +65,7 @@ namespace discussionspot9.Services
                 var isInRoom = await _chatRepository.IsUserInRoomAsync(roomId, senderId);
                 if (!isInRoom)
                 {
-                    _logger.LogWarning($"User {senderId} is not a member of room {roomId}");
+                    _logger.LogWarning($"[ChatService] User {senderId} is not a member of room {roomId}");
                     throw new UnauthorizedAccessException("User is not a member of this room");
                 }
 
@@ -90,13 +90,13 @@ namespace discussionspot9.Services
                 // Get sender display name
                 var senderName = sender?.DisplayName ?? "Unknown";
                 
-                _logger.LogInformation($"Room message saved: MessageId={savedMessage.MessageId}, SenderId={senderId}, RoomId={roomId}");
+                _logger.LogInformation($"[ChatService] Room message saved - MessageId: {savedMessage.MessageId}, SenderId: {senderId}, RoomId: {roomId}");
                 
                 return MapToViewModel(savedMessage, senderId, senderName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error sending room message from {senderId} to room {roomId}");
+                _logger.LogError(ex, $"[ChatService] Error sending room message from {senderId} to room {roomId}: {ex.Message}");
                 throw;
             }
         }
@@ -124,7 +124,7 @@ namespace discussionspot9.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting direct chat history for {userId} and {otherUserId}");
+                _logger.LogError(ex, $"[ChatService] Error getting direct chat history for {userId} and {otherUserId}: {ex.Message}");
                 return new List<ChatMessageViewModel>();
             }
         }
@@ -152,7 +152,7 @@ namespace discussionspot9.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting room chat history for room {roomId}");
+                _logger.LogError(ex, $"[ChatService] Error getting room chat history for room {roomId}: {ex.Message}");
                 return new List<ChatMessageViewModel>();
             }
         }
@@ -214,25 +214,76 @@ namespace discussionspot9.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting user direct chats for {userId}");
+                _logger.LogError(ex, $"[ChatService] Error getting user direct chats for {userId}: {ex.Message}");
                 return new List<DirectChatViewModel>();
             }
         }
 
         public async Task<List<ChatRoomViewModel>> GetUserChatRoomsAsync(string userId)
         {
-            var rooms = await _chatRepository.GetUserRoomsAsync(userId);
-            
-            return rooms.Select(r => new ChatRoomViewModel
+            try
             {
-                ChatRoomId = r.ChatRoomId,
-                Name = r.Name,
-                Description = r.Description,
-                IconUrl = r.IconUrl,
-                MemberCount = r.MemberCount,
-                IsPublic = r.IsPublic,
-                UnreadCount = 0 // TODO: Calculate unread count
-            }).ToList();
+                var rooms = await _chatRepository.GetUserRoomsAsync(userId);
+                
+                // Get last message for each room
+                var roomIds = rooms.Select(r => r.ChatRoomId).ToList();
+                var lastMessages = new Dictionary<int, ChatMessage>();
+                
+                if (roomIds.Any())
+                {
+                    var messages = await _context.ChatMessages
+                        .Where(m => roomIds.Contains(m.ChatRoomId ?? 0) && !m.IsDeleted)
+                        .OrderByDescending(m => m.SentAt)
+                        .GroupBy(m => m.ChatRoomId)
+                        .Select(g => g.First())
+                        .ToListAsync();
+                    
+                    foreach (var msg in messages)
+                    {
+                        if (msg.ChatRoomId.HasValue)
+                        {
+                            lastMessages[msg.ChatRoomId.Value] = msg;
+                        }
+                    }
+                }
+
+                // Get sender names for last messages
+                var senderIds = lastMessages.Values.Select(m => m.SenderId).Distinct().ToList();
+                var userProfiles = await _context.UserProfiles
+                    .Where(p => senderIds.Contains(p.UserId))
+                    .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+
+                var viewModels = rooms.Select(r => 
+                {
+                    var viewModel = new ChatRoomViewModel
+                    {
+                        ChatRoomId = r.ChatRoomId,
+                        Name = r.Name,
+                        Description = r.Description,
+                        IconUrl = r.IconUrl,
+                        MemberCount = r.MemberCount,
+                        IsPublic = r.IsPublic,
+                        UnreadCount = 0 // TODO: Calculate unread count
+                    };
+
+                    // Add last message if exists
+                    if (lastMessages.TryGetValue(r.ChatRoomId, out var lastMsg))
+                    {
+                        var senderName = userProfiles.GetValueOrDefault(lastMsg.SenderId, "Unknown");
+                        viewModel.LastMessage = MapToViewModel(lastMsg, userId, senderName);
+                    }
+
+                    return viewModel;
+                }).ToList();
+
+                _logger.LogInformation($"[ChatService] Retrieved {viewModels.Count} chat rooms for user {userId}");
+                return viewModels;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting user chat rooms for {userId}");
+                return new List<ChatRoomViewModel>();
+            }
         }
 
         public async Task MarkMessageAsReadAsync(int messageId, string userId)
@@ -306,6 +357,11 @@ namespace discussionspot9.Services
         public async Task LeaveChatRoomAsync(int roomId, string userId)
         {
             await _chatRepository.RemoveRoomMemberAsync(roomId, userId);
+        }
+
+        public async Task<bool> IsUserInRoomAsync(int roomId, string userId)
+        {
+            return await _chatRepository.IsUserInRoomAsync(roomId, userId);
         }
 
         private ChatMessageViewModel MapToViewModel(ChatMessage message, string currentUserId, string senderName)

@@ -98,6 +98,10 @@
 
             <div class="chat-messages" id="chatMessages">
                 <!-- Messages will be dynamically loaded here -->
+                <div class="chat-empty-messages" id="chatEmptyMessages" style="display: none; text-align: center; padding: 2rem; color: #7c7c7c;">
+                    <i class="far fa-comment-dots" style="font-size: 2rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
+                    <p style="margin: 0; font-size: 0.9rem;">No messages yet. Start the conversation!</p>
+                </div>
             </div>
 
             <div class="chat-typing-indicator" id="chatTypingIndicator">
@@ -132,12 +136,28 @@
     let isMinimized = true;
 
     // Initialize chat when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         chatWidget = document.getElementById('chatWidget');
         
-        // Initialize chat controller (will be implemented in chat-controller.js)
+        // Initialize chat controller
         if (typeof ChatController !== 'undefined') {
             chatController = new ChatController();
+            window.chatController = chatController; // Expose globally
+            
+            // Initialize the chat system
+            await chatController.initialize();
+            
+            // Set current user ID if available
+            @if (User.Identity.IsAuthenticated)
+            {
+                <text>
+                window.currentUserId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+                </text>
+            }
+            
+            console.log('✅ Chat widget initialized');
+        } else {
+            console.error('❌ ChatController not found');
         }
     });
 
@@ -182,23 +202,105 @@
     }
 
     // Open chat window with specific user
-    function openChatWindow(userId, userName, avatar) {
+    async function openChatWindow(userId, userName, avatar) {
+        // Hide lists and show chat window
         document.getElementById('directChatList').style.display = 'none';
+        document.getElementById('onlineUsersList').style.display = 'none';
         document.getElementById('roomsChatList').style.display = 'none';
         document.getElementById('chatWindow').classList.add('active');
         
+        // Update window header
         document.getElementById('chatWindowUserName').textContent = userName;
-        document.getElementById('chatWindowAvatar').textContent = avatar;
-        document.getElementById('chatWindowAvatar').style.background = getRandomColor();
+        const avatarEl = document.getElementById('chatWindowAvatar');
+        avatarEl.textContent = avatar || userName.substring(0, 2).toUpperCase();
+        avatarEl.style.background = getColorFromName(userName);
         document.getElementById('chatWindowStatus').innerHTML = '<i class="fas fa-circle" style="font-size: 0.5rem;"></i> Online';
         
         // Store current user ID (clear room ID)
         window.currentChatUserId = userId;
         window.currentChatRoomId = null;
         
+        // Ensure ChatUI is initialized with widget container
+        if (chatController && chatController.chatUI) {
+            // Force re-initialize to find widget container
+            chatController.chatUI.messagesContainer = null;
+            chatController.chatUI.initialize();
+            
+            if (!chatController.chatUI.messagesContainer) {
+                console.error('❌ ChatUI: Still cannot find chatMessages container');
+            } else {
+                console.log('✅ ChatUI: Found chatMessages container in widget');
+            }
+        }
+        
         // Load chat history
         if (chatController) {
-            chatController.loadChatHistory(userId);
+            console.log('📜 Loading chat history for user:', userId);
+            await chatController.loadChatHistory(userId);
+            
+            // Scroll to bottom after loading
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('chatMessages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    console.log('✅ Scrolled to bottom, messages count:', messagesContainer.children.length);
+                } else {
+                    console.error('❌ Cannot scroll - messages container not found');
+                }
+            }, 200);
+        } else {
+            console.error('❌ ChatController not initialized');
+        }
+    }
+
+    // Open room chat window (unified with direct messages)
+    async function openRoomChatWindow(roomId, roomName, roomIcon) {
+        // Hide lists and show chat window
+        document.getElementById('directChatList').style.display = 'none';
+        document.getElementById('onlineUsersList').style.display = 'none';
+        document.getElementById('roomsChatList').style.display = 'none';
+        document.getElementById('chatWindow').classList.add('active');
+        
+        // Update window header
+        document.getElementById('chatWindowUserName').textContent = roomName || 'Room';
+        const avatarEl = document.getElementById('chatWindowAvatar');
+        avatarEl.textContent = roomIcon || roomName?.substring(0, 2).toUpperCase() || 'R';
+        avatarEl.style.background = getColorFromName(roomName || 'Room');
+        document.getElementById('chatWindowStatus').innerHTML = '<i class="fas fa-users" style="font-size: 0.7rem;"></i> Room';
+        
+        // Store current room ID (clear user ID)
+        window.currentChatRoomId = roomId;
+        window.currentChatUserId = null;
+        
+        // Ensure ChatUI is initialized with widget container
+        if (chatController && chatController.chatUI) {
+            chatController.chatUI.messagesContainer = null;
+            chatController.chatUI.initialize();
+            
+            if (!chatController.chatUI.messagesContainer) {
+                console.error('❌ ChatUI: Still cannot find chatMessages container');
+            } else {
+                console.log('✅ ChatUI: Found chatMessages container in widget');
+            }
+        }
+        
+        // Load room chat history
+        if (chatController) {
+            console.log('📜 Loading room chat history for room:', roomId);
+            await chatController.loadRoomHistory(roomId);
+            
+            // Scroll to bottom after loading
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('chatMessages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    console.log('✅ Scrolled to bottom, messages count:', messagesContainer.children.length);
+                } else {
+                    console.error('❌ Cannot scroll - messages container not found');
+                }
+            }, 200);
+        } else {
+            console.error('❌ ChatController not initialized');
         }
     }
 
@@ -206,19 +308,50 @@
     function closeChatWindow() {
         document.getElementById('chatWindow').classList.remove('active');
         
+        // Clear current chat
+        window.currentChatUserId = null;
+        window.currentChatRoomId = null;
+        
         // Show the active tab list
-        const activeTab = document.querySelector('.chat-tab.active').getAttribute('data-tab');
+        const activeTab = document.querySelector('.chat-tab.active')?.getAttribute('data-tab') || 'direct';
         switchChatTab(activeTab);
     }
 
     // Send message
-    function sendChatMessage() {
+    async function sendChatMessage() {
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
         
-        if (message && chatController) {
-            chatController.sendMessage(message);
+        if (!message) {
+            return;
+        }
+        
+        if (!chatController) {
+            console.error('❌ ChatController not initialized');
+            alert('Chat system not ready. Please wait a moment and try again.');
+            return;
+        }
+        
+        if (!window.currentChatUserId && !window.currentChatRoomId) {
+            console.error('❌ No chat recipient selected');
+            alert('Please select a user or room to chat with.');
+            return;
+        }
+        
+        try {
+            await chatController.sendMessage(message);
             input.value = '';
+            
+            // Scroll to bottom after sending
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('chatMessages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, 100);
+        } catch (error) {
+            console.error('❌ Error sending message:', error);
+            alert('Failed to send message. Please try again.');
         }
     }
 
@@ -247,10 +380,24 @@
         }
     });
 
-    // Helper function
-    function getRandomColor() {
-        const colors = ['#0079d3', '#ff4500', '#46d160', '#ffa500', '#7c7c7c', '#0056b3'];
-        return colors[Math.floor(Math.random() * colors.length)];
+    // Helper function - Get color from name (deterministic)
+    function getColorFromName(name) {
+        const colors = ['#0079d3', '#ff4500', '#46d160', '#ffa500', '#7c7c7c', '#0056b3', '#8b5cf6', '#ec4899'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    }
+    
+    // Helper function - Get initials from name
+    function getInitials(name) {
+        if (!name) return 'U';
+        const parts = name.split(' ').filter(p => p.length > 0);
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, Math.min(2, name.length)).toUpperCase();
     }
 
     // Global function to open chat from anywhere (e.g., online members)

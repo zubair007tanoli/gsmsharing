@@ -10,33 +10,59 @@ class ChatService {
             onTyping: [],
             onUserOnline: [],
             onUserOffline: [],
-            onError: []
+            onError: [],
+            onUserJoinedRoom: [],
+            onUserLeftRoom: [],
+            onConnectionStateChanged: []
         };
     }
 
     /**
-     * Initialize SignalR connection
+     * Initialize SignalR connection with retry logic
      */
-    async initialize() {
+    async initialize(maxRetries = 5, retryDelay = 2000) {
         try {
             this.connection = new signalR.HubConnectionBuilder()
                 .withUrl("/chatHub")
-                .withAutomaticReconnect()
+                .withAutomaticReconnect({
+                    nextRetryDelayInMilliseconds: (retryContext) => {
+                        // Exponential backoff: 0s, 2s, 4s, 8s, 16s
+                        return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
+                    }
+                })
                 .configureLogging(signalR.LogLevel.Information)
                 .build();
 
             // Register event handlers
             this.registerHandlers();
 
-            // Start connection
-            await this.connection.start();
-            this.isConnected = true;
-            console.log('✅ ChatHub connected successfully');
-
-            return true;
+            // Start connection with retry logic
+            let retryCount = 0;
+            while (retryCount < maxRetries) {
+                try {
+                    await this.connection.start();
+                    this.isConnected = true;
+                    console.log('✅ ChatHub connected successfully');
+                    return true;
+                } catch (error) {
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        console.error(`❌ ChatHub connection failed after ${maxRetries} attempts:`, error);
+                        this.isConnected = false;
+                        // Notify error callbacks
+                        this.callbacks.onError.forEach(cb => cb(`Connection failed: ${error.message}`));
+                        return false;
+                    }
+                    console.warn(`⚠️ ChatHub connection attempt ${retryCount}/${maxRetries} failed, retrying in ${retryDelay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    retryDelay *= 2; // Exponential backoff
+                }
+            }
+            return false;
         } catch (error) {
-            console.error('❌ ChatHub connection failed:', error);
+            console.error('❌ ChatHub initialization failed:', error);
             this.isConnected = false;
+            this.callbacks.onError.forEach(cb => cb(`Initialization failed: ${error.message}`));
             return false;
         }
     }
@@ -85,16 +111,33 @@ class ChatService {
         this.connection.onreconnecting((error) => {
             console.warn('🔄 ChatHub reconnecting...', error);
             this.isConnected = false;
+            this.callbacks.onConnectionStateChanged.forEach(cb => cb('reconnecting'));
         });
 
         this.connection.onreconnected((connectionId) => {
             console.log('✅ ChatHub reconnected:', connectionId);
             this.isConnected = true;
+            this.callbacks.onConnectionStateChanged.forEach(cb => cb('connected'));
+        });
+
+        // Room join/leave events
+        this.connection.on('UserJoinedRoom', (userId, roomId) => {
+            console.log('👤 User joined room:', userId, roomId);
+            this.callbacks.onUserJoinedRoom.forEach(cb => cb(userId, roomId));
+        });
+
+        this.connection.on('UserLeftRoom', (userId, roomId) => {
+            console.log('👤 User left room:', userId, roomId);
+            this.callbacks.onUserLeftRoom.forEach(cb => cb(userId, roomId));
         });
 
         this.connection.onclose((error) => {
             console.error('❌ ChatHub connection closed:', error);
             this.isConnected = false;
+            // Notify error callbacks with user-friendly message
+            const errorMessage = error ? `Connection lost: ${error.message}` : 'Connection lost. Trying to reconnect...';
+            this.callbacks.onError.forEach(cb => cb(errorMessage));
+            this.callbacks.onConnectionStateChanged.forEach(cb => cb('disconnected'));
         });
     }
 
@@ -104,16 +147,26 @@ class ChatService {
     async sendDirectMessage(receiverId, content) {
         if (!this.isConnected) {
             console.error('❌ Cannot send message: Not connected');
-            return false;
+            const error = { success: false, error: 'Not connected to chat server' };
+            this.callbacks.onError.forEach(cb => cb(error.error));
+            return error;
+        }
+
+        if (!receiverId || !content || !content.trim()) {
+            const error = { success: false, error: 'Invalid message: receiver ID and content are required' };
+            this.callbacks.onError.forEach(cb => cb(error.error));
+            return error;
         }
 
         try {
-            await this.connection.invoke('SendDirectMessage', receiverId, content);
+            await this.connection.invoke('SendDirectMessage', receiverId, content.trim());
             console.log('📤 Direct message sent to:', receiverId);
-            return true;
+            return { success: true };
         } catch (error) {
             console.error('❌ Error sending message:', error);
-            return false;
+            const errorResult = { success: false, error: error.message || 'Failed to send message' };
+            this.callbacks.onError.forEach(cb => cb(errorResult.error));
+            return errorResult;
         }
     }
 
@@ -123,16 +176,26 @@ class ChatService {
     async sendRoomMessage(roomId, content) {
         if (!this.isConnected) {
             console.error('❌ Cannot send message: Not connected');
-            return false;
+            const error = { success: false, error: 'Not connected to chat server' };
+            this.callbacks.onError.forEach(cb => cb(error.error));
+            return error;
+        }
+
+        if (!roomId || !content || !content.trim()) {
+            const error = { success: false, error: 'Invalid message: room ID and content are required' };
+            this.callbacks.onError.forEach(cb => cb(error.error));
+            return error;
         }
 
         try {
-            await this.connection.invoke('SendRoomMessage', roomId, content);
+            await this.connection.invoke('SendRoomMessage', roomId, content.trim());
             console.log('📤 Room message sent to room:', roomId);
-            return true;
+            return { success: true };
         } catch (error) {
             console.error('❌ Error sending room message:', error);
-            return false;
+            const errorResult = { success: false, error: error.message || 'Failed to send message' };
+            this.callbacks.onError.forEach(cb => cb(errorResult.error));
+            return errorResult;
         }
     }
 
@@ -383,6 +446,18 @@ class ChatService {
 
     onError(callback) {
         this.callbacks.onError.push(callback);
+    }
+
+    onUserJoinedRoom(callback) {
+        this.callbacks.onUserJoinedRoom.push(callback);
+    }
+
+    onUserLeftRoom(callback) {
+        this.callbacks.onUserLeftRoom.push(callback);
+    }
+
+    onConnectionStateChanged(callback) {
+        this.callbacks.onConnectionStateChanged.push(callback);
     }
 }
 

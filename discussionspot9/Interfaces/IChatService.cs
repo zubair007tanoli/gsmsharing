@@ -15,6 +15,7 @@ namespace discussionspot9.Interfaces
         Task<ChatRoomViewModel> CreateChatRoomAsync(string creatorId, string name, string? description, bool isPublic = true);
         Task JoinChatRoomAsync(int roomId, string userId);
         Task LeaveChatRoomAsync(int roomId, string userId);
+        Task<bool> IsUserInRoomAsync(int roomId, string userId);
     }
 }
 

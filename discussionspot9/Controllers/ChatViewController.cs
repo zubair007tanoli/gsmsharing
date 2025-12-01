@@ -148,10 +148,25 @@ namespace discussionspot9.Controllers
         /// GET: /chat/rooms/create
         /// </summary>
         [HttpGet]
+        [Route("chat/rooms/create")]
         public IActionResult CreateRoom()
         {
-            var model = new CreateChatRoomViewModel();
-            return View(model);
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Auth", "Account");
+                }
+
+                var model = new CreateChatRoomViewModel();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading create room page");
+                return RedirectToAction("Index");
+            }
         }
 
         /// <summary>

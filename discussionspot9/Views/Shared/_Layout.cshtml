@@ -119,8 +119,8 @@
         @RenderBody()
     </main>
 
-    <!-- Chat Widget (Bottom Left) -->
-    @if (User.Identity?.IsAuthenticated == true)
+    <!-- Chat Widget (Bottom Left) - Hidden on dedicated chat pages -->
+    @if (User.Identity?.IsAuthenticated == true && !Context.Request.Path.StartsWithSegments("/chat"))
     {
         <partial name="_ChatWidget" />
     }

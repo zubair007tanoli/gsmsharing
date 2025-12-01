@@ -1,6 +1,13 @@
 @model discussionspot9.Models.ViewModels.ChatViewModels.ChatInboxViewModel
 @{
     ViewData["Title"] = "Messages - DiscussionSpot";
+    
+    // Ensure user is authenticated
+    if (!User.Identity?.IsAuthenticated ?? true)
+    {
+        Context.Response.Redirect("/Account/Auth");
+        return;
+    }
 }
 
 <link href="~/css/chat.css" rel="stylesheet" />

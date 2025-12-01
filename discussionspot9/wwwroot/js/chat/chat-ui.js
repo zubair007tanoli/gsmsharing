@@ -11,31 +11,128 @@ class ChatUI {
      * Initialize UI elements
      */
     initialize() {
+        // Try to find messages container (could be in widget or page)
+        // Try widget first, then dedicated page
         this.messagesContainer = document.getElementById('chatMessages');
+        
+        // If not found, the widget might be minimized - try to find it anyway
+        if (!this.messagesContainer) {
+            // Check if widget exists but is hidden
+            const widget = document.getElementById('chatWidget');
+            if (widget) {
+                // Container exists in DOM even if hidden, try again
+                this.messagesContainer = document.getElementById('chatMessages');
+            }
+        }
+        
         this.typingIndicator = document.getElementById('chatTypingIndicator');
+        
+        // Log for debugging
+        if (!this.messagesContainer) {
+            console.warn('⚠️ ChatUI: chatMessages container not found');
+            console.warn('⚠️ Available elements:', {
+                chatWidget: !!document.getElementById('chatWidget'),
+                chatWindow: !!document.getElementById('chatWindow'),
+                chatContent: !!document.getElementById('chatContent')
+            });
+        } else {
+            console.log('✅ ChatUI: Found messages container:', {
+                id: this.messagesContainer.id,
+                visible: this.messagesContainer.offsetParent !== null,
+                parent: this.messagesContainer.parentElement?.id
+            });
+        }
+        
+        if (!this.typingIndicator) {
+            console.warn('⚠️ ChatUI: chatTypingIndicator not found');
+        }
     }
 
     /**
      * Add message to chat
      */
     addMessage(message) {
+        // Re-initialize if container not found (might be in widget that was just opened)
         if (!this.messagesContainer) {
             this.initialize();
         }
+        
+        // If still not found, try again after a short delay (widget might be opening)
+        if (!this.messagesContainer) {
+            console.warn('⚠️ ChatUI: Container not found, retrying in 100ms...');
+            setTimeout(() => {
+                this.initialize();
+                if (this.messagesContainer) {
+                    this.addMessage(message); // Retry adding the message
+                } else {
+                    console.error('❌ ChatUI: Cannot add message - container not found after retry');
+                    console.error('❌ Available containers:', {
+                        chatMessages: document.getElementById('chatMessages'),
+                        chatWindow: document.getElementById('chatWindow'),
+                        chatWidget: document.getElementById('chatWidget')
+                    });
+                }
+            }, 100);
+            return;
+        }
 
-        const messageEl = this.createMessageElement(message);
-        this.messagesContainer.appendChild(messageEl);
+        // Check if message already exists (prevent duplicates)
+        if (message.MessageId) {
+            const existing = this.messagesContainer.querySelector(`[data-message-id="${message.MessageId}"]`);
+            if (existing) {
+                console.log('📝 ChatUI: Message already exists, skipping:', message.MessageId);
+                return;
+            }
+        }
+
+        try {
+            const messageEl = this.createMessageElement(message);
+            this.messagesContainer.appendChild(messageEl);
+            
+            // Hide empty state if it exists
+            const emptyState = document.getElementById('chatEmptyMessages');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            console.log('✅ ChatUI: Message added successfully:', {
+                MessageId: message.MessageId,
+                Container: this.messagesContainer.id,
+                TotalMessages: this.messagesContainer.children.length
+            });
+            
+            this.scrollToBottom();
+        } catch (error) {
+            console.error('❌ ChatUI: Error adding message:', error);
+        }
     }
 
     /**
      * Create message HTML element
      */
     createMessageElement(message) {
+        if (!message || !message.Content) {
+            console.error('❌ ChatUI: Invalid message object:', message);
+            return null;
+        }
+
         const div = document.createElement('div');
         div.className = `chat-message ${message.IsMine ? 'mine' : ''}`;
-        div.setAttribute('data-message-id', message.MessageId);
+        
+        // Use MessageId if available, otherwise generate a temporary one
+        const messageId = message.MessageId || Date.now();
+        div.setAttribute('data-message-id', messageId);
 
-        const initials = message.SenderName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        // Get initials from sender name
+        let initials = 'U';
+        if (message.SenderName) {
+            const parts = message.SenderName.split(' ').filter(p => p.length > 0);
+            if (parts.length >= 2) {
+                initials = (parts[0][0] + parts[1][0]).toUpperCase();
+            } else if (parts.length === 1 && parts[0].length > 0) {
+                initials = parts[0].substring(0, 2).toUpperCase();
+            }
+        }
 
         div.innerHTML = `
             <div class="chat-message-avatar">${initials}</div>
@@ -43,7 +140,7 @@ class ChatUI {
                 <div class="chat-message-bubble">
                     <p class="chat-message-text">${this.escapeHtml(message.Content)}</p>
                 </div>
-                <div class="chat-message-time">${message.FormattedTime || message.TimeAgo}</div>
+                <div class="chat-message-time">${message.FormattedTime || message.TimeAgo || 'now'}</div>
             </div>
         `;
 
@@ -67,6 +164,11 @@ class ChatUI {
     clearMessages() {
         if (this.messagesContainer) {
             this.messagesContainer.innerHTML = '';
+            // Show empty state if it exists
+            const emptyState = document.getElementById('chatEmptyMessages');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
         }
     }
 
@@ -88,7 +190,10 @@ class ChatUI {
      */
     scrollToBottom() {
         if (this.messagesContainer) {
-            this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            // Use requestAnimationFrame for smooth scrolling
+            requestAnimationFrame(() => {
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            });
         }
     }
 
@@ -113,12 +218,21 @@ class ChatUI {
     showError(message) {
         if (this.messagesContainer) {
             const errorDiv = document.createElement('div');
-            errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+            errorDiv.className = 'chat-error-message alert alert-danger alert-dismissible fade show';
+            errorDiv.setAttribute('role', 'alert');
             errorDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="fas fa-exclamation-circle"></i>
+                <span>${this.escapeHtml(message)}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             `;
             this.messagesContainer.appendChild(errorDiv);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
         }
     }
 
@@ -278,6 +392,50 @@ class ChatUI {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
         }
         return colors[Math.abs(hash) % colors.length];
+    }
+
+    /**
+     * Show room member join/leave notification
+     */
+    showRoomMemberNotification(userId, roomId, action) {
+        if (!this.messagesContainer) return;
+
+        // Get user display name (would need to fetch or pass as parameter)
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'chat-system-message';
+        notificationDiv.innerHTML = `
+            <div class="chat-system-message-content">
+                <i class="fas fa-user-${action === 'joined' ? 'plus' : 'minus'}"></i>
+                <span>User ${action === 'joined' ? 'joined' : 'left'} the room</span>
+            </div>
+        `;
+        this.messagesContainer.appendChild(notificationDiv);
+        this.scrollToBottom();
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notificationDiv.parentNode) {
+                notificationDiv.remove();
+            }
+        }, 5000);
+    }
+
+    /**
+     * Update connection status indicator
+     */
+    updateConnectionStatus(state) {
+        const statusEl = document.getElementById('chatConnectionStatus');
+        if (!statusEl) return;
+
+        const statusConfig = {
+            'connected': { text: 'Connected', class: 'status-connected', icon: 'fa-check-circle' },
+            'disconnected': { text: 'Disconnected', class: 'status-disconnected', icon: 'fa-times-circle' },
+            'reconnecting': { text: 'Reconnecting...', class: 'status-reconnecting', icon: 'fa-sync fa-spin' }
+        };
+
+        const config = statusConfig[state] || statusConfig['disconnected'];
+        statusEl.className = `chat-connection-status ${config.class}`;
+        statusEl.innerHTML = `<i class="fas ${config.icon}"></i> ${config.text}`;
     }
 
     /**
