@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -106,12 +107,15 @@ namespace discussionspot9.Services.MCP
                     continue;
                 }
 
-                // Try multiple possible paths (check both with and without discussionspot9 folder)
+                // Try multiple possible paths (check both with and without discussionspot9 folder, including Ubuntu paths)
                 var possiblePaths = new List<string>
                 {
                     Path.Combine(_environment.ContentRootPath, "mcp-servers", server.Script),
                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", server.Script),
-                    Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", server.Script)
+                    Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", server.Script),
+                    // Ubuntu deployment paths
+                    "/var/www/discussionspot/mcp-servers/" + server.Script,
+                    "/var/www/discussionspot9/mcp-servers/" + server.Script
                 };
 
                 // Also try parent directory (in case we're in bin/Debug/net9.0)
@@ -181,8 +185,15 @@ namespace discussionspot9.Services.MCP
                     serverName, 
                     _retryCounts.GetValueOrDefault(serverName, 0) + 1);
 
-                // Check if Python is available
-                var pythonExe = _configuration["Python:ExecutablePath"] ?? "python";
+                // Check if Python is available (try python3 first on Linux, then python)
+                var pythonExe = _configuration["Python:ExecutablePath"];
+                if (string.IsNullOrEmpty(pythonExe))
+                {
+                    // Auto-detect: try python3 first (Linux/Ubuntu), then python (Windows)
+                    var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                    pythonExe = isWindows ? "python" : "python3";
+                }
+
                 var pythonCheck = new ProcessStartInfo
                 {
                     FileName = pythonExe,
@@ -198,11 +209,25 @@ namespace discussionspot9.Services.MCP
                     using var checkProcess = Process.Start(pythonCheck);
                     if (checkProcess == null)
                     {
-                        throw new Exception("Python not found. Please install Python and add it to PATH.");
+                        // Try alternative: if python3 failed, try python (or vice versa)
+                        var altPython = pythonExe == "python3" ? "python" : "python3";
+                        pythonCheck.FileName = altPython;
+                        using var altCheckProcess = Process.Start(pythonCheck);
+                        if (altCheckProcess == null)
+                        {
+                            throw new Exception($"Python not found. Tried: {pythonExe} and {altPython}. Please install Python and add it to PATH.");
+                        }
+                        pythonExe = altPython;
+                        altCheckProcess.WaitForExit(2000);
+                        var pythonVersion = await altCheckProcess.StandardOutput.ReadToEndAsync();
+                        _logger.LogInformation("Python found: {Version} (using {Exe})", pythonVersion.Trim(), pythonExe);
                     }
-                    checkProcess.WaitForExit(2000);
-                    var pythonVersion = await checkProcess.StandardOutput.ReadToEndAsync();
-                    _logger.LogInformation("Python found: {Version}", pythonVersion.Trim());
+                    else
+                    {
+                        checkProcess.WaitForExit(2000);
+                        var pythonVersion = await checkProcess.StandardOutput.ReadToEndAsync();
+                        _logger.LogInformation("Python found: {Version} (using {Exe})", pythonVersion.Trim(), pythonExe);
+                    }
                 }
                 catch (Exception ex)
                 {

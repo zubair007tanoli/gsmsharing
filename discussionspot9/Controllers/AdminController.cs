@@ -837,11 +837,15 @@ namespace discussionspot9.Controllers
 
                 var (script, port) = servers[serverName];
                 
-                // Try multiple possible paths (including parent directories)
+                // Try multiple possible paths (including Ubuntu deployment paths)
                 var possiblePaths = new List<string>
                 {
+                    // Standard paths
                     Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script)
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
+                    // Ubuntu deployment paths
+                    "/var/www/discussionspot/mcp-servers/" + script,
+                    "/var/www/discussionspot9/mcp-servers/" + script
                 };
 
                 // Try parent directories if we're in bin/Debug or bin/Release
@@ -863,6 +867,7 @@ namespace discussionspot9.Controllers
                     if (!string.IsNullOrEmpty(contentRootParent))
                     {
                         possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", script));
+                        possiblePaths.Add(Path.Combine(contentRootParent, "mcp-servers", script));
                     }
                 }
 

@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "seo-automation": {
+      "command": "python3",
+      "args": [
+        "/var/www/discussionspot/mcp-servers/seo-automation/main.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    },
+    "web-story-validator": {
+      "command": "python3",
+      "args": [
+        "/var/www/discussionspot/mcp-servers/web-story-validator/main.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
+

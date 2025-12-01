@@ -49,30 +49,55 @@ fi
 # Step 3: Copy MCP server files
 echo -e "\n${GREEN}Step 3: Copying MCP server files...${NC}"
 
-# Check if source files exist in script directory
-if [ -d "$SCRIPT_DIR/seo-automation" ] && [ -f "$SCRIPT_DIR/seo-automation/main.py" ]; then
-    echo "Found seo-automation in script directory, copying..."
+# Check multiple possible source locations
+SOURCE_DIRS=(
+    "$SCRIPT_DIR"
+    "$(dirname "$SCRIPT_DIR")/mcp-servers"
+    "$APP_DIR/mcp-servers"
+    "/var/www/discussionspot9/mcp-servers"
+    "$HOME/discussionspot/mcp-servers"
+)
+
+FOUND_SOURCE=""
+for dir in "${SOURCE_DIRS[@]}"; do
+    if [ -f "$dir/seo-automation/main.py" ]; then
+        FOUND_SOURCE="$dir"
+        echo -e "${GREEN}✓ Found seo-automation source at: $FOUND_SOURCE${NC}"
+        break
+    fi
+done
+
+# Copy SEO automation
+if [ -n "$FOUND_SOURCE" ] && [ -f "$FOUND_SOURCE/seo-automation/main.py" ]; then
+    echo "Copying seo-automation server from $FOUND_SOURCE..."
     if [ -d "$MCP_DIR/seo-automation" ]; then
         echo "  Removing existing directory..."
         rm -rf "$MCP_DIR/seo-automation"
     fi
-    cp -r "$SCRIPT_DIR/seo-automation" "$MCP_DIR/"
+    cp -r "$FOUND_SOURCE/seo-automation" "$MCP_DIR/"
     echo -e "${GREEN}✓ SEO automation server copied${NC}"
 elif [ -f "$MCP_DIR/seo-automation/main.py" ]; then
     echo -e "${GREEN}✓ SEO automation server already exists at destination${NC}"
 else
-    echo -e "${RED}✗ seo-automation not found in script directory ($SCRIPT_DIR)${NC}"
-    echo -e "${YELLOW}  You may need to manually copy files or run this script from the mcp-servers directory${NC}"
-    echo -e "${YELLOW}  Expected location: $SCRIPT_DIR/seo-automation/main.py${NC}"
+    echo -e "${RED}✗ seo-automation not found${NC}"
+    echo -e "${YELLOW}Searched in:${NC}"
+    for dir in "${SOURCE_DIRS[@]}"; do
+        echo -e "${YELLOW}  - $dir/seo-automation/main.py${NC}"
+    done
+    echo -e "\n${YELLOW}⚠ Files need to be copied to the server first.${NC}"
+    echo -e "${YELLOW}  Option 1: Deploy via git (git pull)${NC}"
+    echo -e "${YELLOW}  Option 2: Copy files manually via SCP/SFTP${NC}"
+    echo -e "${YELLOW}  Option 3: Run from the directory containing mcp-servers/${NC}"
 fi
 
-if [ -d "$SCRIPT_DIR/web-story-validator" ] && [ -f "$SCRIPT_DIR/web-story-validator/main.py" ]; then
-    echo "Found web-story-validator in script directory, copying..."
+# Copy web-story-validator
+if [ -n "$FOUND_SOURCE" ] && [ -f "$FOUND_SOURCE/web-story-validator/main.py" ]; then
+    echo "Copying web-story-validator server from $FOUND_SOURCE..."
     if [ -d "$MCP_DIR/web-story-validator" ]; then
         echo "  Removing existing directory..."
         rm -rf "$MCP_DIR/web-story-validator"
     fi
-    cp -r "$SCRIPT_DIR/web-story-validator" "$MCP_DIR/"
+    cp -r "$FOUND_SOURCE/web-story-validator" "$MCP_DIR/"
     echo -e "${GREEN}✓ Web story validator server copied${NC}"
 elif [ -f "$MCP_DIR/web-story-validator/main.py" ]; then
     echo -e "${GREEN}✓ Web story validator server already exists at destination${NC}"
