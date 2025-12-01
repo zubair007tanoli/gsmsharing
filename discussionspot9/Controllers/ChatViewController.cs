@@ -2,41 +2,39 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.ChatViewModels;
-using discussionspot9.Data.DbContext;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace discussionspot9.Controllers
 {
     [Authorize]
+    [Route("[controller]")]
     public class ChatViewController : Controller
     {
         private readonly IChatService _chatService;
-        private readonly ApplicationDbContext _context;
+        private readonly IPresenceService _presenceService;
         private readonly ILogger<ChatViewController> _logger;
 
         public ChatViewController(
-            IChatService chatService, 
-            ApplicationDbContext context,
+            IChatService chatService,
+            IPresenceService presenceService,
             ILogger<ChatViewController> logger)
         {
             _chatService = chatService;
-            _context = context;
+            _presenceService = presenceService;
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get current user ID
-        /// </summary>
         private string? GetUserId()
         {
             return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         /// <summary>
-        /// Main chat inbox page
-        /// GET: /chat
+        /// Chat inbox page
+        /// GET: /ChatView or /ChatView/Index
         /// </summary>
+        [HttpGet("")]
+        [HttpGet("Index")]
         public async Task<IActionResult> Index()
         {
             try
@@ -47,68 +45,28 @@ namespace discussionspot9.Controllers
                     return RedirectToAction("Auth", "Account");
                 }
 
-                var directChats = await _chatService.GetUserDirectChatsAsync(userId);
-                var rooms = await _chatService.GetUserChatRoomsAsync(userId);
-                var unreadCount = await _chatService.GetUnreadCountAsync(userId);
-
                 var model = new ChatInboxViewModel
                 {
-                    DirectChats = directChats,
-                    ChatRooms = rooms,
-                    UnreadCount = unreadCount
+                    DirectChats = await _chatService.GetUserDirectChatsAsync(userId),
+                    ChatRooms = await _chatService.GetUserChatRoomsAsync(userId),
+                    UnreadCount = await _chatService.GetUnreadCountAsync(userId)
                 };
 
-                return View(model);
+                return View("~/Views/Chat/Index.cshtml", model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading chat inbox");
-                return View(new ChatInboxViewModel());
+                return View("Error");
             }
         }
 
         /// <summary>
-        /// Direct message conversation page
-        /// GET: /chat/direct/{userId}
+        /// Direct chat page
+        /// GET: /ChatView/Direct/{userId}
         /// </summary>
-        public async Task<IActionResult> Direct(string userId, [FromQuery] int page = 1)
-        {
-            try
-            {
-                var currentUserId = GetUserId();
-                if (string.IsNullOrEmpty(currentUserId))
-                {
-                    return RedirectToAction("Auth", "Account");
-                }
-
-                var messages = await _chatService.GetDirectChatHistoryAsync(currentUserId, userId, page, 50);
-                
-                // Get user profile info for display
-                var userProfile = await _context.UserProfiles.FindAsync(userId);
-                
-                var model = new DirectChatPageViewModel
-                {
-                    UserId = userId,
-                    UserName = userProfile?.DisplayName ?? "User",
-                    AvatarUrl = userProfile?.AvatarUrl ?? "/images/default-avatar.png",
-                    Messages = messages,
-                    CurrentPage = page
-                };
-
-                return View(model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error loading direct chat with {userId}");
-                return RedirectToAction("Index");
-            }
-        }
-
-        /// <summary>
-        /// Chat room page
-        /// GET: /chat/rooms/{roomId}
-        /// </summary>
-        public async Task<IActionResult> Room(int roomId, [FromQuery] int page = 1)
+        [HttpGet("Direct/{otherUserId}")]
+        public async Task<IActionResult> Direct(string otherUserId)
         {
             try
             {
@@ -118,23 +76,70 @@ namespace discussionspot9.Controllers
                     return RedirectToAction("Auth", "Account");
                 }
 
-                var messages = await _chatService.GetRoomChatHistoryAsync(roomId, page, 50);
+                // Get chat history
+                var messages = await _chatService.GetDirectChatHistoryAsync(userId, otherUserId);
+                
+                // Get other user info (you'll need to implement this or get from UserProfiles)
+                var model = new DirectChatPageViewModel
+                {
+                    OtherUserId = otherUserId,
+                    Messages = messages,
+                    CurrentUserId = userId
+                };
+
+                return View("~/Views/Chat/Direct.cshtml", model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error loading direct chat with {otherUserId}");
+                return RedirectToAction("Index");
+            }
+        }
+
+        /// <summary>
+        /// Chat room page
+        /// GET: /ChatView/Room/{roomId}
+        /// </summary>
+        [HttpGet("Room/{roomId:int}")]
+        public async Task<IActionResult> Room(int roomId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Auth", "Account");
+                }
+
+                // Check if user is member of room
+                var isMember = await _chatService.IsUserInRoomAsync(roomId, userId);
+                if (!isMember)
+                {
+                    TempData["Error"] = "You are not a member of this room.";
+                    return RedirectToAction("Index");
+                }
+
+                // Get room messages
+                var messages = await _chatService.GetRoomChatHistoryAsync(roomId);
+                
+                // Get room info
                 var rooms = await _chatService.GetUserChatRoomsAsync(userId);
                 var room = rooms.FirstOrDefault(r => r.ChatRoomId == roomId);
 
                 if (room == null)
                 {
-                    return NotFound();
+                    TempData["Error"] = "Room not found.";
+                    return RedirectToAction("Index");
                 }
 
-                var model = new RoomChatViewModel
+                var model = new RoomChatPageViewModel
                 {
                     Room = room,
                     Messages = messages,
-                    CurrentPage = page
+                    CurrentUserId = userId
                 };
 
-                return View(model);
+                return View("~/Views/Chat/Room.cshtml", model);
             }
             catch (Exception ex)
             {
@@ -145,45 +150,29 @@ namespace discussionspot9.Controllers
 
         /// <summary>
         /// Create room page
-        /// GET: /chat/rooms/create
+        /// GET: /ChatView/CreateRoom
         /// </summary>
-        [HttpGet]
-        [Route("chat/rooms/create")]
+        [HttpGet("CreateRoom")]
         public IActionResult CreateRoom()
         {
-            try
-            {
-                var userId = GetUserId();
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return RedirectToAction("Auth", "Account");
-                }
-
-                var model = new CreateChatRoomViewModel();
-                return View(model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading create room page");
-                return RedirectToAction("Index");
-            }
+            return View("~/Views/Chat/CreateRoom.cshtml");
         }
 
         /// <summary>
-        /// Create room - POST
-        /// POST: /chat/rooms/create
+        /// Create room POST
+        /// POST: /ChatView/CreateRoom
         /// </summary>
-        [HttpPost("chat/rooms/create")]
+        [HttpPost("CreateRoom")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateRoom(CreateChatRoomViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return View("~/Views/Chat/CreateRoom.cshtml", model);
+                }
+
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
@@ -197,16 +186,15 @@ namespace discussionspot9.Controllers
                     model.IsPublic
                 );
 
-                TempData["SuccessMessage"] = "Chat room created successfully!";
+                TempData["Success"] = "Chat room created successfully!";
                 return RedirectToAction("Room", new { roomId = room.ChatRoomId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating chat room");
                 ModelState.AddModelError("", "Failed to create chat room. Please try again.");
-                return View(model);
+                return View("~/Views/Chat/CreateRoom.cshtml", model);
             }
         }
     }
 }
-

@@ -22,6 +22,13 @@ class ChatService {
      */
     async initialize(maxRetries = 5, retryDelay = 2000) {
         try {
+            // Check if SignalR is loaded
+            if (typeof signalR === 'undefined') {
+                console.error('❌ SignalR library not loaded');
+                this.callbacks.onError.forEach(cb => cb('SignalR library not loaded'));
+                return false;
+            }
+            
             this.connection = new signalR.HubConnectionBuilder()
                 .withUrl("/chatHub")
                 .withAutomaticReconnect({

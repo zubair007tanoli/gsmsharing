@@ -2,12 +2,10 @@ namespace discussionspot9.Models.ViewModels.ChatViewModels
 {
     public class DirectChatPageViewModel
     {
-        public string UserId { get; set; } = null!;
-        public string? UserName { get; set; }
-        public string? AvatarUrl { get; set; }
+        public string OtherUserId { get; set; } = null!;
+        public string OtherUserName { get; set; } = "User";
+        public string? OtherUserAvatar { get; set; }
+        public string CurrentUserId { get; set; } = null!;
         public List<ChatMessageViewModel> Messages { get; set; } = new();
-        public int CurrentPage { get; set; } = 1;
-        public int TotalPages { get; set; } = 1;
     }
 }
-

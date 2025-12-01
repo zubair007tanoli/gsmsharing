@@ -11,14 +11,22 @@ class ChatController {
         this.currentChatRoomName = null;
         this.messageCount = 0;
         this.typingTimeout = null;
+        this.initialized = false;
         
-        this.initialize();
+        // Don't auto-initialize in constructor - let the widget do it
+        // this.initialize();
     }
 
     /**
      * Initialize chat system
      */
     async initialize() {
+        // Prevent double initialization
+        if (this.initialized) {
+            console.log('⚠️ Chat controller already initialized, skipping...');
+            return true;
+        }
+        
         console.log('🚀 Initializing chat controller...');
         
         // Connect to SignalR
@@ -27,10 +35,13 @@ class ChatController {
         if (connected) {
             this.setupEventHandlers();
             this.loadInitialData();
+            this.initialized = true;
             console.log('✅ Chat system ready');
+            return true;
         } else {
             console.error('❌ Failed to initialize chat');
             this.chatUI.showError('Failed to connect to chat server. Please refresh the page.');
+            return false;
         }
     }
 
