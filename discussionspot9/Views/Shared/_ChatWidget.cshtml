@@ -4,6 +4,10 @@
 <!-- SignalR Library (required for chat) -->
 <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
 
+<!-- Google AdSense (for chat ads) -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+     crossorigin="anonymous"></script>
+
 <div id="chatWidget" class="chat-widget minimized">
     <!-- Chat Header -->
     <div class="chat-header" onclick="toggleChatWidget()">
@@ -25,7 +29,7 @@
     </div>
 
     <!-- Chat Content (Hidden when minimized) -->
-    <div id="chatContent" style="display: none; flex: 1; display: flex; flex-direction: column;">
+    <div id="chatContent" class="chat-content" style="display: none;">
         <!-- Chat Tabs -->
         <div class="chat-tabs">
             <button class="chat-tab active" data-tab="direct" onclick="switchChatTab('direct')">
@@ -115,10 +119,25 @@
 
             <div class="chat-input-area">
                 <div class="chat-input-wrapper">
+                    <button class="chat-emoji-btn" id="chatEmojiBtn" onclick="toggleEmojiPicker()" title="Add emoji">
+                        <i class="far fa-smile"></i>
+                    </button>
                     <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." autocomplete="off" />
                     <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
                         <i class="fas fa-paper-plane"></i>
                     </button>
+                </div>
+                <!-- Emoji Picker -->
+                <div id="emojiPicker" class="emoji-picker" style="display: none;">
+                    <div class="emoji-picker-header">
+                        <span>Emojis</span>
+                        <button class="emoji-picker-close" onclick="toggleEmojiPicker()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="emoji-picker-content" id="emojiPickerContent">
+                        <!-- Emojis will be populated here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -179,6 +198,11 @@
             content.style.display = 'flex';
             icon.className = 'fas fa-chevron-up';
             subtitle.textContent = 'Online now';
+            
+            // Re-initialize ChatUI to find container after widget is expanded
+            if (chatController && chatController.chatUI) {
+                chatController.chatUI.initialize();
+            }
         }
     }
 
@@ -203,11 +227,16 @@
 
     // Open chat window with specific user
     async function openChatWindow(userId, userName, avatar) {
+        console.log('🔵 openChatWindow called:', { userId, userName, avatar });
+        
         // Hide lists and show chat window
         document.getElementById('directChatList').style.display = 'none';
         document.getElementById('onlineUsersList').style.display = 'none';
         document.getElementById('roomsChatList').style.display = 'none';
-        document.getElementById('chatWindow').classList.add('active');
+        
+        const chatWindow = document.getElementById('chatWindow');
+        chatWindow.classList.add('active');
+        console.log('✅ Chat window activated:', chatWindow.classList.contains('active'));
         
         // Update window header
         document.getElementById('chatWindowUserName').textContent = userName;
@@ -220,23 +249,32 @@
         window.currentChatUserId = userId;
         window.currentChatRoomId = null;
         
+        console.log('📝 Set currentChatUserId:', window.currentChatUserId);
+        console.log('📝 Current user ID (self):', window.currentUserId);
+        
         // Ensure ChatUI is initialized with widget container
         if (chatController && chatController.chatUI) {
             // Force re-initialize to find widget container
-            chatController.chatUI.messagesContainer = null;
-            chatController.chatUI.initialize();
+            chatController.chatUI.messagesContainer = document.getElementById('chatMessages');
             
             if (!chatController.chatUI.messagesContainer) {
-                console.error('❌ ChatUI: Still cannot find chatMessages container');
+                console.error('❌ ChatUI: Cannot find chatMessages container');
             } else {
-                console.log('✅ ChatUI: Found chatMessages container in widget');
+                console.log('✅ ChatUI: Found chatMessages container:', chatController.chatUI.messagesContainer);
             }
         }
         
         // Load chat history
         if (chatController) {
             console.log('📜 Loading chat history for user:', userId);
-            await chatController.loadChatHistory(userId);
+            console.log('📜 SignalR connected:', chatController.chatService?.isConnected);
+            
+            try {
+                await chatController.loadChatHistory(userId);
+                console.log('✅ Chat history loaded');
+            } catch (error) {
+                console.error('❌ Error loading chat history:', error);
+            }
             
             // Scroll to bottom after loading
             setTimeout(() => {
@@ -244,10 +282,11 @@
                 if (messagesContainer) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                     console.log('✅ Scrolled to bottom, messages count:', messagesContainer.children.length);
+                    console.log('📝 Messages container innerHTML length:', messagesContainer.innerHTML.length);
                 } else {
                     console.error('❌ Cannot scroll - messages container not found');
                 }
-            }, 200);
+            }, 300);
         } else {
             console.error('❌ ChatController not initialized');
         }
@@ -320,15 +359,36 @@
     // Send message
     async function sendChatMessage() {
         const input = document.getElementById('chatInput');
+        if (!input) {
+            console.warn('⚠️ Chat input not found');
+            return;
+        }
+        
         const message = input.value.trim();
         
         if (!message) {
+            // Silently return - no need to log empty messages
             return;
         }
+        
+        console.log('📤 sendChatMessage called:', {
+            messageLength: message.length,
+            currentChatUserId: window.currentChatUserId,
+            currentChatRoomId: window.currentChatRoomId,
+            currentUserId: window.currentUserId,
+            chatControllerExists: !!chatController,
+            isConnected: chatController?.chatService?.isConnected
+        });
         
         if (!chatController) {
             console.error('❌ ChatController not initialized');
             alert('Chat system not ready. Please wait a moment and try again.');
+            return;
+        }
+        
+        if (!chatController.chatService?.isConnected) {
+            console.error('❌ SignalR not connected');
+            alert('Not connected to chat server. Please refresh the page.');
             return;
         }
         
@@ -339,19 +399,22 @@
         }
         
         try {
+            console.log('📤 Calling chatController.sendMessage...');
             await chatController.sendMessage(message);
             input.value = '';
+            console.log('✅ Message sent successfully');
             
             // Scroll to bottom after sending
             setTimeout(() => {
                 const messagesContainer = document.getElementById('chatMessages');
                 if (messagesContainer) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    console.log('✅ Scrolled to bottom after sending');
                 }
             }, 100);
         } catch (error) {
             console.error('❌ Error sending message:', error);
-            alert('Failed to send message. Please try again.');
+            alert('Failed to send message: ' + (error.message || 'Unknown error'));
         }
     }
 
@@ -390,6 +453,11 @@
         return colors[Math.abs(hash) % colors.length];
     }
     
+    // Alias for backwards compatibility
+    function getRandomColor() {
+        return getColorFromName(Math.random().toString());
+    }
+    
     // Helper function - Get initials from name
     function getInitials(name) {
         if (!name) return 'U';
@@ -399,6 +467,62 @@
         }
         return name.substring(0, Math.min(2, name.length)).toUpperCase();
     }
+
+    // Emoji picker functionality
+    const commonEmojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', 
+                          '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+                          '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩',
+                          '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+                          '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬',
+                          '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+                          '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '👏', '🙌', '👐',
+                          '🔥', '💯', '⭐', '🌟', '✨', '💫', '🎉', '🎊', '🎈', '🎁'];
+
+    function toggleEmojiPicker() {
+        const picker = document.getElementById('emojiPicker');
+        const content = document.getElementById('emojiPickerContent');
+        
+        if (picker.style.display === 'none') {
+            picker.style.display = 'block';
+            
+            // Populate emojis if not already done
+            if (content.children.length === 0) {
+                commonEmojis.forEach(emoji => {
+                    const emojiBtn = document.createElement('button');
+                    emojiBtn.className = 'emoji-item';
+                    emojiBtn.textContent = emoji;
+                    emojiBtn.onclick = () => insertEmoji(emoji);
+                    content.appendChild(emojiBtn);
+                });
+            }
+        } else {
+            picker.style.display = 'none';
+        }
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById('chatInput');
+        if (input) {
+            const cursorPos = input.selectionStart || input.value.length;
+            const textBefore = input.value.substring(0, cursorPos);
+            const textAfter = input.value.substring(cursorPos);
+            input.value = textBefore + emoji + textAfter;
+            input.focus();
+            input.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+        }
+    }
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', function(event) {
+        const picker = document.getElementById('emojiPicker');
+        const emojiBtn = document.getElementById('chatEmojiBtn');
+        if (picker && picker.style.display === 'block' && 
+            !picker.contains(event.target) && 
+            event.target !== emojiBtn && 
+            !emojiBtn.contains(event.target)) {
+            picker.style.display = 'none';
+        }
+    });
 
     // Global function to open chat from anywhere (e.g., online members)
     window.openChat = function(userId, displayName) {
@@ -417,26 +541,9 @@
         openChatWindow(userId, displayName, initials);
     };
 
-    // Open chat room window
-    function openChatRoomWindow(roomId, roomName, roomIcon) {
-        document.getElementById('directChatList').style.display = 'none';
-        document.getElementById('roomsChatList').style.display = 'none';
-        document.getElementById('chatWindow').classList.add('active');
-        
-        document.getElementById('chatWindowUserName').textContent = roomName;
-        document.getElementById('chatWindowAvatar').textContent = roomIcon || roomName.substring(0, 2).toUpperCase();
-        document.getElementById('chatWindowAvatar').style.background = getRandomColor();
-        document.getElementById('chatWindowStatus').innerHTML = '<i class="fas fa-users"></i> Group Chat';
-        
-        // Store current room ID
-        window.currentChatRoomId = roomId;
-        window.currentChatUserId = null;
-        
-        // Load room chat history
-        if (chatController) {
-            chatController.loadRoomHistory(roomId);
-        }
-    }
+    // Note: openChatRoomWindow is defined above as openRoomChatWindow - use that instead
+    // This is an alias for backwards compatibility
+    window.openChatRoomWindow = openRoomChatWindow;
 
     // Open create room modal
     function openCreateRoomModal() {

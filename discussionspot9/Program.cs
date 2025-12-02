@@ -530,7 +530,23 @@ builder.Services.AddHostedService<DailyDataSyncService>();
 builder.Services.AddHostedService<NightlySeoRescoreService>();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddSignalR();
+// Configure SignalR for optimal performance
+builder.Services.AddSignalR(options =>
+{
+    // Enable detailed errors only in development
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    
+    // Optimize message buffer sizes for chat
+    options.MaximumReceiveMessageSize = 32 * 1024; // 32KB max message size
+    options.StreamBufferCapacity = 10; // Buffer capacity for streaming
+    
+    // Client timeout settings
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    
+    // Maximum parallel invocations per connection
+    options.MaximumParallelInvocationsPerClient = 1; // Process one at a time for chat
+});
 
 // =============================================
 // CHAT SYSTEM SERVICES

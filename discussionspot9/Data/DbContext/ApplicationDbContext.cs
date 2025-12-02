@@ -1034,9 +1034,25 @@ namespace discussionspot9.Data.DbContext
                     .HasForeignKey(e => e.ChatRoomId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                // Individual indexes
                 entity.HasIndex(e => e.SenderId);
                 entity.HasIndex(e => e.ReceiverId);
                 entity.HasIndex(e => e.SentAt);
+                entity.HasIndex(e => e.ChatRoomId);
+                entity.HasIndex(e => e.IsDeleted);
+                
+                // Composite indexes for common query patterns (CRITICAL for performance)
+                // For direct messages: WHERE (SenderId = X AND ReceiverId = Y) OR (SenderId = Y AND ReceiverId = X)
+                entity.HasIndex(e => new { e.SenderId, e.ReceiverId, e.IsDeleted, e.SentAt })
+                    .HasFilter("[IsDeleted] = 0 AND [ReceiverId] IS NOT NULL");
+                
+                // For room messages: WHERE ChatRoomId = X AND IsDeleted = false ORDER BY SentAt
+                entity.HasIndex(e => new { e.ChatRoomId, e.IsDeleted, e.SentAt })
+                    .HasFilter("[IsDeleted] = 0 AND [ChatRoomId] IS NOT NULL");
+                
+                // For unread messages: WHERE ReceiverId = X AND IsRead = false
+                entity.HasIndex(e => new { e.ReceiverId, e.IsRead, e.IsDeleted })
+                    .HasFilter("[IsDeleted] = 0 AND [ReceiverId] IS NOT NULL");
             });
 
             builder.Entity<ChatRoom>(entity =>

@@ -80,13 +80,13 @@ class ChatService {
     registerHandlers() {
         // Receive direct message
         this.connection.on('ReceiveDirectMessage', (message) => {
-            console.log('📩 Direct message received:', message);
+            // Removed verbose logging for performance
             this.callbacks.onMessageReceived.forEach(cb => cb(message));
         });
 
         // Receive room message
         this.connection.on('ReceiveRoomMessage', (message) => {
-            console.log('📩 Room message received:', message);
+            // Removed verbose logging for performance
             this.callbacks.onMessageReceived.forEach(cb => cb(message));
         });
 
@@ -167,10 +167,8 @@ class ChatService {
 
         try {
             await this.connection.invoke('SendDirectMessage', receiverId, content.trim());
-            console.log('📤 Direct message sent to:', receiverId);
             return { success: true };
         } catch (error) {
-            console.error('❌ Error sending message:', error);
             const errorResult = { success: false, error: error.message || 'Failed to send message' };
             this.callbacks.onError.forEach(cb => cb(errorResult.error));
             return errorResult;
@@ -253,10 +251,12 @@ class ChatService {
 
         try {
             const history = await this.connection.invoke('GetChatHistory', otherUserId, page, 50);
-            console.log('📜 Chat history loaded:', history.length, 'messages');
-            return history;
+            return history || [];
         } catch (error) {
-            console.error('❌ Error getting chat history:', error);
+            // Only log errors, not warnings
+            if (window.DEBUG_MODE) {
+                console.error('❌ Error getting chat history:', error);
+            }
             return [];
         }
     }

@@ -204,27 +204,60 @@
 /* Dark Mode Toggle */
 .dark-mode-toggle {
     position: relative;
+    color: var(--text-secondary);
 }
 
 .dark-mode-toggle i {
     position: absolute;
     transition: all 0.3s ease;
+    color: inherit;
 }
 
 .dark-mode-toggle .fa-moon {
     opacity: 1;
+    display: inline-block;
+    color: var(--text-secondary);
 }
 
 .dark-mode-toggle .fa-sun {
     opacity: 0;
+    display: none;
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .dark-mode-toggle {
+    color: var(--text-secondary);
 }
 
 [data-theme="dark"] .dark-mode-toggle .fa-moon {
     opacity: 0;
+    display: none;
 }
 
 [data-theme="dark"] .dark-mode-toggle .fa-sun {
     opacity: 1;
+    display: inline-block;
+    color: #fbbf24;
+}
+
+/* Dark Mode Hover Improvements */
+[data-theme="dark"] .main-header .action-icon:hover,
+body.dark-mode .main-header .action-icon:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #a5b4fc;
+    transform: scale(1.1);
+}
+
+[data-theme="dark"] .main-header .nav-link:hover,
+body.dark-mode .main-header .nav-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a5b4fc;
+}
+
+[data-theme="dark"] .main-header .dropdown-item:hover,
+body.dark-mode .main-header .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
 }
 
 /* Notification Badge */

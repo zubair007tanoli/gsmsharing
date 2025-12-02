@@ -167,8 +167,18 @@ body {
     margin: 0 4px;
 }
 
+.dark-mode-toggle {
+    color: #6c757d;
+}
+
+.dark-mode-toggle .fa-moon {
+    display: inline-block;
+    color: inherit;
+}
+
 .dark-mode-toggle .fa-sun {
     display: none;
+    color: #f6e05e;
 }
 
 .notification-btn {
@@ -480,12 +490,16 @@ body {
         color: #e2e8f0;
     }
 
+    .dark-mode .dark-mode-toggle {
+        color: #e2e8f0;
+    }
+
     .dark-mode .dark-mode-toggle .fa-moon {
-        display: none;
+        display: none !important;
     }
 
     .dark-mode .dark-mode-toggle .fa-sun {
-        display: block;
+        display: inline-block !important;
         color: #f6e05e;
     }
 

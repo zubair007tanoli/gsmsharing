@@ -131,50 +131,52 @@ class ChatController {
         // Get current user ID from window or data attribute
         const currentUserId = window.currentUserId || document.body.getAttribute('data-user-id') || null;
         
-        // Determine IsMine if not set by server (for room messages)
-        if (message.IsMine === undefined && currentUserId && message.SenderId) {
-            message.IsMine = message.SenderId === currentUserId;
+        // Normalize property names (handle both camelCase and PascalCase)
+        const senderId = message.senderId || message.SenderId;
+        const receiverId = message.receiverId || message.ReceiverId;
+        const chatRoomIdFromMsg = message.chatRoomId || message.ChatRoomId;
+        const messageId = message.messageId || message.MessageId;
+        const content = message.content || message.Content;
+        
+        // Determine isMine if not set by server (for room messages)
+        // Set both camelCase and PascalCase for compatibility
+        if (message.isMine === undefined && message.IsMine === undefined && currentUserId && senderId) {
+            const isMine = senderId === currentUserId;
+            message.isMine = isMine;
+            message.IsMine = isMine;
         }
         
         // Check if this message is for the current chat (direct or room)
         const chatUserId = window.currentChatUserId || this.currentChatUserId;
         const chatRoomId = window.currentChatRoomId || this.currentChatRoomId;
+        const isMine = message.isMine || message.IsMine || false;
         
-        console.log('📨 Processing incoming message:', {
-            MessageId: message.MessageId,
-            SenderId: message.SenderId,
-            ReceiverId: message.ReceiverId,
-            ChatRoomId: message.ChatRoomId,
-            IsMine: message.IsMine,
-            CurrentUserId: currentUserId,
-            CurrentChatUserId: chatUserId,
-            CurrentChatRoomId: chatRoomId,
-            Content: message.Content?.substring(0, 30)
-        });
+        // Removed verbose logging for performance - only log in debug mode
+        if (window.DEBUG_MODE) {
+            console.log('📨 Processing incoming message:', { messageId, senderId, isMine });
+        }
         
         // For direct messages (has ReceiverId)
-        if (message.ReceiverId) {
+        if (receiverId) {
             // Message is for this chat if:
             // 1. We're viewing this conversation (chatUserId matches sender or receiver)
             // 2. OR it's our own message (always show our own messages)
             const isViewingThisChat = chatUserId && (
-                message.SenderId === chatUserId || 
-                message.ReceiverId === chatUserId
+                senderId === chatUserId || 
+                receiverId === chatUserId
             );
             
-            const shouldDisplay = message.IsMine || isViewingThisChat;
+            const shouldDisplay = isMine || isViewingThisChat;
             
             if (!shouldDisplay) {
-                console.log('📨 Direct message not for current chat, updating unread count only');
                 this.updateUnreadCount();
                 return;
             }
         }
         // For room messages (has ChatRoomId, no ReceiverId)
-        else if (message.ChatRoomId) {
+        else if (chatRoomIdFromMsg) {
             // Only display if we're viewing this room
-            if (chatRoomId && message.ChatRoomId !== chatRoomId) {
-                console.log('📨 Room message not for current room, skipping');
+            if (chatRoomId && chatRoomIdFromMsg !== chatRoomId) {
                 this.updateUnreadCount();
                 return;
             }
@@ -182,48 +184,41 @@ class ChatController {
         }
         
         // Check if message already exists (prevent duplicates)
-        if (message.MessageId) {
-            const existingMessage = document.querySelector(`[data-message-id="${message.MessageId}"]`);
+        if (messageId) {
+            const existingMessage = document.querySelector(`[data-message-id="${messageId}"]`);
             if (existingMessage) {
-                console.log('📝 Message already exists, skipping duplicate:', message.MessageId);
-                return;
+                return; // Skip duplicate
             }
         }
         
         // Remove optimistic message if it exists (temporary messages have Date.now() as ID)
-        if (message.Content) {
+        if (content) {
             const optimisticMessages = document.querySelectorAll('[data-message-id]');
             optimisticMessages.forEach(el => {
                 const msgId = parseInt(el.getAttribute('data-message-id'));
                 // If it's a temporary ID (very large number from Date.now()) and content matches, remove it
-                if (msgId > 1000000000000 && el.textContent.includes(message.Content)) {
-                    console.log('🗑️ Removing optimistic message:', msgId);
+                if (msgId > 1000000000000 && el.textContent.includes(content)) {
                     el.remove();
                 }
             });
         }
         
-        console.log('✅ Adding message to UI:', {
-            MessageId: message.MessageId,
-            SenderId: message.SenderId,
-            IsMine: message.IsMine
-        });
-        
         // Ensure ChatUI container is found (might be in widget)
-        this.chatUI.initialize();
+        this.chatUI.messagesContainer = document.getElementById('chatMessages');
         
         // Verify container exists before adding
         if (!this.chatUI.messagesContainer) {
-            console.error('❌ Cannot add message - container not found, retrying...');
-            setTimeout(() => {
-                this.chatUI.initialize();
-                if (this.chatUI.messagesContainer) {
-                    this.chatUI.addMessage(message);
-                } else {
-                    console.error('❌ Still cannot find container after retry');
-                }
-            }, 100);
-            return;
+            this.chatUI.messagesContainer = document.getElementById('chatMessages');
+            if (!this.chatUI.messagesContainer) {
+                // Retry once after a short delay
+                setTimeout(() => {
+                    this.chatUI.messagesContainer = document.getElementById('chatMessages');
+                    if (this.chatUI.messagesContainer) {
+                        this.chatUI.addMessage(message);
+                    }
+                }, 50);
+                return;
+            }
         }
         
         // Add message to UI
@@ -238,8 +233,8 @@ class ChatController {
         }
 
         // Mark as read if chat is open and message is for current user (direct messages only)
-        if (message.ReceiverId && chatUserId && message.ReceiverId === chatUserId && !message.IsMine && message.MessageId) {
-            this.chatService.markAsRead(message.MessageId);
+        if (receiverId && chatUserId && receiverId === chatUserId && !isMine && messageId) {
+            this.chatService.markAsRead(messageId);
         }
 
         // Update unread count
@@ -291,18 +286,13 @@ class ChatController {
             return;
         }
 
-        console.log('📤 Sending direct message:', {
-            userId: targetUserId,
-            content: content.substring(0, 30)
-        });
-
         // Store temporary message ID for removal later
         const tempMessageId = Date.now();
         
         // Ensure ChatUI is initialized
         this.chatUI.initialize();
         
-        // Optimistic UI update
+        // Optimistic UI update (show message immediately - CRITICAL for perceived performance)
         const optimisticMessage = {
             MessageId: tempMessageId,
             SenderId: window.currentUserId || 'current-user',
@@ -314,36 +304,41 @@ class ChatController {
             FormattedTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
         };
 
+        // Show message IMMEDIATELY (don't wait for server) - CRITICAL for perceived performance
         if (this.chatUI.messagesContainer) {
-            this.chatUI.addMessage(optimisticMessage);
-            this.chatUI.scrollToBottom();
-        } else {
-            console.warn('⚠️ Messages container not found, message will appear when received from server');
+            // Add message and force immediate render (bypass batching for single messages)
+            const messageEl = this.chatUI.createMessageElement(optimisticMessage);
+            if (messageEl && this.chatUI.messagesContainer) {
+                this.chatUI.messagesContainer.appendChild(messageEl);
+                // Use requestAnimationFrame for smooth rendering
+                requestAnimationFrame(() => {
+                    this.chatUI.scrollToBottom();
+                });
+            } else {
+                // Fallback to normal addMessage if direct append fails
+                this.chatUI.addMessage(optimisticMessage);
+                this.chatUI.flushPendingMessages();
+                this.chatUI.scrollToBottom();
+            }
         }
 
-        try {
-            // Send to server
-            const result = await this.chatService.sendDirectMessage(targetUserId, content.trim());
-            
-            console.log('📤 Send result:', result);
-            
-            if (!result || !result.success) {
-                console.error('❌ Failed to send message:', result?.error);
-                // Remove optimistic message on failure
+        // Send to server asynchronously (non-blocking)
+        // The real message from server will replace the optimistic one
+        this.chatService.sendDirectMessage(targetUserId, content.trim())
+            .then(result => {
+                if (!result || !result.success) {
+                    // Remove optimistic message on failure
+                    const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
+                    if (tempMsg) tempMsg.remove();
+                    this.chatUI.showError(result?.error || 'Failed to send message. Please try again.');
+                }
+            })
+            .catch(error => {
+                // Remove optimistic message on error
                 const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
                 if (tempMsg) tempMsg.remove();
-                this.chatUI.showError(result?.error || 'Failed to send message. Please try again.');
-            } else {
-                console.log('✅ Message sent successfully');
-            }
-        } catch (error) {
-            console.error('❌ Error sending message:', error);
-            // Remove optimistic message on error
-            const tempMsg = document.querySelector(`[data-message-id="${tempMessageId}"]`);
-            if (tempMsg) tempMsg.remove();
-            this.chatUI.showError(error.message || 'Failed to send message. Please try again.');
-            throw error;
-        }
+                this.chatUI.showError(error.message || 'Failed to send message. Please try again.');
+            });
     }
 
     /**
@@ -426,27 +421,20 @@ class ChatController {
         window.currentChatUserId = userId;
         window.currentChatRoomId = null;
         
-        console.log('📜 Loading chat history for:', userId);
-        
         // Ensure ChatUI is initialized with correct container
         this.chatUI.initialize();
         
         // Verify container is found
         if (!this.chatUI.messagesContainer) {
-            console.error('❌ ChatController: chatMessages container not found, retrying...');
             // Try again after a delay (widget might be opening)
             setTimeout(() => {
                 this.chatUI.initialize();
                 if (this.chatUI.messagesContainer) {
                     this.loadChatHistory(userId);
-                } else {
-                    console.error('❌ ChatController: Still cannot find container after retry');
                 }
-            }, 200);
+            }, 100);
             return;
         }
-        
-        console.log('✅ ChatController: Container found, loading history...');
         
         // Show loading indicator
         this.chatUI.showLoading();
@@ -454,31 +442,36 @@ class ChatController {
         // Get history from server
         const history = await this.chatService.getChatHistory(userId);
         
-        console.log(`📨 Received ${history?.length || 0} messages from server`);
-        
         // Clear loading and display messages
         this.chatUI.clearMessages();
         
         if (history && history.length > 0) {
-            console.log(`📨 Loading ${history.length} messages into UI`);
             const currentUserId = window.currentUserId;
-            history.forEach(message => {
-                // Ensure IsMine is set correctly
-                if (message.IsMine === undefined && currentUserId && message.SenderId) {
-                    message.IsMine = message.SenderId === currentUserId;
+            
+            // Process all messages first (prepare data)
+            const processedMessages = history.map(message => {
+                // Ensure isMine is set correctly (handle both camelCase and PascalCase)
+                const senderId = message.senderId || message.SenderId;
+                if (message.isMine === undefined && message.IsMine === undefined && currentUserId && senderId) {
+                    const isMine = senderId === currentUserId;
+                    message.isMine = isMine;
+                    message.IsMine = isMine;
                 }
-                console.log('📝 Adding message:', {
-                    MessageId: message.MessageId,
-                    SenderId: message.SenderId,
-                    IsMine: message.IsMine,
-                    Content: message.Content?.substring(0, 30)
-                });
+                return message;
+            });
+            
+            // Batch add all messages at once for better performance
+            processedMessages.forEach(message => {
                 this.chatUI.addMessage(message);
             });
+            
+            // Force flush any pending messages
+            if (this.chatUI.flushPendingMessages) {
+                this.chatUI.flushPendingMessages();
+            }
+            
             this.messageCount = history.length;
-            console.log(`✅ Loaded ${this.messageCount} messages`);
         } else {
-            console.log('📭 No messages found in history');
             // Show empty state
             const emptyState = document.getElementById('chatEmptyMessages');
             if (emptyState) {
@@ -547,15 +540,22 @@ class ChatController {
             console.log(`📨 Loading ${history.length} room messages into UI`);
             const currentUserId = window.currentUserId;
             history.forEach(message => {
-                // Ensure IsMine is set correctly
-                if (message.IsMine === undefined && currentUserId && message.SenderId) {
-                    message.IsMine = message.SenderId === currentUserId;
+                // Ensure isMine is set correctly (handle both camelCase and PascalCase)
+                const senderId = message.senderId || message.SenderId;
+                if (message.isMine === undefined && message.IsMine === undefined && currentUserId && senderId) {
+                    const isMine = senderId === currentUserId;
+                    message.isMine = isMine;
+                    message.IsMine = isMine;
                 }
+                const messageId = message.messageId || message.MessageId;
+                const content = message.content || message.Content;
+                const isMine = message.isMine || message.IsMine || false;
+                
                 console.log('📝 Adding room message:', {
-                    MessageId: message.MessageId,
-                    SenderId: message.SenderId,
-                    IsMine: message.IsMine,
-                    Content: message.Content?.substring(0, 30)
+                    messageId: messageId,
+                    senderId: senderId,
+                    isMine: isMine,
+                    content: content?.substring(0, 30)
                 });
                 this.chatUI.addMessage(message);
             });
@@ -669,22 +669,38 @@ class ChatController {
     }
 
     /**
-     * Show chat ad (non-intrusive)
+     * Show Google AdSense ad (non-intrusive)
      */
     showChatAd() {
+        // Only show ads if AdSense is loaded
+        if (typeof adsbygoogle === 'undefined') {
+            console.warn('⚠️ Google AdSense not loaded');
+            return;
+        }
+
+        const adId = 'chat-ad-' + Date.now();
         const adHtml = `
-            <div class="chat-ad">
-                <div class="chat-ad-label">Sponsored</div>
-                <div class="chat-ad-content">
-                    <div class="chat-ad-text">
-                        <div class="chat-ad-title">Discover Premium Features</div>
-                        <div class="chat-ad-description">Upgrade for ad-free experience and more!</div>
-                    </div>
-                </div>
+            <div class="chat-ad" id="${adId}">
+                <div class="chat-ad-label">Advertisement</div>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                     data-ad-slot="YOUR_AD_SLOT_ID"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
             </div>
         `;
         
         this.chatUI.addAdToMessages(adHtml);
+        
+        // Initialize AdSense after adding to DOM
+        setTimeout(() => {
+            try {
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (e) {
+                console.error('❌ Error loading AdSense ad:', e);
+            }
+        }, 100);
     }
 
     /**

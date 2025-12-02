@@ -110,6 +110,92 @@
     
     <!-- Google AdSense Auto Ads -->
     <partial name="_AdSenseAutoAd" />
+    
+    <!-- Inline script to apply theme immediately (prevents FOUC) -->
+    <script>
+        (function() {
+            // Apply theme immediately before page renders (body doesn't exist yet, so only set html attribute)
+            try {
+                const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+                const savedTheme = localStorage.getItem("theme");
+                
+                // Determine initial theme
+                let initialTheme = 'light';
+                if (savedTheme === "dark" || (!savedTheme && prefersDarkScheme.matches)) {
+                    initialTheme = 'dark';
+                }
+                
+                // Apply theme to html element immediately (this is available in head)
+                // CSS will handle the styling based on [data-theme="dark"] selector
+                document.documentElement.setAttribute('data-theme', initialTheme);
+            } catch (e) {
+                // Fallback to light if there's an error
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    
+    <!-- Prevent flash of unstyled content with inline styles -->
+    <style>
+        /* Ensure navbar has default styling before CSS loads */
+        .main-header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            transition: background 0.3s ease;
+        }
+        
+        /* Support both [data-theme="dark"] and .dark-mode selectors */
+        [data-theme="dark"] .main-header,
+        body.dark-mode .main-header {
+            background: rgba(26, 26, 27, 0.95) !important;
+        }
+        
+        /* Ensure toggle icon is visible and properly styled */
+        .dark-mode-toggle {
+            color: #787c7e !important;
+            visibility: visible !important;
+        }
+        
+        [data-theme="dark"] .dark-mode-toggle,
+        body.dark-mode .dark-mode-toggle {
+            color: #818384 !important;
+        }
+        
+        .dark-mode-toggle .fa-moon {
+            display: inline-block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .dark-mode-toggle .fa-sun {
+            display: none !important;
+            opacity: 0 !important;
+        }
+        
+        [data-theme="dark"] .dark-mode-toggle .fa-moon,
+        body.dark-mode .dark-mode-toggle .fa-moon {
+            display: none !important;
+            opacity: 0 !important;
+        }
+        
+        [data-theme="dark"] .dark-mode-toggle .fa-sun,
+        body.dark-mode .dark-mode-toggle .fa-sun {
+            display: inline-block !important;
+            opacity: 1 !important;
+            color: #fbbf24 !important;
+            visibility: visible !important;
+        }
+        
+        /* Ensure action icons are visible */
+        .action-icon {
+            color: #787c7e !important;
+            visibility: visible !important;
+        }
+        
+        [data-theme="dark"] .action-icon,
+        body.dark-mode .action-icon {
+            color: #818384 !important;
+        }
+    </style>
 </head>
 <body>
     
@@ -275,9 +361,9 @@
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/CustomJs/Dark-mode.js" defer></script>
     <script src="~/js/search-autocomplete.js" asp-append-version="true" defer></script>
     <script src="~/js/dark-mode.js" asp-append-version="true" defer></script>
+    <!-- CustomJs/Dark-mode.js removed - functionality consolidated into dark-mode.js -->
     <script src="~/js/keyboard-shortcuts.js" asp-append-version="true" defer></script>
     <script src="~/js/CustomJs/share-handler.js" asp-append-version="true"></script>
     <script src="~/js/notification-handler.js" asp-append-version="true"></script>

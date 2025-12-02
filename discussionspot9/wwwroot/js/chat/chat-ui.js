@@ -5,6 +5,10 @@ class ChatUI {
     constructor() {
         this.messagesContainer = null;
         this.typingIndicator = null;
+        this.pendingMessages = [];
+        this.renderTimeout = null;
+        this.scrollTimeout = null;
+        this.isScrolling = false;
     }
 
     /**
@@ -12,121 +16,139 @@ class ChatUI {
      */
     initialize() {
         // Try to find messages container (could be in widget or page)
-        // Try widget first, then dedicated page
+        // The container exists in DOM even when hidden, we just need to find it
         this.messagesContainer = document.getElementById('chatMessages');
-        
-        // If not found, the widget might be minimized - try to find it anyway
-        if (!this.messagesContainer) {
-            // Check if widget exists but is hidden
-            const widget = document.getElementById('chatWidget');
-            if (widget) {
-                // Container exists in DOM even if hidden, try again
-                this.messagesContainer = document.getElementById('chatMessages');
-            }
-        }
-        
         this.typingIndicator = document.getElementById('chatTypingIndicator');
         
-        // Log for debugging
-        if (!this.messagesContainer) {
+        // Only log in debug mode for performance
+        if (window.DEBUG_MODE && !this.messagesContainer) {
             console.warn('⚠️ ChatUI: chatMessages container not found');
-            console.warn('⚠️ Available elements:', {
-                chatWidget: !!document.getElementById('chatWidget'),
-                chatWindow: !!document.getElementById('chatWindow'),
-                chatContent: !!document.getElementById('chatContent')
-            });
-        } else {
-            console.log('✅ ChatUI: Found messages container:', {
-                id: this.messagesContainer.id,
-                visible: this.messagesContainer.offsetParent !== null,
-                parent: this.messagesContainer.parentElement?.id
-            });
-        }
-        
-        if (!this.typingIndicator) {
-            console.warn('⚠️ ChatUI: chatTypingIndicator not found');
         }
     }
 
     /**
-     * Add message to chat
+     * Add message to chat (optimized with batching)
      */
     addMessage(message) {
-        // Re-initialize if container not found (might be in widget that was just opened)
+        // Always try to find the container fresh - it might have been hidden before
         if (!this.messagesContainer) {
-            this.initialize();
+            this.messagesContainer = document.getElementById('chatMessages');
         }
         
         // If still not found, try again after a short delay (widget might be opening)
         if (!this.messagesContainer) {
             console.warn('⚠️ ChatUI: Container not found, retrying in 100ms...');
             setTimeout(() => {
-                this.initialize();
+                this.messagesContainer = document.getElementById('chatMessages');
                 if (this.messagesContainer) {
                     this.addMessage(message); // Retry adding the message
                 } else {
                     console.error('❌ ChatUI: Cannot add message - container not found after retry');
-                    console.error('❌ Available containers:', {
-                        chatMessages: document.getElementById('chatMessages'),
-                        chatWindow: document.getElementById('chatWindow'),
-                        chatWidget: document.getElementById('chatWidget')
-                    });
                 }
             }, 100);
             return;
         }
 
         // Check if message already exists (prevent duplicates)
-        if (message.MessageId) {
-            const existing = this.messagesContainer.querySelector(`[data-message-id="${message.MessageId}"]`);
+        const messageId = message.messageId || message.MessageId;
+        if (messageId) {
+            const existing = this.messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
             if (existing) {
-                console.log('📝 ChatUI: Message already exists, skipping:', message.MessageId);
-                return;
+                return; // Skip duplicate
             }
         }
 
-        try {
-            const messageEl = this.createMessageElement(message);
-            this.messagesContainer.appendChild(messageEl);
+        // Add to pending messages for batch rendering
+        this.pendingMessages.push(message);
+        
+        // Clear existing timeout
+        if (this.renderTimeout) {
+            clearTimeout(this.renderTimeout);
+        }
+        
+        // Batch render messages (render immediately for single messages, batch for multiple)
+        // Reduced delay for better responsiveness
+        this.renderTimeout = setTimeout(() => {
+            this.flushPendingMessages();
+        }, this.pendingMessages.length > 1 ? 8 : 0); // Reduced from 16ms to 8ms
+    }
+
+    /**
+     * Flush pending messages to DOM (batch rendering for performance)
+     */
+    flushPendingMessages() {
+        if (this.pendingMessages.length === 0 || !this.messagesContainer) return;
+
+        // Use DocumentFragment for batch DOM updates
+        const fragment = document.createDocumentFragment();
+        let addedCount = 0;
+
+        this.pendingMessages.forEach(message => {
+            try {
+                const messageEl = this.createMessageElement(message);
+                if (messageEl && messageEl instanceof Node) {
+                    fragment.appendChild(messageEl);
+                    addedCount++;
+                }
+            } catch (error) {
+                console.error('❌ ChatUI: Error creating message element:', error);
+            }
+        });
+
+        // Single DOM update for all messages
+        if (fragment.children.length > 0) {
+            this.messagesContainer.appendChild(fragment);
             
             // Hide empty state if it exists
             const emptyState = document.getElementById('chatEmptyMessages');
             if (emptyState) {
                 emptyState.style.display = 'none';
             }
-            
-            console.log('✅ ChatUI: Message added successfully:', {
-                MessageId: message.MessageId,
-                Container: this.messagesContainer.id,
-                TotalMessages: this.messagesContainer.children.length
-            });
-            
-            this.scrollToBottom();
-        } catch (error) {
-            console.error('❌ ChatUI: Error adding message:', error);
         }
+
+        // Clear pending messages
+        this.pendingMessages = [];
+        this.renderTimeout = null;
+
+        // Debounced scroll to bottom
+        this.scrollToBottom();
     }
 
     /**
      * Create message HTML element
      */
     createMessageElement(message) {
-        if (!message || !message.Content) {
-            console.error('❌ ChatUI: Invalid message object:', message);
+        if (!message) {
+            console.error('❌ ChatUI: Message is null or undefined');
+            return null;
+        }
+        
+        // Handle both camelCase and PascalCase property names (from server vs client)
+        // Server sends camelCase, optimistic messages use PascalCase
+        // Try multiple possible property names
+        const content = message.content || message.Content || message.text || message.Text || message.body || message.Body || '';
+        const isMine = message.isMine !== undefined ? message.isMine : (message.IsMine !== undefined ? message.IsMine : false);
+        const messageId = message.messageId || message.MessageId || message.id || message.Id || Date.now();
+        const senderName = message.senderName || message.SenderName || message.sender || message.Sender || 'User';
+        const formattedTime = message.formattedTime || message.FormattedTime || message.timeAgo || message.TimeAgo || message.time || message.Time || 'now';
+        
+        // Check if content is empty or just whitespace
+        if (!content || (typeof content === 'string' && content.trim().length === 0)) {
+            // Only log error in development (you can add a debug flag here)
+            if (window.DEBUG_MODE) {
+                console.error('❌ ChatUI: Message has no content!', message);
+            }
             return null;
         }
 
         const div = document.createElement('div');
-        div.className = `chat-message ${message.IsMine ? 'mine' : ''}`;
-        
-        // Use MessageId if available, otherwise generate a temporary one
-        const messageId = message.MessageId || Date.now();
+        div.className = `chat-message ${isMine ? 'mine' : ''}`;
         div.setAttribute('data-message-id', messageId);
 
         // Get initials from sender name
         let initials = 'U';
-        if (message.SenderName) {
-            const parts = message.SenderName.split(' ').filter(p => p.length > 0);
+        if (senderName) {
+            const parts = senderName.split(' ').filter(p => p.length > 0);
             if (parts.length >= 2) {
                 initials = (parts[0][0] + parts[1][0]).toUpperCase();
             } else if (parts.length === 1 && parts[0].length > 0) {
@@ -134,13 +156,16 @@ class ChatUI {
             }
         }
 
+        // Render emojis in content (convert :emoji: to actual emojis)
+        const renderedContent = this.renderEmojis(this.escapeHtml(content));
+
         div.innerHTML = `
             <div class="chat-message-avatar">${initials}</div>
             <div class="chat-message-content">
                 <div class="chat-message-bubble">
-                    <p class="chat-message-text">${this.escapeHtml(message.Content)}</p>
+                    <p class="chat-message-text">${renderedContent}</p>
                 </div>
-                <div class="chat-message-time">${message.FormattedTime || message.TimeAgo || 'now'}</div>
+                <div class="chat-message-time">${formattedTime}</div>
             </div>
         `;
 
@@ -155,20 +180,37 @@ class ChatUI {
 
         const adDiv = document.createElement('div');
         adDiv.innerHTML = adHtml;
-        this.messagesContainer.appendChild(adDiv.firstElementChild);
+        const adElement = adDiv.firstElementChild;
+        if (adElement) {
+            this.messagesContainer.appendChild(adElement);
+            // Scroll to show the ad
+            this.scrollToBottom();
+        }
     }
 
     /**
      * Clear all messages
      */
     clearMessages() {
+        // Always try to find the container fresh
+        if (!this.messagesContainer) {
+            this.messagesContainer = document.getElementById('chatMessages');
+        }
+        
         if (this.messagesContainer) {
+            // Keep the empty state element if it exists
+            const emptyState = this.messagesContainer.querySelector('#chatEmptyMessages');
             this.messagesContainer.innerHTML = '';
-            // Show empty state if it exists
-            const emptyState = document.getElementById('chatEmptyMessages');
+            
+            // Re-add empty state
             if (emptyState) {
+                this.messagesContainer.appendChild(emptyState);
                 emptyState.style.display = 'block';
             }
+            
+            console.log('✅ ChatUI: Messages cleared');
+        } else {
+            console.warn('⚠️ ChatUI: Cannot clear messages - container not found');
         }
     }
 
@@ -186,29 +228,49 @@ class ChatUI {
     }
 
     /**
-     * Scroll to bottom of messages
+     * Scroll to bottom of messages (debounced for performance)
      */
     scrollToBottom() {
-        if (this.messagesContainer) {
+        if (!this.messagesContainer || this.isScrolling) return;
+
+        // Clear existing timeout
+        if (this.scrollTimeout) {
+            clearTimeout(this.scrollTimeout);
+        }
+
+        // Debounce scroll operations (reduced delay for better responsiveness)
+        this.scrollTimeout = setTimeout(() => {
+            this.isScrolling = true;
             // Use requestAnimationFrame for smooth scrolling
             requestAnimationFrame(() => {
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                if (this.messagesContainer) {
+                    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                }
+                this.isScrolling = false;
             });
-        }
+        }, 10); // Reduced from 50ms to 10ms for faster scrolling
     }
 
     /**
      * Show loading state
      */
     showLoading() {
+        // Always try to find the container fresh
+        if (!this.messagesContainer) {
+            this.messagesContainer = document.getElementById('chatMessages');
+        }
+        
         if (this.messagesContainer) {
             this.messagesContainer.innerHTML = `
-                <div class="chat-empty-state">
+                <div class="chat-loading-state" style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
             `;
+            console.log('✅ ChatUI: Showing loading state');
+        } else {
+            console.warn('⚠️ ChatUI: Cannot show loading - container not found');
         }
     }
 
@@ -269,6 +331,35 @@ class ChatUI {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Render emojis in text (supports Unicode emojis and common :emoji: syntax)
+     */
+    renderEmojis(text) {
+        if (!text) return text;
+        
+        // Common emoji mappings
+        const emojiMap = {
+            ':)': '😊', ':-)': '😊', ':D': '😃', ':-D': '😃',
+            ':(': '😢', ':-(': '😢', ':P': '😛', ':-P': '😛',
+            ';)': '😉', ';-)': '😉', ':O': '😮', ':-O': '😮',
+            ':*': '😘', ':-*': '😘', '<3': '❤️', '</3': '💔',
+            ':thumbsup:': '👍', ':thumbsdown:': '👎',
+            ':heart:': '❤️', ':like:': '👍', ':love:': '😍',
+            ':laugh:': '😂', ':wink:': '😉', ':cool:': '😎',
+            ':fire:': '🔥', ':100:': '💯', ':ok:': '👌'
+        };
+
+        let result = text;
+        
+        // Replace :emoji: patterns
+        Object.keys(emojiMap).forEach(key => {
+            const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            result = result.replace(regex, emojiMap[key]);
+        });
+
+        return result;
     }
 
     /**

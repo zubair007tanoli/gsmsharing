@@ -110,13 +110,10 @@ namespace discussionspot9.Hubs
                     return;
                 }
 
-                _logger.LogInformation($"[ChatHub] Sending direct message from {senderId} to {receiverId}: {content.Substring(0, Math.Min(50, content.Length))}...");
-
+                // Save message to database
                 var message = await _chatService.SendDirectMessageAsync(senderId, receiverId, content);
 
-                _logger.LogInformation($"[ChatHub] Direct message saved - MessageId: {message.MessageId}, SenderId: {senderId}, ReceiverId: {receiverId}");
-
-                // Create message copies with proper IsMine flag for each recipient
+                // Create message objects (lightweight, no async operations)
                 var messageForReceiver = new
                 {
                     message.MessageId,
@@ -129,7 +126,7 @@ namespace discussionspot9.Hubs
                     message.AttachmentType,
                     message.SentAt,
                     message.IsRead,
-                    IsMine = false, // Receiver didn't send this
+                    IsMine = false,
                     message.TimeAgo,
                     message.FormattedTime
                 };
@@ -146,18 +143,28 @@ namespace discussionspot9.Hubs
                     message.AttachmentType,
                     message.SentAt,
                     message.IsRead,
-                    IsMine = true, // Sender sent this
+                    IsMine = true,
                     message.TimeAgo,
                     message.FormattedTime
                 };
 
-                // Send to receiver (if they're connected)
-                await Clients.User(receiverId).SendAsync("ReceiveDirectMessage", messageForReceiver);
+                // Send to sender immediately (optimistic response)
+                var senderTask = Clients.Caller.SendAsync("ReceiveDirectMessage", messageForSender);
                 
-                // Send back to sender (for confirmation and real-time update)
-                await Clients.Caller.SendAsync("ReceiveDirectMessage", messageForSender);
-
-                _logger.LogInformation($"[ChatHub] Direct message delivered - MessageId: {message.MessageId}, From: {senderId}, To: {receiverId}");
+                // Send to receiver in parallel (don't block on this)
+                var receiverTask = Clients.User(receiverId).SendAsync("ReceiveDirectMessage", messageForReceiver);
+                
+                // Wait for sender delivery (user sees their message immediately)
+                await senderTask;
+                
+                // Don't wait for receiver - let it deliver asynchronously
+                _ = receiverTask.ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        _logger.LogError(t.Exception, $"[ChatHub] Error delivering message {message.MessageId} to receiver");
+                    }
+                }, TaskContinuationOptions.OnlyOnFaulted);
             }
             catch (Exception ex)
             {

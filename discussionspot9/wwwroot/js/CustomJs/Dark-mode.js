@@ -1,30 +1,37 @@
-﻿// Dark Mode Toggle Functionality
+// Dark Mode Toggle Functionality
+// This script works with the inline script in _Layout.cshtml
+// The theme is already applied by the inline script, so we just sync and add event listeners
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Check for saved theme preference or use system preference
+    const html = document.documentElement;
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-    const savedTheme = localStorage.getItem("theme");
-
-    // Apply dark mode if saved or system preference is dark
-    if (savedTheme === "dark" || (!savedTheme && prefersDarkScheme.matches)) {
+    
+    // Get current theme from html (already set by inline script)
+    const currentTheme = html.getAttribute('data-theme') || 'light';
+    const isDarkMode = currentTheme === 'dark';
+    
+    // Sync body class with html attribute (in case it wasn't synced)
+    if (isDarkMode) {
         document.body.classList.add("dark-mode");
-        updateDarkModeToggle(true);
     } else {
         document.body.classList.remove("dark-mode");
-        updateDarkModeToggle(false);
     }
+    
+    // Update toggle icon
+    updateDarkModeToggle(isDarkMode);
 
     // Add event listener to dark mode toggle
     const darkModeToggle = document.querySelector(".dark-mode-toggle");
     if (darkModeToggle) {
         darkModeToggle.addEventListener("click", toggleDarkMode);
-    } else {
-        console.error("Dark mode toggle button not found!");
     }
 
-    // Listen for system preference changes
+    // Listen for system preference changes (only if no saved preference)
     prefersDarkScheme.addEventListener("change", (e) => {
         if (!localStorage.getItem("theme")) {
+            const newTheme = e.matches ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            
             if (e.matches) {
                 document.body.classList.add("dark-mode");
                 updateDarkModeToggle(true);
@@ -38,11 +45,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Toggle dark mode
 function toggleDarkMode() {
-    document.body.classList.toggle("dark-mode");
-    const isDarkMode = document.body.classList.contains("dark-mode");
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    // Update both html attribute and body class
+    html.setAttribute('data-theme', newTheme);
+    const isDarkMode = newTheme === 'dark';
+    
+    if (isDarkMode) {
+        document.body.classList.add("dark-mode");
+    } else {
+        document.body.classList.remove("dark-mode");
+    }
 
     // Save preference to localStorage
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    localStorage.setItem("theme", newTheme);
 
     // Update toggle icon
     updateDarkModeToggle(isDarkMode);

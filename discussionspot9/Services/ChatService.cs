@@ -9,16 +9,16 @@ namespace discussionspot9.Services
     public class ChatService : IChatService
     {
         private readonly IChatRepository _chatRepository;
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly ILogger<ChatService> _logger;
 
         public ChatService(
             IChatRepository chatRepository,
-            ApplicationDbContext context,
+            IDbContextFactory<ApplicationDbContext> contextFactory,
             ILogger<ChatService> logger)
         {
             _chatRepository = chatRepository;
-            _context = context;
+            _contextFactory = contextFactory;
             _logger = logger;
         }
 
@@ -37,16 +37,27 @@ namespace discussionspot9.Services
                     IsDeleted = false
                 };
 
-                var savedMessage = await _chatRepository.AddMessageAsync(message);
+                // Save message and get sender name in parallel for better performance
+                var saveTask = _chatRepository.AddMessageAsync(message);
                 
-                // Get sender info from UserProfiles (query by UserId, not primary key)
-                var sender = await _context.UserProfiles
-                    .FirstOrDefaultAsync(p => p.UserId == senderId);
+                // Get sender name using a separate DbContext instance to avoid conflicts
+                string senderName = "User";
+                try
+                {
+                    await using var context = await _contextFactory.CreateDbContextAsync();
+                    var senderNameResult = await context.UserProfiles
+                        .AsNoTracking()
+                        .Where(p => p.UserId == senderId)
+                        .Select(p => p.DisplayName)
+                        .FirstOrDefaultAsync();
+                    senderName = senderNameResult ?? "User";
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"[ChatService] Could not fetch sender name for {senderId}, using default");
+                }
                 
-                // Get sender display name
-                var senderName = sender?.DisplayName ?? "Unknown";
-                
-                _logger.LogInformation($"[ChatService] Direct message saved - MessageId: {savedMessage.MessageId}, SenderId: {senderId}, ReceiverId: {receiverId}");
+                var savedMessage = await saveTask;
                 
                 return MapToViewModel(savedMessage, senderId, senderName);
             }
@@ -83,12 +94,20 @@ namespace discussionspot9.Services
 
                 var savedMessage = await _chatRepository.AddMessageAsync(message);
                 
-                // Get sender info from UserProfiles
-                var sender = await _context.UserProfiles
-                    .FirstOrDefaultAsync(p => p.UserId == senderId);
-                
-                // Get sender display name
-                var senderName = sender?.DisplayName ?? "Unknown";
+                // Get sender info from UserProfiles using factory to avoid concurrency issues
+                string senderName = "Unknown";
+                try
+                {
+                    await using var context = await _contextFactory.CreateDbContextAsync();
+                    var sender = await context.UserProfiles
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.UserId == senderId);
+                    senderName = sender?.DisplayName ?? "Unknown";
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"[ChatService] Could not fetch sender name for {senderId}, using default");
+                }
                 
                 _logger.LogInformation($"[ChatService] Room message saved - MessageId: {savedMessage.MessageId}, SenderId: {senderId}, RoomId: {roomId}");
                 
@@ -108,11 +127,21 @@ namespace discussionspot9.Services
                 var skip = (page - 1) * pageSize;
                 var messages = await _chatRepository.GetDirectMessagesAsync(userId, otherUserId, skip, pageSize);
                 
-                // Get user profiles for sender names
+                // Get user profiles for sender names using factory
                 var userIds = messages.Select(m => m.SenderId).Distinct().ToList();
-                var userProfiles = await _context.UserProfiles
-                    .Where(p => userIds.Contains(p.UserId))
-                    .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                Dictionary<string, string> userProfiles = new();
+                try
+                {
+                    await using var context = await _contextFactory.CreateDbContextAsync();
+                    userProfiles = await context.UserProfiles
+                        .AsNoTracking()
+                        .Where(p => userIds.Contains(p.UserId))
+                        .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"[ChatService] Could not fetch user profiles, using defaults");
+                }
                 
                 var viewModels = messages.Select(m => 
                 {
@@ -136,11 +165,21 @@ namespace discussionspot9.Services
                 var skip = (page - 1) * pageSize;
                 var messages = await _chatRepository.GetRoomMessagesAsync(roomId, skip, pageSize);
                 
-                // Get user profiles for sender names
+                // Get user profiles for sender names using factory
                 var userIds = messages.Select(m => m.SenderId).Distinct().ToList();
-                var userProfiles = await _context.UserProfiles
-                    .Where(p => userIds.Contains(p.UserId))
-                    .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                Dictionary<string, string> userProfiles = new();
+                try
+                {
+                    await using var context = await _contextFactory.CreateDbContextAsync();
+                    userProfiles = await context.UserProfiles
+                        .AsNoTracking()
+                        .Where(p => userIds.Contains(p.UserId))
+                        .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"[ChatService] Could not fetch user profiles, using defaults");
+                }
                 
                 var viewModels = messages.Select(m => 
                 {
@@ -161,11 +200,12 @@ namespace discussionspot9.Services
         {
             try
             {
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                
                 // Get all messages where user is sender or receiver
-                var recentChats = await _context.ChatMessages
+                var recentChats = await context.ChatMessages
+                    .AsNoTracking()
                     .Where(m => (m.SenderId == userId || m.ReceiverId == userId) && !m.IsDeleted && m.ChatRoomId == null)
-                    .Include(m => m.Sender)
-                    .Include(m => m.Receiver)
                     .GroupBy(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
                     .Select(g => new
                     {
@@ -177,7 +217,8 @@ namespace discussionspot9.Services
 
                 // Get all user profiles for the other users
                 var otherUserIds = recentChats.Where(c => !string.IsNullOrEmpty(c.OtherUserId)).Select(c => c.OtherUserId!).ToList();
-                var userProfiles = await _context.UserProfiles
+                var userProfiles = await context.UserProfiles
+                    .AsNoTracking()
                     .Where(p => otherUserIds.Contains(p.UserId))
                     .ToDictionaryAsync(p => p.UserId, p => p);
 
@@ -229,9 +270,12 @@ namespace discussionspot9.Services
                 var roomIds = rooms.Select(r => r.ChatRoomId).ToList();
                 var lastMessages = new Dictionary<int, ChatMessage>();
                 
+                Dictionary<string, string> userProfiles = new();
                 if (roomIds.Any())
                 {
-                    var messages = await _context.ChatMessages
+                    await using var context = await _contextFactory.CreateDbContextAsync();
+                    var messages = await context.ChatMessages
+                        .AsNoTracking()
                         .Where(m => roomIds.Contains(m.ChatRoomId ?? 0) && !m.IsDeleted)
                         .OrderByDescending(m => m.SentAt)
                         .GroupBy(m => m.ChatRoomId)
@@ -245,13 +289,17 @@ namespace discussionspot9.Services
                             lastMessages[msg.ChatRoomId.Value] = msg;
                         }
                     }
-                }
 
-                // Get sender names for last messages
-                var senderIds = lastMessages.Values.Select(m => m.SenderId).Distinct().ToList();
-                var userProfiles = await _context.UserProfiles
-                    .Where(p => senderIds.Contains(p.UserId))
-                    .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                    // Get sender names for last messages
+                    var senderIds = lastMessages.Values.Select(m => m.SenderId).Distinct().ToList();
+                    if (senderIds.Any())
+                    {
+                        userProfiles = await context.UserProfiles
+                            .AsNoTracking()
+                            .Where(p => senderIds.Contains(p.UserId))
+                            .ToDictionaryAsync(p => p.UserId, p => p.DisplayName);
+                    }
+                }
 
                 var viewModels = rooms.Select(r => 
                 {

@@ -8,15 +8,17 @@ namespace discussionspot9.Repositories
 {
     public class ChatRepository : IChatRepository
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public ChatRepository(ApplicationDbContext context)
+        public ChatRepository(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<ChatMessage> AddMessageAsync(ChatMessage message)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            
             try
             {
                 // Ensure required fields are set
@@ -36,30 +38,14 @@ namespace discussionspot9.Repositories
                     message.SentAt = DateTime.UtcNow;
                 }
                 
-                // Ensure IsDeleted is set (defaults to false)
-                // IsDeleted is a bool, so it defaults to false already
+                // Add and save message (optimized - removed unnecessary checks)
+                context.ChatMessages.Add(message);
                 
-                _context.ChatMessages.Add(message);
-                var saveResult = await _context.SaveChangesAsync();
+                // Save changes - MessageId is automatically set by EF Core
+                await context.SaveChangesAsync();
                 
-                // Verify message was saved
-                if (saveResult == 0)
-                {
-                    throw new InvalidOperationException("Failed to save message to database - no rows affected");
-                }
-                
-                // Reload with navigation properties for proper serialization
-                var savedMessage = await _context.ChatMessages
-                    .Include(m => m.Sender)
-                    .Include(m => m.Receiver)
-                    .FirstOrDefaultAsync(m => m.MessageId == message.MessageId);
-                
-                if (savedMessage == null)
-                {
-                    throw new InvalidOperationException($"Message was saved but could not be retrieved. MessageId: {message.MessageId}");
-                }
-                
-                return savedMessage;
+                // Return the message directly - EF Core tracks it and MessageId is set
+                return message;
             }
             catch (DbUpdateException dbEx)
             {
@@ -73,53 +59,64 @@ namespace discussionspot9.Repositories
 
         public async Task<List<ChatMessage>> GetDirectMessagesAsync(string userId1, string userId2, int skip, int take)
         {
-            return await _context.ChatMessages
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            
+            // Optimized query - removed unnecessary Includes for better performance
+            // Use AsNoTracking for read-only queries
+            return await context.ChatMessages
+                .AsNoTracking()
                 .Where(m => (m.SenderId == userId1 && m.ReceiverId == userId2) ||
                            (m.SenderId == userId2 && m.ReceiverId == userId1))
                 .Where(m => !m.IsDeleted)
                 .OrderByDescending(m => m.SentAt)
                 .Skip(skip)
                 .Take(take)
-                .Include(m => m.Sender)
-                .Include(m => m.Receiver)
                 .ToListAsync();
         }
 
         public async Task<List<ChatMessage>> GetRoomMessagesAsync(int roomId, int skip, int take)
         {
-            return await _context.ChatMessages
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            
+            // Optimized query - removed unnecessary Include for better performance
+            return await context.ChatMessages
+                .AsNoTracking()
                 .Where(m => m.ChatRoomId == roomId && !m.IsDeleted)
                 .OrderByDescending(m => m.SentAt)
                 .Skip(skip)
                 .Take(take)
-                .Include(m => m.Sender)
                 .ToListAsync();
         }
 
         public async Task<ChatMessage?> GetMessageByIdAsync(int messageId)
         {
-            return await _context.ChatMessages
-                .Include(m => m.Sender)
-                .Include(m => m.Receiver)
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            
+            // Use AsNoTracking for read-only queries
+            return await context.ChatMessages
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.MessageId == messageId);
         }
 
         public async Task UpdateMessageAsync(ChatMessage message)
         {
-            _context.ChatMessages.Update(message);
-            await _context.SaveChangesAsync();
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            context.ChatMessages.Update(message);
+            await context.SaveChangesAsync();
         }
 
         public async Task<int> GetUnreadCountAsync(string userId)
         {
-            return await _context.ChatMessages
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.ChatMessages
                 .Where(m => m.ReceiverId == userId && !m.IsRead && !m.IsDeleted)
                 .CountAsync();
         }
 
         public async Task<List<ChatMessage>> GetUnreadMessagesAsync(string userId)
         {
-            return await _context.ChatMessages
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.ChatMessages
                 .Where(m => m.ReceiverId == userId && !m.IsRead && !m.IsDeleted)
                 .Include(m => m.Sender)
                 .OrderBy(m => m.SentAt)
@@ -128,23 +125,26 @@ namespace discussionspot9.Repositories
 
         public async Task<ChatRoom> CreateRoomAsync(ChatRoom room)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
             room.CreatedAt = DateTime.UtcNow;
             room.IsActive = true;
-            _context.ChatRooms.Add(room);
-            await _context.SaveChangesAsync();
+            context.ChatRooms.Add(room);
+            await context.SaveChangesAsync();
             return room;
         }
 
         public async Task<ChatRoom?> GetRoomByIdAsync(int roomId)
         {
-            return await _context.ChatRooms
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.ChatRooms
                 .Include(r => r.Members)
                 .FirstOrDefaultAsync(r => r.ChatRoomId == roomId);
         }
 
         public async Task<List<ChatRoom>> GetUserRoomsAsync(string userId)
         {
-            return await _context.ChatRoomMembers
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.ChatRoomMembers
                 .Where(m => m.UserId == userId)
                 .Include(m => m.ChatRoom)
                 .Select(m => m.ChatRoom)
@@ -153,15 +153,16 @@ namespace discussionspot9.Repositories
 
         public async Task<ChatRoomMember> AddRoomMemberAsync(ChatRoomMember member)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
             member.JoinedAt = DateTime.UtcNow;
-            _context.ChatRoomMembers.Add(member);
+            context.ChatRoomMembers.Add(member);
             
             // Update room member count
-            var room = await _context.ChatRooms.FindAsync(member.ChatRoomId);
+            var room = await context.ChatRooms.FindAsync(member.ChatRoomId);
             if (room != null)
             {
                 room.MemberCount++;
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
             
             return member;
@@ -169,27 +170,29 @@ namespace discussionspot9.Repositories
 
         public async Task RemoveRoomMemberAsync(int roomId, string userId)
         {
-            var member = await _context.ChatRoomMembers
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var member = await context.ChatRoomMembers
                 .FirstOrDefaultAsync(m => m.ChatRoomId == roomId && m.UserId == userId);
             
             if (member != null)
             {
-                _context.ChatRoomMembers.Remove(member);
+                context.ChatRoomMembers.Remove(member);
                 
                 // Update room member count
-                var room = await _context.ChatRooms.FindAsync(roomId);
+                var room = await context.ChatRooms.FindAsync(roomId);
                 if (room != null && room.MemberCount > 0)
                 {
                     room.MemberCount--;
                 }
                 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
         }
 
         public async Task<bool> IsUserInRoomAsync(int roomId, string userId)
         {
-            return await _context.ChatRoomMembers
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.ChatRoomMembers
                 .AnyAsync(m => m.ChatRoomId == roomId && m.UserId == userId);
         }
     }

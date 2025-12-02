@@ -12,6 +12,12 @@ body.dark-mode {
     --primary-hover: #a5b4fc;
     --navbar-bg: #111827;
     --navbar-border: #374151;
+    /* Improved hover colors */
+    --hover-bg: rgba(255, 255, 255, 0.08);
+    --hover-bg-strong: rgba(255, 255, 255, 0.12);
+    --hover-bg-card: rgba(255, 255, 255, 0.05);
+    --hover-text: #ffffff;
+    --hover-border: rgba(129, 140, 248, 0.3);
 }
 
 /* Base Elements */
@@ -43,6 +49,7 @@ body.dark-mode {
     }
 
         body.dark-mode .nav-link:hover {
+            background: var(--hover-bg);
             color: var(--primary-color);
         }
 
@@ -61,6 +68,13 @@ body.dark-mode {
     body.dark-mode .card {
         background-color: var(--bg-color);
         border-color: var(--border-color);
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    body.dark-mode .card:hover {
+        background-color: rgba(31, 41, 55, 0.8);
+        border-color: rgba(129, 140, 248, 0.3);
+        transform: translateY(-2px);
     }
 
     body.dark-mode .card-header {
@@ -82,6 +96,12 @@ body.dark-mode {
     body.dark-mode .post-item {
         background-color: var(--bg-color);
         border-color: var(--border-color);
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    body.dark-mode .post-item:hover {
+        background-color: var(--hover-bg-card);
+        border-color: var(--hover-border);
     }
 
     /* Topic Tags */
@@ -117,8 +137,9 @@ body.dark-mode {
     }
 
         body.dark-mode .active-category:hover {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: rgba(129, 140, 248, 0.2);
+            color: var(--primary-hover);
+            border-color: var(--hover-border);
         }
 
     /* More Users */
@@ -139,8 +160,9 @@ body.dark-mode {
     }
 
         body.dark-mode .social-icons a:hover {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: rgba(129, 140, 248, 0.2);
+            color: var(--primary-hover);
+            transform: translateY(-2px);
         }
 
     /* Form Elements */
@@ -170,6 +192,8 @@ body.dark-mode {
         body.dark-mode .btn-primary:hover {
             background-color: var(--primary-hover);
             border-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(129, 140, 248, 0.3);
         }
 
     body.dark-mode .btn-outline-secondary {
@@ -178,9 +202,9 @@ body.dark-mode {
     }
 
         body.dark-mode .btn-outline-secondary:hover {
-            background-color: var(--bg-dark);
+            background-color: var(--hover-bg);
             color: var(--text-color);
-            border-color: var(--border-color);
+            border-color: rgba(129, 140, 248, 0.4);
         }
 
     /* Dropdown Menu */
@@ -194,8 +218,8 @@ body.dark-mode {
     }
 
         body.dark-mode .dropdown-item:hover {
-            background-color: var(--bg-dark);
-            color: var(--text-color);
+            background-color: var(--hover-bg);
+            color: var(--hover-text);
         }
 
     body.dark-mode .dropdown-divider {
@@ -221,6 +245,12 @@ body.dark-mode {
     body.dark-mode .list-group-item {
         background-color: var(--bg-color);
         border-color: var(--border-color);
+        color: var(--text-color);
+        transition: background-color 0.2s ease;
+    }
+
+    body.dark-mode .list-group-item:hover {
+        background-color: var(--hover-bg);
         color: var(--text-color);
     }
 
@@ -254,7 +284,8 @@ body.dark-mode {
     }
 
 body.dark-mode .dark-mode-toggle:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--hover-bg);
+    transform: scale(1.05);
 }
 
 .dark-mode-toggle i {
@@ -413,7 +444,7 @@ body.dark-mode {
 
         body.dark-mode .comment-action:hover {
             color: var(--primary-hover);
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--hover-bg);
         }
 
     /* Nested comments */
@@ -456,6 +487,9 @@ body.dark-mode {
 
         body.dark-mode .vote-button:hover,
         body.dark-mode .action-button:hover {
+            background-color: var(--hover-bg);
+            color: var(--primary-hover);
+            transform: scale(1.05);
             color: var(--primary-hover);
             background-color: rgba(255, 255, 255, 0.05);
         }
@@ -485,4 +519,195 @@ body.dark-mode .text-body{
 input::placeholder {
     color: red;
     opacity: 1; /* For Firefox */
+}
+
+/* Stories Strip Card Style Dark Mode */
+[data-theme="dark"] .stories-strip.card-style,
+body.dark-mode .stories-strip.card-style {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* Sponsor Sections Dark Mode */
+[data-theme="dark"] .sponsor-item,
+body.dark-mode .sponsor-item {
+    background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+    color: white;
+}
+
+[data-theme="dark"] .sponsor-item:nth-child(2),
+body.dark-mode .sponsor-item:nth-child(2) {
+    background: linear-gradient(135deg, #831843 0%, #9f1239 100%);
+}
+
+[data-theme="dark"] .sponsor-badge,
+body.dark-mode .sponsor-badge {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .sponsor-title,
+body.dark-mode .sponsor-title {
+    color: white;
+}
+
+[data-theme="dark"] .sponsor-text,
+body.dark-mode .sponsor-text {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* Top Contributors Dark Mode */
+[data-theme="dark"] .top-contributors,
+body.dark-mode .top-contributors {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .top-contributors .section-title,
+body.dark-mode .top-contributors .section-title {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .contributor-item,
+body.dark-mode .contributor-item {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .contributor-item:hover,
+body.dark-mode .contributor-item:hover {
+    background: var(--hover-bg);
+    transform: translateX(3px);
+    border-color: var(--hover-border);
+}
+
+[data-theme="dark"] .contributor-name,
+body.dark-mode .contributor-name {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .contributor-stats,
+body.dark-mode .contributor-stats {
+    color: var(--text-light);
+}
+
+[data-theme="dark"] .contributors-card,
+body.dark-mode .contributors-card {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .contributors-card .card-header,
+body.dark-mode .contributors-card .card-header {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .contributor-rank,
+body.dark-mode .contributor-rank {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .contributor-karma,
+body.dark-mode .contributor-karma {
+    color: var(--text-color);
+}
+
+/* Sidebar Card Dark Mode */
+[data-theme="dark"] .sidebar-card,
+body.dark-mode .sidebar-card {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .sidebar-header,
+body.dark-mode .sidebar-header {
+    border-bottom-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .stat-label,
+body.dark-mode .stat-label {
+    color: var(--text-light);
+}
+
+[data-theme="dark"] .stat-number,
+body.dark-mode .stat-number {
+    color: var(--text-color);
+}
+
+/* Contribution Sections Dark Mode */
+[data-theme="dark"] .contribution-item,
+body.dark-mode .contribution-item {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .contribution-section,
+body.dark-mode .contribution-section {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .contribution-section .card-header,
+body.dark-mode .contribution-section .card-header {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Additional Hover Improvements for Common Elements */
+[data-theme="dark"] .btn:hover,
+body.dark-mode .btn:hover {
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover,
+body.dark-mode .btn-outline-primary:hover {
+    background-color: rgba(129, 140, 248, 0.15);
+    border-color: var(--primary-hover);
+    color: var(--primary-hover);
+}
+
+[data-theme="dark"] .btn-outline-success:hover,
+body.dark-mode .btn-outline-success:hover {
+    background-color: rgba(34, 197, 94, 0.15);
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+[data-theme="dark"] .btn-outline-danger:hover,
+body.dark-mode .btn-outline-danger:hover {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: #f87171;
+    color: #f87171;
+}
+
+[data-theme="dark"] .card:hover,
+body.dark-mode .card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] a:hover,
+body.dark-mode a:hover {
+    color: var(--primary-hover);
+}
+
+[data-theme="dark"] .badge:hover,
+body.dark-mode .badge:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+[data-theme="dark"] .table tbody tr:hover,
+body.dark-mode .table tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+[data-theme="dark"] .pagination .page-link:hover,
+body.dark-mode .pagination .page-link:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--hover-border);
+    color: var(--primary-hover);
 }
