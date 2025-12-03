@@ -1,4 +1,4 @@
-﻿using discussionspot9.Data.DbContext;
+using discussionspot9.Data.DbContext;
 using discussionspot9.Helpers;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
@@ -720,6 +720,23 @@ namespace discussionspot9.Services
 
             if (post == null) return null;
 
+            // DEBUG: Log content retrieval
+            _logger.LogInformation("🔍 GetPostDetailsUpdateAsync - PostId: {PostId}, Content Length: {Length}, Content IsNull: {IsNull}",
+                post.PostId,
+                post.Content?.Length ?? 0,
+                post.Content == null);
+            
+            if (!string.IsNullOrEmpty(post.Content))
+            {
+                _logger.LogInformation("📝 Content preview (first 300 chars): {Preview}",
+                    post.Content.Length > 300 ? post.Content.Substring(0, 300) + "..." : post.Content);
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ Content is NULL or EMPTY for PostId: {PostId}, PostType: {PostType}",
+                    post.PostId, post.PostType);
+            }
+
             int? currentUserVote = null;
             bool isSavedByUser = false;
 
@@ -768,12 +785,12 @@ namespace discussionspot9.Services
                 _logger.LogInformation("No URL for post {PostId}, link preview not created", post.PostId);
             }
 
-            return new PostDetailViewModel
+            var viewModel = new PostDetailViewModel
             {
                 PostId = post.PostId,
                 Title = post.Title,
                 Slug = post.Slug,
-                Content = post.Content,
+                Content = post.Content, // Direct assignment - no transformation
                 PostType = post.PostType,
                 Url = post.Url,
                 CreatedAt = post.CreatedAt,
@@ -826,6 +843,13 @@ namespace discussionspot9.Services
                 }).ToList(),
                 CurrentUserVote = currentUserVote
             };
+            
+            // DEBUG: Verify Content was assigned correctly
+            _logger.LogInformation("✅ ViewModel created - Content Length: {Length}, Content IsNull: {IsNull}",
+                viewModel.Content?.Length ?? 0,
+                viewModel.Content == null);
+            
+            return viewModel;
         }
         public async Task IncrementViewCountAsync(int postId)
         {

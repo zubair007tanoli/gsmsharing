@@ -209,6 +209,24 @@
     margin-bottom: 0;
 }
 
+/* Ensure base64 images display correctly */
+.detail-test-page .post-text img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1rem 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.detail-test-page .post-text img[src^="data:image"] {
+    max-width: 100%;
+    height: auto;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
 .detail-test-page .post-text br {
     display: none;
 }

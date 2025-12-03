@@ -1,4 +1,4 @@
-﻿
+
     let currentColorCommand = null;
 
     function formatText(command, value = null) {
@@ -194,7 +194,11 @@ function sanitizeHtml(dirty) {
         ],
         FORBID_TAGS: ['script', 'iframe', 'object', 'embed'],
         FORBID_ATTR: ['onclick', 'onerror', 'onload'],
-        ADD_ATTR: ['target']
+        ADD_ATTR: ['target'],
+        // Allow data URIs for images (base64 images)
+        ALLOW_DATA_ATTR: true,
+        // Allow data: protocol for images (base64 encoded images)
+        ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
     });
 }
 

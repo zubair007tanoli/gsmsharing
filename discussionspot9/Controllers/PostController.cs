@@ -1,4 +1,4 @@
-﻿using discussionspot9.Data.DbContext;
+using discussionspot9.Data.DbContext;
 using discussionspot9.Extensions;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
@@ -71,6 +71,19 @@ namespace discussionspot9.Controllers
             var postDetails = await _postService.GetPostDetailsUpdateAsync(communitySlug, postSlug);
             if (postDetails == null)
                 return NotFound();
+            
+            // Debug: Log content status
+            _logger.LogInformation("🔍 Post Detail Debug - PostId: {PostId}, Content Length: {Length}, Content IsNull: {IsNull}, Content IsEmpty: {IsEmpty}",
+                postDetails.PostId,
+                postDetails.Content?.Length ?? 0,
+                postDetails.Content == null,
+                string.IsNullOrEmpty(postDetails.Content));
+            
+            if (!string.IsNullOrEmpty(postDetails.Content))
+            {
+                _logger.LogInformation("📝 Content preview (first 200 chars): {Preview}", 
+                    postDetails.Content.Length > 200 ? postDetails.Content.Substring(0, 200) + "..." : postDetails.Content);
+            }
          
 
             string? userId = null;
