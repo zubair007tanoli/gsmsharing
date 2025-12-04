@@ -263,45 +263,8 @@
                     </div>
 
                     <div class="post-content">
-                        @* Debug: Show content status *@
-                        @if (Context.Request.Host.Host.Contains("localhost"))
-                        {
-                            <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-size: 12px; border: 1px solid #ccc;">
-                                <strong>DEBUG INFO:</strong><br/>
-                                Content is null: @(Model.Post.Content == null)<br/>
-                                Content is empty: @(string.IsNullOrEmpty(Model.Post.Content))<br/>
-                                Content is whitespace: @(string.IsNullOrWhiteSpace(Model.Post.Content))<br/>
-                                Content length: @(Model.Post.Content?.Length ?? 0)<br/>
-                                Content preview (first 200 chars): @(Model.Post.Content != null && Model.Post.Content.Length > 0 ? Model.Post.Content.Substring(0, Math.Min(200, Model.Post.Content.Length)) : "NULL")
-                            </div>
-                        }
-                        
-                        @* FORCE RENDER CONTENT WITHOUT CONDITIONS - BYPASS ALL CHECKS *@
                         <div class="post-text" id="postContent" data-post-id="@Model.Post.PostId" data-content-length="@(Model.Post.Content?.Length ?? 0)">
-                            @* ALWAYS render content - even if null/empty *@
-                            @Html.Raw(Model.Post.Content ?? "<div style='color: red; padding: 10px; border: 2px solid red;'>⚠️ CONTENT IS NULL</div>")
-                            
-                            @* Debug script to verify content was rendered *@
-                            @if (Context.Request.Host.Host.Contains("localhost"))
-                            {
-                                <script>
-                                    (function() {
-                                        const postContent = document.getElementById('postContent');
-                                        if (postContent) {
-                                            console.log('✅ Content FORCED render');
-                                            console.log('  - Model Content length:', @(Model.Post.Content?.Length ?? 0));
-                                            console.log('  - Div innerHTML length:', postContent.innerHTML.length);
-                                            console.log('  - Has images:', postContent.querySelectorAll('img').length > 0);
-                                            console.log('  - Has base64 images:', postContent.querySelectorAll('img[src^="data:image"]').length > 0);
-                                            
-                                            // Show actual content in console
-                                            if (postContent.innerHTML.length > 0) {
-                                                console.log('  - Content preview:', postContent.innerHTML.substring(0, 500));
-                                            }
-                                        }
-                                    })();
-                                </script>
-                            }
+                            @Html.Raw(Model.Post.Content ?? "")
                         </div>
 
                         @* Render Image Gallery if images are present in Media list *@
@@ -778,161 +741,28 @@
     <script>
         // Initialize Quill editor after DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // DISABLE CONTENT CLEANING TO TEST BASE64 IMAGES
-            console.log('🚨 CONTENT CLEANING DISABLED FOR DEBUGGING');
-            
             const postContent = document.getElementById('postContent');
             if (postContent) {
-                const initialContent = postContent.innerHTML.trim();
-                console.log('📝 Initial content length:', initialContent.length);
-                
-                // Check for base64 images immediately
+                // Ensure base64 images are properly displayed
                 const base64Images = postContent.querySelectorAll('img[src^="data:image"]');
-                console.log(`🔍 Found ${base64Images.length} base64 image(s) on page load`);
-                
                 if (base64Images.length > 0) {
-                    base64Images.forEach((img, idx) => {
-                        console.log(`  Image ${idx + 1}:`, {
-                            srcLength: img.src.length,
-                            srcPreview: img.src.substring(0, 100) + '...',
-                            display: window.getComputedStyle(img).display,
-                            visibility: window.getComputedStyle(img).visibility,
-                            width: img.offsetWidth,
-                            height: img.offsetHeight
-                        });
-                        
-                        // Force display styles
+                    base64Images.forEach((img) => {
                         img.style.display = 'block';
                         img.style.maxWidth = '100%';
                         img.style.height = 'auto';
                         img.style.visibility = 'visible';
                         img.style.opacity = '1';
                     });
-                    
-                    // Check again after 1 second to see if they disappear
-                    setTimeout(() => {
-                        const remainingImages = postContent.querySelectorAll('img[src^="data:image"]');
-                        console.log(`🔍 After 1 second: ${remainingImages.length} base64 image(s) remain`);
-                        if (remainingImages.length < base64Images.length) {
-                            console.error('❌ IMAGES WERE REMOVED BY SOMETHING!');
-                        }
-                    }, 1000);
                 }
                 
-                return; // SKIP ALL CONTENT CLEANING FOR NOW
-                // Debug: Check for base64 images before processing
-                const initialImages = postContent.querySelectorAll('img[src^="data:image"]');
-                if (initialImages.length > 0) {
-                    console.log(`🔍 Found ${initialImages.length} base64 image(s) in post content`);
-                    initialImages.forEach((img, idx) => {
-                        console.log(`  Image ${idx + 1}:`, {
-                            srcLength: img.src.length,
-                            srcPreview: img.src.substring(0, 100) + '...',
-                            alt: img.alt,
-                            display: window.getComputedStyle(img).display,
-                            visibility: window.getComputedStyle(img).visibility
-                        });
-                    });
-                } else {
-                    console.log('⚠️ No base64 images found in initial content');
-                    // Check if there are any img tags at all
-                    const allImages = postContent.querySelectorAll('img');
-                    if (allImages.length > 0) {
-                        console.log(`Found ${allImages.length} image(s) but none are base64:`);
-                        allImages.forEach((img, idx) => {
-                            console.log(`  Image ${idx + 1} src:`, img.src.substring(0, 100));
-                        });
-                    }
-                }
-                // Preserve images before cleaning
-                const images = postContent.querySelectorAll('img');
-                const imageData = Array.from(images).map(img => ({
-                    src: img.src,
-                    alt: img.alt,
-                    className: img.className,
-                    style: img.style.cssText
-                }));
-                
-                // Remove empty paragraphs and excessive line breaks
-                const paragraphs = postContent.querySelectorAll('p');
-                paragraphs.forEach(p => {
-                    const text = p.textContent.trim();
-                    // Don't remove paragraphs that contain images
-                    if (!text || text === '') {
-                        const hasImage = p.querySelector('img');
-                        if (!hasImage) {
-                            p.remove();
-                        }
-                    }
-                });
-                
-                // CRITICAL: Replace entire img tags with placeholders BEFORE any content cleaning
-                // This prevents the regex replacements from breaking the base64 data URIs
-                const content = postContent.innerHTML;
-                const imgPlaceholder = '___IMG_PLACEHOLDER___';
-                const imgMap = new Map();
-                let imgIndex = 0;
-                
-                // Find and replace ALL img tags (including base64 ones) with placeholders
-                // Use a more robust regex that handles the entire img tag
-                const protectedContent = content.replace(/<img[^>]*>/gi, (match) => {
-                    const placeholder = `${imgPlaceholder}${imgIndex}`;
-                    imgMap.set(placeholder, match);
-                    imgIndex++;
-                    console.log(`📸 Protected image ${imgIndex - 1}:`, match.substring(0, 150));
-                    return placeholder;
-                });
-                
-                // Now safely clean the content (no img tags to break)
-                let cleanedContent = protectedContent
-                    .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br>') // Replace multiple <br> with single
-                    .replace(/<p>\s*<\/p>/gi, '') // Remove empty paragraphs
-                    .replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '') // Remove paragraphs with only <br>
-                    .trim();
-                
-                // Restore all img tags
-                imgMap.forEach((imgTag, placeholder) => {
-                    // Escape special regex characters in placeholder
-                    const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    cleanedContent = cleanedContent.replace(new RegExp(escapedPlaceholder, 'g'), imgTag);
-                });
-                
-                console.log(`✅ Restored ${imgMap.size} image(s) after content cleaning`);
-                postContent.innerHTML = cleanedContent;
-                
-                // Ensure images are displayed correctly after restoration
-                const restoredImages = postContent.querySelectorAll('img');
-                console.log(`🔍 After restoration: Found ${restoredImages.length} image(s)`);
-                
-                restoredImages.forEach((img, idx) => {
-                    if (img.src && img.src.startsWith('data:image')) {
-                        // Ensure base64 images are properly displayed
+                // Ensure all images have proper styling
+                const allImages = postContent.querySelectorAll('img');
+                allImages.forEach((img) => {
+                    if (img.src) {
                         img.style.maxWidth = '100%';
                         img.style.height = 'auto';
-                        img.style.display = 'block';
-                        img.style.margin = '1rem 0';
-                        img.style.visibility = 'visible';
-                        img.style.opacity = '1';
-                        // Force reflow to ensure display
-                        img.offsetHeight;
-                        console.log(`✅ Base64 image ${idx + 1} restored and styled:`, img.src.substring(0, 50) + '...');
-                    } else if (img.src) {
-                        img.style.maxWidth = '100%';
-                        img.style.height = 'auto';
-                        console.log(`✅ Regular image ${idx + 1} restored:`, img.src.substring(0, 100));
-                    } else {
-                        console.warn(`⚠️ Image ${idx + 1} has no src attribute`);
                     }
                 });
-                
-                // Verify images are still in DOM
-                setTimeout(() => {
-                    const finalImages = postContent.querySelectorAll('img');
-                    console.log(`🔍 Final check: ${finalImages.length} image(s) in DOM`);
-                    if (finalImages.length !== imgMap.size) {
-                        console.error(`❌ ERROR: Lost ${imgMap.size - finalImages.length} image(s) during processing!`);
-                    }
-                }, 100);
             }
             
             // Position share dropdown correctly
@@ -990,11 +820,8 @@
                 allowedChars: /^[A-Za-z0-9_\-\sÀ-ÖØ-öø-ÿ]*$/,
                 mentionDenotationChars: [String.fromCharCode(64)], // @@ symbol (ASCII 64)
                 source: function(searchTerm, renderList, mentionChar) {
-                    console.log('🔍 Searching commenters for:', searchTerm);
-                    
                     // Get all commenters from the page
                     const allCommenters = getCommentersFromPage();
-                    console.log('📋 All commenters:', allCommenters);
                     
                     if (searchTerm.length === 0) {
                         // Show all commenters if no search term
@@ -1009,7 +836,6 @@
                         user.value.toLowerCase().includes(searchLower)
                     );
                     
-                    console.log('✅ Found commenters:', filtered);
                     renderList(filtered.slice(0, 10), searchTerm);
                 },
                 renderItem: function(item, searchTerm) {
@@ -1017,34 +843,80 @@
                     return `<div class="mention-item"><div class="mention-avatar" style="background-color: #4f46e5;">${item.initials}</div><div class="mention-info"><div class="mention-name">${item.displayName}</div><div class="mention-username">${atSymbol}${item.value}</div></div></div>`;
                 },
                 onSelect: function(item, insertItem) {
-                    console.log('✅ User selected:', item);
                     insertItem(item);
                 }
             };
 
             // Initialize the main comment editor with @@ mention
-            window.mainCommentQuill = new Quill('#mainCommentEditor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: toolbarOptions,
-                    mention: mentionModule
-                },
-                placeholder: 'What are your thoughts? Use @@ to mention users...'
-            });
+            // Wait for Quill to be available with retry mechanism
+            function initializeQuillEditor() {
+                const mainEditorEl = document.getElementById('mainCommentEditor');
+                if (!mainEditorEl) {
+                    return;
+                }
 
-            // Clear button functionality
-            const clearBtn = document.getElementById('clearMainComment');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', function() {
-                    window.mainCommentQuill.setText('');
-                });
+                // Check if Quill is loaded
+                if (typeof Quill === 'undefined') {
+                    // Retry after a short delay (up to 5 seconds)
+                    if (typeof initializeQuillEditor.retryCount === 'undefined') {
+                        initializeQuillEditor.retryCount = 0;
+                    }
+                    if (initializeQuillEditor.retryCount < 50) {
+                        initializeQuillEditor.retryCount++;
+                        setTimeout(initializeQuillEditor, 100);
+                    } else {
+                        // Fallback: simple textarea if Quill failed to load after retries
+                        const fallback = document.createElement('textarea');
+                        fallback.id = 'mainCommentFallback';
+                        fallback.className = 'form-control';
+                        fallback.rows = 4;
+                        fallback.placeholder = 'What are your thoughts?';
+                        mainEditorEl.replaceWith(fallback);
+                    }
+                    return;
+                }
+
+                try {
+                    window.mainCommentQuill = new Quill('#mainCommentEditor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: toolbarOptions,
+                            mention: mentionModule
+                        },
+                        placeholder: 'What are your thoughts? Use @@ to mention users...'
+                    });
+
+                    // Clear button functionality
+                    const clearBtn = document.getElementById('clearMainComment');
+                    if (clearBtn) {
+                        clearBtn.addEventListener('click', function() {
+                            if (window.mainCommentQuill) {
+                                window.mainCommentQuill.setText('');
+                            }
+                        });
+                    }
+
+                    // Update hidden textarea when editor content changes
+                    window.mainCommentQuill.on('text-change', function() {
+                        const content = window.mainCommentQuill.root.innerHTML;
+                        const hidden = document.getElementById('mainCommentContent');
+                        if (hidden) {
+                            hidden.value = content;
+                        }
+                    });
+                } catch (error) {
+                    // Fallback: simple textarea if Quill failed to initialize
+                    const fallback = document.createElement('textarea');
+                    fallback.id = 'mainCommentFallback';
+                    fallback.className = 'form-control';
+                    fallback.rows = 4;
+                    fallback.placeholder = 'What are your thoughts?';
+                    mainEditorEl.replaceWith(fallback);
+                }
             }
 
-            // Update hidden textarea when editor content changes
-            window.mainCommentQuill.on('text-change', function() {
-                const content = window.mainCommentQuill.root.innerHTML;
-                document.getElementById('mainCommentContent').value = content;
-            });
+            // Start initialization
+            initializeQuillEditor();
             
             // NOTE: Poll voting is handled by Post_Script_Real_Time_Fix.js via SignalR
             // The castPollVote method in that script handles all poll interactions
@@ -1120,56 +992,6 @@
                     toast.remove();
                 });
             }
-        });
-        
-        // Feature Verification and Fixes
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('=== FEATURE VERIFICATION ===');
-            
-            // 1. Comment Count Verification
-            const commentCountInHeader = document.querySelector('.comment-count');
-            const commentCountInButton = document.querySelector('.action-btn .fa-comment')?.closest('button')?.querySelector('span');
-            
-            console.log('📊 Comment Count in Header:', commentCountInHeader?.textContent || 'NOT FOUND');
-            console.log('📊 Comment Count in Button:', commentCountInButton?.textContent || 'NOT FOUND');
-            
-            if (commentCountInButton && !commentCountInButton.textContent.includes('(')) {
-                // Fix format if needed
-                const count = '@Model.Post.CommentCount';
-                commentCountInButton.textContent = `Comments (${count})`;
-            }
-            
-            // 2. Share Count - Hide loading stats if backend not ready
-            const shareStats = document.querySelectorAll('.share-stats, [id^="share-count-display"]');
-            if (shareStats.length > 0) {
-                console.log('📤 Share Stats Elements:', shareStats.length);
-                shareStats.forEach(el => {
-                    // Hide share count until backend is implemented
-                    el.style.display = 'none';
-                });
-            }
-            
-            // 3. Save Button Verification
-            const saveBtn = document.getElementById('saveBtn-@Model.Post.PostId');
-            console.log('🔖 Save Button:', saveBtn ? 'FOUND ✅' : 'NOT FOUND ❌');
-            console.log('🔖 Is Saved:', saveBtn?.getAttribute('data-issaved'));
-            
-            // 4. Report Button Verification
-            const reportBtn = document.getElementById('reportBtn-@Model.Post.PostId');
-            console.log('🚩 Report Button:', reportBtn ? 'FOUND ✅' : 'NOT FOUND ❌');
-            console.log('🚩 Report Function:', typeof reportPost !== 'undefined' ? 'FOUND ✅' : 'NOT FOUND ❌');
-            
-            // 5. SignalR Connection Verification
-            setTimeout(() => {
-                if (window.signalRManager) {
-                    console.log('🔌 SignalR State:', window.signalRManager.postConnection?.state || 'NOT CONNECTED');
-                    console.log('🔌 Post ID:', window.signalRManager.pagePostId || 'NOT SET');
-                } else {
-                    console.log('🔌 SignalR Manager:', 'NOT INITIALIZED ❌');
-                }
-            }, 2000);
-            
-            console.log('=== END VERIFICATION ===');
         });
         
         // Report Post Function
@@ -1330,7 +1152,6 @@
                     const sortType = this.dataset.sort;
                     const sortLabel = this.textContent.trim();
                     
-                    console.log('Sorting comments by:', sortType);
                     currentSortText.textContent = sortLabel;
                     
                     // Sort comments
@@ -1375,8 +1196,6 @@
 
                 // Re-append sorted comments
                 comments.forEach(comment => commentList.appendChild(comment));
-                
-                console.log(`✅ Comments sorted by ${sortType}`);
             }
         });
         
@@ -1452,8 +1271,6 @@
         }
         
         function updatePollResults(pollResults, totalVotes) {
-            console.log('📊 Updating poll results:', pollResults);
-            
             pollResults.forEach(option => {
                 // Update vote count
                 const voteCountEl = document.querySelector(`[data-vote-count="${option.optionId}"]`);
@@ -1544,7 +1361,6 @@
         
         function confirmDeletePost(postId) {
             postIdToDelete = postId;
-            console.log('📝 Opening delete modal for post:', postId);
             const modal = new bootstrap.Modal(document.getElementById('deletePostModal'));
             modal.show();
         }
@@ -1560,8 +1376,6 @@
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Deleting...';
             
-            console.log('🗑️ Attempting to delete post:', postIdToDelete);
-            
             try {
                 const response = await fetch('/Post/Delete', {
                     method: 'POST',
@@ -1573,7 +1387,6 @@
                 });
                 
                 const result = await response.json();
-                console.log('Delete response:', result);
                 
                 if (result.success) {
                     // Close modal
