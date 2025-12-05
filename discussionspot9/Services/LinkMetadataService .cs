@@ -1,4 +1,4 @@
-﻿using discussionspot9.Interfaces;
+using discussionspot9.Interfaces;
 using discussionspot9.Models.ViewModels.CreativeViewModels;
 using HtmlAgilityPack;
 
