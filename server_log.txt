@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\LAPTOP BACKUP\CodingProject2025\Repos\gsmsharing\discussionspot9\mcp-servers\seo-automation\main.py", line 6, in <module>
+    from fastapi import FastAPI, HTTPException
+ModuleNotFoundError: No module named 'fastapi'

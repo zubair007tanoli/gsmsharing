@@ -1,0 +1,5 @@
+Collecting fastapi==0.104.1 (from -r discussionspot9/mcp-servers/seo-automation/requirements.txt (line 1))
+
+[notice] A new release of pip is available: 25.2 -> 25.3
+[notice] To update, run: C:\Users\zubai\AppData\Local\Python\pythoncore-3.14-64\python.exe -m pip install --upgrade pip
+ERROR: Operation cancelled by user

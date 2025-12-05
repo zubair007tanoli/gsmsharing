@@ -92,7 +92,8 @@ namespace discussionspot9.Services.MCP
         {
             var servers = new[]
             {
-                new { Name = "SeoAutomation", Script = "seo-automation/main.py", Port = 5001 },
+                // Try test_server.py first (no dependencies), then main_simple.py, then main.py
+                new { Name = "SeoAutomation", Scripts = new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" }, Port = 5001 },
                 // Add more servers here when implemented
                 // new { Name = "Performance", Script = "performance/main.py", Port = 5002 },
                 // new { Name = "UserPreferences", Script = "user-preferences/main.py", Port = 5003 }
@@ -107,55 +108,63 @@ namespace discussionspot9.Services.MCP
                     continue;
                 }
 
-                // Try multiple possible paths (check both with and without discussionspot9 folder, including Ubuntu paths)
-                var possiblePaths = new List<string>
-                {
-                    Path.Combine(_environment.ContentRootPath, "mcp-servers", server.Script),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", server.Script),
-                    Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", server.Script),
-                    // Ubuntu deployment paths
-                    "/var/www/discussionspot/mcp-servers/" + server.Script,
-                    "/var/www/discussionspot9/mcp-servers/" + server.Script
-                };
-
-                // Also try parent directory (in case we're in bin/Debug/net9.0)
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                if (baseDir.Contains("bin") || baseDir.Contains("Debug") || baseDir.Contains("Release"))
-                {
-                    var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.FullName;
-                    if (!string.IsNullOrEmpty(projectRoot))
-                    {
-                        possiblePaths.Add(Path.Combine(projectRoot, "mcp-servers", server.Script));
-                    }
-                }
-
-                // Try ContentRootPath parent (if ContentRootPath is discussionspot9 folder)
-                var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
-                if (!string.IsNullOrEmpty(contentRootParent))
-                {
-                    possiblePaths.Add(Path.Combine(contentRootParent, "mcp-servers", server.Script));
-                    possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", server.Script));
-                }
-
+                // Try each script in order (test_server.py first, then main_simple.py, then main.py)
                 string? scriptPath = null;
-                foreach (var path in possiblePaths)
+                foreach (var script in server.Scripts)
                 {
-                    if (File.Exists(path))
+                    // Try multiple possible paths (check both with and without discussionspot9 folder, including Ubuntu paths)
+                    var possiblePaths = new List<string>
                     {
-                        scriptPath = path;
-                        _logger.LogInformation("Found server script at: {Path}", path);
-                        break;
+                        Path.Combine(_environment.ContentRootPath, "mcp-servers", script),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
+                        Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script),
+                        // Ubuntu deployment paths
+                        "/var/www/discussionspot/mcp-servers/" + script,
+                        "/var/www/discussionspot9/mcp-servers/" + script
+                    };
+
+                    // Also try parent directory (in case we're in bin/Debug/net9.0)
+                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    if (baseDir.Contains("bin") || baseDir.Contains("Debug") || baseDir.Contains("Release"))
+                    {
+                        var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.FullName;
+                        if (!string.IsNullOrEmpty(projectRoot))
+                        {
+                            possiblePaths.Add(Path.Combine(projectRoot, "mcp-servers", script));
+                        }
                     }
+
+                    // Try ContentRootPath parent (if ContentRootPath is discussionspot9 folder)
+                    var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
+                    if (!string.IsNullOrEmpty(contentRootParent))
+                    {
+                        possiblePaths.Add(Path.Combine(contentRootParent, "mcp-servers", script));
+                        possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", script));
+                    }
+
+                    foreach (var path in possiblePaths)
+                    {
+                        if (File.Exists(path))
+                        {
+                            scriptPath = path;
+                            _logger.LogInformation("Found server script at: {Path}", path);
+                            break;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(scriptPath))
+                        break;
                 }
 
                 if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
                 {
-                    _logger.LogError("Server script not found. Searched paths: {Paths}", 
-                        string.Join(", ", possiblePaths));
+                    _logger.LogError("Server script not found. Tried scripts: {Scripts}", 
+                        string.Join(", ", server.Scripts));
                     continue;
                 }
 
-                _logger.LogInformation("Auto-starting {ServerName} on port {Port}...", server.Name, server.Port);
+                _logger.LogInformation("Auto-starting {ServerName} on port {Port} using {Script}...", 
+                    server.Name, server.Port, Path.GetFileName(scriptPath));
                 await StartServerAsync(server.Name, scriptPath, server.Port);
                 
                 // Wait a bit before starting next server
@@ -406,7 +415,7 @@ namespace discussionspot9.Services.MCP
         {
             var servers = new[]
             {
-                new { Name = "SeoAutomation", Port = 5001, Script = "seo-automation/main.py" }
+                new { Name = "SeoAutomation", Port = 5001, Scripts = new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" } }
             };
 
             foreach (var server in servers)
@@ -420,12 +429,30 @@ namespace discussionspot9.Services.MCP
                 {
                     _logger.LogWarning("Server {ServerName} appears to have crashed, restarting...", server.Name);
                     
-                    var scriptPath = Path.Combine(
-                        AppDomain.CurrentDomain.BaseDirectory,
-                        "mcp-servers",
-                        server.Script);
+                    // Try to find script path
+                    string? scriptPath = null;
+                    foreach (var script in server.Scripts)
+                    {
+                        var possiblePaths = new[]
+                        {
+                            Path.Combine(_environment.ContentRootPath, "mcp-servers", script),
+                            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
+                            Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script)
+                        };
 
-                    if (File.Exists(scriptPath))
+                        foreach (var path in possiblePaths)
+                        {
+                            if (File.Exists(path))
+                            {
+                                scriptPath = path;
+                                break;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(scriptPath))
+                            break;
+                    }
+
+                    if (!string.IsNullOrEmpty(scriptPath) && File.Exists(scriptPath))
                     {
                         await RestartServerAsync(server.Name, scriptPath, server.Port);
                     }
@@ -433,22 +460,27 @@ namespace discussionspot9.Services.MCP
                 else if (!isRunning && !_runningServers.ContainsKey(server.Name))
                 {
                     // Server not running and not in our list, try to start it
-                    // Try multiple possible paths
-                    var possiblePaths = new[]
-                    {
-                        Path.Combine(_environment.ContentRootPath, "mcp-servers", server.Script),
-                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", server.Script),
-                        Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", server.Script)
-                    };
-
+                    // Try multiple possible paths for each script
                     string? scriptPath = null;
-                    foreach (var path in possiblePaths)
+                    foreach (var script in server.Scripts)
                     {
-                        if (File.Exists(path))
+                        var possiblePaths = new[]
                         {
-                            scriptPath = path;
-                            break;
+                            Path.Combine(_environment.ContentRootPath, "mcp-servers", script),
+                            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
+                            Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script)
+                        };
+
+                        foreach (var path in possiblePaths)
+                        {
+                            if (File.Exists(path))
+                            {
+                                scriptPath = path;
+                                break;
+                            }
                         }
+                        if (!string.IsNullOrEmpty(scriptPath))
+                            break;
                     }
 
                     if (!string.IsNullOrEmpty(scriptPath) && File.Exists(scriptPath))
@@ -458,7 +490,8 @@ namespace discussionspot9.Services.MCP
                     }
                     else
                     {
-                        _logger.LogWarning("Server {ServerName} script not found, cannot restart", server.Name);
+                        _logger.LogWarning("Server {ServerName} script not found, cannot restart. Tried: {Scripts}", 
+                            server.Name, string.Join(", ", server.Scripts));
                     }
                 }
             }

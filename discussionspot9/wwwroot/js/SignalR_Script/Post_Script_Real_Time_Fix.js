@@ -1,4 +1,4 @@
-﻿class SignalRManager {
+class SignalRManager {
     constructor() {
         this.postConnection = null;
         this.notificationConnection = null;
@@ -128,6 +128,14 @@
                 // Update comment count only for top-level comments
                 if (!parentCommentId) {
                     this.updateCommentCount(1);
+                }
+                
+                // Process link previews for the newly added comment
+                if (window.CommentLinkPreview) {
+                    const newComment = targetContainer.lastElementChild;
+                    if (newComment && newComment.classList.contains('comment-item')) {
+                        window.CommentLinkPreview.processComment(newComment);
+                    }
                 }
             } else {
                 console.error(`Could not find container for comment. ParentID: ${parentCommentId || 'none'}`);

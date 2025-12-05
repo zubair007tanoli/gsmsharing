@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Preview Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/css/comment-link-preview.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .comment-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .comment-text {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        #console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔗 Link Preview Test Page</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: API Endpoint</h2>
+        <button onclick="testAPI()">Test API with GitHub URL</button>
+        <button onclick="testBatchAPI()">Test Batch API</button>
+        <div id="api-result" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Sample Comments</h2>
+        <button onclick="processComments()">Process Comments</button>
+        <button onclick="addNewComment()">Add New Comment</button>
+        
+        <div class="comment-list" style="margin-top: 20px;">
+            <div class="comment-item">
+                <div class="comment-content">
+                    <div class="comment-meta">
+                        <strong>User 1</strong> • 5 min ago
+                    </div>
+                    <div class="comment-text">
+                        Check out this amazing project: https://github.com/microsoft/vscode
+                    </div>
+                    <div class="comment-actions"></div>
+                </div>
+            </div>
+
+            <div class="comment-item">
+                <div class="comment-content">
+                    <div class="comment-meta">
+                        <strong>User 2</strong> • 10 min ago
+                    </div>
+                    <div class="comment-text">
+                        Great resources: https://stackoverflow.com and https://github.com
+                    </div>
+                    <div class="comment-actions"></div>
+                </div>
+            </div>
+
+            <div class="comment-item">
+                <div class="comment-content">
+                    <div class="comment-meta">
+                        <strong>User 3</strong> • 15 min ago
+                    </div>
+                    <div class="comment-text">
+                        Visit www.example.com for more info
+                    </div>
+                    <div class="comment-actions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <button onclick="clearConsole()">Clear Console</button>
+        <div id="console-output"></div>
+    </div>
+
+    <script src="/js/CustomJs/comment-link-preview.js"></script>
+    <script>
+        // Capture console.log
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addToConsole(type, ...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const line = document.createElement('div');
+            line.style.color = type === 'error' ? '#f48771' : type === 'warn' ? '#dcdcaa' : '#d4d4d4';
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleOutput.appendChild(line);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole('log', ...args);
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole('error', ...args);
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole('warn', ...args);
+        };
+
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+        }
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/LinkMetadata/GetMetadata', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: 'https://github.com' })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                console.log('✅ API Test Success:', data);
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+                console.error('❌ API Test Failed:', error);
+            }
+        }
+
+        async function testBatchAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = 'Testing batch...';
+            
+            try {
+                const response = await fetch('/api/LinkMetadata/GetMetadataBatch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        urls: ['https://github.com', 'https://stackoverflow.com'] 
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                console.log('✅ Batch API Test Success:', data);
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+                console.error('❌ Batch API Test Failed:', error);
+            }
+        }
+
+        function processComments() {
+            console.log('🔄 Manually processing comments...');
+            if (window.CommentLinkPreview) {
+                window.CommentLinkPreview.processAll();
+            } else {
+                console.error('❌ CommentLinkPreview not loaded!');
+            }
+        }
+
+        function addNewComment() {
+            const commentList = document.querySelector('.comment-list');
+            const newComment = document.createElement('div');
+            newComment.className = 'comment-item';
+            newComment.innerHTML = `
+                <div class="comment-content">
+                    <div class="comment-meta">
+                        <strong>New User</strong> • just now
+                    </div>
+                    <div class="comment-text">
+                        Fresh link: https://reddit.com
+                    </div>
+                    <div class="comment-actions"></div>
+                </div>
+            `;
+            commentList.appendChild(newComment);
+            console.log('➕ New comment added');
+        }
+
+        // Initial log
+        console.log('📄 Test page loaded');
+        console.log('🔗 CommentLinkPreview available:', typeof window.CommentLinkPreview !== 'undefined');
+    </script>
+</body>
+</html>
+

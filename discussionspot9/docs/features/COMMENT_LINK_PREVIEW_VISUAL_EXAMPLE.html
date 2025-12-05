@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comment Link Preview - Visual Example</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .example-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .example-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .before-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .before, .after {
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .before {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+        }
+
+        .after {
+            background: #d1ecf1;
+            border: 2px solid #0dcaf0;
+        }
+
+        .label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .before .label {
+            color: #856404;
+        }
+
+        .after .label {
+            color: #055160;
+        }
+
+        /* Comment styles */
+        .comment-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .comment-time {
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .comment-text {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        /* Link preview styles */
+        .comment-link-previews {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .comment-link-preview-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .comment-link-preview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .comment-link-preview-container {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 0;
+            min-height: 100px;
+        }
+
+        .comment-link-preview-thumbnail {
+            position: relative;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .comment-link-preview-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .comment-link-preview-content {
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .comment-link-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-link-preview-favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .comment-link-preview-domain {
+            font-size: 0.75rem;
+            color: #667eea;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .comment-link-preview-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 0.4rem 0;
+            line-height: 1.3;
+        }
+
+        .comment-link-preview-description {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.4;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .comment-link-preview-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        /* Inline link icon */
+        .comment-inline-link-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 0 4px;
+            transition: all 0.2s ease;
+            vertical-align: middle;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+
+        .comment-inline-link-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.5);
+        }
+
+        .comment-inline-link-icon i {
+            font-size: 0.75rem;
+        }
+
+        .url-text {
+            color: #0066cc;
+            word-break: break-all;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .before-after {
+                grid-template-columns: 1fr;
+            }
+
+            .comment-link-preview-container {
+                grid-template-columns: 1fr;
+            }
+
+            .comment-link-preview-thumbnail {
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📎 Comment Link Preview Feature</h1>
+
+        <!-- Example 1: Single Link -->
+        <div class="example-section">
+            <div class="example-title">
+                <i class="fas fa-link"></i>
+                Example 1: Single Link in Comment
+            </div>
+            <div class="before-after">
+                <div class="before">
+                    <div class="label">❌ Before</div>
+                    <div class="comment-item">
+                        <div class="comment-meta">
+                            <div class="user-avatar">JD</div>
+                            <span class="comment-author">John Doe</span>
+                            <span class="comment-time">2 min ago</span>
+                        </div>
+                        <div class="comment-text">
+                            Check out this amazing project: <span class="url-text">https://github.com/microsoft/vscode</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="after">
+                    <div class="label">✅ After</div>
+                    <div class="comment-item">
+                        <div class="comment-meta">
+                            <div class="user-avatar">JD</div>
+                            <span class="comment-author">John Doe</span>
+                            <span class="comment-time">2 min ago</span>
+                        </div>
+                        <div class="comment-text">
+                            Check out this amazing project: <a href="#" class="comment-inline-link-icon" title="https://github.com/microsoft/vscode"><i class="fas fa-link"></i></a>
+                        </div>
+                        <div class="comment-link-previews">
+                            <a href="#" class="comment-link-preview-card">
+                                <div class="comment-link-preview-container">
+                                    <div class="comment-link-preview-thumbnail">
+                                        <img src="https://opengraph.githubassets.com/1/microsoft/vscode" alt="VS Code">
+                                    </div>
+                                    <div class="comment-link-preview-content">
+                                        <div class="comment-link-preview-header">
+                                            <img src="https://github.com/favicon.ico" alt="favicon" class="comment-link-preview-favicon">
+                                            <span class="comment-link-preview-domain">github.com</span>
+                                        </div>
+                                        <h4 class="comment-link-preview-title">Visual Studio Code</h4>
+                                        <p class="comment-link-preview-description">Visual Studio Code is a code editor redefined and optimized for building and debugging modern web and cloud applications.</p>
+                                        <div class="comment-link-preview-footer">
+                                            <i class="fas fa-external-link-alt"></i>
+                                            <span>Visit link</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example 2: Multiple Links -->
+        <div class="example-section">
+            <div class="example-title">
+                <i class="fas fa-link"></i>
+                Example 2: Multiple Links in Comment
+            </div>
+            <div class="before-after">
+                <div class="before">
+                    <div class="label">❌ Before</div>
+                    <div class="comment-item">
+                        <div class="comment-meta">
+                            <div class="user-avatar">SA</div>
+                            <span class="comment-author">Sarah Anderson</span>
+                            <span class="comment-time">5 min ago</span>
+                        </div>
+                        <div class="comment-text">
+                            Great resources for learning:<br>
+                            <span class="url-text">https://stackoverflow.com</span><br>
+                            <span class="url-text">https://github.com</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="after">
+                    <div class="label">✅ After</div>
+                    <div class="comment-item">
+                        <div class="comment-meta">
+                            <div class="user-avatar">SA</div>
+                            <span class="comment-author">Sarah Anderson</span>
+                            <span class="comment-time">5 min ago</span>
+                        </div>
+                        <div class="comment-text">
+                            Great resources for learning:<br>
+                            <a href="#" class="comment-inline-link-icon"><i class="fas fa-link"></i></a><br>
+                            <a href="#" class="comment-inline-link-icon"><i class="fas fa-link"></i></a>
+                        </div>
+                        <div class="comment-link-previews">
+                            <a href="#" class="comment-link-preview-card">
+                                <div class="comment-link-preview-container">
+                                    <div class="comment-link-preview-thumbnail">
+                                        <img src="https://cdn.sstatic.net/Sites/stackoverflow/Img/apple-touch-icon@2.png" alt="Stack Overflow">
+                                    </div>
+                                    <div class="comment-link-preview-content">
+                                        <div class="comment-link-preview-header">
+                                            <img src="https://stackoverflow.com/favicon.ico" alt="favicon" class="comment-link-preview-favicon">
+                                            <span class="comment-link-preview-domain">stackoverflow.com</span>
+                                        </div>
+                                        <h4 class="comment-link-preview-title">Stack Overflow</h4>
+                                        <p class="comment-link-preview-description">Stack Overflow is the largest online community for programmers to learn, share their knowledge, and advance their careers.</p>
+                                        <div class="comment-link-preview-footer">
+                                            <i class="fas fa-external-link-alt"></i>
+                                            <span>Visit link</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="comment-link-preview-card">
+                                <div class="comment-link-preview-container">
+                                    <div class="comment-link-preview-thumbnail">
+                                        <img src="https://github.githubassets.com/images/modules/open_graph/github-logo.png" alt="GitHub">
+                                    </div>
+                                    <div class="comment-link-preview-content">
+                                        <div class="comment-link-preview-header">
+                                            <img src="https://github.com/favicon.ico" alt="favicon" class="comment-link-preview-favicon">
+                                            <span class="comment-link-preview-domain">github.com</span>
+                                        </div>
+                                        <h4 class="comment-link-preview-title">GitHub</h4>
+                                        <p class="comment-link-preview-description">GitHub is where over 100 million developers shape the future of software, together.</p>
+                                        <div class="comment-link-preview-footer">
+                                            <i class="fas fa-external-link-alt"></i>
+                                            <span>Visit link</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features List -->
+        <div class="example-section">
+            <div class="example-title">
+                <i class="fas fa-star"></i>
+                Key Features
+            </div>
+            <ul class="feature-list">
+                <li>Automatic URL detection (HTTP, HTTPS, www)</li>
+                <li>Rich metadata extraction (Open Graph Protocol)</li>
+                <li>Compact link icons replace long URLs</li>
+                <li>Thumbnail images with lazy loading</li>
+                <li>Favicon and domain display</li>
+                <li>Hover effects and animations</li>
+                <li>Dark theme support</li>
+                <li>Mobile responsive design</li>
+                <li>Real-time processing for new comments</li>
+                <li>Batch API requests for performance</li>
+                <li>Graceful error handling</li>
+                <li>Security: SSRF protection, XSS prevention</li>
+            </ul>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="example-section">
+            <div class="example-title">
+                <i class="fas fa-code"></i>
+                Technical Implementation
+            </div>
+            <p><strong>Frontend:</strong></p>
+            <ul class="feature-list">
+                <li>JavaScript: Automatic URL detection with regex</li>
+                <li>MutationObserver: Watches for new comments</li>
+                <li>Batch API calls: 2-10 URLs per request</li>
+                <li>CSS: Modern flexbox/grid layout</li>
+            </ul>
+            <p style="margin-top: 1rem;"><strong>Backend:</strong></p>
+            <ul class="feature-list">
+                <li>ASP.NET Core API Controller</li>
+                <li>LinkMetadataService: Open Graph extraction</li>
+                <li>HtmlAgilityPack: HTML parsing</li>
+                <li>10-second timeout protection</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

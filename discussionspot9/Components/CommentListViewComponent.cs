@@ -36,7 +36,8 @@ namespace discussionspot9.ViewComponents
                         UpvoteCount = c.Comment.UpvoteCount,           // Added
                         DownvoteCount = c.Comment.DownvoteCount,       // Added
                         CurrentUserVote = c.Comment.CurrentUserVote,
-                        IsEdited = c.Comment.IsEdited
+                        IsEdited = c.Comment.IsEdited,
+                        LinkPreviews = c.Comment.LinkPreviews ?? new List<LinkPreviewViewModel>() // Added
                     },
                     Depth = c.Depth,
                     Children = MapChildren(c.Children)
@@ -172,7 +173,8 @@ namespace discussionspot9.ViewComponents
                     UpvoteCount = c.Comment.UpvoteCount,
                     DownvoteCount = c.Comment.DownvoteCount,
                     CurrentUserVote = c.Comment.CurrentUserVote,
-                    IsEdited = c.Comment.IsEdited
+                    IsEdited = c.Comment.IsEdited,
+                    LinkPreviews = c.Comment.LinkPreviews ?? new List<LinkPreviewViewModel>() // Added
                 },
                 Depth = c.Depth,
                 Children = MapChildren(c.Children) // Recursive call

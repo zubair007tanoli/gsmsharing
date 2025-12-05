@@ -69,6 +69,9 @@ namespace discussionspot9.Services
 
             await dbContext.SaveChangesAsync();
             
+            // Extract and save link previews from comment content
+            await ExtractAndSaveLinkPreviewsAsync(dbContext, comment.CommentId, model.Content);
+            
             // Get commenter name for notifications
             var commenterProfile = await dbContext.UserProfiles.FindAsync(model.UserId);
             var commenterName = commenterProfile?.DisplayName ?? "Someone";
@@ -117,6 +120,95 @@ namespace discussionspot9.Services
             return new CreateCommentResult { Success = true, CommentId = comment.CommentId };
         }
 
+        /// <summary>
+        /// Extract URLs from comment content and save link previews to database
+        /// </summary>
+        private async Task ExtractAndSaveLinkPreviewsAsync(ApplicationDbContext dbContext, int commentId, string content)
+        {
+            try
+            {
+                // URL detection regex - matches http, https, and www URLs
+                var urlRegex = new System.Text.RegularExpressions.Regex(@"(https?://[^\s<]+)|(www\.[^\s<]+)", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                
+                var matches = urlRegex.Matches(content);
+                var urls = new HashSet<string>();
+                
+                foreach (System.Text.RegularExpressions.Match match in matches)
+                {
+                    var url = match.Value;
+                    // Ensure URL has protocol
+                    if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        url = "https://" + url;
+                    }
+                    urls.Add(url);
+                }
+                
+                if (urls.Count == 0)
+                {
+                    return;
+                }
+                
+                _logger.LogInformation($"Found {urls.Count} URL(s) in comment {commentId}, fetching metadata...");
+                
+                // Fetch metadata for each URL and save to database
+                foreach (var url in urls)
+                {
+                    try
+                    {
+                        var metadata = await _linkMetadataService.GetMetadataAsync(url);
+                        
+                        var linkPreview = new CommentLinkPreview
+                        {
+                            CommentId = commentId,
+                            Url = metadata.Url,
+                            Title = metadata.Title,
+                            Description = metadata.Description,
+                            Domain = metadata.Domain,
+                            ThumbnailUrl = metadata.ThumbnailUrl,
+                            FaviconUrl = metadata.FaviconUrl,
+                            CreatedAt = DateTime.UtcNow,
+                            LastFetchedAt = DateTime.UtcNow,
+                            FetchSucceeded = true
+                        };
+                        
+                        dbContext.CommentLinkPreviews.Add(linkPreview);
+                        _logger.LogInformation($"Saved link preview for {url} in comment {commentId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, $"Failed to fetch metadata for URL: {url}");
+                        
+                        // Save a basic link preview even if fetch fails
+                        var uri = new Uri(url);
+                        var linkPreview = new CommentLinkPreview
+                        {
+                            CommentId = commentId,
+                            Url = url,
+                            Title = uri.Host,
+                            Description = "Unable to load preview",
+                            Domain = uri.Host,
+                            FaviconUrl = $"{uri.Scheme}://{uri.Host}/favicon.ico",
+                            CreatedAt = DateTime.UtcNow,
+                            LastFetchedAt = DateTime.UtcNow,
+                            FetchSucceeded = false
+                        };
+                        
+                        dbContext.CommentLinkPreviews.Add(linkPreview);
+                    }
+                }
+                
+                await dbContext.SaveChangesAsync();
+                _logger.LogInformation($"Successfully saved {urls.Count} link preview(s) for comment {commentId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error extracting and saving link previews for comment {commentId}");
+                // Don't fail comment creation if link preview extraction fails
+            }
+        }
+
         public async Task<CommentViewModel?> GetCommentByIdAsync(int commentId)
         {
             using var dbContext = _context.CreateDbContext(); // Use the factory to create a DbContext instance
@@ -125,6 +217,7 @@ namespace discussionspot9.Services
             var comment = await dbContext.Comments
                 .AsNoTracking()
                 .Include(c => c.User)
+                .Include(c => c.LinkPreviews) // Include link previews
                 .FirstOrDefaultAsync(c => c.CommentId == commentId);
 
             if (comment == null) return null;
@@ -450,6 +543,7 @@ namespace discussionspot9.Services
             var allComments = await dbContext.Comments
                 .Where(c => c.PostId == postId && !c.IsDeleted)
                 .Include(c => c.User)
+                .Include(c => c.LinkPreviews) // Include link previews
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -662,7 +756,16 @@ namespace discussionspot9.Services
                 AuthorDisplayName = userProfile?.DisplayName ?? "Unknown",
                 AuthorInitials = GetInitials(userProfile?.DisplayName ?? "Unknown"),
                 IsAuthorVerified = userProfile?.IsVerified ?? false,
-                ParentCommentId = comment.ParentCommentId
+                ParentCommentId = comment.ParentCommentId,
+                LinkPreviews = comment.LinkPreviews?.Select(lp => new LinkPreviewViewModel
+                {
+                    Url = lp.Url,
+                    Title = lp.Title,
+                    Description = lp.Description,
+                    Domain = lp.Domain,
+                    ThumbnailUrl = lp.ThumbnailUrl ?? string.Empty,
+                    FaviconUrl = lp.FaviconUrl ?? string.Empty
+                }).ToList() ?? new List<LinkPreviewViewModel>()
             };
         }
 
