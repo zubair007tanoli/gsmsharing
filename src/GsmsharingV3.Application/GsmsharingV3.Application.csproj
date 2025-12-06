@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\GsmsharingV3.Domain\GsmsharingV3.Domain.csproj" />
+    <ProjectReference Include="..\GsmsharingV3.Infrastructure\GsmsharingV3.Infrastructure.csproj" />
+    <ProjectReference Include="..\GsmsharingV3.Shared\GsmsharingV3.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

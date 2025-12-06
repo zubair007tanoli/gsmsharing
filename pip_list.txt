@@ -1,3 +1,0 @@
-Package Version
-------- -------
-pip     25.2

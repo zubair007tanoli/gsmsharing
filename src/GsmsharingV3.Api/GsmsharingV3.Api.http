@@ -1,0 +1,6 @@
+@GsmsharingV3.Api_HostAddress = http://localhost:5099
+
+GET {{GsmsharingV3.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
