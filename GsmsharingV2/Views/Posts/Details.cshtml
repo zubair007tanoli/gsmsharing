@@ -1,0 +1,199 @@
+@model GsmsharingV2.Models.Post
+@{
+    ViewData["Title"] = Model.Title + " - GSMSharing";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <article class="card shadow-custom">
+                <div class="card-body p-4">
+                    <!-- Post Header -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h1 class="mb-2">@Model.Title</h1>
+                                <div class="d-flex gap-2 mb-3">
+                                    @if (Model.IsFeatured == true)
+                                    {
+                                        <span class="badge badge-featured">
+                                            <i class="fas fa-star me-1"></i>Featured
+                                        </span>
+                                    }
+                                    @if (Model.IsPromoted == true)
+                                    {
+                                        <span class="badge badge-promoted">
+                                            <i class="fas fa-fire me-1"></i>Promoted
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="post-meta">
+                            <div class="d-flex flex-wrap gap-3 align-items-center">
+                                <span>
+                                    <i class="fas fa-user text-primary me-1"></i>
+                                    <strong>@Model.User?.UserName</strong>
+                                </span>
+                                <span>
+                                    <i class="fas fa-users text-primary me-1"></i>
+                                    <a href="#" class="text-decoration-none">@Model.Community?.Name</a>
+                                </span>
+                                <span>
+                                    <i class="fas fa-calendar text-primary me-1"></i>
+                                    @Model.CreatedAt?.ToString("MMMM dd, yyyy 'at' HH:mm")
+                                </span>
+                                <span>
+                                    <i class="fas fa-eye text-primary me-1"></i>
+                                    @(Model.ViewCount ?? 0) views
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Featured Image -->
+                    @if (!string.IsNullOrEmpty(Model.FeaturedImage))
+                    {
+                        <div class="mb-4">
+                            <img src="@Model.FeaturedImage" class="img-fluid rounded-custom shadow-sm" alt="@Model.Title">
+                        </div>
+                    }
+
+                    <!-- Post Content -->
+                    <div class="post-content mb-4">
+                        @Html.Raw(Model.Content)
+                    </div>
+
+                    <!-- Post Tags -->
+                    @if (!string.IsNullOrEmpty(Model.Tags))
+                    {
+                        <div class="post-tags mb-4">
+                            @foreach (var tag in Model.Tags.Split(',').Take(5))
+                            {
+                                <span class="post-tag">#@tag.Trim()</span>
+                            }
+                        </div>
+                    }
+
+                    <!-- Post Actions -->
+                    <div class="d-flex gap-2 mb-4">
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-thumbs-up me-2"></i>Like
+                        </button>
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-share me-2"></i>Share
+                        </button>
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-bookmark me-2"></i>Save
+                        </button>
+                    </div>
+
+                    <!-- Edit/Delete Actions (for post owner) -->
+                    @if (User.Identity?.IsAuthenticated == true && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.UserId)
+                    {
+                        <hr class="my-4">
+                        <div class="d-flex gap-2">
+                            <a href="/Posts/Edit/@Model.PostID" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>Edit Post
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@Model.PostID" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this post?')">
+                                    <i class="fas fa-trash me-2"></i>Delete Post
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <!-- Comments Section -->
+            <div class="card shadow-custom mt-4">
+                <div class="card-body p-4">
+                    <h3 class="mb-4">
+                        <i class="fas fa-comments me-2"></i>Comments
+                    </h3>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="mb-4">
+                            <form>
+                                <div class="mb-3">
+                                    <textarea class="form-control" rows="3" placeholder="Write a comment..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Post Comment
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <a href="/UserAccounts/Login" class="alert-link">Login</a> to join the discussion
+                        </div>
+                    }
+                    <div class="comments-list">
+                        <p class="text-muted text-center py-4">No comments yet. Be the first to comment!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-custom mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-info-circle me-2"></i>About This Post
+                    </h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-user text-primary me-2"></i>
+                            <strong>Author:</strong> @Model.User?.UserName
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            <strong>Community:</strong> @Model.Community?.Name
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-primary me-2"></i>
+                            <strong>Published:</strong> @Model.PublishedAt?.ToString("MMMM dd, yyyy")
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-eye text-primary me-2"></i>
+                            <strong>Views:</strong> @(Model.ViewCount ?? 0)
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-custom mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-fire me-2"></i>Trending Posts
+                    </h5>
+                    <p class="text-muted">Coming soon...</p>
+                </div>
+            </div>
+
+            <div class="card shadow-custom">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-tags me-2"></i>Related Tags
+                    </h5>
+                    <div class="post-tags">
+                        @if (!string.IsNullOrEmpty(Model.Tags))
+                        {
+                            @foreach (var tag in Model.Tags.Split(',').Take(10))
+                            {
+                                <span class="post-tag">#@tag.Trim()</span>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

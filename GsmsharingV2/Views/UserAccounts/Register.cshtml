@@ -1,0 +1,151 @@
+@model GsmsharingV2.Controllers.RegisterViewModel
+@{
+    ViewData["Title"] = "Register - GSMSharing";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-custom">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <i class="fas fa-user-plus fa-3x mb-3"></i>
+                    <h2 class="mb-0">Join GSMSharing</h2>
+                    <p class="mb-0 opacity-75">Create your account and start sharing</p>
+                </div>
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>@ViewBag.ErrorMessage
+                        </div>
+                    }
+
+                    <form asp-action="Register" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="mb-4">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>Email Address
+                            </label>
+                            <input asp-for="Email" class="form-control form-control-lg" type="email" placeholder="your.email@example.com" required />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                            <small class="form-text text-muted">We'll never share your email with anyone</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Password
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control form-control-lg" type="password" placeholder="Create a strong password" required id="passwordInput" />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                            <small class="form-text text-muted">At least 6 characters with uppercase, lowercase, and digit</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="ConfirmPassword" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Confirm Password
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="ConfirmPassword" class="form-control form-control-lg" type="password" placeholder="Confirm your password" required id="confirmPasswordInput" />
+                                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                    <i class="fas fa-eye" id="toggleConfirmIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                            <label class="form-check-label" for="termsCheck">
+                                I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+
+                        <div class="text-center">
+                            <p class="mb-0">
+                                Already have an account? 
+                                <a href="/UserAccounts/Login" class="text-decoration-none fw-bold">Login here</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Benefits Card -->
+            <div class="card shadow-custom mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-gift me-2"></i>Join and Get Access To:
+                    </h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Share repair guides and tutorials</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Participate in community discussions</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Access marketplace features</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Build your professional profile</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Connect with repair experts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Toggle confirm password visibility
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+            const toggleConfirmIcon = document.getElementById('toggleConfirmIcon');
+            
+            if (confirmPasswordInput.type === 'password') {
+                confirmPasswordInput.type = 'text';
+                toggleConfirmIcon.classList.remove('fa-eye');
+                toggleConfirmIcon.classList.add('fa-eye-slash');
+            } else {
+                confirmPasswordInput.type = 'password';
+                toggleConfirmIcon.classList.remove('fa-eye-slash');
+                toggleConfirmIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Password match validation
+        document.getElementById('confirmPasswordInput').addEventListener('input', function() {
+            const password = document.getElementById('passwordInput').value;
+            const confirmPassword = this.value;
+            
+            if (password !== confirmPassword && confirmPassword.length > 0) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+}

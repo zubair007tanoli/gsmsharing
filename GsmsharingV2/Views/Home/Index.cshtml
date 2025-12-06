@@ -1,8 +1,268 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "GSMSharing - Mobile Repair Community";
+    var categories = ViewBag.Categories as IEnumerable<GsmsharingV2.Models.Category> ?? new List<GsmsharingV2.Models.Category>();
+    var postsByCategory = ViewBag.PostsByCategory as Dictionary<GsmsharingV2.Models.Category, IEnumerable<GsmsharingV2.Models.Post>> ?? new Dictionary<GsmsharingV2.Models.Category, IEnumerable<GsmsharingV2.Models.Post>>();
+    var recentPosts = ViewBag.RecentPosts as IEnumerable<GsmsharingV2.Models.Post> ?? new List<GsmsharingV2.Models.Post>();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- Reddit-like Main Feed -->
+<div class="reddit-layout">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8 col-xl-9">
+                <!-- Category Tabs -->
+                <div class="category-tabs mb-3">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="/" class="category-tab active">
+                            <i class="fas fa-fire me-1"></i>Hot
+                        </a>
+                        <a href="/?sort=new" class="category-tab">
+                            <i class="fas fa-clock me-1"></i>New
+                        </a>
+                        <a href="/?sort=top" class="category-tab">
+                            <i class="fas fa-trophy me-1"></i>Top
+                        </a>
+                        <span class="category-divider">|</span>
+                        @foreach (var category in categories.Take(5))
+                        {
+                            <a href="/category/@category.Slug" class="category-tab">
+                                <i class="@(category.IconClass ?? "fas fa-folder") me-1"></i>@category.Name
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <!-- Posts by Category Sections -->
+                @if (postsByCategory.Any())
+                {
+                    @foreach (var categoryPosts in postsByCategory)
+                    {
+                        <div class="category-section mb-4">
+                            <div class="category-header d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h3 class="category-title mb-1">
+                                        <i class="@(categoryPosts.Key.IconClass ?? "fas fa-folder") me-2"></i>
+                                        @categoryPosts.Key.Name
+                                    </h3>
+                                    <p class="category-description text-muted mb-0">@categoryPosts.Key.Description</p>
+                                </div>
+                                <a href="/category/@categoryPosts.Key.Slug" class="btn btn-sm btn-outline-primary">
+                                    View All <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                            
+                            <div class="reddit-posts">
+                                @foreach (var post in categoryPosts.Value)
+                                {
+                                    <div class="reddit-post">
+                                        <div class="post-voting">
+                                            <button class="vote-btn upvote" title="Upvote">
+                                                <i class="fas fa-arrow-up"></i>
+                                            </button>
+                                            <span class="vote-count">@(post.ViewCount ?? 0)</span>
+                                            <button class="vote-btn downvote" title="Downvote">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                        </div>
+                                        <div class="post-content">
+                                            <div class="post-header">
+                                                <span class="community-badge">
+                                                    <i class="fas fa-users me-1"></i>r/@post.Community?.Name
+                                                </span>
+                                                <span class="post-meta">
+                                                    Posted by <strong>u/@post.User?.UserName</strong>
+                                                    <span class="time-ago">@GetTimeAgo(post.CreatedAt)</span>
+                                                </span>
+                                            </div>
+                                            <h4 class="post-title">
+                                                <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">
+                                                    @post.Title
+                                                </a>
+                                            </h4>
+                                            @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                            {
+                                                <div class="post-image">
+                                                    <img src="@post.FeaturedImage" alt="@post.Title" class="img-fluid">
+                                                </div>
+                                            }
+                                            <p class="post-excerpt">@(post.Content?.Length > 200 ? post.Content.Substring(0, 200) + "..." : post.Content)</p>
+                                            <div class="post-footer">
+                                                <button class="post-action">
+                                                    <i class="fas fa-comment me-1"></i>@(post.Comments?.Count ?? 0) Comments
+                                                </button>
+                                                <button class="post-action">
+                                                    <i class="fas fa-share me-1"></i>Share
+                                                </button>
+                                                <button class="post-action">
+                                                    <i class="fas fa-bookmark me-1"></i>Save
+                                                </button>
+                                                @if (post.IsFeatured == true)
+                                                {
+                                                    <span class="badge badge-featured ms-2">
+                                                        <i class="fas fa-star me-1"></i>Featured
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <!-- Recent Posts Fallback -->
+                    <div class="reddit-posts">
+                        @foreach (var post in recentPosts)
+                        {
+                            <div class="reddit-post">
+                                <div class="post-voting">
+                                    <button class="vote-btn upvote" title="Upvote">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                    <span class="vote-count">@(post.ViewCount ?? 0)</span>
+                                    <button class="vote-btn downvote" title="Downvote">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <span class="community-badge">
+                                            <i class="fas fa-users me-1"></i>r/@post.Community?.Name
+                                        </span>
+                                        <span class="post-meta">
+                                            Posted by <strong>u/@post.User?.UserName</strong>
+                                            <span class="time-ago">@GetTimeAgo(post.CreatedAt)</span>
+                                        </span>
+                                    </div>
+                                    <h4 class="post-title">
+                                        <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">
+                                            @post.Title
+                                        </a>
+                                    </h4>
+                                    @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                    {
+                                        <div class="post-image">
+                                            <img src="@post.FeaturedImage" alt="@post.Title" class="img-fluid">
+                                        </div>
+                                    }
+                                    <p class="post-excerpt">@(post.Content?.Length > 200 ? post.Content.Substring(0, 200) + "..." : post.Content)</p>
+                                    <div class="post-footer">
+                                        <button class="post-action">
+                                            <i class="fas fa-comment me-1"></i>@(post.Comments?.Count ?? 0) Comments
+                                        </button>
+                                        <button class="post-action">
+                                            <i class="fas fa-share me-1"></i>Share
+                                        </button>
+                                        <button class="post-action">
+                                            <i class="fas fa-bookmark me-1"></i>Save
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Create Post CTA -->
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="create-post-card mt-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <a href="/Posts/Create" class="create-post-input flex-grow-1">
+                                <span class="text-muted">Create a post...</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4 col-xl-3">
+                <div class="reddit-sidebar">
+                    <!-- Top Communities -->
+                    <div class="sidebar-card mb-3">
+                        <div class="sidebar-header">
+                            <h5><i class="fas fa-fire me-2"></i>Top Communities</h5>
+                        </div>
+                        <div class="sidebar-content">
+                            <div class="community-item">
+                                <span class="community-number">1</span>
+                                <i class="fas fa-circle community-icon"></i>
+                                <div class="community-info">
+                                    <strong>r/MobileRepair</strong>
+                                    <small>12.5k members</small>
+                                </div>
+                                <button class="btn btn-sm btn-primary">Join</button>
+                            </div>
+                            <!-- Add more communities -->
+                        </div>
+                    </div>
+
+                    <!-- Create Post Card -->
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="sidebar-card mb-3">
+                            <div class="sidebar-content p-3 text-center">
+                                <a href="/Posts/Create" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus-circle me-2"></i>Create Post
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- About Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-header">
+                            <h5><i class="fas fa-info-circle me-2"></i>About GSMSharing</h5>
+                        </div>
+                        <div class="sidebar-content">
+                            <p class="mb-3">Your premier destination for mobile repair knowledge, community discussions, and marketplace.</p>
+                            <div class="sidebar-stats">
+                                <div class="stat-item">
+                                    <strong>1.2M+</strong>
+                                    <small>Members</small>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>50K+</strong>
+                                    <small>Posts</small>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>200+</strong>
+                                    <small>Communities</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@functions {
+    private string GetTimeAgo(DateTime? date)
+    {
+        if (date == null) return "just now";
+        
+        var timeSpan = DateTime.UtcNow - date.Value;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return $"{(int)timeSpan.TotalSeconds}s ago";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+    }
+}

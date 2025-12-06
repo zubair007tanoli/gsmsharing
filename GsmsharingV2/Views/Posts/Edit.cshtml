@@ -1,0 +1,63 @@
+@model GsmsharingV2.Models.Post
+@{
+    ViewData["Title"] = "Edit Post";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1>Edit Post</h1>
+            
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="PostID" />
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="Slug" />
+                
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label">Title</label>
+                    <input asp-for="Title" class="form-control" required />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CommunityID" class="form-label">Community</label>
+                    <select asp-for="CommunityID" class="form-select" asp-items="@(new SelectList(ViewBag.Communities, "CommunityID", "Name"))">
+                        <option value="">Select a community</option>
+                    </select>
+                    <span asp-validation-for="CommunityID" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Content" class="form-label">Content</label>
+                    <textarea asp-for="Content" class="form-control" rows="10" required></textarea>
+                    <span asp-validation-for="Content" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="FeaturedImage" class="form-label">Featured Image URL</label>
+                    <input asp-for="FeaturedImage" class="form-control" type="url" />
+                    <span asp-validation-for="FeaturedImage" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PostStatus" class="form-label">Status</label>
+                    <select asp-for="PostStatus" class="form-select">
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">Update Post</button>
+                    <a href="/r/@(Model.Community?.Slug ?? "gsmsharing")/posts/@Model.Slug" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

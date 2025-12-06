@@ -1,0 +1,180 @@
+@model IEnumerable<GsmsharingV2.Models.Post>
+@{
+    ViewData["Title"] = "All Posts - GSMSharing";
+}
+
+<div class="reddit-layout">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8 col-xl-9">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="mb-2">
+                            <i class="fas fa-newspaper me-2"></i>All Posts
+                        </h1>
+                        <p class="text-muted mb-0">Browse all posts from our community</p>
+                    </div>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="/Posts/Create" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Create Post
+                        </a>
+                    }
+                </div>
+
+                @if (Model != null && Model.Any())
+                {
+                    <div class="reddit-posts">
+                        @foreach (var post in Model)
+                        {
+                            <div class="reddit-post">
+                                <div class="post-voting">
+                                    <button class="vote-btn upvote" title="Upvote">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                    <span class="vote-count">@(post.ViewCount ?? 0)</span>
+                                    <button class="vote-btn downvote" title="Downvote">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                </div>
+                                <div class="post-content">
+                                    <div class="post-header">
+                                        <span class="community-badge">
+                                            <i class="fas fa-users me-1"></i>r/@post.Community?.Name
+                                        </span>
+                                        <span class="post-meta">
+                                            Posted by <strong>u/@post.User?.UserName</strong>
+                                            <span class="time-ago">@GetTimeAgo(post.CreatedAt)</span>
+                                        </span>
+                                    </div>
+                                    <h4 class="post-title">
+                                        <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">
+                                            @post.Title
+                                        </a>
+                                    </h4>
+                                    @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                    {
+                                        <div class="post-image">
+                                            <img src="@post.FeaturedImage" alt="@post.Title" class="img-fluid">
+                                        </div>
+                                    }
+                                    <p class="post-excerpt">@(post.Content?.Length > 200 ? post.Content.Substring(0, 200) + "..." : post.Content)</p>
+                                    <div class="post-footer">
+                                        <button class="post-action">
+                                            <i class="fas fa-comment me-1"></i>@(post.Comments?.Count ?? 0) Comments
+                                        </button>
+                                        <button class="post-action">
+                                            <i class="fas fa-share me-1"></i>Share
+                                        </button>
+                                        <button class="post-action">
+                                            <i class="fas fa-bookmark me-1"></i>Save
+                                        </button>
+                                        @if (post.IsFeatured == true)
+                                        {
+                                            <span class="badge badge-featured ms-2">
+                                                <i class="fas fa-star me-1"></i>Featured
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (ViewBag.TotalCount > ViewBag.PageSize)
+                    {
+                        <div class="pagination-wrapper mt-4">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    @if (ViewBag.CurrentPage > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)">Previous</a>
+                                        </li>
+                                    }
+                                    @for (int i = 1; i <= Math.Ceiling((double)ViewBag.TotalCount / ViewBag.PageSize); i++)
+                                    {
+                                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="?page=@i">@i</a>
+                                        </li>
+                                    }
+                                    @if (ViewBag.CurrentPage < Math.Ceiling((double)ViewBag.TotalCount / ViewBag.PageSize))
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)">Next</a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+                        </div>
+                        <h3 class="mb-3">No posts found</h3>
+                        <p class="text-muted mb-4">Be the first to share your knowledge with the community!</p>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a href="/Posts/Create" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus-circle me-2"></i>Create Your First Post
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/UserAccounts/Register" class="btn btn-primary btn-lg me-2">
+                                <i class="fas fa-user-plus me-2"></i>Sign Up
+                            </a>
+                            <a href="/UserAccounts/Login" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4 col-xl-3">
+                <div class="reddit-sidebar">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="sidebar-card mb-3">
+                            <div class="sidebar-content p-3 text-center">
+                                <a href="/Posts/Create" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus-circle me-2"></i>Create Post
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetTimeAgo(DateTime? date)
+    {
+        if (date == null) return "just now";
+        
+        var timeSpan = DateTime.UtcNow - date.Value;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return $"{(int)timeSpan.TotalSeconds}s ago";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+    }
+}
