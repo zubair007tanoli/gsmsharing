@@ -42,7 +42,19 @@
                             @(status?.SeoAutomation?.IsOnline == true ? "Online" : "Offline")
                         </span>
                     </div>
-                    <p class="mb-1"><strong>Endpoint:</strong> <code>http://localhost:5001</code></p>
+                    <p class="mb-1"><strong>Endpoint:</strong> <code>@(status?.SeoAutomation?.Endpoint ?? "http://localhost:5001")</code></p>
+                    @if (status?.SeoAutomation?.PortChanged == true)
+                    {
+                        <p class="mb-1">
+                            <strong>Port:</strong> 
+                            <span class="badge bg-warning">@(status?.SeoAutomation?.ActualPort) (Preferred: @(status?.SeoAutomation?.PreferredPort))</span>
+                            <small class="text-muted">Port changed due to conflict</small>
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-1"><strong>Port:</strong> <span class="badge bg-info">@(status?.SeoAutomation?.ActualPort)</span></p>
+                    }
                     <p class="mb-1"><strong>Status:</strong> @(status?.SeoAutomation?.Message ?? "Unknown")</p>
                     @if (status?.SeoAutomation?.ResponseTimeMs != null)
                     {
@@ -65,6 +77,18 @@
                         </span>
                     </div>
                     <p class="mb-1"><strong>Endpoint:</strong> <code>@(status?.Performance?.Endpoint ?? "http://localhost:5002")</code></p>
+                    @if (status?.Performance?.PortChanged == true)
+                    {
+                        <p class="mb-1">
+                            <strong>Port:</strong> 
+                            <span class="badge bg-warning">@(status?.Performance?.ActualPort) (Preferred: @(status?.Performance?.PreferredPort))</span>
+                            <small class="text-muted">Port changed due to conflict</small>
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-1"><strong>Port:</strong> <span class="badge bg-info">@(status?.Performance?.ActualPort)</span></p>
+                    }
                     <p class="mb-1"><strong>Status:</strong> @(status?.Performance?.Message ?? "Unknown")</p>
                     @if (status?.Performance?.ResponseTimeMs != null)
                     {
@@ -87,6 +111,18 @@
                         </span>
                     </div>
                     <p class="mb-1"><strong>Endpoint:</strong> <code>@(status?.UserPreferences?.Endpoint ?? "http://localhost:5003")</code></p>
+                    @if (status?.UserPreferences?.PortChanged == true)
+                    {
+                        <p class="mb-1">
+                            <strong>Port:</strong> 
+                            <span class="badge bg-warning">@(status?.UserPreferences?.ActualPort) (Preferred: @(status?.UserPreferences?.PreferredPort))</span>
+                            <small class="text-muted">Port changed due to conflict</small>
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-1"><strong>Port:</strong> <span class="badge bg-info">@(status?.UserPreferences?.ActualPort)</span></p>
+                    }
                     <p class="mb-1"><strong>Status:</strong> @(status?.UserPreferences?.Message ?? "Unknown")</p>
                     @if (status?.UserPreferences?.ResponseTimeMs != null)
                     {
@@ -127,6 +163,37 @@
                                 @(diagnostics?.ManagerAvailable == true ? "Yes" : "No")
                             </span>
                         </p>
+                        <p><strong>Port Finder Available:</strong> 
+                            <span class="badge @(diagnostics?.PortFinderAvailable == true ? "bg-success" : "bg-danger")">
+                                @(diagnostics?.PortFinderAvailable == true ? "Yes" : "No")
+                            </span>
+                        </p>
+                        @if (diagnostics?.AllServerPorts != null && diagnostics.AllServerPorts.Count > 0)
+                        {
+                            <p><strong>Active Server Ports:</strong></p>
+                            <ul class="list-unstyled ms-3">
+                                @foreach (var port in diagnostics.AllServerPorts)
+                                {
+                                    <li><code>@port.Key</code>: <strong>@port.Value</strong></li>
+                                }
+                            </ul>
+                        }
+                        @if (!string.IsNullOrEmpty(diagnostics?.AutoStartError))
+                        {
+                            <div class="alert alert-danger mt-2">
+                                <strong>Auto-Start Error:</strong><br>
+                                <small>@diagnostics.AutoStartError</small>
+                            </div>
+                        }
+                        <p><strong>Python Installed:</strong> 
+                            <span class="badge @(diagnostics?.PythonInstalled == true ? "bg-success" : "bg-danger")">
+                                @(diagnostics?.PythonInstalled == true ? "Yes" : "No")
+                            </span>
+                        </p>
+                        @if (!string.IsNullOrEmpty(diagnostics?.PythonVersion))
+                        {
+                            <p><strong>Python Version:</strong> <code>@diagnostics.PythonVersion</code></p>
+                        }
                     </div>
                 </div>
             </div>
@@ -249,5 +316,18 @@ async function startServer(serverName) {
 setInterval(function() {
     refreshStatus();
 }, 30000);
+
+// Auto-start server if offline when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        @if (status?.SeoAutomation?.IsOnline != true && ViewBag.Diagnostics?.AutoStartEnabled == true)
+        {
+            <text>
+            console.log('SEO Automation server is offline, attempting to start...');
+            startServer('SeoAutomation');
+            </text>
+        }
+    }, 2000); // Wait 2 seconds after page load
+});
 </script>
 

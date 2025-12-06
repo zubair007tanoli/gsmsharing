@@ -596,6 +596,8 @@ builder.Services.AddHttpClient("McpServerManager", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
 });
+// Register PortFinder first (McpServerManager depends on it)
+builder.Services.AddSingleton<discussionspot9.Services.MCP.IPortFinder, discussionspot9.Services.MCP.PortFinder>();
 builder.Services.AddSingleton<discussionspot9.Services.MCP.IMcpServerManager, discussionspot9.Services.MCP.McpServerManager>();
 builder.Services.AddHostedService<discussionspot9.Services.MCP.McpServerManager>(sp => 
     (discussionspot9.Services.MCP.McpServerManager)sp.GetRequiredService<discussionspot9.Services.MCP.IMcpServerManager>());

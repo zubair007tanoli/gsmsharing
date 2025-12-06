@@ -18,6 +18,7 @@ namespace discussionspot9.Controllers
         private readonly IPresenceService _presenceService;
         private readonly IConfiguration _configuration;
         private readonly Services.MCP.IMcpServerManager? _mcpServerManager;
+        private readonly Services.MCP.IPortFinder? _portFinder;
         private readonly IWebHostEnvironment? _environment;
 
         public AdminController(
@@ -27,6 +28,7 @@ namespace discussionspot9.Controllers
             IPresenceService presenceService,
             IConfiguration configuration,
             Services.MCP.IMcpServerManager? mcpServerManager = null,
+            Services.MCP.IPortFinder? portFinder = null,
             IWebHostEnvironment? environment = null)
         {
             _context = context;
@@ -35,6 +37,7 @@ namespace discussionspot9.Controllers
             _presenceService = presenceService;
             _configuration = configuration;
             _mcpServerManager = mcpServerManager;
+            _portFinder = portFinder;
             _environment = environment;
         }
 
@@ -745,43 +748,171 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("AccessDenied", "Account");
             }
             
-            // Get endpoints from configuration
-            var seoEndpoint = _configuration["MCP:Servers:SeoAutomation:Endpoint"] ?? "http://localhost:5001";
-            var perfEndpoint = _configuration["MCP:Servers:Performance:Endpoint"] ?? "http://localhost:5002";
-            var prefsEndpoint = _configuration["MCP:Servers:UserPreferences:Endpoint"] ?? "http://localhost:5003";
+            // Get actual ports from server manager (or fallback to config)
+            var seoPreferredPort = _configuration.GetValue<int>("MCP:Servers:SeoAutomation:Port", 5001);
+            var perfPreferredPort = _configuration.GetValue<int>("MCP:Servers:Performance:Port", 5002);
+            var prefsPreferredPort = _configuration.GetValue<int>("MCP:Servers:UserPreferences:Port", 5003);
             
-            var seoStatus = await CheckMcpServerStatusAsync($"{seoEndpoint}/health");
-            var perfStatus = await CheckMcpServerStatusAsync($"{perfEndpoint}/health");
-            var prefsStatus = await CheckMcpServerStatusAsync($"{prefsEndpoint}/health");
+            // Get actual ports used (if server is running)
+            var seoActualPort = _mcpServerManager?.GetServerPort("SeoAutomation") ?? seoPreferredPort;
+            var perfActualPort = _mcpServerManager?.GetServerPort("Performance") ?? perfPreferredPort;
+            var prefsActualPort = _mcpServerManager?.GetServerPort("UserPreferences") ?? prefsPreferredPort;
+            
+            // Check port availability
+            var seoPortAvailable = _portFinder?.IsPortAvailable(seoPreferredPort) ?? false;
+            var perfPortAvailable = _portFinder?.IsPortAvailable(perfPreferredPort) ?? false;
+            var prefsPortAvailable = _portFinder?.IsPortAvailable(prefsPreferredPort) ?? false;
+            
+            // Try to check if server is running on any port (check preferred and nearby ports)
+            var seoStatus = await CheckMcpServerStatusWithFallbackAsync("SeoAutomation", seoActualPort, seoPreferredPort);
+            var perfStatus = await CheckMcpServerStatusWithFallbackAsync("Performance", perfActualPort, perfPreferredPort);
+            var prefsStatus = await CheckMcpServerStatusWithFallbackAsync("UserPreferences", prefsActualPort, prefsPreferredPort);
+            
+            var seoEndpoint = $"http://localhost:{seoStatus.ActualPort ?? seoActualPort}";
+            var perfEndpoint = $"http://localhost:{perfStatus.ActualPort ?? perfActualPort}";
+            var prefsEndpoint = $"http://localhost:{prefsStatus.ActualPort ?? prefsActualPort}";
             
             var status = new
             {
                 SeoAutomation = new { 
-                    seoStatus.IsOnline, 
-                    seoStatus.StatusCode, 
-                    seoStatus.ResponseTime, 
-                    seoStatus.ResponseTimeMs,
-                    seoStatus.Message,
-                    Endpoint = seoEndpoint
+                    IsOnline = seoStatus.Status.IsOnline, 
+                    StatusCode = seoStatus.Status.StatusCode, 
+                    ResponseTime = seoStatus.Status.ResponseTime, 
+                    ResponseTimeMs = seoStatus.Status.ResponseTimeMs,
+                    Message = seoStatus.Status.Message,
+                    Endpoint = seoEndpoint,
+                    PreferredPort = seoPreferredPort,
+                    ActualPort = seoStatus.ActualPort ?? seoActualPort,
+                    PortAvailable = seoPortAvailable,
+                    PortChanged = (seoStatus.ActualPort ?? seoActualPort) != seoPreferredPort
                 },
                 Performance = new { 
-                    perfStatus.IsOnline, 
-                    perfStatus.StatusCode, 
-                    perfStatus.ResponseTime, 
-                    perfStatus.ResponseTimeMs,
-                    perfStatus.Message,
-                    Endpoint = perfEndpoint
+                    IsOnline = perfStatus.Status.IsOnline, 
+                    StatusCode = perfStatus.Status.StatusCode, 
+                    ResponseTime = perfStatus.Status.ResponseTime, 
+                    ResponseTimeMs = perfStatus.Status.ResponseTimeMs,
+                    Message = perfStatus.Status.Message,
+                    Endpoint = perfEndpoint,
+                    PreferredPort = perfPreferredPort,
+                    ActualPort = perfStatus.ActualPort ?? perfActualPort,
+                    PortAvailable = perfPortAvailable,
+                    PortChanged = (perfStatus.ActualPort ?? perfActualPort) != perfPreferredPort
                 },
                 UserPreferences = new { 
-                    prefsStatus.IsOnline, 
-                    prefsStatus.StatusCode, 
-                    prefsStatus.ResponseTime, 
-                    prefsStatus.ResponseTimeMs,
-                    prefsStatus.Message,
-                    Endpoint = prefsEndpoint
+                    IsOnline = prefsStatus.Status.IsOnline, 
+                    StatusCode = prefsStatus.Status.StatusCode, 
+                    ResponseTime = prefsStatus.Status.ResponseTime, 
+                    ResponseTimeMs = prefsStatus.Status.ResponseTimeMs,
+                    Message = prefsStatus.Status.Message,
+                    Endpoint = prefsEndpoint,
+                    PreferredPort = prefsPreferredPort,
+                    ActualPort = prefsStatus.ActualPort ?? prefsActualPort,
+                    PortAvailable = prefsPortAvailable,
+                    PortChanged = (prefsStatus.ActualPort ?? prefsActualPort) != prefsPreferredPort
                 },
                 LastChecked = DateTime.UtcNow
             };
+            
+            // If server is offline and auto-start is enabled, try to start it
+            string? autoStartError = null;
+            if (!seoStatus.Status.IsOnline && _mcpServerManager != null && 
+                _configuration.GetValue<bool>("MCP:AutoStart:Enabled", true) &&
+                _configuration.GetValue<bool>("MCP:Servers:SeoAutomation:Enabled", true))
+            {
+                _logger.LogInformation("SEO Automation server is offline, attempting to start...");
+                try
+                {
+                    var servers = new Dictionary<string, (string[] Scripts, int Port)>
+                    {
+                        { "SeoAutomation", (new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" }, seoPreferredPort) }
+                    };
+                    
+                    if (servers.ContainsKey("SeoAutomation"))
+                    {
+                        var (scripts, port) = servers["SeoAutomation"];
+                        string? scriptPath = null;
+                        var searchedPaths = new List<string>();
+                        
+                        foreach (var script in scripts)
+                        {
+                            var possiblePaths = new List<string>
+                            {
+                                Path.Combine(_environment?.ContentRootPath ?? "", "mcp-servers", script),
+                                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
+                                Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script)
+                            };
+                            
+                            // Also try parent directories
+                            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                            if (baseDir.Contains("bin"))
+                            {
+                                var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.FullName;
+                                if (!string.IsNullOrEmpty(projectRoot))
+                                {
+                                    possiblePaths.Add(Path.Combine(projectRoot, "mcp-servers", script));
+                                }
+                            }
+                            
+                            if (_environment != null)
+                            {
+                                var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
+                                if (!string.IsNullOrEmpty(contentRootParent))
+                                {
+                                    possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", script));
+                                    possiblePaths.Add(Path.Combine(contentRootParent, "mcp-servers", script));
+                                }
+                            }
+                            
+                            foreach (var path in possiblePaths)
+                            {
+                                searchedPaths.Add(path);
+                                if (System.IO.File.Exists(path))
+                                {
+                                    scriptPath = path;
+                                    _logger.LogInformation("Found server script at: {Path}", path);
+                                    break;
+                                }
+                            }
+                            if (!string.IsNullOrEmpty(scriptPath)) break;
+                        }
+                        
+                        if (string.IsNullOrEmpty(scriptPath))
+                        {
+                            autoStartError = $"Server script not found. Searched: {string.Join(", ", searchedPaths.Take(5))}...";
+                            _logger.LogError(autoStartError);
+                        }
+                        else
+                        {
+                            // Start in background but don't wait - let it complete asynchronously
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    var result = await _mcpServerManager.StartServerAsync("SeoAutomation", scriptPath, port);
+                                    if (result)
+                                    {
+                                        _logger.LogInformation("✅ SEO Automation server started successfully");
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("⚠️ SEO Automation server failed to start");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "❌ Error starting SEO Automation server: {Error}", ex.Message);
+                                }
+                            });
+                            _logger.LogInformation("SEO Automation server start initiated in background");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    autoStartError = $"Failed to auto-start: {ex.Message}";
+                    _logger.LogError(ex, "Failed to auto-start SEO Automation server");
+                }
+            }
             
             // Get diagnostic information
             var diagnostics = new
@@ -789,7 +920,12 @@ namespace discussionspot9.Controllers
                 AutoStartEnabled = _configuration.GetValue<bool>("MCP:AutoStart:Enabled", true),
                 PythonPath = _configuration["Python:ExecutablePath"] ?? "python",
                 SeoServerEnabled = _configuration.GetValue<bool>("MCP:Servers:SeoAutomation:Enabled", true),
-                ManagerAvailable = _mcpServerManager != null
+                ManagerAvailable = _mcpServerManager != null,
+                PortFinderAvailable = _portFinder != null,
+                AllServerPorts = _mcpServerManager?.GetAllServerPorts() ?? new Dictionary<string, int>(),
+                AutoStartError = autoStartError,
+                PythonInstalled = CheckPythonInstalled(),
+                PythonVersion = GetPythonVersion()
             };
 
             ViewBag.McpStatus = status;
@@ -819,9 +955,9 @@ namespace discussionspot9.Controllers
             string serverName = string.Empty;
             try
             {
-                var servers = new Dictionary<string, (string Script, int Port)>
+                var servers = new Dictionary<string, (string[] Scripts, int Port)>
                 {
-                    { "SeoAutomation", ("seo-automation/main.py", 5001) }
+                    { "SeoAutomation", (new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" }, 5001) }
                 };
 
                 serverName = request?.ServerName ?? string.Empty;
@@ -835,55 +971,63 @@ namespace discussionspot9.Controllers
                     return Json(new { success = false, message = $"Unknown server: {serverName}" });
                 }
 
-                var (script, port) = servers[serverName];
+                var (scripts, port) = servers[serverName];
                 
-                // Try multiple possible paths (including Ubuntu deployment paths)
-                var possiblePaths = new List<string>
-                {
-                    // Standard paths
-                    Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
-                    // Ubuntu deployment paths
-                    "/var/www/discussionspot/mcp-servers/" + script,
-                    "/var/www/discussionspot9/mcp-servers/" + script
-                };
-
-                // Try parent directories if we're in bin/Debug or bin/Release
-                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                if (baseDir.Contains("bin"))
-                {
-                    var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.FullName;
-                    if (!string.IsNullOrEmpty(projectRoot))
-                    {
-                        possiblePaths.Add(Path.Combine(projectRoot, "mcp-servers", script));
-                    }
-                }
-
-                // Try ContentRootPath
-                if (_environment != null)
-                {
-                    possiblePaths.Add(Path.Combine(_environment.ContentRootPath, "mcp-servers", script));
-                    var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
-                    if (!string.IsNullOrEmpty(contentRootParent))
-                    {
-                        possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", script));
-                        possiblePaths.Add(Path.Combine(contentRootParent, "mcp-servers", script));
-                    }
-                }
-
+                // Try each script in order (test_server.py first, then main_simple.py, then main.py)
                 string? scriptPath = null;
-                foreach (var path in possiblePaths)
+                foreach (var script in scripts)
                 {
-                    if (System.IO.File.Exists(path))
+                    // Try multiple possible paths (including Ubuntu deployment paths)
+                    var possiblePaths = new List<string>
                     {
-                        scriptPath = path;
-                        break;
+                        // Standard paths
+                        Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", script),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mcp-servers", script),
+                        // Ubuntu deployment paths
+                        "/var/www/discussionspot/mcp-servers/" + script,
+                        "/var/www/discussionspot9/mcp-servers/" + script
+                    };
+
+                    // Try parent directories if we're in bin/Debug or bin/Release
+                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    if (baseDir.Contains("bin"))
+                    {
+                        var projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.FullName;
+                        if (!string.IsNullOrEmpty(projectRoot))
+                        {
+                            possiblePaths.Add(Path.Combine(projectRoot, "mcp-servers", script));
+                        }
                     }
+
+                    // Try ContentRootPath
+                    if (_environment != null)
+                    {
+                        possiblePaths.Add(Path.Combine(_environment.ContentRootPath, "mcp-servers", script));
+                        var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
+                        if (!string.IsNullOrEmpty(contentRootParent))
+                        {
+                            possiblePaths.Add(Path.Combine(contentRootParent, "discussionspot9", "mcp-servers", script));
+                            possiblePaths.Add(Path.Combine(contentRootParent, "mcp-servers", script));
+                        }
+                    }
+
+                    foreach (var path in possiblePaths)
+                    {
+                        if (System.IO.File.Exists(path))
+                        {
+                            scriptPath = path;
+                            _logger.LogInformation("Found server script at: {Path}", path);
+                            break;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(scriptPath))
+                        break;
                 }
 
                 if (string.IsNullOrEmpty(scriptPath))
                 {
-                    return Json(new { success = false, message = $"Server script not found. Searched: {string.Join(", ", possiblePaths)}" });
+                    return Json(new { success = false, message = $"Server script not found. Tried: {string.Join(", ", scripts)}" });
                 }
 
                 var result = await _mcpServerManager.StartServerAsync(serverName, scriptPath, port);
@@ -914,17 +1058,43 @@ namespace discussionspot9.Controllers
                 return Json(new { success = false, message = "Unauthorized" });
             }
 
+            // Check for test_server.py (preferred) and other scripts
+            var scripts = new[] { "test_server.py", "main_simple.py", "main.py" };
+            var foundScripts = new List<object>();
+            var basePaths = new[]
+            {
+                Directory.GetCurrentDirectory(),
+                AppDomain.CurrentDomain.BaseDirectory,
+                _environment?.ContentRootPath ?? ""
+            };
+
+            foreach (var script in scripts)
+            {
+                foreach (var basePath in basePaths)
+                {
+                    var scriptPath = Path.Combine(basePath, "mcp-servers", "seo-automation", script);
+                    if (System.IO.File.Exists(scriptPath))
+                    {
+                        foundScripts.Add(new { Script = script, Path = scriptPath, Found = true });
+                        break;
+                    }
+                }
+            }
+
             var diagnostics = new
             {
                 PythonInstalled = CheckPythonInstalled(),
                 PythonVersion = GetPythonVersion(),
-                ServerScriptExists = System.IO.File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", "seo-automation", "main.py")),
-                ServerScriptPath = Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", "seo-automation", "main.py"),
+                PythonPath = _configuration["Python:ExecutablePath"] ?? "python",
+                ServerScripts = foundScripts,
+                TestServerExists = System.IO.File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "mcp-servers", "seo-automation", "test_server.py")),
                 ContentRootPath = _environment?.ContentRootPath,
                 BaseDirectory = AppDomain.CurrentDomain.BaseDirectory,
                 CurrentDirectory = Directory.GetCurrentDirectory(),
                 AutoStartEnabled = _configuration.GetValue<bool>("MCP:AutoStart:Enabled", true),
                 SeoServerEnabled = _configuration.GetValue<bool>("MCP:Servers:SeoAutomation:Enabled", true),
+                ManagerAvailable = _mcpServerManager != null,
+                AllServerPorts = _mcpServerManager?.GetAllServerPorts() ?? new Dictionary<string, int>(),
                 GoogleAuthConfigured = !string.IsNullOrEmpty(_configuration["Authentication:Google:ClientId"]) || 
                                       System.IO.File.Exists(Path.Combine(_environment?.ContentRootPath ?? "", "Secrets", "AuthKeys.json"))
             };
@@ -985,13 +1155,49 @@ namespace discussionspot9.Controllers
             }
         }
         
+        private async Task<(McpServerStatus Status, int? ActualPort)> CheckMcpServerStatusWithFallbackAsync(string serverName, int currentPort, int preferredPort)
+        {
+            // First try the current/actual port
+            var status = await CheckMcpServerStatusAsync($"http://localhost:{currentPort}/health");
+            if (status.IsOnline)
+            {
+                return (status, currentPort);
+            }
+            
+            // If not online, try preferred port (in case it's different)
+            if (currentPort != preferredPort)
+            {
+                var preferredStatus = await CheckMcpServerStatusAsync($"http://localhost:{preferredPort}/health");
+                if (preferredStatus.IsOnline)
+                {
+                    return (preferredStatus, preferredPort);
+                }
+            }
+            
+            // Try nearby ports (in case port was changed due to conflict)
+            for (int i = 1; i <= 5; i++)
+            {
+                int testPort = preferredPort + i;
+                if (testPort > 65535) break;
+                
+                var testStatus = await CheckMcpServerStatusAsync($"http://localhost:{testPort}/health");
+                if (testStatus.IsOnline)
+                {
+                    return (testStatus, testPort);
+                }
+            }
+            
+            // Return the original status (offline)
+            return (status, currentPort);
+        }
+        
         private async Task<McpServerStatus> CheckMcpServerStatusAsync(string endpoint)
         {
             var startTime = DateTime.UtcNow;
             try
             {
                 using var client = new HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(5);
+                client.Timeout = TimeSpan.FromSeconds(3); // Reduced timeout for faster checks
                 var response = await client.GetAsync(endpoint);
                 var responseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
                 

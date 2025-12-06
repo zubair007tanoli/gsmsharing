@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -12,10 +13,12 @@ namespace discussionspot9.Services.MCP
     /// </summary>
     public interface IMcpServerManager
     {
-        Task<bool> StartServerAsync(string serverName, string scriptPath, int port, int maxRetries = 3);
+        Task<bool> StartServerAsync(string serverName, string scriptPath, int preferredPort, int maxRetries = 3);
         Task<bool> StopServerAsync(string serverName);
         Task<bool> IsServerRunningAsync(int port);
-        Task RestartServerAsync(string serverName, string scriptPath, int port);
+        Task RestartServerAsync(string serverName, string scriptPath, int preferredPort);
+        int? GetServerPort(string serverName);
+        Dictionary<string, int> GetAllServerPorts();
     }
 
     public class McpServerManager : IMcpServerManager, IHostedService
@@ -24,7 +27,9 @@ namespace discussionspot9.Services.MCP
         private readonly ILogger<McpServerManager> _logger;
         private readonly HttpClient _httpClient;
         private readonly IWebHostEnvironment _environment;
+        private readonly IPortFinder _portFinder;
         private readonly Dictionary<string, Process> _runningServers = new();
+        private readonly Dictionary<string, int> _serverPorts = new(); // Store actual ports used
         private readonly Dictionary<string, int> _retryCounts = new();
         private Timer? _healthCheckTimer;
         private bool _isEnabled;
@@ -33,11 +38,13 @@ namespace discussionspot9.Services.MCP
             IConfiguration configuration,
             ILogger<McpServerManager> logger,
             IHttpClientFactory httpClientFactory,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IPortFinder portFinder)
         {
             _configuration = configuration;
             _logger = logger;
             _environment = environment;
+            _portFinder = portFinder;
             _httpClient = httpClientFactory.CreateClient("McpServerManager");
             _httpClient.Timeout = TimeSpan.FromSeconds(5);
             _isEnabled = _configuration.GetValue<bool>("MCP:AutoStart:Enabled", true);
@@ -93,10 +100,14 @@ namespace discussionspot9.Services.MCP
             var servers = new[]
             {
                 // Try test_server.py first (no dependencies), then main_simple.py, then main.py
-                new { Name = "SeoAutomation", Scripts = new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" }, Port = 5001 },
+                new { 
+                    Name = "SeoAutomation", 
+                    Scripts = new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" }, 
+                    PreferredPort = _configuration.GetValue<int>("MCP:Servers:SeoAutomation:Port", 5001)
+                },
                 // Add more servers here when implemented
-                // new { Name = "Performance", Script = "performance/main.py", Port = 5002 },
-                // new { Name = "UserPreferences", Script = "user-preferences/main.py", Port = 5003 }
+                // new { Name = "Performance", Script = "performance/main.py", PreferredPort = 5002 },
+                // new { Name = "UserPreferences", Script = "user-preferences/main.py", PreferredPort = 5003 }
             };
 
             foreach (var server in servers)
@@ -163,23 +174,50 @@ namespace discussionspot9.Services.MCP
                     continue;
                 }
 
-                _logger.LogInformation("Auto-starting {ServerName} on port {Port} using {Script}...", 
-                    server.Name, server.Port, Path.GetFileName(scriptPath));
-                await StartServerAsync(server.Name, scriptPath, server.Port);
+                _logger.LogInformation("Auto-starting {ServerName} on preferred port {Port} using {Script}...", 
+                    server.Name, server.PreferredPort, Path.GetFileName(scriptPath));
+                await StartServerAsync(server.Name, scriptPath, server.PreferredPort);
                 
                 // Wait a bit before starting next server
                 await Task.Delay(2000);
             }
         }
 
-        public async Task<bool> StartServerAsync(string serverName, string scriptPath, int port, int maxRetries = 3)
+        public async Task<bool> StartServerAsync(string serverName, string scriptPath, int preferredPort, int maxRetries = 3)
         {
-            // Check if already running
-            if (await IsServerRunningAsync(port))
+            // Check if server is already running (check stored port)
+            if (_serverPorts.ContainsKey(serverName))
             {
-                _logger.LogInformation("Server {ServerName} is already running on port {Port}", serverName, port);
-                return true;
+                int existingPort = _serverPorts[serverName];
+                if (await IsServerRunningAsync(existingPort))
+                {
+                    _logger.LogInformation("Server {ServerName} is already running on port {Port}", serverName, existingPort);
+                    return true;
+                }
+                else
+                {
+                    // Port stored but server not running, clear it
+                    _serverPorts.Remove(serverName);
+                    _runningServers.Remove(serverName);
+                }
             }
+
+            // Find available port (preferred port or alternative)
+            int port;
+            try
+            {
+                port = _portFinder.FindAvailablePort(preferredPort, maxAttempts: 10);
+                _logger.LogInformation("Using port {Port} for {ServerName} (preferred was {PreferredPort})", 
+                    port, serverName, preferredPort);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to find available port for {ServerName}", serverName);
+                return false;
+            }
+
+            // Store the port we're using
+            _serverPorts[serverName] = port;
 
             // Check retry count
             if (_retryCounts.ContainsKey(serverName) && _retryCounts[serverName] >= maxRetries)
@@ -247,7 +285,7 @@ namespace discussionspot9.Services.MCP
                 var scriptDir = Path.GetDirectoryName(scriptPath);
                 var scriptFile = Path.GetFileName(scriptPath);
 
-                _logger.LogInformation("Starting server from: {ScriptDir}, File: {ScriptFile}", scriptDir, scriptFile);
+                _logger.LogInformation("Starting server from: {ScriptDir}, File: {ScriptFile}, Port: {Port}", scriptDir, scriptFile, port);
 
                 // Check if requirements are installed
                 var requirementsPath = Path.Combine(scriptDir ?? "", "requirements.txt");
@@ -256,16 +294,27 @@ namespace discussionspot9.Services.MCP
                     _logger.LogInformation("Requirements file found, checking dependencies...");
                 }
 
+                // For test_server.py, pass port as argument if it's not the default
+                var scriptArgs = $"\"{scriptPath}\"";
+                if (scriptPath.EndsWith("test_server.py") && port != 5001)
+                {
+                    scriptArgs = $"\"{scriptPath}\" {port}";
+                    _logger.LogInformation("Passing port {Port} as argument to test_server.py", port);
+                }
+
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = pythonExe,
-                    Arguments = $"\"{scriptFile}\"",
+                    Arguments = scriptArgs,
                     WorkingDirectory = scriptDir,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true
                 };
+                
+                // Set environment variable for unbuffered output (helps with logging)
+                startInfo.Environment["PYTHONUNBUFFERED"] = "1";
 
                 var process = new Process { StartInfo = startInfo };
                 
@@ -330,12 +379,14 @@ namespace discussionspot9.Services.MCP
                     }
                 }
 
-                // Final check
+                // Final check - wait a bit longer for server to fully start
+                await Task.Delay(1000); // Give server extra time to initialize
                 isRunning = await IsServerRunningAsync(port);
 
                 if (isRunning)
                 {
                     _runningServers[serverName] = process;
+                    _serverPorts[serverName] = port; // Store the port
                     _retryCounts[serverName] = 0; // Reset retry count on success
                     _logger.LogInformation("✅ {ServerName} started successfully on port {Port}", serverName, port);
                     return true;
@@ -344,22 +395,77 @@ namespace discussionspot9.Services.MCP
                 {
                     var allErrors = string.Join("\n", errorOutput);
                     var allOutput = string.Join("\n", standardOutput);
-                    process.Kill();
-                    process.Dispose();
-                    throw new Exception($"Server started but health check failed after {waited}ms. Errors: {allErrors}. Output: {allOutput}");
+                    
+                    // Don't kill process immediately - it might still be starting
+                    // Wait a bit more and check again
+                    await Task.Delay(2000);
+                    isRunning = await IsServerRunningAsync(port);
+                    
+                    if (isRunning)
+                    {
+                        _runningServers[serverName] = process;
+                        _serverPorts[serverName] = port;
+                        _retryCounts[serverName] = 0;
+                        _logger.LogInformation("✅ {ServerName} started successfully on port {Port} (after extended wait)", serverName, port);
+                        return true;
+                    }
+                    
+                    // Check one more time after a longer delay
+                    await Task.Delay(3000);
+                    isRunning = await IsServerRunningAsync(port);
+                    
+                    if (isRunning)
+                    {
+                        _runningServers[serverName] = process;
+                        _serverPorts[serverName] = port;
+                        _retryCounts[serverName] = 0;
+                        _logger.LogInformation("✅ {ServerName} started successfully on port {Port} (after final wait)", serverName, port);
+                        return true;
+                    }
+                    
+                    // Process is still running but health check fails - might be a different issue
+                    _logger.LogWarning("Server process is running but health check failed. Process may be starting slowly or there's a configuration issue.");
+                    _logger.LogWarning("Errors: {Errors}, Output: {Output}", allErrors, allOutput);
+                    
+                    // Don't kill the process - it might still be starting
+                    // Store it and let health check monitor it
+                    _runningServers[serverName] = process;
+                    _serverPorts[serverName] = port;
+                    
+                    // Return false but keep process running - health check will retry
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to start {ServerName}, will retry", serverName);
+                _logger.LogError(ex, "Failed to start {ServerName}: {Error}", serverName, ex.Message);
+                
+                // Clear port if we stored it
+                if (_serverPorts.ContainsKey(serverName))
+                {
+                    _serverPorts.Remove(serverName);
+                }
                 
                 _retryCounts[serverName] = _retryCounts.GetValueOrDefault(serverName, 0) + 1;
                 
-                // Retry after delay
-                var retryDelay = _configuration.GetValue<int>("MCP:AutoStart:RetryDelaySeconds", 10);
-                await Task.Delay(retryDelay * 1000);
-                
-                return await StartServerAsync(serverName, scriptPath, port, maxRetries);
+                // Only retry if we haven't exceeded max retries
+                if (_retryCounts[serverName] < maxRetries)
+                {
+                    _logger.LogInformation("Retrying {ServerName} in {Delay} seconds (attempt {Attempt}/{MaxRetries})", 
+                        serverName, _configuration.GetValue<int>("MCP:AutoStart:RetryDelaySeconds", 10), 
+                        _retryCounts[serverName], maxRetries);
+                    
+                    // Retry after delay
+                    var retryDelay = _configuration.GetValue<int>("MCP:AutoStart:RetryDelaySeconds", 10);
+                    await Task.Delay(retryDelay * 1000);
+                    
+                    return await StartServerAsync(serverName, scriptPath, preferredPort, maxRetries);
+                }
+                else
+                {
+                    _logger.LogError("Server {ServerName} has exceeded max retries ({MaxRetries}), giving up", serverName, maxRetries);
+                    return false;
+                }
             }
         }
 
@@ -380,6 +486,7 @@ namespace discussionspot9.Services.MCP
                 }
                 process.Dispose();
                 _runningServers.Remove(serverName);
+                _serverPorts.Remove(serverName); // Clear port mapping
                 _logger.LogInformation("Stopped {ServerName}", serverName);
                 return true;
             }
@@ -403,19 +510,33 @@ namespace discussionspot9.Services.MCP
             }
         }
 
-        public async Task RestartServerAsync(string serverName, string scriptPath, int port)
+        public async Task RestartServerAsync(string serverName, string scriptPath, int preferredPort)
         {
             _logger.LogInformation("Restarting {ServerName}...", serverName);
             await StopServerAsync(serverName);
             await Task.Delay(2000);
-            await StartServerAsync(serverName, scriptPath, port);
+            await StartServerAsync(serverName, scriptPath, preferredPort);
+        }
+
+        public int? GetServerPort(string serverName)
+        {
+            return _serverPorts.ContainsKey(serverName) ? _serverPorts[serverName] : null;
+        }
+
+        public Dictionary<string, int> GetAllServerPorts()
+        {
+            return new Dictionary<string, int>(_serverPorts);
         }
 
         private async Task CheckAndRestartServersAsync()
         {
             var servers = new[]
             {
-                new { Name = "SeoAutomation", Port = 5001, Scripts = new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" } }
+                new { 
+                    Name = "SeoAutomation", 
+                    PreferredPort = _configuration.GetValue<int>("MCP:Servers:SeoAutomation:Port", 5001), 
+                    Scripts = new[] { "seo-automation/test_server.py", "seo-automation/main_simple.py", "seo-automation/main.py" } 
+                }
             };
 
             foreach (var server in servers)
@@ -423,7 +544,11 @@ namespace discussionspot9.Services.MCP
                 var enabled = _configuration.GetValue<bool>($"MCP:Servers:{server.Name}:Enabled", true);
                 if (!enabled) continue;
 
-                var isRunning = await IsServerRunningAsync(server.Port);
+                // Check if server is running (use stored port if available, otherwise preferred port)
+                int portToCheck = _serverPorts.ContainsKey(server.Name) 
+                    ? _serverPorts[server.Name] 
+                    : server.PreferredPort;
+                var isRunning = await IsServerRunningAsync(portToCheck);
                 
                 if (!isRunning && _runningServers.ContainsKey(server.Name))
                 {
@@ -454,7 +579,7 @@ namespace discussionspot9.Services.MCP
 
                     if (!string.IsNullOrEmpty(scriptPath) && File.Exists(scriptPath))
                     {
-                        await RestartServerAsync(server.Name, scriptPath, server.Port);
+                        await RestartServerAsync(server.Name, scriptPath, server.PreferredPort);
                     }
                 }
                 else if (!isRunning && !_runningServers.ContainsKey(server.Name))
@@ -486,7 +611,7 @@ namespace discussionspot9.Services.MCP
                     if (!string.IsNullOrEmpty(scriptPath) && File.Exists(scriptPath))
                     {
                         _logger.LogInformation("Server {ServerName} is not running, attempting to start...", server.Name);
-                        await StartServerAsync(server.Name, scriptPath, server.Port);
+                        await StartServerAsync(server.Name, scriptPath, server.PreferredPort);
                     }
                     else
                     {

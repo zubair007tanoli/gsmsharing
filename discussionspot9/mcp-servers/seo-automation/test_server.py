@@ -18,7 +18,7 @@ class MCPHandler(BaseHTTPRequestHandler):
             
             response = {
                 "status": "healthy",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
                 "server": "SEO Automation (Test Mode)",
                 "ai_available": False,
                 "model": "none (test server)"
@@ -73,22 +73,31 @@ class MCPHandler(BaseHTTPRequestHandler):
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {format % args}")
 
 if __name__ == '__main__':
+    import sys
     PORT = 5001
+    
+    # Allow port to be overridden via command line argument
+    if len(sys.argv) > 1:
+        try:
+            PORT = int(sys.argv[1])
+        except ValueError:
+            print(f"Invalid port argument: {sys.argv[1]}, using default 5001")
+    
     server = HTTPServer(('0.0.0.0', PORT), MCPHandler)
     
-    print("=" * 70)
-    print("🚀 MCP SEO Automation Test Server")
-    print("=" * 70)
-    print(f"✅ Server running on http://localhost:{PORT}")
-    print(f"✅ Health check: http://localhost:{PORT}/health")
-    print("✅ No dependencies required - uses Python standard library only!")
-    print("=" * 70)
-    print("Press Ctrl+C to stop")
-    print()
+    print("=" * 70, flush=True)
+    print("🚀 MCP SEO Automation Test Server", flush=True)
+    print("=" * 70, flush=True)
+    print(f"✅ Server running on http://localhost:{PORT}", flush=True)
+    print(f"✅ Health check: http://localhost:{PORT}/health", flush=True)
+    print("✅ No dependencies required - uses Python standard library only!", flush=True)
+    print("=" * 70, flush=True)
+    print("Press Ctrl+C to stop", flush=True)
+    print(flush=True)
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n\n🛑 Server stopped")
+        print("\n\n🛑 Server stopped", flush=True)
         server.shutdown()
 
