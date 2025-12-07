@@ -1,0 +1,8 @@
+{
+  "Python": {
+    "ExecutablePath": "",
+    "ScriptTimeout": 30
+  },
+  "_Note": "For Ubuntu/Linux deployment, leave ExecutablePath empty to auto-detect python3, or set to 'python3' or '/usr/bin/python3'. You can also use environment variable PYTHON_EXECUTABLE."
+}
+

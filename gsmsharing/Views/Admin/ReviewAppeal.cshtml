@@ -1,0 +1,130 @@
+@model gsmsharing.Models.BanAppeal
+@{
+    ViewData["Title"] = "Review Appeal";
+    ViewData["BreadcrumbSection"] = "User Management";
+    ViewData["BreadcrumbPage"] = "Review Appeal";
+    Layout = "_AdminLayout";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Review Appeal</h1>
+            <div>
+                <a href="/Admin/BanAppeals" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back to Appeals
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Appeal Details</h5>
+            </div>
+            <div class="admin-card-body">
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">User Information</h6>
+                    <p class="mb-1"><strong>Username:</strong> @Model.User?.UserName</p>
+                    <p class="mb-1"><strong>Email:</strong> @Model.User?.Email</p>
+                    <p class="mb-0"><strong>Banned At:</strong> @(Model.User?.BannedAt?.ToString("yyyy-MM-dd HH:mm") ?? "N/A")</p>
+                    @if (!string.IsNullOrEmpty(Model.User?.BanReason))
+                    {
+                        <p class="mb-0"><strong>Ban Reason:</strong> @Model.User.BanReason</p>
+                    }
+                </div>
+
+                <hr />
+
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Appeal Message</h6>
+                    <div class="p-3 bg-light rounded">
+                        @Model.AppealMessage
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Appeal Information</h6>
+                    <p class="mb-1"><strong>Submitted At:</strong> @Model.SubmittedAt.ToString("yyyy-MM-dd HH:mm")</p>
+                    <p class="mb-1">
+                        <strong>Status:</strong>
+                        @if (Model.Status == gsmsharing.Models.AppealStatus.Pending)
+                        {
+                            <span class="badge bg-warning">Pending</span>
+                        }
+                        else if (Model.Status == gsmsharing.Models.AppealStatus.Approved)
+                        {
+                            <span class="badge bg-success">Approved</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Rejected</span>
+                        }
+                    </p>
+                    @if (Model.ReviewedBy != null)
+                    {
+                        <p class="mb-1"><strong>Reviewed By:</strong> @Model.ReviewedBy.UserName</p>
+                        <p class="mb-1"><strong>Reviewed At:</strong> @Model.ReviewedAt?.ToString("yyyy-MM-dd HH:mm")</p>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.AdminResponse))
+                    {
+                        <p class="mb-0"><strong>Admin Response:</strong> @Model.AdminResponse</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        @if (Model.Status == gsmsharing.Models.AppealStatus.Pending)
+        {
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">Actions</h5>
+                </div>
+                <div class="admin-card-body">
+                    <form method="post" action="/Admin/ApproveAppeal" class="mb-3">
+                        <input type="hidden" name="id" value="@Model.BanAppealId" />
+                        <div class="mb-3">
+                            <label for="approveResponse" class="form-label">Admin Response (Optional)</label>
+                            <textarea class="form-control" id="approveResponse" name="adminResponse" rows="3" placeholder="Optional message to the user"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check me-2"></i> Approve Appeal
+                        </button>
+                    </form>
+
+                    <form method="post" action="/Admin/RejectAppeal">
+                        <input type="hidden" name="id" value="@Model.BanAppealId" />
+                        <div class="mb-3">
+                            <label for="rejectResponse" class="form-label">Admin Response <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="rejectResponse" name="adminResponse" rows="3" placeholder="Reason for rejection" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-times me-2"></i> Reject Appeal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">Appeal Status</h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This appeal has already been reviewed.
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+

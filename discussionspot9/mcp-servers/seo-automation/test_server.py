@@ -6,7 +6,7 @@ Uses only Python standard library
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 class MCPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -18,7 +18,7 @@ class MCPHandler(BaseHTTPRequestHandler):
             
             response = {
                 "status": "healthy",
-                "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "server": "SEO Automation (Test Mode)",
                 "ai_available": False,
                 "model": "none (test server)"

@@ -178,19 +178,31 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("AccessDenied", "Account");
             }
             
-            var moderators = await _context.SiteRoles
-                .Where(r => r.RoleName == "Moderator" && r.IsActive)
-                .Join(_context.UserProfiles,
-                    r => r.UserId,
-                    u => u.UserId,
-                    (r, u) => new
-                    {
-                        UserProfile = u,
-                        SiteRole = r
-                    })
-                .ToListAsync();
+            try
+            {
+                var moderators = await _context.SiteRoles
+                    .Where(r => r.RoleName == "Moderator" && r.IsActive)
+                    .Join(_context.UserProfiles,
+                        r => r.UserId,
+                        u => u.UserId,
+                        (r, u) => new
+                        {
+                            UserProfile = u,
+                            SiteRole = r
+                        })
+                    .OrderByDescending(m => m.SiteRole.AssignedAt)
+                    .ToListAsync();
 
-            return View(moderators);
+                // Convert anonymous type to dynamic list
+                var result = moderators.Select(x => (dynamic)x).ToList();
+                return View(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading moderators");
+                TempData["ErrorMessage"] = $"Error loading moderators: {ex.Message}";
+                return View(new List<dynamic>());
+            }
         }
 
         // Banned Users Management
@@ -203,20 +215,32 @@ namespace discussionspot9.Controllers
                 return RedirectToAction("AccessDenied", "Account");
             }
             
-            var bannedUsers = await _context.UserBans
-                .Where(b => b.IsActive)
-                .Join(_context.UserProfiles,
-                    b => b.UserId,
-                    u => u.UserId,
-                    (b, u) => new
-                    {
-                        UserProfile = u,
-                        Ban = b
-                    })
-                .OrderByDescending(x => x.Ban.BannedAt)
-                .ToListAsync();
+            try
+            {
+                // Try to query UserBans - if table doesn't exist, it will throw an exception
+                var bannedUsers = await _context.UserBans
+                    .Where(b => b.IsActive)
+                    .Join(_context.UserProfiles,
+                        b => b.UserId,
+                        u => u.UserId,
+                        (b, u) => new
+                        {
+                            UserProfile = u,
+                            Ban = b
+                        })
+                    .OrderByDescending(x => x.Ban.BannedAt)
+                    .ToListAsync();
 
-            return View(bannedUsers);
+                // Convert anonymous type to dynamic list
+                var result = bannedUsers.Select(x => (dynamic)x).ToList();
+                return View(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading banned users");
+                TempData["ErrorMessage"] = $"Error loading banned users: {ex.Message}";
+                return View(new List<dynamic>());
+            }
         }
 
         // Analytics Overview
@@ -551,23 +575,53 @@ namespace discussionspot9.Controllers
             {
                 return Json(new { success = false, message = "Ban reason is required" });
             }
-            
-            DateTime? expiresAt = null;
-            if (!isPermanent && banDurationDays.HasValue && banDurationDays.Value > 0)
+
+            try
             {
-                expiresAt = DateTime.UtcNow.AddDays(banDurationDays.Value);
-            }
-            
-            var result = await _adminService.BanUserAsync(userId, currentUserId, reason, expiresAt, isPermanent);
-            
-            if (result)
-            {
+                DateTime? expiresAt = null;
+                if (!isPermanent && banDurationDays.HasValue && banDurationDays.Value > 0)
+                {
+                    expiresAt = DateTime.UtcNow.AddDays(banDurationDays.Value);
+                }
+
+                // First, update UserProfile directly (this works even if UserBans table doesn't exist)
+                var userProfile = await _context.UserProfiles.FindAsync(userId);
+                if (userProfile == null)
+                {
+                    return Json(new { success = false, message = "User not found" });
+                }
+
+                // Update UserProfile ban status
+                userProfile.IsBanned = true;
+                userProfile.BanExpiresAt = expiresAt;
+                userProfile.BanReason = reason;
+                
+                // Try to use AdminService to create ban record (if table exists)
+                try
+                {
+                    var result = await _adminService.BanUserAsync(userId, currentUserId, reason, expiresAt, isPermanent);
+                    if (!result)
+                    {
+                        _logger.LogWarning("AdminService.BanUserAsync returned false, but UserProfile was updated");
+                    }
+                }
+                catch (Exception banEx)
+                {
+                    _logger.LogWarning(banEx, "Could not create UserBans record (table may not exist), but UserProfile was updated");
+                    // Continue - we've already updated UserProfile which is the main thing
+                }
+                
+                await _context.SaveChangesAsync();
+
                 _logger.LogInformation("User {UserId} banned by {AdminId}. Reason: {Reason}, Duration: {Duration}", 
                     userId, currentUserId, reason, isPermanent ? "Permanent" : $"{banDurationDays} days");
                 return Json(new { success = true, message = "User banned successfully" });
             }
-            
-            return Json(new { success = false, message = "Failed to ban user (may already be banned)" });
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error banning user {UserId}", userId);
+                return Json(new { success = false, message = $"Error banning user: {ex.Message}" });
+            }
         }
         
         /// <summary>
@@ -592,16 +646,34 @@ namespace discussionspot9.Controllers
             {
                 reason = "Ban lifted by administrator";
             }
-            
-            var result = await _adminService.UnbanUserAsync(userId, currentUserId, reason);
-            
-            if (result)
+
+            try
             {
-                _logger.LogInformation("User {UserId} unbanned by {AdminId}. Reason: {Reason}", userId, currentUserId, reason);
-                return Json(new { success = true, message = "User unbanned successfully" });
+                var result = await _adminService.UnbanUserAsync(userId, currentUserId, reason);
+                
+                if (result)
+                {
+                    // Also update UserProfile
+                    var userProfile = await _context.UserProfiles.FindAsync(userId);
+                    if (userProfile != null)
+                    {
+                        userProfile.IsBanned = false;
+                        userProfile.BanExpiresAt = null;
+                        userProfile.BanReason = null;
+                        await _context.SaveChangesAsync();
+                    }
+
+                    _logger.LogInformation("User {UserId} unbanned by {AdminId}. Reason: {Reason}", userId, currentUserId, reason);
+                    return Json(new { success = true, message = "User unbanned successfully" });
+                }
+                
+                return Json(new { success = false, message = "Failed to unban user (may not be banned)" });
             }
-            
-            return Json(new { success = false, message = "Failed to unban user (may not be banned)" });
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unbanning user {UserId}", userId);
+                return Json(new { success = false, message = $"Error unbanning user: {ex.Message}" });
+            }
         }
         
         /// <summary>

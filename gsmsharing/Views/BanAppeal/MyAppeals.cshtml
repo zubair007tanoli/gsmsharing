@@ -1,0 +1,133 @@
+@model IEnumerable<gsmsharing.Models.BanAppeal>
+@{
+    ViewData["Title"] = "My Ban Appeals";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-gavel me-2"></i>My Ban Appeals
+                </h2>
+                @if (ViewBag.IsBanned == true)
+                {
+                    <a href="/BanAppeal/Create" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Submit New Appeal
+                    </a>
+                }
+            </div>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    @TempData["Info"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Appeals Found</h5>
+                        <p class="text-muted">You haven't submitted any ban appeals yet.</p>
+                        @if (ViewBag.IsBanned == true)
+                        {
+                            <a href="/BanAppeal/Create" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus me-2"></i>Submit Your First Appeal
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Appeal Message</th>
+                                        <th>Submitted At</th>
+                                        <th>Status</th>
+                                        <th>Reviewed At</th>
+                                        <th>Admin Response</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var appeal in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div style="max-width: 400px;">
+                                                    @appeal.AppealMessage
+                                                </div>
+                                            </td>
+                                            <td>@appeal.SubmittedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>
+                                                @if (appeal.Status == gsmsharing.Models.AppealStatus.Pending)
+                                                {
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>Pending
+                                                    </span>
+                                                }
+                                                else if (appeal.Status == gsmsharing.Models.AppealStatus.Approved)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle me-1"></i>Approved
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times-circle me-1"></i>Rejected
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (appeal.ReviewedAt.HasValue)
+                                                {
+                                                    @appeal.ReviewedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(appeal.AdminResponse))
+                                                {
+                                                    <div style="max-width: 300px;">
+                                                        @appeal.AdminResponse
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+

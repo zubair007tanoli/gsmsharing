@@ -1038,13 +1038,43 @@ namespace discussionspot9.Controllers
                 }
                 else
                 {
-                    return Json(new { success = false, message = $"Failed to start {serverName}. Check logs for details." });
+                    // Get more detailed error information
+                    var errorDetails = $"Failed to start {serverName}.";
+                    
+                    // Try to get the last error from the server manager
+                    var lastError = _mcpServerManager?.GetLastError(serverName);
+                    if (!string.IsNullOrWhiteSpace(lastError))
+                    {
+                        errorDetails += $" Error: {lastError}";
+                    }
+                    
+                    var pythonPathConfig = _configuration["Python:ExecutablePath"];
+                    var pythonPath = string.IsNullOrWhiteSpace(pythonPathConfig) ? "auto-detect (will try 'python' or 'python3')" : pythonPathConfig;
+                    errorDetails += $" Python path: {pythonPath}.";
+                    
+                    // Add specific guidance based on configuration
+                    if (string.IsNullOrWhiteSpace(pythonPathConfig))
+                    {
+                        errorDetails += " Python is set to auto-detect. If Python is not found, please install Python from https://www.python.org/downloads/ and add it to PATH, or set 'Python:ExecutablePath' in appsettings.json to the full path of python.exe";
+                    }
+                    else
+                    {
+                        errorDetails += " The configured Python path may be invalid. Please verify the path in appsettings.json under 'Python:ExecutablePath'.";
+                    }
+                    
+                    errorDetails += " Check application logs for detailed error messages.";
+                    return Json(new { success = false, message = errorDetails });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error starting MCP server {ServerName}", serverName ?? "Unknown");
-                return Json(new { success = false, message = $"Error: {ex.Message}" });
+                var errorMessage = $"Error: {ex.Message}";
+                if (ex.InnerException != null)
+                {
+                    errorMessage += $" Inner: {ex.InnerException.Message}";
+                }
+                return Json(new { success = false, message = errorMessage });
             }
         }
 

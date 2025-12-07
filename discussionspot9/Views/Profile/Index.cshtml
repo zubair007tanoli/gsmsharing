@@ -1,4 +1,4 @@
-﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.ProfileViewModel
+@model discussionspot9.Models.ViewModels.CreativeViewModels.ProfileViewModel
 @{
     ViewData["Title"] = "User Profile - " + Model.DisplayName;
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -602,15 +602,60 @@
                         <p class="profile-bio">@Model.Bio</p>
                     }
                     <div class="mt-3">
-                        @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
-                            { "ShareTitle", $"{Model.DisplayName}'s Profile on DiscussionSpot" },
-                            { "ShareDescription", Model.Bio ?? $"Check out {Model.DisplayName}'s profile and posts on DiscussionSpot" },
-                            { "ShareUrl", $"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}" },
-                            { "ShareImage", Model.AvatarUrl ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png" },
-                            { "ShareType", "profile" },
-                            { "ContentId", Model.UserId },
-                            { "ShareVariant", "simple" }
-                        })
+                        <div class="profile-share-dropdown-wrapper">
+                            <button class="profile-action-secondary" onclick="toggleProfileShare(event, 'profileShareDropdownMain')" id="profileShareBtnMain">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Share Profile</span>
+                            </button>
+                            <div class="profile-share-dropdown" id="profileShareDropdownMain" style="display: none;">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                                   target="_blank" 
+                                   rel="noopener" 
+                                   class="profile-share-option"
+                                   onclick="trackShare('profile', '@Model.UserId', 'facebook')">
+                                    <i class="fab fa-facebook-f" style="color: #1877f2;"></i>
+                                    <span>Facebook</span>
+                                </a>
+                                <a href="https://twitter.com/intent/tweet?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")&text=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile")" 
+                                   target="_blank" 
+                                   rel="noopener" 
+                                   class="profile-share-option"
+                                   onclick="trackShare('profile', '@Model.UserId', 'twitter')">
+                                    <i class="fab fa-twitter" style="color: #1da1f2;"></i>
+                                    <span>Twitter</span>
+                                </a>
+                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                                   target="_blank" 
+                                   rel="noopener" 
+                                   class="profile-share-option"
+                                   onclick="trackShare('profile', '@Model.UserId', 'linkedin')">
+                                    <i class="fab fa-linkedin-in" style="color: #0077b5;"></i>
+                                    <span>LinkedIn</span>
+                                </a>
+                                <a href="https://reddit.com/submit?url=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")&title=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile")" 
+                                   target="_blank" 
+                                   rel="noopener" 
+                                   class="profile-share-option"
+                                   onclick="trackShare('profile', '@Model.UserId', 'reddit')">
+                                    <i class="fab fa-reddit-alien" style="color: #ff4500;"></i>
+                                    <span>Reddit</span>
+                                </a>
+                                <a href="https://wa.me/?text=@Uri.EscapeDataString($"{Model.DisplayName}'s Profile - {Context.Request.Scheme}://{Context.Request.Host}/u/{Model.DisplayName}")" 
+                                   target="_blank" 
+                                   rel="noopener" 
+                                   class="profile-share-option"
+                                   onclick="trackShare('profile', '@Model.UserId', 'whatsapp')">
+                                    <i class="fab fa-whatsapp" style="color: #25d366;"></i>
+                                    <span>WhatsApp</span>
+                                </a>
+                                <button type="button" 
+                                        class="profile-share-option" 
+                                        onclick="copyProfileLink('@Context.Request.Scheme://@Context.Request.Host/u/@Model.DisplayName', event)">
+                                    <i class="fas fa-copy" style="color: #6c757d;"></i>
+                                    <span>Copy Link</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     @if (!string.IsNullOrEmpty(Model.Website))
                     {
@@ -882,12 +927,21 @@
 
 
     <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
         // Tab Navigation with AJAX loading
         document.querySelectorAll('#profileTabs .nav-link').forEach(function(tab) {
             tab.addEventListener('click', function() {
                 const tabId = this.getAttribute('data-bs-target').replace('#', '');
                 loadTabContent(tabId);
             });
+            });
+
+            // Load initial activity content
+            loadTabContent('activity');
+            
+            // Initialize share dropdowns
+            initializeShareDropdowns();
         });
 
         // Load tab content via AJAX
@@ -911,12 +965,197 @@
             }
         }
 
-        // Load initial activity content
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTabContent('activity');
-        });
+        // Initialize share dropdowns - handle multiple instances
+        function initializeShareDropdowns() {
+            const shareButtons = document.querySelectorAll('.profile-action-secondary[onclick*="toggleProfileShare"]');
+            shareButtons.forEach(function(btn) {
+                // Get the dropdown ID from onclick attribute or find closest dropdown
+                const onclickAttr = btn.getAttribute('onclick');
+                let dropdownId = null;
+                
+                // Extract dropdown ID from onclick if present
+                if (onclickAttr && onclickAttr.includes('profileShareDropdown')) {
+                    const match = onclickAttr.match(/profileShareDropdown\w+/);
+                    if (match) {
+                        dropdownId = match[0];
+                    }
+                }
+                
+                // If no ID in onclick, find the closest dropdown
+                if (!dropdownId) {
+                    const wrapper = btn.closest('.profile-share-dropdown-wrapper');
+                    if (wrapper) {
+                        const dropdown = wrapper.querySelector('.profile-share-dropdown');
+                        if (dropdown && dropdown.id) {
+                            dropdownId = dropdown.id;
+                        }
+                    }
+                }
+                
+                // Remove existing onclick and add event listener
+                btn.removeAttribute('onclick');
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleProfileShare(e, dropdownId);
+                });
+            });
+            
+            console.log('Initialized share dropdowns:', shareButtons.length);
+            
+            // Test if functions are available
+            if (typeof window.toggleProfileShare === 'function') {
+                console.log('toggleProfileShare function is available');
+            } else {
+                console.error('toggleProfileShare function is NOT available');
+            }
+            
+            if (typeof window.copyProfileLink === 'function') {
+                console.log('copyProfileLink function is available');
+            } else {
+                console.error('copyProfileLink function is NOT available');
+            }
+        }
 
-        // Share profile function
+        // Profile Share Dropdown Toggle - Make it global
+        window.toggleProfileShare = function(event, dropdownId) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // If no dropdownId provided, try to find the closest dropdown
+            let dropdown;
+            if (dropdownId) {
+                dropdown = document.getElementById(dropdownId);
+            } else {
+                // Find dropdown relative to the clicked button
+                if (event && event.target) {
+                    const wrapper = event.target.closest('.profile-share-dropdown-wrapper');
+                    if (wrapper) {
+                        dropdown = wrapper.querySelector('.profile-share-dropdown');
+                    }
+                }
+                // Fallback to first dropdown found
+                if (!dropdown) {
+                    dropdown = document.querySelector('.profile-share-dropdown');
+                }
+            }
+            
+            if (!dropdown) {
+                console.error('Profile share dropdown not found');
+                return;
+            }
+            
+            const isOpen = dropdown.style.display !== 'none' && dropdown.style.display !== '';
+            
+            // Close all other share dropdowns
+            document.querySelectorAll('.profile-share-dropdown').forEach(d => {
+                if (d !== dropdown) d.style.display = 'none';
+            });
+            
+            // Toggle this dropdown
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            
+            console.log('Profile share dropdown toggled:', !isOpen, dropdownId || 'default');
+        };
+        
+        // Copy Profile Link - Make it global
+        window.copyProfileLink = function(url, event) {
+            if (!url) {
+                console.error('No URL provided to copy');
+                return;
+            }
+            
+            navigator.clipboard.writeText(url).then(function() {
+                // Find the button that triggered this
+                let button = null;
+                if (event && event.target) {
+                    button = event.target.closest('button.profile-share-option');
+                }
+                
+                // Fallback: find button by checking onclick attributes
+                if (!button) {
+                    const buttons = document.querySelectorAll('.profile-share-option');
+                    buttons.forEach(btn => {
+                        const onclickAttr = btn.getAttribute('onclick');
+                        if (onclickAttr && onclickAttr.includes('copyProfileLink') && onclickAttr.includes(url)) {
+                            button = btn;
+                        }
+                    });
+                }
+                
+                if (button) {
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check" style="color: #28a745;"></i><span>Copied!</span>';
+                    button.style.color = '#28a745';
+                    
+                    setTimeout(function() {
+                        button.innerHTML = originalHTML;
+                        button.style.color = '';
+                    }, 2000);
+                }
+                
+                // Show toast notification if available
+                if (typeof showShareToast === 'function') {
+                    showShareToast('Profile link copied to clipboard!');
+                } else if (typeof showShareToast === 'undefined') {
+                    // Create a simple toast
+                    const toast = document.createElement('div');
+                    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 12px 20px; border-radius: 6px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+                    toast.textContent = 'Profile link copied to clipboard!';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3000);
+                } else {
+                    alert('Profile link copied to clipboard!');
+                }
+                
+                // Track share
+                if (typeof trackShare === 'function') {
+                    trackShare('profile', '@Model.UserId', 'copy');
+                }
+            }).catch(function(err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy link. Please copy manually: ' + url);
+            });
+        };
+        
+        // Track Share function - Make sure it's available
+        if (typeof trackShare === 'undefined') {
+            window.trackShare = function(contentType, contentId, platform) {
+                if (!contentId) return;
+                
+                console.log('Tracking share:', { contentType, contentId, platform });
+                
+                fetch('/api/share/track', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contentType: contentType,
+                        contentId: contentId,
+                        platform: platform,
+                        timestamp: new Date().toISOString()
+                    })
+                }).catch(err => {
+                    console.log('Share tracking failed:', err);
+                });
+            };
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const wrappers = document.querySelectorAll('.profile-share-dropdown-wrapper');
+            wrappers.forEach(wrapper => {
+                const dropdown = wrapper.querySelector('.profile-share-dropdown');
+                if (dropdown && !wrapper.contains(event.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        });
+        
+        // Share profile function (fallback)
         function shareProfile() {
             if (navigator.share) {
                 navigator.share({
@@ -925,10 +1164,8 @@
                     url: window.location.href
                 });
             } else {
-                // Fallback: copy to clipboard
-                navigator.clipboard.writeText(window.location.href).then(function() {
-                    alert('Profile URL copied to clipboard!');
-                });
+                // Fallback: open dropdown
+                toggleProfileShare(event);
             }
         }
 

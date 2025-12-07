@@ -113,16 +113,24 @@ async def mcp_endpoint(request: dict):
 
 if __name__ == "__main__":
     import sys
+    PORT = 5001
+    
+    # Allow port to be overridden via command line argument
+    if len(sys.argv) > 1:
+        try:
+            PORT = int(sys.argv[1])
+        except ValueError:
+            print(f"Invalid port argument: {sys.argv[1]}, using default 5001", flush=True)
     
     # Log to stdout for process manager
     print("🚀 Starting SEO Automation MCP Server...", flush=True)
     print("📦 Using FREE Local AI (Ollama)", flush=True)
     print(f"🤖 Model: {ai_config.model}", flush=True)
-    print("✅ Server running on http://localhost:5001", flush=True)
+    print(f"✅ Server running on http://localhost:{PORT}", flush=True)
     print("", flush=True)
     
     try:
-        uvicorn.run(app, host="0.0.0.0", port=5001, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
     except KeyboardInterrupt:
         print("\n⚠️  Server stopped by user", flush=True)
         sys.exit(0)

@@ -100,14 +100,24 @@ async def mcp_endpoint(request: dict):
 
 
 if __name__ == "__main__":
+    import sys
+    PORT = 5001
+    
+    # Allow port to be overridden via command line argument
+    if len(sys.argv) > 1:
+        try:
+            PORT = int(sys.argv[1])
+        except ValueError:
+            print(f"Invalid port argument: {sys.argv[1]}, using default 5001")
+    
     print("=" * 60)
     print("🚀 SEO Automation MCP Server - SIMPLIFIED MODE")
     print("=" * 60)
-    print("✅ Server starting on http://localhost:5001")
-    print("✅ Health check: http://localhost:5001/health")
+    print(f"✅ Server starting on http://localhost:{PORT}")
+    print(f"✅ Health check: http://localhost:{PORT}/health")
     print("⚠️  AI features disabled (Ollama not required)")
     print("=" * 60)
     print()
     
-    uvicorn.run(app, host="0.0.0.0", port=5001, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
 

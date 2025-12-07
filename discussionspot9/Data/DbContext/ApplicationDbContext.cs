@@ -63,6 +63,7 @@ namespace discussionspot9.Data.DbContext
         public DbSet<ModerationLog> ModerationLogs { get; set; }
         public DbSet<SiteRole> SiteRoles { get; set; }
         public DbSet<PostReport> PostReports { get; set; }
+        public DbSet<BanAppeal> BanAppeals { get; set; }
         
         // Web Stories tables
         public DbSet<Story> Stories { get; set; }
@@ -1265,6 +1266,33 @@ namespace discussionspot9.Data.DbContext
                     t.HasCheckConstraint("CK_UserNotificationSettings_EmailDigestFrequency", 
                         "EmailDigestFrequency IN ('never', 'daily', 'weekly')");
                 });
+            });
+            #endregion
+
+            #region BanAppeal Configuration
+            builder.Entity<BanAppeal>(entity =>
+            {
+                entity.HasKey(e => e.BanAppealId);
+                entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(e => e.AppealMessage).HasMaxLength(2000).IsRequired();
+                entity.Property(e => e.ReviewedByUserId).HasMaxLength(450);
+                entity.Property(e => e.AdminResponse).HasMaxLength(500);
+                entity.Property(e => e.SubmittedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.Status).HasDefaultValue(AppealStatus.Pending);
+
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.SubmittedAt);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ReviewedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.ReviewedByUserId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
             #endregion
 

@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Admin Dashboard";
     ViewData["BreadcrumbSection"] = "Dashboard";
     ViewData["BreadcrumbPage"] = "Overview";
@@ -106,6 +106,27 @@
         </div>
     </div>
 </div>
+
+<!-- Ban Appeals Alert -->
+@if (ViewBag.PendingAppealsCount > 0)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">Pending Ban Appeals</h5>
+                        <p class="mb-0">You have <strong>@ViewBag.PendingAppealsCount</strong> pending ban appeal(s) waiting for review.</p>
+                    </div>
+                    <a href="/Admin/BanAppeals" class="btn btn-warning">
+                        <i class="fas fa-gavel me-2"></i>Review Appeals
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <!-- Recent Activity -->
 <div class="row">

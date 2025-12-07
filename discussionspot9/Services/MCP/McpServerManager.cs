@@ -19,6 +19,7 @@ namespace discussionspot9.Services.MCP
         Task RestartServerAsync(string serverName, string scriptPath, int preferredPort);
         int? GetServerPort(string serverName);
         Dictionary<string, int> GetAllServerPorts();
+        string? GetLastError(string serverName);
     }
 
     public class McpServerManager : IMcpServerManager, IHostedService
@@ -31,6 +32,7 @@ namespace discussionspot9.Services.MCP
         private readonly Dictionary<string, Process> _runningServers = new();
         private readonly Dictionary<string, int> _serverPorts = new(); // Store actual ports used
         private readonly Dictionary<string, int> _retryCounts = new();
+        private readonly Dictionary<string, string> _lastErrors = new(); // Store last error message for each server
         private Timer? _healthCheckTimer;
         private bool _isEnabled;
 
@@ -233,12 +235,28 @@ namespace discussionspot9.Services.MCP
                     _retryCounts.GetValueOrDefault(serverName, 0) + 1);
 
                 // Check if Python is available (try python3 first on Linux, then python)
-                var pythonExe = _configuration["Python:ExecutablePath"];
+                // First check environment variable (useful for Ubuntu deployment)
+                var pythonExe = Environment.GetEnvironmentVariable("PYTHON_EXECUTABLE") 
+                    ?? _configuration["Python:ExecutablePath"];
+                
+                // Validate configured path exists (if it's a full path, not just "python" or "python3")
+                if (!string.IsNullOrEmpty(pythonExe) && pythonExe.Contains(Path.DirectorySeparatorChar) && !File.Exists(pythonExe))
+                {
+                    // Configured path doesn't exist, fall back to auto-detect
+                    _logger.LogWarning("Configured Python path '{Path}' does not exist, falling back to auto-detect", pythonExe);
+                    pythonExe = null; // Reset to trigger auto-detect
+                }
+                
                 if (string.IsNullOrEmpty(pythonExe))
                 {
                     // Auto-detect: try python3 first (Linux/Ubuntu), then python (Windows)
                     var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
                     pythonExe = isWindows ? "python" : "python3";
+                    _logger.LogInformation("Python path not configured, using auto-detect: {PythonExe}", pythonExe);
+                }
+                else
+                {
+                    _logger.LogInformation("Using configured Python path: {PythonExe}", pythonExe);
                 }
 
                 var pythonCheck = new ProcessStartInfo
@@ -273,6 +291,31 @@ namespace discussionspot9.Services.MCP
                     {
                         checkProcess.WaitForExit(2000);
                         var pythonVersion = await checkProcess.StandardOutput.ReadToEndAsync();
+                        var pythonError = await checkProcess.StandardError.ReadToEndAsync();
+                        
+                        // Check if this is the Windows Store stub
+                        if (string.IsNullOrWhiteSpace(pythonVersion) || 
+                            pythonError.Contains("Microsoft Store") || 
+                            pythonError.Contains("run without arguments to install"))
+                        {
+                            _logger.LogWarning("Python stub detected (Windows Store redirect). Trying alternative...");
+                            // Try alternative
+                            var altPython = pythonExe == "python3" ? "python" : "python3";
+                            pythonCheck.FileName = altPython;
+                            using var altCheckProcess = Process.Start(pythonCheck);
+                            if (altCheckProcess == null)
+                            {
+                                throw new Exception($"Python not found. The '{pythonExe}' command appears to be a Windows Store stub. Please install Python from https://www.python.org/downloads/ and add it to PATH.");
+                            }
+                            altCheckProcess.WaitForExit(2000);
+                            pythonVersion = await altCheckProcess.StandardOutput.ReadToEndAsync();
+                            pythonError = await altCheckProcess.StandardError.ReadToEndAsync();
+                            if (string.IsNullOrWhiteSpace(pythonVersion) || pythonError.Contains("Microsoft Store"))
+                            {
+                                throw new Exception($"Python not found. Both 'python' and 'python3' appear to be Windows Store stubs. Please install Python from https://www.python.org/downloads/ and add it to PATH, or configure the full path in appsettings.json under 'Python:ExecutablePath'.");
+                            }
+                            pythonExe = altPython;
+                        }
                         _logger.LogInformation("Python found: {Version} (using {Exe})", pythonVersion.Trim(), pythonExe);
                     }
                 }
@@ -294,12 +337,13 @@ namespace discussionspot9.Services.MCP
                     _logger.LogInformation("Requirements file found, checking dependencies...");
                 }
 
-                // For test_server.py, pass port as argument if it's not the default
+                // For test_server.py, main_simple.py, and main.py, pass port as argument if it's not the default
                 var scriptArgs = $"\"{scriptPath}\"";
-                if (scriptPath.EndsWith("test_server.py") && port != 5001)
+                var scriptFileName = Path.GetFileName(scriptPath);
+                if ((scriptFileName == "test_server.py" || scriptFileName == "main_simple.py" || scriptFileName == "main.py") && port != 5001)
                 {
                     scriptArgs = $"\"{scriptPath}\" {port}";
-                    _logger.LogInformation("Passing port {Port} as argument to test_server.py", port);
+                    _logger.LogInformation("Passing port {Port} as argument to {Script}", port, scriptFileName);
                 }
 
                 var startInfo = new ProcessStartInfo
@@ -344,9 +388,18 @@ namespace discussionspot9.Services.MCP
                     }
                 };
 
-                if (!process.Start())
+                try
                 {
-                    throw new Exception("Failed to start process");
+                    if (!process.Start())
+                    {
+                        throw new Exception($"Failed to start Python process. Command: {pythonExe} {scriptArgs}");
+                    }
+                }
+                catch (Exception startEx)
+                {
+                    _logger.LogError(startEx, "Failed to start process. Python: {PythonExe}, Script: {ScriptPath}, WorkingDir: {WorkingDir}", 
+                        pythonExe, scriptPath, scriptDir);
+                    throw new Exception($"Failed to start Python process: {startEx.Message}. Make sure Python is installed and the script path is correct.", startEx);
                 }
 
                 process.BeginOutputReadLine();
@@ -375,7 +428,44 @@ namespace discussionspot9.Services.MCP
                         var exitCode = process.ExitCode;
                         var allErrors = string.Join("\n", errorOutput);
                         var allOutput = string.Join("\n", standardOutput);
-                        throw new Exception($"Server process exited with code {exitCode}. Errors: {allErrors}. Output: {allOutput}");
+                        
+                        // Wait a bit for all output to be captured
+                        await Task.Delay(500);
+                        
+                        // Re-read output in case more was written
+                        if (errorOutput.Count == 0 && standardOutput.Count == 0)
+                        {
+                            // Try to read any remaining output
+                            try
+                            {
+                                if (process.StandardError != null)
+                                {
+                                    var remainingErrors = await process.StandardError.ReadToEndAsync();
+                                    if (!string.IsNullOrWhiteSpace(remainingErrors))
+                                        errorOutput.Add(remainingErrors);
+                                }
+                                if (process.StandardOutput != null)
+                                {
+                                    var remainingOutput = await process.StandardOutput.ReadToEndAsync();
+                                    if (!string.IsNullOrWhiteSpace(remainingOutput))
+                                        standardOutput.Add(remainingOutput);
+                                }
+                            }
+                            catch { }
+                        }
+                        
+                        allErrors = string.Join("\n", errorOutput);
+                        allOutput = string.Join("\n", standardOutput);
+                        
+                        var errorMsg = $"Server process exited with code {exitCode}.";
+                        if (!string.IsNullOrWhiteSpace(allErrors))
+                            errorMsg += $" Errors: {allErrors}";
+                        if (!string.IsNullOrWhiteSpace(allOutput))
+                            errorMsg += $" Output: {allOutput}";
+                        if (string.IsNullOrWhiteSpace(allErrors) && string.IsNullOrWhiteSpace(allOutput))
+                            errorMsg += " No error output captured. Check if Python is installed and the script is valid.";
+                        
+                        throw new Exception(errorMsg);
                     }
                 }
 
@@ -388,6 +478,7 @@ namespace discussionspot9.Services.MCP
                     _runningServers[serverName] = process;
                     _serverPorts[serverName] = port; // Store the port
                     _retryCounts[serverName] = 0; // Reset retry count on success
+                    _lastErrors.Remove(serverName); // Clear any previous errors
                     _logger.LogInformation("✅ {ServerName} started successfully on port {Port}", serverName, port);
                     return true;
                 }
@@ -406,6 +497,7 @@ namespace discussionspot9.Services.MCP
                         _runningServers[serverName] = process;
                         _serverPorts[serverName] = port;
                         _retryCounts[serverName] = 0;
+                        _lastErrors.Remove(serverName); // Clear any previous errors
                         _logger.LogInformation("✅ {ServerName} started successfully on port {Port} (after extended wait)", serverName, port);
                         return true;
                     }
@@ -419,6 +511,7 @@ namespace discussionspot9.Services.MCP
                         _runningServers[serverName] = process;
                         _serverPorts[serverName] = port;
                         _retryCounts[serverName] = 0;
+                        _lastErrors.Remove(serverName); // Clear any previous errors
                         _logger.LogInformation("✅ {ServerName} started successfully on port {Port} (after final wait)", serverName, port);
                         return true;
                     }
@@ -438,7 +531,16 @@ namespace discussionspot9.Services.MCP
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to start {ServerName}: {Error}", serverName, ex.Message);
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += $" Inner: {ex.InnerException.Message}";
+                }
+                
+                _logger.LogError(ex, "Failed to start {ServerName}: {Error}", serverName, errorMessage);
+                
+                // Store the error message for retrieval
+                _lastErrors[serverName] = errorMessage;
                 
                 // Clear port if we stored it
                 if (_serverPorts.ContainsKey(serverName))
@@ -463,7 +565,8 @@ namespace discussionspot9.Services.MCP
                 }
                 else
                 {
-                    _logger.LogError("Server {ServerName} has exceeded max retries ({MaxRetries}), giving up", serverName, maxRetries);
+                    _logger.LogError("Server {ServerName} has exceeded max retries ({MaxRetries}), giving up. Last error: {Error}", 
+                        serverName, maxRetries, errorMessage);
                     return false;
                 }
             }
@@ -526,6 +629,11 @@ namespace discussionspot9.Services.MCP
         public Dictionary<string, int> GetAllServerPorts()
         {
             return new Dictionary<string, int>(_serverPorts);
+        }
+
+        public string? GetLastError(string serverName)
+        {
+            return _lastErrors.ContainsKey(serverName) ? _lastErrors[serverName] : null;
         }
 
         private async Task CheckAndRestartServersAsync()

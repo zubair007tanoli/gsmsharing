@@ -916,13 +916,16 @@
 .profile-share-dropdown-wrapper {
     position: relative;
     width: 100%;
+    display: inline-block;
 }
 
 .profile-share-dropdown {
     position: absolute;
     top: 100%;
     left: 0;
-    right: 0;
+    min-width: 200px;
+    width: 100%;
+    max-width: 300px;
     background: var(--profile-bg-primary);
     border: 1px solid var(--profile-border);
     border-radius: var(--profile-border-radius);
@@ -931,6 +934,63 @@
     z-index: 1000;
     overflow: hidden;
     animation: dropdownSlideIn 0.2s ease;
+}
+
+/* Responsive adjustments for share dropdown */
+@media (max-width: 992px) {
+    .profile-share-dropdown {
+        right: 0;
+        left: auto;
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-share-dropdown {
+        right: 0;
+        left: auto;
+        max-width: 260px;
+    }
+    
+    .profile-share-option {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+    
+    .profile-share-option i {
+        font-size: 16px;
+        width: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-share-dropdown {
+        position: fixed;
+        top: auto !important;
+        bottom: 20px;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%);
+        max-width: calc(100% - 40px);
+        width: 90%;
+        max-width: 320px;
+        max-height: 70vh;
+        overflow-y: auto;
+        margin-top: 0;
+    }
+    
+    .profile-share-dropdown-wrapper {
+        width: 100%;
+    }
+    
+    .profile-action-secondary {
+        width: 100%;
+    }
+    
+    .profile-share-option {
+        padding: 14px 16px;
+        font-size: 14px;
+    }
 }
 
 @keyframes dropdownSlideIn {

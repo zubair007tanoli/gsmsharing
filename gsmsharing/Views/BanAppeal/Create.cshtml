@@ -1,0 +1,97 @@
+@model gsmsharing.Models.BanAppeal
+@{
+    ViewData["Title"] = "Submit Ban Appeal";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-gavel me-2"></i>Submit Ban Appeal
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["Info"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            @TempData["Info"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> Please provide a detailed explanation for why you believe your ban should be lifted. 
+                        Appeals are reviewed by administrators and decisions are final.
+                    </div>
+
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="AppealMessage" class="form-label">
+                                Appeal Message <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="AppealMessage" class="form-control" rows="8" 
+                                      placeholder="Please explain why you believe your ban should be lifted. Include any relevant context or information that might help administrators make a decision." 
+                                      required></textarea>
+                            <span asp-validation-for="AppealMessage" class="text-danger"></span>
+                            <small class="form-text text-muted">
+                                Minimum 50 characters. Be clear and respectful in your appeal.
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Appeal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>Appeal Guidelines
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Be respectful and professional in your appeal</li>
+                        <li>Provide specific details about your situation</li>
+                        <li>Explain what you've learned or how you've changed</li>
+                        <li>Only one pending appeal is allowed at a time</li>
+                        <li>Appeals are typically reviewed within 1-3 business days</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            var message = document.querySelector('[name="AppealMessage"]').value.trim();
+            if (message.length < 50) {
+                e.preventDefault();
+                alert('Please provide at least 50 characters in your appeal message.');
+                return false;
+            }
+        });
+    </script>
+}
+
+

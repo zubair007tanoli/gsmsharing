@@ -37,6 +37,7 @@ namespace gsmsharing.Database
         public DbSet<ChatRoom> ChatRooms { get; set; }
         public DbSet<ChatRoomMember> ChatRoomMembers { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<BanAppeal> BanAppeals { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
