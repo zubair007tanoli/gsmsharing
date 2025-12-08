@@ -1,0 +1,114 @@
+@model GsmsharingV2.Models.MobilePost
+@{
+    ViewData["Title"] = Model.Title + " - GSMSharing";
+    var relatedBlogs = ViewBag.RelatedBlogs as IEnumerable<GsmsharingV2.Models.MobilePost> ?? new List<GsmsharingV2.Models.MobilePost>();
+}
+
+<div class="blog-container mt-4">
+    <div class="blog-main-content">
+        <!-- Main Content -->
+        <div>
+            <article class="card shadow-blog rounded-blog mb-4">
+                @if (!string.IsNullOrEmpty(Model.WebLinks))
+                {
+                    <img src="@Model.WebLinks" alt="@Model.Title" class="blog-post-image">
+                }
+                <div class="blog-post-content">
+                    <div class="d-flex gap-2 mb-3">
+                        <span class="blog-post-category">
+                            <i class="fas fa-mobile-alt me-1"></i>Mobile Blog
+                        </span>
+                    </div>
+                    <h1 class="blog-post-title">@Model.Title</h1>
+                    <div class="blog-post-meta mb-4">
+                        <div class="blog-post-author">
+                            <div class="blog-post-author-avatar">
+                                @(Model.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                            </div>
+                            <span>@(Model.User?.UserName ?? "Anonymous")</span>
+                        </div>
+                        <span><i class="fas fa-calendar me-1"></i>@Model.CreationDate?.ToString("MMMM dd, yyyy")</span>
+                        <span><i class="fas fa-eye me-1"></i>@(Model.views ?? 0) views</span>
+                        <span><i class="fas fa-thumbs-up me-1"></i>@(Model.likes ?? 0) likes</span>
+                    </div>
+                    <div class="post-content" style="font-size: 1.125rem; line-height: 1.8;">
+                        @Html.Raw(Model.Content)
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.Tags))
+                    {
+                        <div class="mt-4 pt-4 border-top">
+                            <div class="d-flex gap-2 flex-wrap">
+                                @foreach (var tag in Model.Tags.Split(',').Take(10))
+                                {
+                                    <span class="badge bg-primary">#@tag.Trim()</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <!-- Related Blogs -->
+            @if (relatedBlogs.Any())
+            {
+                <div class="card shadow-blog rounded-blog">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-book-open me-2 text-primary"></i>Related Articles
+                        </h5>
+                        <div class="row g-3">
+                            @foreach (var related in relatedBlogs)
+                            {
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-3">
+                                        @if (!string.IsNullOrEmpty(related.WebLinks))
+                                        {
+                                            <img src="@related.WebLinks" alt="@related.Title" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;" onerror="this.style.display='none'">
+                                        }
+                                        <div>
+                                            <h6><a href="/Blog/Details/@related.BlogId" class="text-decoration-none">@(related.Title?.Length > 60 ? related.Title.Substring(0, 60) + "..." : related.Title)</a></h6>
+                                            <small class="text-muted">
+                                                <i class="fas fa-eye me-1"></i>@(related.views ?? 0) views
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="blog-sidebar">
+            <div class="card shadow-blog rounded-blog mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Article Info
+                    </h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-user text-primary me-2"></i>
+                            <strong>Author:</strong> @(Model.User?.UserName ?? "Anonymous")
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-primary me-2"></i>
+                            <strong>Published:</strong> @Model.CreationDate?.ToString("MMMM dd, yyyy")
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-eye text-primary me-2"></i>
+                            <strong>Views:</strong> @(Model.views ?? 0)
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-thumbs-up text-primary me-2"></i>
+                            <strong>Likes:</strong> @(Model.likes ?? 0)
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

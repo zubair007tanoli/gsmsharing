@@ -1,0 +1,166 @@
+@model IEnumerable<GsmsharingV2.Models.ForumThread>
+@{
+    ViewData["Title"] = "Forums - GSMSharing";
+    var categories = ViewBag.Categories as dynamic;
+}
+
+<div class="blog-container mt-4">
+    <div class="blog-main-content">
+        <!-- Main Content -->
+        <div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-comments me-2 text-primary"></i>Forums
+                    </h1>
+                    <p class="text-muted mb-0">Join discussions, ask questions, and share knowledge</p>
+                </div>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a href="/Forum/Create" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i>New Thread
+                    </a>
+                }
+            </div>
+
+            <!-- Categories -->
+            @if (categories != null)
+            {
+                <div class="card shadow-blog rounded-blog mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-tags me-2 text-primary"></i>Categories
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var cat in categories)
+                            {
+                                <a href="/Forum/Category/@cat.Name" class="badge bg-primary p-2 text-decoration-none">
+                                    @cat.Name <span class="badge bg-light text-dark">@cat.Count</span>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="card shadow-blog rounded-blog">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50%">Topic</th>
+                                        <th>Author</th>
+                                        <th>Replies</th>
+                                        <th>Views</th>
+                                        <th>Last Activity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var forum in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <h6 class="mb-1">
+                                                    <a href="/Forum/Details/@forum.UserFourmID" class="text-decoration-none">
+                                                        @forum.Title
+                                                    </a>
+                                                </h6>
+                                                @if (!string.IsNullOrEmpty(forum.Tags))
+                                                {
+                                                    <div class="mt-1">
+                                                        @foreach (var tag in forum.Tags.Split(',').Take(3))
+                                                        {
+                                                            <span class="badge bg-secondary me-1">@tag.Trim()</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="blog-post-author-avatar me-2">
+                                                        @(forum.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                                                    </div>
+                                                    <span>@(forum.User?.UserName ?? "Anonymous")</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@(forum.Replies?.Count ?? 0)</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@(forum.Views ?? 0)</span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@GetTimeAgo(forum.CreationDate)</small>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            @if (ViewBag.CurrentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)">Previous</a>
+                                </li>
+                            }
+                            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="?page=@i">@i</a>
+                                </li>
+                            }
+                            @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)">Next</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                    <h3 class="mb-3">No forum threads found</h3>
+                    <p class="text-muted">Be the first to start a discussion!</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetTimeAgo(DateTime? date)
+    {
+        if (date == null) return "just now";
+        
+        var timeSpan = DateTime.UtcNow - date.Value;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return $"{(int)timeSpan.TotalSeconds}s ago";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+    }
+}
+

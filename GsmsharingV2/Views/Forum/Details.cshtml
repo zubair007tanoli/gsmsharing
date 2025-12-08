@@ -1,0 +1,157 @@
+@model GsmsharingV2.Models.ForumThread
+@{
+    ViewData["Title"] = Model.Title + " - Forum - GSMSharing";
+    var relatedForums = ViewBag.RelatedForums as IEnumerable<GsmsharingV2.Models.ForumThread> ?? new List<GsmsharingV2.Models.ForumThread>();
+}
+
+<div class="blog-container mt-4">
+    <div class="blog-main-content">
+        <!-- Main Content -->
+        <div>
+            <article class="card shadow-blog rounded-blog mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h1 class="mb-3">@Model.Title</h1>
+                            <div class="d-flex gap-2 mb-3">
+                                @if (!string.IsNullOrEmpty(Model.Tags))
+                                {
+                                    @foreach (var tag in Model.Tags.Split(',').Take(5))
+                                    {
+                                        <span class="badge bg-primary">@tag.Trim()</span>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="blog-post-meta mb-4 pb-3 border-bottom">
+                        <div class="blog-post-author">
+                            <div class="blog-post-author-avatar">
+                                @(Model.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                            </div>
+                            <span>@(Model.User?.UserName ?? "Anonymous")</span>
+                        </div>
+                        <span><i class="fas fa-calendar me-1"></i>@Model.CreationDate?.ToString("MMMM dd, yyyy 'at' HH:mm")</span>
+                        <span><i class="fas fa-eye me-1"></i>@(Model.Views ?? 0) views</span>
+                        <span><i class="fas fa-thumbs-up me-1"></i>@(Model.Likes ?? 0) likes</span>
+                    </div>
+
+                    <div class="post-content" style="font-size: 1.125rem; line-height: 1.8;">
+                        @Html.Raw(Model.Content)
+                    </div>
+                </div>
+            </article>
+
+            <!-- Replies Section -->
+            <div class="card shadow-blog rounded-blog mb-4">
+                <div class="card-body">
+                    <h4 class="mb-4">
+                        <i class="fas fa-comments me-2 text-primary"></i>Replies (@(Model.Replies?.Count ?? 0))
+                    </h4>
+                    
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="mb-4">
+                            <form>
+                                <div class="mb-3">
+                                    <textarea class="form-control" rows="4" placeholder="Write a reply..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Post Reply
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <a href="/UserAccounts/Login" class="alert-link">Login</a> to reply to this thread
+                        </div>
+                    }
+
+                    @if (Model.Replies != null && Model.Replies.Any())
+                    {
+                        <div class="replies-list">
+                            @foreach (var reply in Model.Replies.OrderBy(r => r.PublishDate))
+                            {
+                                <div class="comment-card mb-3">
+                                    <div class="comment-header">
+                                        <div class="comment-avatar">
+                                            @(reply.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                                        </div>
+                                        <div>
+                                            <div class="comment-author">@(reply.User?.UserName ?? "Anonymous")</div>
+                                            <div class="comment-date">@GetTimeAgo(reply.PublishDate)</div>
+                                        </div>
+                                    </div>
+                                    <div class="comment-content">@Html.Raw(reply.ForumContent)</div>
+                                    <div class="comment-actions">
+                                        <button class="comment-action-btn">
+                                            <i class="fas fa-thumbs-up me-1"></i>@(reply.Like ?? 0)
+                                        </button>
+                                        <button class="comment-action-btn">
+                                            <i class="fas fa-thumbs-down me-1"></i>@(reply.DisLike ?? 0)
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-4">No replies yet. Be the first to reply!</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Related Forums -->
+            @if (relatedForums.Any())
+            {
+                <div class="card shadow-blog rounded-blog">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-book-open me-2 text-primary"></i>Related Threads
+                        </h5>
+                        <div class="list-group list-group-flush">
+                            @foreach (var related in relatedForums)
+                            {
+                                <a href="/Forum/Details/@related.UserFourmID" class="list-group-item list-group-item-action border-0 px-0 mb-2">
+                                    <h6 class="mb-1">@(related.Title?.Length > 60 ? related.Title.Substring(0, 60) + "..." : related.Title)</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>@(related.Views ?? 0) views
+                                        <i class="fas fa-comments me-1 ms-2"></i>@(related.Replies?.Count ?? 0) replies
+                                    </small>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetTimeAgo(DateTime? date)
+    {
+        if (date == null) return "just now";
+        
+        var timeSpan = DateTime.UtcNow - date.Value;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return $"{(int)timeSpan.TotalSeconds}s ago";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+    }
+}
+

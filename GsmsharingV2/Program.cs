@@ -1,10 +1,31 @@
 using GsmsharingV2.Database;
+using GsmsharingV2.Interfaces;
+using GsmsharingV2.Mappings;
+using GsmsharingV2.Middleware;
 using GsmsharingV2.Models;
+using GsmsharingV2.Repositories;
+using GsmsharingV2.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .CreateLogger();
+
+try
+{
+    Log.Information("Starting GSMSharing V2 application");
+
+    // Use Serilog for logging
+    builder.Host.UseSerilog();
 
 // Database Configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -40,10 +61,23 @@ builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.Applic
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Register AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
 // Register Repositories
-builder.Services.AddScoped<GsmsharingV2.Interfaces.IPostRepository, GsmsharingV2.Repositories.PostRepository>();
-builder.Services.AddScoped<GsmsharingV2.Interfaces.ICommunityRepository, GsmsharingV2.Repositories.CommunityRepository>();
-builder.Services.AddScoped<GsmsharingV2.Interfaces.ICategoryRepository, GsmsharingV2.Repositories.CategoryRepository>();
+builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<ICommunityRepository, CommunityRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<IReactionRepository, ReactionRepository>();
+
+// Register Services
+builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<ICommunityService, CommunityService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IReactionService, ReactionService>();
+builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 
 var app = builder.Build();
 
@@ -59,6 +93,9 @@ else
     app.UseHsts();
 }
 
+// Use custom exception handling middleware
+app.UseExceptionHandling();
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
@@ -66,8 +103,6 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapStaticAssets();
 
 // Custom route for Reddit-style post URLs
 app.MapControllerRoute(
@@ -77,8 +112,7 @@ app.MapControllerRoute(
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // Ensure database is created BEFORE app starts
 try
@@ -313,10 +347,20 @@ try
 }
 catch (Exception ex)
 {
-    // Use console as fallback if logging isn't available yet
-    Console.WriteLine($"❌ CRITICAL: Error initializing database: {ex.Message}");
-    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    Log.Fatal(ex, "❌ CRITICAL: Error initializing database: {Message}", ex.Message);
     // Don't throw - let the app start so user can see the error in the UI
 }
 
-app.Run();
+try
+{
+    Log.Information("GSMSharing V2 application started successfully");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

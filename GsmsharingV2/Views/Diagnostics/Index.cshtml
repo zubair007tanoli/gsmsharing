@@ -1,0 +1,86 @@
+@{
+    ViewData["Title"] = "Diagnostics - GSMSharing";
+    var diagnostics = ViewBag.Diagnostics as Dictionary<string, object> ?? new Dictionary<string, object>();
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-stethoscope me-2"></i>System Diagnostics
+            </h1>
+
+            <div class="card shadow-blog rounded-blog">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Database Status</h5>
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Check</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in diagnostics)
+                            {
+                                <tr>
+                                    <td><strong>@item.Key</strong></td>
+                                    <td>
+                                        @if (item.Value is bool boolValue)
+                                        {
+                                            @(boolValue ? "✅ Yes" : "❌ No")
+                                        }
+                                        else if (item.Value is int intValue)
+                                        {
+                                            <span class="badge bg-primary">@intValue</span>
+                                        }
+                                        else
+                                        {
+                                            @item.Value?.ToString()
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-blog rounded-blog mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Quick Actions</h5>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Homepage
+                        </a>
+                        <a href="/Blog/Blogs" class="btn btn-primary">
+                            <i class="fas fa-blog me-2"></i>Blogs
+                        </a>
+                        <a href="/Forum" class="btn btn-primary">
+                            <i class="fas fa-comments me-2"></i>Forums
+                        </a>
+                        <a href="/Posts" class="btn btn-primary">
+                            <i class="fas fa-newspaper me-2"></i>Posts
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if (diagnostics.ContainsKey("Error"))
+            {
+                <div class="alert alert-danger mt-4">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Detected</h5>
+                    <p><strong>Message:</strong> @diagnostics["Error"]</p>
+                    @if (diagnostics.ContainsKey("StackTrace"))
+                    {
+                        <details>
+                            <summary>Stack Trace</summary>
+                            <pre class="mt-2">@diagnostics["StackTrace"]</pre>
+                        </details>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

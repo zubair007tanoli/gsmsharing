@@ -1,0 +1,185 @@
+@model IEnumerable<GsmsharingV2.Models.MobilePost>
+@{
+    ViewData["Title"] = "Blog - GSMSharing | Mobile & IT Articles";
+    var gsmBlogs = ViewBag.GsmBlogs as IEnumerable<GsmsharingV2.Models.GsmBlog> ?? new List<GsmsharingV2.Models.GsmBlog>();
+    var affiliateProducts = ViewBag.AffiliateProducts as IEnumerable<GsmsharingV2.Models.AffiliationProduct> ?? new List<GsmsharingV2.Models.AffiliationProduct>();
+}
+
+<div class="blog-container mt-4">
+    <div class="blog-main-content">
+        <!-- Main Content -->
+        <div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-blog me-2 text-primary"></i>Blog Posts
+                    </h1>
+                    <p class="text-muted mb-0">Latest mobile & IT articles, reviews, and guides</p>
+                </div>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="row g-4">
+                    @foreach (var blog in Model)
+                    {
+                        <div class="col-md-6 col-lg-4 fade-in-up">
+                            <div class="blog-post-card">
+                                @if (!string.IsNullOrEmpty(blog.WebLinks))
+                                {
+                                    <img src="@blog.WebLinks" alt="@blog.Title" class="blog-post-image" onerror="this.style.display='none'">
+                                }
+                                <div class="blog-post-content">
+                                    <span class="blog-post-category">
+                                        <i class="fas fa-mobile-alt me-1"></i>Mobile
+                                    </span>
+                                    <h3 class="blog-post-title">
+                                        <a href="/Blog/Details/@blog.BlogId">@blog.Title</a>
+                                    </h3>
+                                    <p class="blog-post-excerpt">
+                                        @if (!string.IsNullOrEmpty(blog.MetaDis))
+                                        {
+                                            @(blog.MetaDis.Length > 120 ? blog.MetaDis.Substring(0, 120) + "..." : blog.MetaDis)
+                                        }
+                                        else if (!string.IsNullOrEmpty(blog.Content))
+                                        {
+                                            @(blog.Content.Length > 120 ? blog.Content.Substring(0, 120) + "..." : blog.Content)
+                                        }
+                                    </p>
+                                    <div class="blog-post-meta">
+                                        <div class="blog-post-author">
+                                            <div class="blog-post-author-avatar">
+                                                @(blog.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                                            </div>
+                                            <span>@(blog.User?.UserName ?? "Anonymous")</span>
+                                        </div>
+                                        <span><i class="fas fa-clock me-1"></i>@GetTimeAgo(blog.CreationDate)</span>
+                                        <span><i class="fas fa-eye me-1"></i>@(blog.views ?? 0)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation" class="mt-5">
+                        <ul class="pagination justify-content-center">
+                            @if (ViewBag.CurrentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)">Previous</a>
+                                </li>
+                            }
+                            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="?page=@i">@i</a>
+                                </li>
+                            }
+                            @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)">Next</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-blog fa-4x text-muted mb-3"></i>
+                    <h3 class="mb-3">No blog posts found</h3>
+                    <p class="text-muted">Check back later for new articles!</p>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="blog-sidebar">
+            <!-- GsmBlog Posts -->
+            @if (gsmBlogs.Any())
+            {
+                <div class="card shadow-blog rounded-blog mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-fire me-2 text-primary"></i>Trending Articles
+                        </h5>
+                        <div class="list-group list-group-flush">
+                            @foreach (var gsmBlog in gsmBlogs)
+                            {
+                                <a href="/Blog/GsmBlogDetails/@gsmBlog.BlogId" class="list-group-item list-group-item-action border-0 px-0 mb-2">
+                                    <h6 class="mb-1">@(gsmBlog.BlogTitle?.Length > 60 ? gsmBlog.BlogTitle.Substring(0, 60) + "..." : gsmBlog.BlogTitle)</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-eye me-1"></i>@(gsmBlog.BlogViews ?? 0) views
+                                    </small>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Affiliate Products -->
+            @if (affiliateProducts.Any())
+            {
+                <div class="card shadow-blog rounded-blog mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-shopping-bag me-2 text-primary"></i>Featured Products
+                        </h5>
+                        @foreach (var product in affiliateProducts.Take(3))
+                        {
+                            <div class="affiliate-product-card mb-3">
+                                @if (!string.IsNullOrEmpty(product.ImageLink))
+                                {
+                                    <img src="@product.ImageLink" alt="@product.Title" class="affiliate-product-image" onerror="this.style.display='none'">
+                                }
+                                <div class="affiliate-product-content">
+                                    <h6 class="affiliate-product-title">@(product.Title?.Length > 50 ? product.Title.Substring(0, 50) + "..." : product.Title)</h6>
+                                    @if (product.Price.HasValue)
+                                    {
+                                        <div class="affiliate-product-price">$@product.Price</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(product.BuyLink))
+                                    {
+                                        <a href="@product.BuyLink" target="_blank" class="affiliate-buy-button">
+                                            <i class="fas fa-shopping-cart me-2"></i>Buy Now
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetTimeAgo(DateTime? date)
+    {
+        if (date == null) return "just now";
+        
+        var timeSpan = DateTime.UtcNow - date.Value;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return $"{(int)timeSpan.TotalSeconds}s ago";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+    }
+}
+

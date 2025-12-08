@@ -1,0 +1,131 @@
+@model GsmsharingV2.Models.Post
+@{
+    ViewData["Title"] = Model.Title + " - GSMSharing";
+    var postId = Model.PostID;
+}
+
+<div class="blog-container mt-4">
+    <div class="blog-main-content">
+        <!-- Main Content -->
+        <div>
+            <!-- Post Article -->
+            <article class="card shadow-blog rounded-blog mb-4">
+                @if (!string.IsNullOrEmpty(Model.FeaturedImage))
+                {
+                    <img src="@Model.FeaturedImage" alt="@Model.Title" class="blog-post-image">
+                }
+                <div class="blog-post-content">
+                    <div class="d-flex gap-2 mb-3">
+                        @if (Model.IsFeatured == true)
+                        {
+                            <span class="blog-post-category">
+                                <i class="fas fa-star me-1"></i>Featured
+                            </span>
+                        }
+                        @if (Model.Community != null)
+                        {
+                            <span class="blog-post-category">@Model.Community.Name</span>
+                        }
+                    </div>
+                    <h1 class="blog-post-title">@Model.Title</h1>
+                    <div class="blog-post-meta mb-4">
+                        <div class="blog-post-author">
+                            <div class="blog-post-author-avatar">
+                                @(Model.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                            </div>
+                            <span>@Model.User?.UserName</span>
+                        </div>
+                        <span><i class="fas fa-calendar me-1"></i>@Model.CreatedAt?.ToString("MMMM dd, yyyy")</span>
+                        <span><i class="fas fa-eye me-1"></i>@(Model.ViewCount ?? 0) views</span>
+                    </div>
+                    <div class="post-content" style="font-size: 1.125rem; line-height: 1.8;">
+                        @Html.Raw(Model.Content)
+                    </div>
+                    
+                    <!-- Reactions -->
+                    <div class="reactions-container" id="reactions-container" data-post-id="@postId">
+                        <!-- Reactions will be loaded here -->
+                    </div>
+                </div>
+            </article>
+
+            <!-- Comments Section -->
+            <div class="card shadow-blog rounded-blog">
+                <div class="card-body p-5">
+                    <h3 class="mb-4">
+                        <i class="fas fa-comments me-2 text-primary"></i>Comments
+                        <span class="badge bg-primary ms-2" id="comment-count">0</span>
+                    </h3>
+                    
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="mb-4">
+                            <form id="comment-form">
+                                <input type="hidden" name="PostID" value="@postId">
+                                <div class="mb-3">
+                                    <textarea name="Content" class="form-control" rows="4" placeholder="Write a comment..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Post Comment
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <a href="/UserAccounts/Login" class="alert-link">Login</a> to join the discussion
+                        </div>
+                    }
+                    
+                    <div id="comments-list">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="blog-sidebar">
+            <div class="card shadow-blog rounded-blog mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>About This Post
+                    </h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-user text-primary me-2"></i>
+                            <strong>Author:</strong> @Model.User?.UserName
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            <strong>Community:</strong> @Model.Community?.Name
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar text-primary me-2"></i>
+                            <strong>Published:</strong> @Model.PublishedAt?.ToString("MMMM dd, yyyy")
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-eye text-primary me-2"></i>
+                            <strong>Views:</strong> @(Model.ViewCount ?? 0)
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/comments.js" asp-append-version="true"></script>
+    <script src="~/js/reactions.js" asp-append-version="true"></script>
+    <script>
+        // Load comments and reactions on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadComments(@postId);
+            loadReactions(@postId, null);
+        });
+    </script>
+}
+

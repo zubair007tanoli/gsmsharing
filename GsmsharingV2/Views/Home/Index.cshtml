@@ -1,12 +1,453 @@
-﻿@{
-    ViewData["Title"] = "GSMSharing - Mobile Repair Community";
+@{
+    ViewData["Title"] = "GSMSharing - Mobile & IT Blog | Affiliate Marketing";
     var categories = ViewBag.Categories as IEnumerable<GsmsharingV2.Models.Category> ?? new List<GsmsharingV2.Models.Category>();
     var postsByCategory = ViewBag.PostsByCategory as Dictionary<GsmsharingV2.Models.Category, IEnumerable<GsmsharingV2.Models.Post>> ?? new Dictionary<GsmsharingV2.Models.Category, IEnumerable<GsmsharingV2.Models.Post>>();
     var recentPosts = ViewBag.RecentPosts as IEnumerable<GsmsharingV2.Models.Post> ?? new List<GsmsharingV2.Models.Post>();
+    var recentBlogs = ViewBag.RecentBlogs as IEnumerable<GsmsharingV2.Models.MobilePost> ?? new List<GsmsharingV2.Models.MobilePost>();
+    var gsmBlogs = ViewBag.GsmBlogs as IEnumerable<GsmsharingV2.Models.GsmBlog> ?? new List<GsmsharingV2.Models.GsmBlog>();
+    var recentForums = ViewBag.RecentForums as IEnumerable<GsmsharingV2.Models.ForumThread> ?? new List<GsmsharingV2.Models.ForumThread>();
+    var forumActivities = ViewBag.ForumActivities as IEnumerable<GsmsharingV2.Models.ForumReply> ?? new List<GsmsharingV2.Models.ForumReply>();
+    var featuredProducts = ViewBag.FeaturedProducts as IEnumerable<GsmsharingV2.Models.AffiliationProduct> ?? new List<GsmsharingV2.Models.AffiliationProduct>();
+    var mobileAds = ViewBag.MobileAds as IEnumerable<GsmsharingV2.Models.MobileAd> ?? new List<GsmsharingV2.Models.MobileAd>();
+    var recentSpecs = ViewBag.RecentSpecs as IEnumerable<GsmsharingV2.Models.MobileSpecs> ?? new List<GsmsharingV2.Models.MobileSpecs>();
+    var topCommunities = ViewBag.TopCommunities as IEnumerable<GsmsharingV2.Models.Community> ?? new List<GsmsharingV2.Models.Community>();
+    var onlineUsers = ViewBag.OnlineUsers as IEnumerable<GsmsharingV2.Models.ApplicationUser> ?? new List<GsmsharingV2.Models.ApplicationUser>();
 }
 
-<!-- Reddit-like Main Feed -->
-<div class="reddit-layout">
+<!-- Modern Hero Section -->
+<div class="hero-section-modern">
+    <div class="container">
+        <div class="hero-content-modern fade-in-up">
+            <h1 class="hero-title-modern">
+                Welcome to GSMSharing
+            </h1>
+            <p class="hero-subtitle-modern">
+                Your premier destination for mobile repair knowledge, community discussions, and marketplace. Connect with experts, share solutions, and grow together.
+            </p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a href="/Posts/Create" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus-circle me-2"></i>Create Post
+                    </a>
+                    <a href="/Posts" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-newspaper me-2"></i>Browse Posts
+                    </a>
+                }
+                else
+                {
+                    <a href="/UserAccounts/Register" class="btn btn-light btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Get Started
+                    </a>
+                    <a href="/UserAccounts/Login" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container">
+    <!-- Error Message -->
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Data</h5>
+            <p>@ViewBag.ErrorMessage</p>
+            <p class="mb-0"><small>Check the <a href="/Diagnostics">Diagnostics page</a> for more details.</small></p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Debug Info (remove in production) -->
+    @if (ViewBag.TotalBlogs != null)
+    {
+        <div class="alert alert-info mt-3">
+            <strong>Debug Info:</strong> 
+            Blogs: @ViewBag.TotalBlogs | 
+            Forums: @ViewBag.TotalForums | 
+            Posts: @ViewBag.TotalPosts | 
+            Products: @ViewBag.TotalProducts | 
+            Users: @ViewBag.TotalUsers
+        </div>
+    }
+
+    <div class="row">
+        <!-- Main Feed -->
+        <div class="col-lg-8">
+            <!-- Category Tabs -->
+            <div class="card mb-4 fade-in-up">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="/" class="btn btn-sm btn-primary">
+                            <i class="fas fa-fire me-1"></i>Hot
+                        </a>
+                        <a href="/?sort=new" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-clock me-1"></i>New
+                        </a>
+                        <a href="/?sort=top" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-trophy me-1"></i>Top
+                        </a>
+                        <span class="text-muted mx-2">|</span>
+                        @foreach (var category in categories.Take(5))
+                        {
+                            <a href="/category/@category.Slug" class="btn btn-sm btn-outline-secondary">
+                                <i class="@(category.IconClass ?? "fas fa-folder") me-1"></i>@category.Name
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google AdSense Banner Ad -->
+            @{
+                ViewBag.ShowBannerAd = true;
+            }
+            @await Html.PartialAsync("_GoogleAdSense")
+
+            <!-- Recent Blogs Section -->
+            @if (recentBlogs != null && recentBlogs.Any())
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-blog me-2 text-primary"></i>Latest Blog Posts
+                            </h5>
+                            <p class="text-muted mb-0 small">Recent articles from our blog</p>
+                        </div>
+                        <a href="/Blog/Blogs" class="btn btn-sm btn-outline-primary">
+                            View All <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            @foreach (var blog in recentBlogs.Take(3))
+                            {
+                                <div class="col-md-4">
+                                    <div class="blog-post-card h-100">
+                                        @if (!string.IsNullOrEmpty(blog.WebLinks))
+                                        {
+                                            <img src="@blog.WebLinks" alt="@blog.Title" class="blog-post-image" onerror="this.style.display='none'">
+                                        }
+                                        <div class="blog-post-content">
+                                            <h6 class="blog-post-title">
+                                                <a href="/Blog/Details/@blog.BlogId">@(blog.Title?.Length > 50 ? blog.Title.Substring(0, 50) + "..." : blog.Title)</a>
+                                            </h6>
+                                            <p class="blog-post-excerpt small">
+                                                @(blog.MetaDis?.Length > 80 ? blog.MetaDis.Substring(0, 80) + "..." : blog.MetaDis)
+                                            </p>
+                                            <div class="blog-post-meta">
+                                                <small><i class="fas fa-eye me-1"></i>@(blog.views ?? 0)</small>
+                                                <small><i class="fas fa-clock me-1 ms-2"></i>@GetTimeAgo(blog.CreationDate)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Recent Forums Section -->
+            @if (recentForums != null && recentForums.Any())
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-comments me-2 text-primary"></i>Active Forum Discussions
+                            </h5>
+                            <p class="text-muted mb-0 small">Join the conversation</p>
+                        </div>
+                        <a href="/Forum" class="btn btn-sm btn-outline-primary">
+                            View All <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var forum in recentForums.Take(5))
+                        {
+                            <div class="d-flex justify-content-between align-items-start mb-3 pb-3 @(forum != recentForums.Last() ? "border-bottom" : "")">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a href="/Forum/Details/@forum.UserFourmID" class="text-decoration-none">
+                                            @forum.Title
+                                        </a>
+                                    </h6>
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>@(forum.User?.UserName ?? "Anonymous")
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="fas fa-comments me-1"></i>@(forum.Replies?.Count ?? 0) replies
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="fas fa-eye me-1"></i>@(forum.Views ?? 0) views
+                                        </small>
+                                        <small class="text-muted">@GetTimeAgo(forum.CreationDate)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Featured Products Section -->
+            @if (featuredProducts != null && featuredProducts.Any())
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-header">
+                        <h5 class="mb-1">
+                            <i class="fas fa-shopping-bag me-2 text-primary"></i>Featured Products
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            @foreach (var product in featuredProducts.Take(3))
+                            {
+                                <div class="col-md-4">
+                                    <div class="affiliate-product-card h-100">
+                                        @if (!string.IsNullOrEmpty(product.ImageLink))
+                                        {
+                                            <img src="@product.ImageLink" alt="@product.Title" class="affiliate-product-image" onerror="this.style.display='none'">
+                                        }
+                                        <div class="affiliate-product-content">
+                                            <h6 class="affiliate-product-title">@(product.Title?.Length > 40 ? product.Title.Substring(0, 40) + "..." : product.Title)</h6>
+                                            @if (product.Price.HasValue)
+                                            {
+                                                <div class="affiliate-product-price">$@product.Price</div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(product.BuyLink))
+                                            {
+                                                <a href="@product.BuyLink" target="_blank" class="affiliate-buy-button btn-sm">
+                                                    <i class="fas fa-shopping-cart me-2"></i>Buy Now
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Posts -->
+            @if (postsByCategory != null && postsByCategory.Any())
+            {
+                @foreach (var categoryPosts in postsByCategory)
+                {
+                    <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">
+                                    <i class="@(categoryPosts.Key.IconClass ?? "fas fa-folder") me-2"></i>
+                                    @categoryPosts.Key.Name
+                                </h5>
+                                <p class="text-muted mb-0 small">@categoryPosts.Key.Description</p>
+                            </div>
+                            <a href="/category/@categoryPosts.Key.Slug" class="btn btn-sm btn-outline-primary">
+                                View All <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var post in categoryPosts.Value)
+                            {
+                                <div class="modern-post-card">
+                                    <div class="post-header-modern">
+                                        <span class="community-badge-modern">
+                                            <i class="fas fa-users"></i>
+                                            r/@post.Community?.Name
+                                        </span>
+                                        <span class="text-muted small">
+                                            by <strong>u/@post.User?.UserName</strong>
+                                            <span class="ms-2">@GetTimeAgo(post.CreatedAt)</span>
+                                        </span>
+                                    </div>
+                                    <h4 class="post-title-modern">
+                                        <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">
+                                            @post.Title
+                                        </a>
+                                    </h4>
+                                    @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                    {
+                                        <div class="mb-3">
+                                            <img src="@post.FeaturedImage" alt="@post.Title" class="img-fluid rounded-modern" style="max-height: 300px; object-fit: cover; width: 100%;">
+                                        </div>
+                                    }
+                                    <p class="post-excerpt-modern">
+                                        @(post.Content?.Length > 200 ? post.Content.Substring(0, 200) + "..." : post.Content)
+                                    </p>
+                                    <div class="post-footer-modern">
+                                        <button class="post-action-modern">
+                                            <i class="fas fa-comment"></i>
+                                            <span>@(post.Comments?.Count ?? 0)</span>
+                                        </button>
+                                        <button class="post-action-modern">
+                                            <i class="fas fa-share"></i>
+                                            <span>Share</span>
+                                        </button>
+                                        <button class="post-action-modern">
+                                            <i class="fas fa-bookmark"></i>
+                                            <span>Save</span>
+                                        </button>
+                                        @if (post.IsFeatured == true)
+                                        {
+                                            <span class="badge-modern badge-featured-modern ms-auto">
+                                                <i class="fas fa-star"></i>Featured
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else if (recentPosts.Any())
+            {
+                <div class="card fade-in-up">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Posts</h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var post in recentPosts)
+                        {
+                            <div class="modern-post-card">
+                                <div class="post-header-modern">
+                                    <span class="community-badge-modern">
+                                        <i class="fas fa-users"></i>
+                                        r/@post.Community?.Name
+                                    </span>
+                                    <span class="text-muted small">
+                                        by <strong>u/@post.User?.UserName</strong>
+                                        <span class="ms-2">@GetTimeAgo(post.CreatedAt)</span>
+                                    </span>
+                                </div>
+                                <h4 class="post-title-modern">
+                                    <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">
+                                        @post.Title
+                                    </a>
+                                </h4>
+                                <p class="post-excerpt-modern">
+                                    @(post.Content?.Length > 200 ? post.Content.Substring(0, 200) + "..." : post.Content)
+                                </p>
+                                <div class="post-footer-modern">
+                                    <button class="post-action-modern">
+                                        <i class="fas fa-comment"></i>
+                                        <span>@(post.Comments?.Count ?? 0)</span>
+                                    </button>
+                                    <button class="post-action-modern">
+                                        <i class="fas fa-share"></i>
+                                        <span>Share</span>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            
+            <!-- Show message if NO data at all -->
+            @if ((recentBlogs == null || !recentBlogs.Any()) && 
+                 (recentForums == null || !recentForums.Any()) && 
+                 (featuredProducts == null || !featuredProducts.Any()) && 
+                 (postsByCategory == null || !postsByCategory.Any()) && 
+                 (recentPosts == null || !recentPosts.Any()))
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+                        <h3 class="mb-3">No Content Available</h3>
+                        <p class="text-muted mb-4">
+                            The homepage is empty. This could mean:
+                        </p>
+                        <ul class="list-unstyled text-start d-inline-block mb-4">
+                            <li><i class="fas fa-database text-warning me-2"></i>Database tables are empty</li>
+                            <li><i class="fas fa-plug text-warning me-2"></i>Database connection issue</li>
+                            <li><i class="fas fa-filter text-warning me-2"></i>Data filters are too restrictive</li>
+                        </ul>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <a href="/Diagnostics" class="btn btn-primary">
+                                <i class="fas fa-stethoscope me-2"></i>Check Diagnostics
+                            </a>
+                            <a href="/Blog/Blogs" class="btn btn-outline-primary">
+                                <i class="fas fa-blog me-2"></i>View Blogs
+                            </a>
+                            <a href="/Forum" class="btn btn-outline-primary">
+                                <i class="fas fa-comments me-2"></i>View Forums
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 80px;">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="card mb-4">
+                        <div class="card-body text-center">
+                            <a href="/Posts/Create" class="btn btn-primary w-100">
+                                <i class="fas fa-plus-circle me-2"></i>Create Post
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-fire me-2"></i>Trending Communities</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary">1</span>
+                                <div>
+                                    <strong class="d-block">r/MobileRepair</strong>
+                                    <small class="text-muted">12.5k members</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary">Join</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>About GSMSharing</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-3">Your premier destination for mobile repair knowledge, community discussions, and marketplace.</p>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <strong class="d-block text-primary">1.2M+</strong>
+                                <small class="text-muted">Members</small>
+                            </div>
+                            <div class="col-4">
+                                <strong class="d-block text-primary">50K+</strong>
+                                <small class="text-muted">Posts</small>
+                            </div>
+                            <div class="col-4">
+                                <strong class="d-block text-primary">200+</strong>
+                                <small class="text-muted">Communities</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reddit-like Main Feed (Old - keeping for reference) -->
+<div class="reddit-layout" style="display: none;">
     <div class="container-fluid">
         <div class="row">
             <!-- Main Content -->

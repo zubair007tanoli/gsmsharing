@@ -23,6 +23,11 @@ namespace GsmsharingV2.Database
         // Mobile Specs
         public DbSet<MobileSpecs> MobileSpecs { get; set; }
 
+        // Blog Tables (from existing database)
+        public DbSet<MobilePost> MobilePosts { get; set; }
+        public DbSet<GsmBlog> GsmBlogs { get; set; }
+        public DbSet<AffiliationProduct> AffiliationProducts { get; set; }
+
         // Existing Tables
         public DbSet<Post> Posts { get; set; }
         public DbSet<Comment> Comments { get; set; }
@@ -86,6 +91,33 @@ namespace GsmsharingV2.Database
             // Configure Mobile Specs
             builder.Entity<MobileSpecs>().ToTable("MobileSpecs")
                 .HasKey(ms => ms.Specid);
+
+            // Configure Blog Tables
+            builder.Entity<MobilePost>().ToTable("MobilePosts")
+                .HasKey(mp => mp.BlogId);
+            builder.Entity<GsmBlog>().ToTable("GsmBlog")
+                .HasKey(gb => gb.BlogId);
+            builder.Entity<AffiliationProduct>().ToTable("AffiliationProgram")
+                .HasKey(ap => ap.ProductId);
+
+            // Configure Blog Relationships
+            builder.Entity<MobilePost>()
+                .HasOne(mp => mp.User)
+                .WithMany()
+                .HasForeignKey(mp => mp.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<GsmBlog>()
+                .HasOne(gb => gb.User)
+                .WithMany()
+                .HasForeignKey(gb => gb.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<AffiliationProduct>()
+                .HasOne(ap => ap.User)
+                .WithMany()
+                .HasForeignKey(ap => ap.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
             
             // Configure Core Entities with explicit keys and table names
             builder.Entity<Post>().ToTable("Posts").HasKey(p => p.PostID);
@@ -103,7 +135,289 @@ namespace GsmsharingV2.Database
             builder.Entity<PostTag>().ToTable("PostTags").HasKey(pt => new { pt.PostID, pt.TagID });
             builder.Entity<ChatRoomMember>().ToTable("ChatRoomMembers").HasKey(crm => new { crm.RoomID, crm.UserId });
 
-            // Configure relationships
+            // =============================================
+            // Configure Core Entity Relationships
+            // =============================================
+
+            // Post Relationships
+            builder.Entity<Post>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Post>()
+                .HasOne(p => p.Community)
+                .WithMany(c => c.Posts)
+                .HasForeignKey(p => p.CommunityID)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Post>()
+                .HasMany(p => p.Comments)
+                .WithOne(c => c.Post)
+                .HasForeignKey(c => c.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Post>()
+                .HasMany(p => p.Reactions)
+                .WithOne()
+                .HasForeignKey(r => r.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Post>()
+                .HasMany(p => p.PostTags)
+                .WithOne()
+                .HasForeignKey(pt => pt.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Comment Relationships
+            builder.Entity<Comment>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Comment>()
+                .HasOne(c => c.ParentComment)
+                .WithMany()
+                .HasForeignKey(c => c.ParentCommentID)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Community Relationships
+            builder.Entity<Community>()
+                .HasOne(c => c.Creator)
+                .WithMany()
+                .HasForeignKey(c => c.CreatorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Community>()
+                .HasOne(c => c.Category)
+                .WithMany()
+                .HasForeignKey(c => c.CategoryID)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Community>()
+                .HasMany(c => c.Members)
+                .WithOne()
+                .HasForeignKey(cm => cm.CommunityID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Community>()
+                .HasMany(c => c.ChatRooms)
+                .WithOne()
+                .HasForeignKey(cr => cr.CommunityID)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Category Self-Reference
+            builder.Entity<Category>()
+                .HasOne(c => c.ParentCategory)
+                .WithMany(c => c.ChildCategories)
+                .HasForeignKey(c => c.ParentCategoryID)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<Category>()
+                .HasMany(c => c.Communities)
+                .WithOne(com => com.Category)
+                .HasForeignKey(com => com.CategoryID)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // UserProfile Relationship
+            builder.Entity<UserProfile>()
+                .HasOne(up => up.User)
+                .WithOne()
+                .HasForeignKey<UserProfile>(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // CommunityMember Relationships
+            builder.Entity<CommunityMember>()
+                .HasOne(cm => cm.Community)
+                .WithMany()
+                .HasForeignKey(cm => cm.CommunityID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CommunityMember>()
+                .HasOne(cm => cm.User)
+                .WithMany()
+                .HasForeignKey(cm => cm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Reaction Relationships
+            builder.Entity<Reaction>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Reaction>()
+                .HasOne(r => r.Comment)
+                .WithMany()
+                .HasForeignKey(r => r.CommentID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // PostTag Relationships
+            builder.Entity<PostTag>()
+                .HasOne(pt => pt.Post)
+                .WithMany(p => p.PostTags)
+                .HasForeignKey(pt => pt.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<PostTag>()
+                .HasOne(pt => pt.Tag)
+                .WithMany()
+                .HasForeignKey(pt => pt.TagID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ChatRoom Relationships
+            builder.Entity<ChatRoom>()
+                .HasOne(cr => cr.Creator)
+                .WithMany()
+                .HasForeignKey(cr => cr.CreatedBy)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<ChatRoom>()
+                .HasMany(cr => cr.Members)
+                .WithOne(crm => crm.Room)
+                .HasForeignKey(crm => crm.RoomID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ChatRoomMember Relationships
+            builder.Entity<ChatRoomMember>()
+                .HasOne(crm => crm.User)
+                .WithMany()
+                .HasForeignKey(crm => crm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ChatRoomMember>()
+                .HasOne(crm => crm.User)
+                .WithMany()
+                .HasForeignKey(crm => crm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Notification Relationship
+            builder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =============================================
+            // Configure Indexes
+            // =============================================
+
+            // Posts Indexes
+            builder.Entity<Post>()
+                .HasIndex(p => p.UserId)
+                .HasDatabaseName("IX_Posts_UserId");
+
+            builder.Entity<Post>()
+                .HasIndex(p => p.CommunityID)
+                .HasDatabaseName("IX_Posts_CommunityID");
+
+            builder.Entity<Post>()
+                .HasIndex(p => p.PostStatus)
+                .HasDatabaseName("IX_Posts_PostStatus");
+
+            builder.Entity<Post>()
+                .HasIndex(p => p.CreatedAt)
+                .HasDatabaseName("IX_Posts_CreatedAt");
+
+            builder.Entity<Post>()
+                .HasIndex(p => p.Slug)
+                .HasDatabaseName("IX_Posts_Slug");
+
+            // Comments Indexes
+            builder.Entity<Comment>()
+                .HasIndex(c => c.PostID)
+                .HasDatabaseName("IX_Comments_PostID");
+
+            builder.Entity<Comment>()
+                .HasIndex(c => c.UserId)
+                .HasDatabaseName("IX_Comments_UserId");
+
+            builder.Entity<Comment>()
+                .HasIndex(c => c.ParentCommentID)
+                .HasDatabaseName("IX_Comments_ParentCommentID");
+
+            // Communities Indexes
+            builder.Entity<Community>()
+                .HasIndex(c => c.Slug)
+                .IsUnique()
+                .HasDatabaseName("IX_Communities_Slug");
+
+            builder.Entity<Community>()
+                .HasIndex(c => c.CreatorId)
+                .HasDatabaseName("IX_Communities_CreatorId");
+
+            builder.Entity<Community>()
+                .HasIndex(c => c.CategoryID)
+                .HasDatabaseName("IX_Communities_CategoryID");
+
+            // Categories Indexes
+            builder.Entity<Category>()
+                .HasIndex(c => c.ParentCategoryID)
+                .HasDatabaseName("IX_Categories_ParentCategoryID");
+
+            builder.Entity<Category>()
+                .HasIndex(c => c.Slug)
+                .IsUnique()
+                .HasDatabaseName("IX_Categories_Slug");
+
+            // Tags Indexes
+            builder.Entity<Tags>()
+                .HasIndex(t => t.Slug)
+                .IsUnique()
+                .HasDatabaseName("IX_Tags_Slug");
+
+            // UserProfiles Indexes
+            builder.Entity<UserProfile>()
+                .HasIndex(up => up.UserId)
+                .IsUnique()
+                .HasDatabaseName("IX_UserProfiles_UserId");
+
+            // CommunityMembers Indexes
+            builder.Entity<CommunityMember>()
+                .HasIndex(cm => cm.CommunityID)
+                .HasDatabaseName("IX_CommunityMembers_CommunityID");
+
+            builder.Entity<CommunityMember>()
+                .HasIndex(cm => cm.UserId)
+                .HasDatabaseName("IX_CommunityMembers_UserId");
+
+            // Reactions Indexes
+            builder.Entity<Reaction>()
+                .HasIndex(r => r.PostID)
+                .HasDatabaseName("IX_Reactions_PostID");
+
+            builder.Entity<Reaction>()
+                .HasIndex(r => r.CommentID)
+                .HasDatabaseName("IX_Reactions_CommentID");
+
+            builder.Entity<Reaction>()
+                .HasIndex(r => r.UserId)
+                .HasDatabaseName("IX_Reactions_UserId");
+
+            // Notifications Indexes
+            builder.Entity<Notification>()
+                .HasIndex(n => n.UserId)
+                .HasDatabaseName("IX_Notifications_UserId");
+
+            builder.Entity<Notification>()
+                .HasIndex(n => n.IsRead)
+                .HasDatabaseName("IX_Notifications_IsRead");
+
+            // MobileAds Indexes
+            builder.Entity<MobileAd>()
+                .HasIndex(ma => ma.UserId)
+                .HasDatabaseName("IX_MobileAds_UserId");
+
+            builder.Entity<MobileAd>()
+                .HasIndex(ma => ma.Publish)
+                .HasDatabaseName("IX_MobileAds_Publish");
+
+            // =============================================
+            // Configure Forum Relationships
+            // =============================================
+
             builder.Entity<ForumThread>()
                 .HasMany(f => f.Replies)
                 .WithOne(r => r.Thread)
@@ -115,6 +429,10 @@ namespace GsmsharingV2.Database
                 .WithOne(c => c.Thread)
                 .HasForeignKey(c => c.UserFourmID)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =============================================
+            // Configure Marketplace Relationships
+            // =============================================
 
             builder.Entity<MobileAd>()
                 .HasMany(a => a.Images)

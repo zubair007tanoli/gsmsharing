@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,17 +8,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/modern-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/blog-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GsmsharingV2.styles.css" asp-append-version="true" />
+    
+    @* Google AdSense - Replace YOUR_PUBLISHER_ID with your actual Publisher ID *@
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+     crossorigin="anonymous"></script>
 </head>
 <body>
-    <header class="main-header">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <header class="blog-navbar">
+        <nav class="navbar navbar-expand-lg">
             <div class="container">
-                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-mobile-alt me-2"></i>
-                    <span class="fw-bold">GSMSharing</span>
+                <a class="navbar-brand-blog" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>GSMSharing</span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -26,8 +32,18 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                            <a class="nav-link active" asp-area="" asp-controller="Home" asp-action="Index">
                                 <i class="fas fa-home me-1"></i>Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Blog" asp-action="Blogs">
+                                <i class="fas fa-blog me-1"></i>Blog
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Forum" asp-action="Index">
+                                <i class="fas fa-comments me-1"></i>Forums
                             </a>
                         </li>
                         <li class="nav-item">
@@ -46,10 +62,10 @@
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="forumDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-comments me-1"></i>Forums
+                                <i class="fas fa-shopping-cart me-1"></i>Marketplace
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="forumDropdown">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-list me-2"></i>Browse Forums</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-list me-2"></i>Browse Products</a></li>
                                 <li><a class="dropdown-item" href="#"><i class="fas fa-plus me-2"></i>New Thread</a></li>
                             </ul>
                         </li>
