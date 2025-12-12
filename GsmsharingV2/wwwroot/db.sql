@@ -1,89 +1,9 @@
-USE [master]
-GO
-/****** Object:  Database [gsmsharingv3]    Script Date: 08/12/2025 9:39:49 pm ******/
-CREATE DATABASE [gsmsharingv3]
- CONTAINMENT = NONE
- ON  PRIMARY 
-( NAME = N'gsmsharing', FILENAME = N'/var/opt/mssql/data/gsmsharingv3.mdf' , SIZE = 139264KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
- LOG ON 
-( NAME = N'gsmsharing_log', FILENAME = N'/var/opt/mssql/data/gsmsharingv3_log.ldf' , SIZE = 139264KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
- WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
-GO
-ALTER DATABASE [gsmsharingv3] SET COMPATIBILITY_LEVEL = 150
-GO
-IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
-begin
-EXEC [gsmsharingv3].[dbo].[sp_fulltext_database] @action = 'enable'
-end
-GO
-ALTER DATABASE [gsmsharingv3] SET ANSI_NULL_DEFAULT OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET ANSI_NULLS OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET ANSI_PADDING OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET ANSI_WARNINGS OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET ARITHABORT OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET AUTO_CLOSE ON 
-GO
-ALTER DATABASE [gsmsharingv3] SET AUTO_SHRINK OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET AUTO_UPDATE_STATISTICS ON 
-GO
-ALTER DATABASE [gsmsharingv3] SET CURSOR_CLOSE_ON_COMMIT OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET CURSOR_DEFAULT  GLOBAL 
-GO
-ALTER DATABASE [gsmsharingv3] SET CONCAT_NULL_YIELDS_NULL OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET NUMERIC_ROUNDABORT OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET QUOTED_IDENTIFIER OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET RECURSIVE_TRIGGERS OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET  DISABLE_BROKER 
-GO
-ALTER DATABASE [gsmsharingv3] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET DATE_CORRELATION_OPTIMIZATION OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET TRUSTWORTHY OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET ALLOW_SNAPSHOT_ISOLATION OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET PARAMETERIZATION SIMPLE 
-GO
-ALTER DATABASE [gsmsharingv3] SET READ_COMMITTED_SNAPSHOT ON 
-GO
-ALTER DATABASE [gsmsharingv3] SET HONOR_BROKER_PRIORITY OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET RECOVERY SIMPLE 
-GO
-ALTER DATABASE [gsmsharingv3] SET  MULTI_USER 
-GO
-ALTER DATABASE [gsmsharingv3] SET PAGE_VERIFY CHECKSUM  
-GO
-ALTER DATABASE [gsmsharingv3] SET DB_CHAINING OFF 
-GO
-ALTER DATABASE [gsmsharingv3] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
-GO
-ALTER DATABASE [gsmsharingv3] SET TARGET_RECOVERY_TIME = 60 SECONDS 
-GO
-ALTER DATABASE [gsmsharingv3] SET DELAYED_DURABILITY = DISABLED 
-GO
-ALTER DATABASE [gsmsharingv3] SET ACCELERATED_DATABASE_RECOVERY = OFF  
-GO
-ALTER DATABASE [gsmsharingv3] SET QUERY_STORE = OFF
-GO
 USE [gsmsharingv3]
 GO
-/****** Object:  Schema [gsmsharing]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Schema [gsmsharing]    Script Date: 10/12/2025 12:45:57 am ******/
 CREATE SCHEMA [gsmsharing]
 GO
-/****** Object:  Table [dbo].[AspNetUsers]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetUsers]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -110,7 +30,7 @@ CREATE TABLE [dbo].[AspNetUsers](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobilePosts]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobilePosts]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -137,7 +57,7 @@ CREATE TABLE [dbo].[MobilePosts](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[GetAllPosts]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  View [dbo].[GetAllPosts]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -151,7 +71,7 @@ FROM     dbo.MobilePosts INNER JOIN
                   dbo.AspNetUsers ON dbo.MobilePosts.UserId = dbo.AspNetUsers.Id
 WHERE  (dbo.MobilePosts.publish = 1)
 GO
-/****** Object:  Table [dbo].[__EFMigrationsHistory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[__EFMigrationsHistory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -165,7 +85,7 @@ CREATE TABLE [dbo].[__EFMigrationsHistory](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AdCategory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AdCategory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -180,7 +100,7 @@ CREATE TABLE [dbo].[AdCategory](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AdPostCat]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AdPostCat]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -195,7 +115,7 @@ CREATE TABLE [dbo].[AdPostCat](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AdsImage]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AdsImage]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -211,7 +131,7 @@ CREATE TABLE [dbo].[AdsImage](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AdSubCat]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AdSubCat]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -227,7 +147,7 @@ CREATE TABLE [dbo].[AdSubCat](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AffiliationProgram]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AffiliationProgram]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -252,7 +172,7 @@ CREATE TABLE [dbo].[AffiliationProgram](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AmazonProducts]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AmazonProducts]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -287,7 +207,7 @@ UNIQUE NONCLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AspNetRoleClaims]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetRoleClaims]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -303,7 +223,7 @@ CREATE TABLE [dbo].[AspNetRoleClaims](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AspNetRoles]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetRoles]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -319,7 +239,7 @@ CREATE TABLE [dbo].[AspNetRoles](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AspNetUserClaims]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetUserClaims]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -335,7 +255,7 @@ CREATE TABLE [dbo].[AspNetUserClaims](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AspNetUserLogins]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetUserLogins]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -352,7 +272,7 @@ CREATE TABLE [dbo].[AspNetUserLogins](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AspNetUserRoles]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetUserRoles]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -367,7 +287,7 @@ CREATE TABLE [dbo].[AspNetUserRoles](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[AspNetUserTokens]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[AspNetUserTokens]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -385,7 +305,7 @@ CREATE TABLE [dbo].[AspNetUserTokens](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[BlogCatContainer]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[BlogCatContainer]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -401,7 +321,7 @@ CREATE TABLE [dbo].[BlogCatContainer](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[BlogComments]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[BlogComments]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -418,7 +338,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[BlogFolder]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[BlogFolder]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -434,7 +354,7 @@ CREATE TABLE [dbo].[BlogFolder](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[BlogSEO]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[BlogSEO]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -451,7 +371,7 @@ CREATE TABLE [dbo].[BlogSEO](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[BlogSpecContainer]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[BlogSpecContainer]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -466,7 +386,136 @@ CREATE TABLE [dbo].[BlogSpecContainer](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[FileMenu]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[Categories]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Categories](
+	[CategoryID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](max) NULL,
+	[Slug] [nvarchar](max) NULL,
+	[ParentCategoryID] [int] NULL,
+	[Description] [nvarchar](max) NULL,
+	[MetaTitle] [nvarchar](max) NULL,
+	[MetaDescription] [nvarchar](max) NULL,
+	[OgTitle] [nvarchar](max) NULL,
+	[OgDescription] [nvarchar](max) NULL,
+	[OgImage] [nvarchar](max) NULL,
+	[IconClass] [nvarchar](max) NULL,
+	[DisplayOrder] [int] NULL,
+	[IsActive] [bit] NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+	[CreatedBy] [nvarchar](max) NULL,
+	[UpdatedBy] [nvarchar](max) NULL,
+	[IsDisabledParent] [bit] NOT NULL,
+ CONSTRAINT [PK_Categories] PRIMARY KEY CLUSTERED 
+(
+	[CategoryID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ChatRoomMembers]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ChatRoomMembers](
+	[RoomID] [int] NOT NULL,
+	[UserId] [nvarchar](450) NOT NULL,
+	[JoinedAt] [datetime2](7) NULL,
+	[LastReadAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_ChatRoomMembers] PRIMARY KEY CLUSTERED 
+(
+	[RoomID] ASC,
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ChatRooms]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ChatRooms](
+	[RoomID] [int] IDENTITY(1,1) NOT NULL,
+	[RoomType] [nvarchar](50) NULL,
+	[CommunityID] [int] NULL,
+	[Name] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+	[CreatedBy] [nvarchar](450) NULL,
+ CONSTRAINT [PK_ChatRooms] PRIMARY KEY CLUSTERED 
+(
+	[RoomID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Comments]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Comments](
+	[CommentID] [int] IDENTITY(1,1) NOT NULL,
+	[PostID] [int] NULL,
+	[UserId] [nvarchar](450) NULL,
+	[ParentCommentID] [int] NULL,
+	[Content] [nvarchar](max) NULL,
+	[IsApproved] [bit] NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Comments] PRIMARY KEY CLUSTERED 
+(
+	[CommentID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Communities]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Communities](
+	[CommunityID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](max) NULL,
+	[Slug] [nvarchar](max) NULL,
+	[Description] [nvarchar](max) NULL,
+	[Rules] [nvarchar](max) NULL,
+	[CoverImage] [nvarchar](max) NULL,
+	[IconImage] [nvarchar](max) NULL,
+	[CreatorId] [nvarchar](450) NULL,
+	[IsPrivate] [bit] NULL,
+	[IsVerified] [bit] NULL,
+	[MemberCount] [int] NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+	[CategoryID] [int] NULL,
+ CONSTRAINT [PK_Communities] PRIMARY KEY CLUSTERED 
+(
+	[CommunityID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CommunityMembers]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CommunityMembers](
+	[CommunityMemberID] [int] IDENTITY(1,1) NOT NULL,
+	[CommunityID] [int] NOT NULL,
+	[UserId] [nvarchar](450) NULL,
+	[Role] [nvarchar](50) NULL,
+	[JoinedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_CommunityMembers] PRIMARY KEY CLUSTERED 
+(
+	[CommunityMemberID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[FileMenu]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -477,7 +526,7 @@ CREATE TABLE [dbo].[FileMenu](
 	[DriveId] [varchar](150) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ForumCategory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[ForumCategory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -494,7 +543,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ForumReplys]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[ForumReplys]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -514,7 +563,7 @@ CREATE TABLE [dbo].[ForumReplys](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[FourmComments]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[FourmComments]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -530,7 +579,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[GsmBlog]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[GsmBlog]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -555,7 +604,7 @@ CREATE TABLE [dbo].[GsmBlog](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[GsmBlogCategory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[GsmBlogCategory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -570,7 +619,7 @@ CREATE TABLE [dbo].[GsmBlogCategory](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[GsmBlogComments]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[GsmBlogComments]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -587,7 +636,7 @@ CREATE TABLE [dbo].[GsmBlogComments](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[keywords]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[keywords]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -606,7 +655,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobileAds]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobileAds]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -629,7 +678,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobileCategory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobileCategory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -645,7 +694,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobileFiles]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobileFiles]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -660,7 +709,7 @@ CREATE TABLE [dbo].[MobileFiles](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobilePartAds]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobilePartAds]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -683,7 +732,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobileSale]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobileSale]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -697,7 +746,7 @@ CREATE TABLE [dbo].[MobileSale](
 	[Processor] [nvarchar](50) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobileSpecs]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobileSpecs]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -728,7 +777,7 @@ CREATE TABLE [dbo].[MobileSpecs](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MobileSubCategory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[MobileSubCategory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -745,7 +794,76 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ProductImage]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[Notifications]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Notifications](
+	[NotificationID] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [nvarchar](450) NULL,
+	[Title] [nvarchar](max) NULL,
+	[Content] [nvarchar](max) NULL,
+	[Type] [nvarchar](50) NULL,
+	[ReferenceID] [int] NULL,
+	[ReferenceType] [nvarchar](50) NULL,
+	[IsRead] [bit] NULL,
+	[CreatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Notifications] PRIMARY KEY CLUSTERED 
+(
+	[NotificationID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Posts]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Posts](
+	[PostID] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [nvarchar](450) NULL,
+	[Title] [nvarchar](max) NULL,
+	[Slug] [nvarchar](max) NULL,
+	[Tags] [nvarchar](max) NULL,
+	[Content] [nvarchar](max) NULL,
+	[FeaturedImage] [nvarchar](max) NULL,
+	[MetaTitle] [nvarchar](max) NULL,
+	[MetaDescription] [nvarchar](max) NULL,
+	[OgTitle] [nvarchar](max) NULL,
+	[OgDescription] [nvarchar](max) NULL,
+	[OgImage] [nvarchar](max) NULL,
+	[ViewCount] [int] NULL,
+	[PostStatus] [nvarchar](50) NULL,
+	[IsPromoted] [bit] NULL,
+	[IsFeatured] [bit] NULL,
+	[AllowComments] [bit] NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+	[PublishedAt] [datetime2](7) NULL,
+	[CommunityID] [int] NULL,
+ CONSTRAINT [PK_Posts] PRIMARY KEY CLUSTERED 
+(
+	[PostID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[PostTags]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PostTags](
+	[PostID] [int] NOT NULL,
+	[TagID] [int] NOT NULL,
+ CONSTRAINT [PK_PostTags] PRIMARY KEY CLUSTERED 
+(
+	[PostID] ASC,
+	[TagID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ProductImage]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -757,7 +875,7 @@ CREATE TABLE [dbo].[ProductImage](
 	[UploadDate] [datetime] NULL
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ProductReview]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[ProductReview]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -774,7 +892,7 @@ CREATE TABLE [dbo].[ProductReview](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[profile]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[profile]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -790,7 +908,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ProfilePhoto]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[ProfilePhoto]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -806,7 +924,7 @@ CREATE TABLE [dbo].[ProfilePhoto](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[rating_distribution]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[rating_distribution]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -822,7 +940,25 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Review]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[Reactions]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Reactions](
+	[ReactionID] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [nvarchar](450) NULL,
+	[PostID] [int] NULL,
+	[CommentID] [int] NULL,
+	[ReactionType] [nvarchar](50) NULL,
+	[CreatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Reactions] PRIMARY KEY CLUSTERED 
+(
+	[ReactionID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Review]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -845,7 +981,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[review_aspects]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[review_aspects]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -861,7 +997,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ReviewImage]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[ReviewImage]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -876,7 +1012,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ReviewProduct]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[ReviewProduct]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -893,7 +1029,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[SocialCategories]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[SocialCategories]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -910,7 +1046,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[SocialCommunities]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[SocialCommunities]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -929,7 +1065,52 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Users_Communities]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[Tags]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Tags](
+	[TagID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](max) NULL,
+	[Slug] [nvarchar](max) NULL,
+	[Description] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[CreatedBy] [nvarchar](max) NULL,
+ CONSTRAINT [PK_Tags] PRIMARY KEY CLUSTERED 
+(
+	[TagID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[UserProfiles]    Script Date: 10/12/2025 12:45:57 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UserProfiles](
+	[UserProfileID] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [nvarchar](450) NULL,
+	[Bio] [nvarchar](max) NULL,
+	[ProfileImage] [nvarchar](max) NULL,
+	[CoverImage] [nvarchar](max) NULL,
+	[Location] [nvarchar](max) NULL,
+	[Website] [nvarchar](max) NULL,
+	[TwitterHandle] [nvarchar](max) NULL,
+	[FacebookUrl] [nvarchar](max) NULL,
+	[LinkedInUrl] [nvarchar](max) NULL,
+	[DisplayName] [nvarchar](max) NULL,
+	[LastLoginAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NOT NULL,
+	[IsActive] [bit] NOT NULL,
+ CONSTRAINT [PK_UserProfiles] PRIMARY KEY CLUSTERED 
+(
+	[UserProfileID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Users_Communities]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -945,7 +1126,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[UsersFourm]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [dbo].[UsersFourm]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -969,7 +1150,7 @@ CREATE TABLE [dbo].[UsersFourm](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[blog_files]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[blog_files]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -987,7 +1168,7 @@ CREATE TABLE [gsmsharing].[blog_files](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[blogcat]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[blogcat]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1004,7 +1185,7 @@ CREATE TABLE [gsmsharing].[blogcat](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[blogfolder]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[blogfolder]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1020,7 +1201,7 @@ CREATE TABLE [gsmsharing].[blogfolder](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[blogposts]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[blogposts]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1046,7 +1227,7 @@ CREATE TABLE [gsmsharing].[blogposts](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[category]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[category]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1062,7 +1243,7 @@ CREATE TABLE [gsmsharing].[category](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[categoryforum]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[categoryforum]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1080,7 +1261,7 @@ CREATE TABLE [gsmsharing].[categoryforum](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[code]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[code]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1102,7 +1283,7 @@ CREATE TABLE [gsmsharing].[code](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[codecategory]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[codecategory]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1117,7 +1298,7 @@ CREATE TABLE [gsmsharing].[codecategory](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[codecombine]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[codecombine]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1133,7 +1314,7 @@ CREATE TABLE [gsmsharing].[codecombine](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[codecomments]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[codecomments]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1151,7 +1332,7 @@ CREATE TABLE [gsmsharing].[codecomments](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[codesubcat]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[codesubcat]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1167,7 +1348,7 @@ CREATE TABLE [gsmsharing].[codesubcat](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[comments]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[comments]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1185,7 +1366,7 @@ CREATE TABLE [gsmsharing].[comments](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[gsmlog]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[gsmlog]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1201,7 +1382,7 @@ CREATE TABLE [gsmsharing].[gsmlog](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[news]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[news]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1218,7 +1399,7 @@ CREATE TABLE [gsmsharing].[news](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[subcat]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[subcat]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1234,7 +1415,7 @@ CREATE TABLE [gsmsharing].[subcat](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[user]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[user]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1256,7 +1437,7 @@ CREATE TABLE [gsmsharing].[user](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [gsmsharing].[userforum]    Script Date: 08/12/2025 9:39:56 pm ******/
+/****** Object:  Table [gsmsharing].[userforum]    Script Date: 10/12/2025 12:45:57 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1276,188 +1457,6 @@ CREATE TABLE [gsmsharing].[userforum](
 	[forumid] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [IX_AspNetRoleClaims_RoleId]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [IX_AspNetRoleClaims_RoleId] ON [dbo].[AspNetRoleClaims]
-(
-	[RoleId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [RoleNameIndex]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE UNIQUE NONCLUSTERED INDEX [RoleNameIndex] ON [dbo].[AspNetRoles]
-(
-	[NormalizedName] ASC
-)
-WHERE ([NormalizedName] IS NOT NULL)
-WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [IX_AspNetUserClaims_UserId]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [IX_AspNetUserClaims_UserId] ON [dbo].[AspNetUserClaims]
-(
-	[UserId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [IX_AspNetUserLogins_UserId]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [IX_AspNetUserLogins_UserId] ON [dbo].[AspNetUserLogins]
-(
-	[UserId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [IX_AspNetUserRoles_RoleId]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [IX_AspNetUserRoles_RoleId] ON [dbo].[AspNetUserRoles]
-(
-	[RoleId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [EmailIndex]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE UNIQUE NONCLUSTERED INDEX [EmailIndex] ON [dbo].[AspNetUsers]
-(
-	[NormalizedEmail] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [UserNameIndex]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE UNIQUE NONCLUSTERED INDEX [UserNameIndex] ON [dbo].[AspNetUsers]
-(
-	[NormalizedUserName] ASC
-)
-WHERE ([NormalizedUserName] IS NOT NULL)
-WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [IX_UsersCommunities_CommunityId]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [IX_UsersCommunities_CommunityId] ON [dbo].[Users_Communities]
-(
-	[CommunityId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-SET ANSI_PADDING ON
-GO
-/****** Object:  Index [IX_UsersCommunities_UserId]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [IX_UsersCommunities_UserId] ON [dbo].[Users_Communities]
-(
-	[UserId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_container_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_container_idx] ON [gsmsharing].[blogcat]
-(
-	[Blog_ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_containerCat_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_containerCat_idx] ON [gsmsharing].[blogcat]
-(
-	[catId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_subcat_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_subcat_idx] ON [gsmsharing].[blogcat]
-(
-	[SubCat] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [blog_key_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [blog_key_idx] ON [gsmsharing].[blogfolder]
-(
-	[Blog_ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_User_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_User_idx] ON [gsmsharing].[blogposts]
-(
-	[UserID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_ForumKey_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_ForumKey_idx] ON [gsmsharing].[categoryforum]
-(
-	[forumid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [Programming_FK_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [Programming_FK_idx] ON [gsmsharing].[code]
-(
-	[UserId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_Blog_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_Blog_idx] ON [gsmsharing].[codecombine]
-(
-	[codeId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_MainCat_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_MainCat_idx] ON [gsmsharing].[codecombine]
-(
-	[catid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_SubCat_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_SubCat_idx] ON [gsmsharing].[codecombine]
-(
-	[SubId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_Post_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_Post_idx] ON [gsmsharing].[codecomments]
-(
-	[codeid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_User_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_User_idx] ON [gsmsharing].[codecomments]
-(
-	[Userid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [Fk_Main_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [Fk_Main_idx] ON [gsmsharing].[codesubcat]
-(
-	[Main_Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [F_Blog_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [F_Blog_idx] ON [gsmsharing].[comments]
-(
-	[BlogID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [F_User_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [F_User_idx] ON [gsmsharing].[comments]
-(
-	[UserID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_News_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_News_idx] ON [gsmsharing].[news]
-(
-	[UserID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_Sub_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_Sub_idx] ON [gsmsharing].[subcat]
-(
-	[catid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-GO
-/****** Object:  Index [FK_forumKey_idx]    Script Date: 08/12/2025 9:39:56 pm ******/
-CREATE NONCLUSTERED INDEX [FK_forumKey_idx] ON [gsmsharing].[userforum]
-(
-	[UserID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 GO
 ALTER TABLE [dbo].[AdCategory] ADD  CONSTRAINT [DF_AdCategory_CreationDate]  DEFAULT (getdate()) FOR [CreationDate]
 GO
@@ -2214,8 +2213,4 @@ End
 ' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'VIEW',@level1name=N'GetAllPosts'
 GO
 EXEC sys.sp_addextendedproperty @name=N'MS_DiagramPaneCount', @value=1 , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'VIEW',@level1name=N'GetAllPosts'
-GO
-USE [master]
-GO
-ALTER DATABASE [gsmsharingv3] SET  READ_WRITE 
 GO

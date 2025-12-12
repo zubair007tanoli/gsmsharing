@@ -351,14 +351,20 @@ catch (Exception ex)
     // Don't throw - let the app start so user can see the error in the UI
 }
 
-try
-{
-    Log.Information("GSMSharing V2 application started successfully");
-    app.Run();
+    try
+    {
+        Log.Information("GSMSharing V2 application started successfully");
+        app.Run();
+    }
+    catch (Exception ex)
+    {
+        Log.Fatal(ex, "Application terminated unexpectedly");
+    }
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Application terminated unexpectedly");
+    Log.Fatal(ex, "Application failed to start");
+    throw;
 }
 finally
 {

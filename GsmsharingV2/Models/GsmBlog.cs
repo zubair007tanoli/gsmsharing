@@ -18,6 +18,7 @@ namespace GsmsharingV2.Models
 
         // Navigation properties
         public ApplicationUser User { get; set; }
+        public virtual ICollection<BlogSEO> BlogSEO { get; set; }
     }
 }
 

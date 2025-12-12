@@ -85,12 +85,28 @@ namespace GsmsharingV2.Controllers
             // Get related blogs
             var relatedBlogs = await _context.MobilePosts
                 .Include(mp => mp.User)
-                .Where(mp => mp.publish == true && mp.BlogId != id)
+                .Where(mp => mp.publish == 1 && mp.BlogId != id)
                 .OrderByDescending(mp => mp.views)
                 .Take(6)
                 .ToListAsync();
 
+            // Get blog comments for this post
+            var blogComments = await _context.BlogComments
+                .Include(bc => bc.User)
+                .Where(bc => bc.BlogId == id)
+                .OrderByDescending(bc => bc.CreationDate)
+                .ToListAsync();
+
+            // Get blog spec containers (mobile specs linked to this blog)
+            var blogSpecContainers = await _context.BlogSpecContainer
+                .Include(bsc => bsc.MobileSpecs)
+                .Where(bsc => bsc.BlogId == id)
+                .ToListAsync();
+
             ViewBag.RelatedBlogs = relatedBlogs;
+            ViewBag.BlogComments = blogComments;
+            ViewBag.BlogSpecContainers = blogSpecContainers;
+            ViewBag.CommentCount = blogComments.Count;
 
             return View(blog);
         }
@@ -110,6 +126,12 @@ namespace GsmsharingV2.Controllers
             // Increment view count
             blog.BlogViews = (blog.BlogViews ?? 0) + 1;
             await _context.SaveChangesAsync();
+
+            // Get BlogSEO data for this GsmBlog
+            var blogSEO = await _context.BlogSEO
+                .FirstOrDefaultAsync(bs => bs.BlogId == id);
+
+            ViewBag.BlogSEO = blogSEO;
 
             return View(blog);
         }

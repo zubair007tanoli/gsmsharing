@@ -12,6 +12,10 @@
     var recentSpecs = ViewBag.RecentSpecs as IEnumerable<GsmsharingV2.Models.MobileSpecs> ?? new List<GsmsharingV2.Models.MobileSpecs>();
     var topCommunities = ViewBag.TopCommunities as IEnumerable<GsmsharingV2.Models.Community> ?? new List<GsmsharingV2.Models.Community>();
     var onlineUsers = ViewBag.OnlineUsers as IEnumerable<GsmsharingV2.Models.ApplicationUser> ?? new List<GsmsharingV2.Models.ApplicationUser>();
+    var recentBlogComments = ViewBag.RecentBlogComments as IEnumerable<GsmsharingV2.Models.BlogComment> ?? new List<GsmsharingV2.Models.BlogComment>();
+    var recentProductReviews = ViewBag.RecentProductReviews as IEnumerable<GsmsharingV2.Models.ProductReview> ?? new List<GsmsharingV2.Models.ProductReview>();
+    var blogSEOData = ViewBag.BlogSEOData as IEnumerable<GsmsharingV2.Models.BlogSEO> ?? new List<GsmsharingV2.Models.BlogSEO>();
+    var blogSpecContainers = ViewBag.BlogSpecContainers as IEnumerable<GsmsharingV2.Models.BlogSpecContainer> ?? new List<GsmsharingV2.Models.BlogSpecContainer>();
 }
 
 <!-- Modern Hero Section -->
@@ -67,10 +71,13 @@
         <div class="alert alert-info mt-3">
             <strong>Debug Info:</strong> 
             Blogs: @ViewBag.TotalBlogs | 
+            GsmBlogs: @ViewBag.TotalGsmBlogs |
             Forums: @ViewBag.TotalForums | 
             Posts: @ViewBag.TotalPosts | 
             Products: @ViewBag.TotalProducts | 
-            Users: @ViewBag.TotalUsers
+            Users: @ViewBag.TotalUsers |
+            BlogComments: @ViewBag.TotalBlogComments |
+            ProductReviews: @ViewBag.TotalProductReviews
         </div>
     }
 
@@ -232,6 +239,101 @@
                                 </div>
                             }
                         </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Latest Blog Comments -->
+            @if (recentBlogComments.Any())
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-comment-dots me-2 text-primary"></i>Latest Blog Comments
+                            </h5>
+                            <p class="text-muted mb-0 small">Live feedback from readers</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var comment in recentBlogComments.Take(6))
+                        {
+                            <div class="d-flex justify-content-between align-items-start mb-3 pb-3 @(comment != recentBlogComments.Last() ? "border-bottom" : "")">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-primary rounded-pill">@comment.User?.UserName ?? "Guest"</span>
+                                        <small class="text-muted">@GetTimeAgo(comment.CreationDate)</small>
+                                    </div>
+                                    <div class="small text-muted mb-1">
+                                        on <a href="/Blog/Details/@comment.BlogId" class="fw-semibold">Blog #@comment.BlogId</a>
+                                    </div>
+                                    <p class="mb-0">@((comment.Comment?.Length ?? 0) > 140 ? comment.Comment.Substring(0, 140) + "..." : comment.Comment)</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Latest Product Reviews -->
+            @if (recentProductReviews.Any())
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-star-half-alt me-2 text-primary"></i>Recent Product Reviews
+                            </h5>
+                            <p class="text-muted mb-0 small">Affiliate products rated by the community</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var review in recentProductReviews.Take(6))
+                        {
+                            <div class="d-flex justify-content-between align-items-start mb-3 pb-3 @(review != recentProductReviews.Last() ? "border-bottom" : "")">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-success rounded-pill">@review.User?.UserName ?? "Guest"</span>
+                                        <small class="text-muted">@GetTimeAgo(review.ReviewDate)</small>
+                                    </div>
+                                    <div class="small text-muted mb-1">
+                                        Product #@review.BlogId
+                                    </div>
+                                    <p class="mb-0">@((review.Review?.Length ?? 0) > 140 ? review.Review.Substring(0, 140) + "..." : review.Review)</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Blog + Specs Links -->
+            @if (blogSpecContainers.Any())
+            {
+                <div class="card mb-4 fade-in-up shadow-blog rounded-blog">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-link me-2 text-primary"></i>Blog + Specs Highlights
+                            </h5>
+                            <p class="text-muted mb-0 small">Mobile posts mapped to device specifications</p>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var link in blogSpecContainers.Take(8))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 @(link != blogSpecContainers.Last() ? "border-bottom" : "")">
+                                <div>
+                                    <div class="fw-semibold">
+                                        Blog #@link.BlogId → @link.MobilePost?.Title
+                                    </div>
+                                    <div class="text-muted small">Spec: @link.MobileSpecs?.ModelName ?? "N/A"</div>
+                                </div>
+                                <a class="btn btn-sm btn-outline-primary" href="/Blog/Details/@link.BlogId">
+                                    View
+                                </a>
+                            </div>
+                        }
                     </div>
                 </div>
             }

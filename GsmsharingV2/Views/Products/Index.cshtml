@@ -1,0 +1,231 @@
+@model IEnumerable<GsmsharingV2.Models.AffiliationProduct>
+@{
+    ViewData["Title"] = "Products - GSMSharing | Affiliate Products";
+    var featuredProducts = ViewBag.FeaturedProducts as IEnumerable<GsmsharingV2.Models.AffiliationProduct> ?? new List<GsmsharingV2.Models.AffiliationProduct>();
+    var recentReviews = ViewBag.RecentReviews as IEnumerable<GsmsharingV2.Models.ProductReview> ?? new List<GsmsharingV2.Models.ProductReview>();
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Page Header -->
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">
+                    <i class="fas fa-shopping-bag me-2 text-primary"></i>Affiliate Products
+                </h1>
+                <p class="text-muted lead">Discover the best mobile and IT products with exclusive deals</p>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <!-- Products Grid -->
+                <div class="row g-4">
+                    @foreach (var product in Model)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="product-card-modern h-100">
+                                <div class="product-image-wrapper">
+                                    @if (!string.IsNullOrEmpty(product.ImageLink))
+                                    {
+                                        <img src="@product.ImageLink" alt="@product.Title" class="product-image-modern" onerror="this.src='/images/placeholder-product.jpg'">
+                                    }
+                                    else
+                                    {
+                                        <div class="product-image-placeholder">
+                                            <i class="fas fa-image fa-3x text-muted"></i>
+                                        </div>
+                                    }
+                                    <div class="product-overlay">
+                                        <a href="/Products/Details/@product.ProductId" class="btn btn-light btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View Details
+                                        </a>
+                                    </div>
+                                    @if (product.Views > 100)
+                                    {
+                                        <span class="product-badge badge bg-danger">
+                                            <i class="fas fa-fire me-1"></i>Hot
+                                        </span>
+                                    }
+                                </div>
+                                <div class="product-card-body">
+                                    <h5 class="product-title-modern">
+                                        <a href="/Products/Details/@product.ProductId" class="text-decoration-none">
+                                            @(product.Title?.Length > 60 ? product.Title.Substring(0, 60) + "..." : product.Title)
+                                        </a>
+                                    </h5>
+                                    <p class="product-description-modern text-muted small">
+                                        @if (!string.IsNullOrEmpty(product.ProductDiscription))
+                                        {
+                                            @(product.ProductDiscription.Length > 100 ? product.ProductDiscription.Substring(0, 100) + "..." : product.ProductDiscription)
+                                        }
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        @if (product.Price.HasValue)
+                                        {
+                                            <div class="product-price-modern">
+                                                <span class="price-currency">$</span>
+                                                <span class="price-amount">@product.Price</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-muted small">Price on request</div>
+                                        }
+                                        <div class="product-stats">
+                                            <small class="text-muted">
+                                                <i class="fas fa-eye me-1"></i>@(product.Views ?? 0)
+                                            </small>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(product.BuyLink))
+                                    {
+                                        <a href="@product.BuyLink" target="_blank" class="btn btn-primary w-100 mt-3 product-buy-btn">
+                                            <i class="fas fa-shopping-cart me-2"></i>Buy Now
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation" class="mt-5">
+                        <ul class="pagination justify-content-center">
+                            @if (ViewBag.CurrentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)">
+                                        <i class="fas fa-chevron-left me-1"></i>Previous
+                                    </a>
+                                </li>
+                            }
+                            @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
+                            {
+                                <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="?page=@i">@i</a>
+                                </li>
+                            }
+                            @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)">
+                                        Next<i class="fas fa-chevron-right ms-1"></i>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <div class="empty-state-modern">
+                        <i class="fas fa-shopping-bag fa-4x text-muted mb-4"></i>
+                        <h3 class="mb-3">No products found</h3>
+                        <p class="text-muted">Check back later for new products!</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-3">
+            <div class="sticky-top" style="top: 80px;">
+                <!-- Featured Products -->
+                @if (featuredProducts.Any())
+                {
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-star me-2"></i>Featured Products
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            @foreach (var product in featuredProducts)
+                            {
+                                <div class="featured-product-item p-3 border-bottom">
+                                    <div class="d-flex gap-3">
+                                        @if (!string.IsNullOrEmpty(product.ImageLink))
+                                        {
+                                            <img src="@product.ImageLink" alt="@product.Title" class="featured-product-thumb" onerror="this.style.display='none'">
+                                        }
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">
+                                                <a href="/Products/Details/@product.ProductId" class="text-decoration-none">
+                                                    @(product.Title?.Length > 40 ? product.Title.Substring(0, 40) + "..." : product.Title)
+                                                </a>
+                                            </h6>
+                                            @if (product.Price.HasValue)
+                                            {
+                                                <div class="text-primary fw-bold">$@product.Price</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Recent Reviews -->
+                @if (recentReviews.Any())
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-comments me-2"></i>Recent Reviews
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var review in recentReviews)
+                            {
+                                <div class="review-item mb-3 pb-3 @(review != recentReviews.Last() ? "border-bottom" : "")">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <div class="review-avatar">
+                                            @(review.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                                        </div>
+                                        <div>
+                                            <strong class="small">@(review.User?.UserName ?? "Guest")</strong>
+                                            <div class="text-muted" style="font-size: 0.75rem;">
+                                                @GetTimeAgo(review.ReviewDate)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="mb-0 small">@(review.Review?.Length > 80 ? review.Review.Substring(0, 80) + "..." : review.Review)</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetTimeAgo(DateTime? date)
+    {
+        if (date == null) return "just now";
+        
+        var timeSpan = DateTime.UtcNow - date.Value;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return $"{(int)timeSpan.TotalSeconds}s ago";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays}d ago";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}y ago";
+    }
+}
+

@@ -107,7 +107,7 @@ namespace GsmsharingV2.Controllers
             var createdPostDto = await _postService.CreateAsync(createPostDto, userId);
             
             var communityDto = await _communityService.GetByIdAsync(createdPostDto.CommunityID ?? 0);
-            return RedirectToAction("Details", new { community = communityDto?.CommunitySlug ?? "gsmsharing", slug = createdPostDto.Slug });
+            return RedirectToAction("Details", new { community = communityDto?.Slug ?? "gsmsharing", slug = createdPostDto.Slug });
         }
 
         [Authorize]
@@ -153,7 +153,7 @@ namespace GsmsharingV2.Controllers
             {
                 var updatedPostDto = await _postService.UpdateAsync(updatePostDto, userId);
                 var communityDto = await _communityService.GetByIdAsync(updatedPostDto.CommunityID ?? 0);
-                return RedirectToAction("Details", new { community = communityDto?.CommunitySlug ?? "gsmsharing", slug = updatedPostDto.Slug });
+                return RedirectToAction("Details", new { community = communityDto?.Slug ?? "gsmsharing", slug = updatedPostDto.Slug });
             }
             catch (UnauthorizedAccessException)
             {

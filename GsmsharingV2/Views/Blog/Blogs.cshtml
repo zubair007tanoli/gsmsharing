@@ -23,20 +23,35 @@
                 <div class="row g-4">
                     @foreach (var blog in Model)
                     {
-                        <div class="col-md-6 col-lg-4 fade-in-up">
-                            <div class="blog-post-card">
-                                @if (!string.IsNullOrEmpty(blog.WebLinks))
-                                {
-                                    <img src="@blog.WebLinks" alt="@blog.Title" class="blog-post-image" onerror="this.style.display='none'">
-                                }
-                                <div class="blog-post-content">
-                                    <span class="blog-post-category">
+                        <div class="col-md-6 col-lg-4">
+                            <article class="blog-card-modern h-100">
+                                <div class="blog-image-container">
+                                    @if (!string.IsNullOrEmpty(blog.WebLinks))
+                                    {
+                                        <img src="@blog.WebLinks" alt="@blog.Title" class="blog-image-modern" onerror="this.src='/images/placeholder-blog.jpg'">
+                                    }
+                                    else
+                                    {
+                                        <div class="blog-image-placeholder">
+                                            <i class="fas fa-blog fa-3x text-muted"></i>
+                                        </div>
+                                    }
+                                    <div class="blog-overlay">
+                                        <a href="/Blog/Details/@blog.BlogId" class="btn btn-light btn-sm">
+                                            <i class="fas fa-arrow-right me-1"></i>Read More
+                                        </a>
+                                    </div>
+                                    <span class="blog-category-badge">
                                         <i class="fas fa-mobile-alt me-1"></i>Mobile
                                     </span>
-                                    <h3 class="blog-post-title">
-                                        <a href="/Blog/Details/@blog.BlogId">@blog.Title</a>
+                                </div>
+                                <div class="blog-card-content">
+                                    <h3 class="blog-title-modern">
+                                        <a href="/Blog/Details/@blog.BlogId" class="text-decoration-none">
+                                            @blog.Title
+                                        </a>
                                     </h3>
-                                    <p class="blog-post-excerpt">
+                                    <p class="blog-excerpt-modern">
                                         @if (!string.IsNullOrEmpty(blog.MetaDis))
                                         {
                                             @(blog.MetaDis.Length > 120 ? blog.MetaDis.Substring(0, 120) + "..." : blog.MetaDis)
@@ -46,18 +61,30 @@
                                             @(blog.Content.Length > 120 ? blog.Content.Substring(0, 120) + "..." : blog.Content)
                                         }
                                     </p>
-                                    <div class="blog-post-meta">
-                                        <div class="blog-post-author">
-                                            <div class="blog-post-author-avatar">
+                                    <div class="blog-meta-modern">
+                                        <div class="blog-author-modern">
+                                            <div class="author-avatar-small">
                                                 @(blog.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
                                             </div>
-                                            <span>@(blog.User?.UserName ?? "Anonymous")</span>
+                                            <span class="author-name">@(blog.User?.UserName ?? "Anonymous")</span>
                                         </div>
-                                        <span><i class="fas fa-clock me-1"></i>@GetTimeAgo(blog.CreationDate)</span>
-                                        <span><i class="fas fa-eye me-1"></i>@(blog.views ?? 0)</span>
+                                        <div class="blog-stats">
+                                            <span class="stat-item">
+                                                <i class="fas fa-clock text-muted"></i>
+                                                <small>@GetTimeAgo(blog.CreationDate)</small>
+                                            </span>
+                                            <span class="stat-item">
+                                                <i class="fas fa-eye text-muted"></i>
+                                                <small>@(blog.views ?? 0)</small>
+                                            </span>
+                                            <span class="stat-item">
+                                                <i class="fas fa-thumbs-up text-muted"></i>
+                                                <small>@(blog.likes ?? 0)</small>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </article>
                         </div>
                     }
                 </div>

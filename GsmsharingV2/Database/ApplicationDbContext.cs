@@ -27,6 +27,12 @@ namespace GsmsharingV2.Database
         public DbSet<MobilePost> MobilePosts { get; set; }
         public DbSet<GsmBlog> GsmBlogs { get; set; }
         public DbSet<AffiliationProduct> AffiliationProducts { get; set; }
+        
+        // Blog Related Tables (existing data)
+        public DbSet<BlogSEO> BlogSEO { get; set; }
+        public DbSet<BlogComment> BlogComments { get; set; }
+        public DbSet<ProductReview> ProductReview { get; set; }
+        public DbSet<BlogSpecContainer> BlogSpecContainer { get; set; }
 
         // Existing Tables
         public DbSet<Post> Posts { get; set; }
@@ -73,6 +79,16 @@ namespace GsmsharingV2.Database
             // Configure Forum Entities
             builder.Entity<ForumThread>().ToTable("UsersFourm")
                 .HasKey(f => f.UserFourmID);
+            
+            // Map ForumThread column names (database uses lowercase)
+            builder.Entity<ForumThread>()
+                .Property(f => f.Views).HasColumnName("views");
+            builder.Entity<ForumThread>()
+                .Property(f => f.Likes).HasColumnName("likes");
+            builder.Entity<ForumThread>()
+                .Property(f => f.Dislikes).HasColumnName("dislikes");
+            builder.Entity<ForumThread>()
+                .Property(f => f.Publish).HasColumnName("publish");
             builder.Entity<ForumCategory>().ToTable("ForumCategory")
                 .HasKey(fc => fc.CategoryId);
             builder.Entity<ForumReply>().ToTable("ForumReplys")
@@ -99,6 +115,16 @@ namespace GsmsharingV2.Database
                 .HasKey(gb => gb.BlogId);
             builder.Entity<AffiliationProduct>().ToTable("AffiliationProgram")
                 .HasKey(ap => ap.ProductId);
+            
+            // Configure Blog Related Tables
+            builder.Entity<BlogSEO>().ToTable("BlogSEO")
+                .HasKey(bs => bs.SEOID);
+            builder.Entity<BlogComment>().ToTable("BlogComments")
+                .HasKey(bc => bc.Commentid);
+            builder.Entity<ProductReview>().ToTable("ProductReview")
+                .HasKey(pr => pr.RId);
+            builder.Entity<BlogSpecContainer>().ToTable("BlogSpecContainer")
+                .HasKey(bsc => bsc.ContainerId);
 
             // Configure Blog Relationships
             builder.Entity<MobilePost>()
@@ -117,6 +143,52 @@ namespace GsmsharingV2.Database
                 .HasOne(ap => ap.User)
                 .WithMany()
                 .HasForeignKey(ap => ap.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Configure BlogSEO Relationship
+            builder.Entity<BlogSEO>()
+                .HasOne(bs => bs.GsmBlog)
+                .WithMany(gb => gb.BlogSEO)
+                .HasForeignKey(bs => bs.BlogId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Configure BlogComment Relationships
+            builder.Entity<BlogComment>()
+                .HasOne(bc => bc.MobilePost)
+                .WithMany(mp => mp.BlogComments)
+                .HasForeignKey(bc => bc.BlogId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            builder.Entity<BlogComment>()
+                .HasOne(bc => bc.User)
+                .WithMany()
+                .HasForeignKey(bc => bc.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Configure ProductReview Relationships
+            builder.Entity<ProductReview>()
+                .HasOne(pr => pr.User)
+                .WithMany()
+                .HasForeignKey(pr => pr.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            builder.Entity<ProductReview>()
+                .HasOne(pr => pr.AffiliationProduct)
+                .WithMany(ap => ap.ProductReviews)
+                .HasForeignKey(pr => pr.BlogId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Configure BlogSpecContainer Relationships
+            builder.Entity<BlogSpecContainer>()
+                .HasOne(bsc => bsc.MobilePost)
+                .WithMany(mp => mp.BlogSpecContainers)
+                .HasForeignKey(bsc => bsc.BlogId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            builder.Entity<BlogSpecContainer>()
+                .HasOne(bsc => bsc.MobileSpecs)
+                .WithMany()
+                .HasForeignKey(bsc => bsc.SpecId)
                 .OnDelete(DeleteBehavior.SetNull);
             
             // Configure Core Entities with explicit keys and table names

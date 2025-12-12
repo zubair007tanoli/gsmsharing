@@ -114,15 +114,49 @@ namespace GsmsharingV2.Controllers
                     .Take(12)
                     .ToListAsync();
 
+                // Blog Comments (from existing BlogComments table)
+                var recentBlogComments = await _context.BlogComments
+                    .Include(bc => bc.User)
+                    .Include(bc => bc.MobilePost)
+                    .OrderByDescending(bc => bc.CreationDate)
+                    .Take(10)
+                    .ToListAsync();
+
+                // Product Reviews (from existing ProductReview table)
+                var recentProductReviews = await _context.ProductReview
+                    .Include(pr => pr.User)
+                    .Include(pr => pr.AffiliationProduct)
+                    .OrderByDescending(pr => pr.ReviewDate)
+                    .Take(8)
+                    .ToListAsync();
+
+                // Blog SEO Data (for GsmBlog posts)
+                var blogSEOData = await _context.BlogSEO
+                    .Include(bs => bs.GsmBlog)
+                    .Take(10)
+                    .ToListAsync();
+
+                // Blog Spec Containers (linking MobilePosts to MobileSpecs)
+                var blogSpecContainers = await _context.BlogSpecContainer
+                    .Include(bsc => bsc.MobilePost)
+                    .Include(bsc => bsc.MobileSpecs)
+                    .Take(10)
+                    .ToListAsync();
+
                 // Statistics
                 var totalPosts = await _context.Posts.CountAsync();
                 var totalBlogs = await _context.MobilePosts.CountAsync(mp => mp.publish == 1);
+                var totalGsmBlogs = await _context.GsmBlogs.CountAsync(gb => gb.Publish == true);
                 var totalForums = await _context.UsersFourm.CountAsync(f => f.Publish == 1);
                 var totalUsers = await _context.Users.CountAsync();
                 var totalProducts = await _context.AffiliationProducts.CountAsync();
+                var totalBlogComments = await _context.BlogComments.CountAsync();
+                var totalProductReviews = await _context.ProductReview.CountAsync();
+                var totalBlogSEO = await _context.BlogSEO.CountAsync();
+                var totalBlogSpecContainers = await _context.BlogSpecContainer.CountAsync();
                 
-                _logger.LogInformation("Homepage data loaded: Blogs={Blogs}, Forums={Forums}, Posts={Posts}, Products={Products}, Users={Users}", 
-                    totalBlogs, totalForums, totalPosts, totalProducts, totalUsers);
+                _logger.LogInformation("Homepage data loaded: Blogs={Blogs}, GsmBlogs={GsmBlogs}, Forums={Forums}, Posts={Posts}, Products={Products}, Users={Users}, Comments={Comments}, Reviews={Reviews}", 
+                    totalBlogs, totalGsmBlogs, totalForums, totalPosts, totalProducts, totalUsers, totalBlogComments, totalProductReviews);
 
                 // Set ViewBag
                 ViewBag.FeaturedPosts = featuredPosts;
@@ -138,11 +172,20 @@ namespace GsmsharingV2.Controllers
                 ViewBag.RecentSpecs = recentSpecs;
                 ViewBag.TopCommunities = topCommunities;
                 ViewBag.OnlineUsers = onlineUsers;
+                ViewBag.RecentBlogComments = recentBlogComments;
+                ViewBag.RecentProductReviews = recentProductReviews;
+                ViewBag.BlogSEOData = blogSEOData;
+                ViewBag.BlogSpecContainers = blogSpecContainers;
                 ViewBag.TotalPosts = totalPosts;
                 ViewBag.TotalBlogs = totalBlogs;
+                ViewBag.TotalGsmBlogs = totalGsmBlogs;
                 ViewBag.TotalForums = totalForums;
                 ViewBag.TotalUsers = totalUsers;
                 ViewBag.TotalProducts = totalProducts;
+                ViewBag.TotalBlogComments = totalBlogComments;
+                ViewBag.TotalProductReviews = totalProductReviews;
+                ViewBag.TotalBlogSEO = totalBlogSEO;
+                ViewBag.TotalBlogSpecContainers = totalBlogSpecContainers;
                 
                 return View();
             }
@@ -163,11 +206,20 @@ namespace GsmsharingV2.Controllers
                 ViewBag.RecentSpecs = new List<MobileSpecs>();
                 ViewBag.TopCommunities = new List<Community>();
                 ViewBag.OnlineUsers = new List<ApplicationUser>();
+                ViewBag.RecentBlogComments = new List<BlogComment>();
+                ViewBag.RecentProductReviews = new List<ProductReview>();
+                ViewBag.BlogSEOData = new List<BlogSEO>();
+                ViewBag.BlogSpecContainers = new List<BlogSpecContainer>();
                 ViewBag.TotalPosts = 0;
                 ViewBag.TotalBlogs = 0;
+                ViewBag.TotalGsmBlogs = 0;
                 ViewBag.TotalForums = 0;
                 ViewBag.TotalUsers = 0;
                 ViewBag.TotalProducts = 0;
+                ViewBag.TotalBlogComments = 0;
+                ViewBag.TotalProductReviews = 0;
+                ViewBag.TotalBlogSEO = 0;
+                ViewBag.TotalBlogSpecContainers = 0;
                 ViewBag.ErrorMessage = ex.Message;
                 return View();
             }
