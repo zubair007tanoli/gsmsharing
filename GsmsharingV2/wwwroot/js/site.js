@@ -1,4 +1,4 @@
-﻿// GSMSharing - Custom JavaScript
+// GSMSharing - Custom JavaScript
 // Modern interactions and animations
 
 (function() {

@@ -4,11 +4,11 @@
    ============================================ */
 
 :root {
-    /* Blog & Affiliate Marketing Color Palette */
-    --primary: #2563eb;
-    --primary-dark: #1e40af;
-    --primary-light: #3b82f6;
-    --primary-gradient: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    /* Blog & Affiliate Marketing Color Palette - Updated Theme */
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #818cf8;
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     
     --accent: #f59e0b;
     --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
@@ -25,29 +25,29 @@
     --tech-orange: #f97316;
     
     /* Neutral Colors */
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-800: #1f2937;
-    --gray-900: #111827;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
     
     /* Background Colors */
     --bg-primary: #ffffff;
-    --bg-secondary: #f9fafb;
-    --bg-tertiary: #f3f4f6;
-    --bg-dark: #111827;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-dark: #0f172a;
     --bg-card: #ffffff;
     
     /* Text Colors */
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #6b7280;
-    --text-light: #9ca3af;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
     
     /* Border & Shadow */
     --border-color: #e5e7eb;
@@ -117,7 +117,7 @@ body {
 }
 
 /* ============================================
-   Modern Blog Navigation
+   Modern Blog Navigation - Updated
    ============================================ */
 
 .blog-navbar {

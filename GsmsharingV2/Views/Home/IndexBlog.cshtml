@@ -1,182 +1,95 @@
-@{
+﻿@{
     ViewData["Title"] = "GSMSharing - Mobile & IT Blog | Affiliate Marketing";
     var categories = ViewBag.Categories as IEnumerable<GsmsharingV2.Models.Category> ?? new List<GsmsharingV2.Models.Category>();
     var featuredPosts = ViewBag.FeaturedPosts as IEnumerable<GsmsharingV2.Models.Post> ?? new List<GsmsharingV2.Models.Post>();
     var recentPosts = ViewBag.RecentPosts as IEnumerable<GsmsharingV2.Models.Post> ?? new List<GsmsharingV2.Models.Post>();
 }
 
-<!-- Blog Hero Section -->
-<div class="blog-hero">
-    <div class="blog-hero-content">
-        <h1 class="blog-hero-title">Mobile & IT Solutions</h1>
-        <p class="blog-hero-subtitle">
-            Discover the latest mobile repair guides, tech reviews, and IT solutions. 
-            Expert insights, product reviews, and affiliate recommendations for mobile enthusiasts.
-        </p>
-        <div class="blog-hero-cta">
-            <a href="/Posts" class="btn btn-light btn-lg">
-                <i class="fas fa-book-open me-2"></i>Read Articles
-            </a>
-            <a href="/Posts/Create" class="btn btn-outline-light btn-lg">
-                <i class="fas fa-pen me-2"></i>Write Article
-            </a>
+<div class="mb-4">
+    <div class="gs-soft p-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <h1 class="h3 gs-page-title mb-1">Mobile &amp; IT Solutions</h1>
+                <p class="gs-kicker mb-0">Articles and guides with the redesigned GSMSharing theme.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="/Posts" class="btn btn-primary"><i class="fas fa-book-open me-2"></i>Read Articles</a>
+                <a href="/Posts/Create" class="btn btn-outline-primary"><i class="fas fa-pen me-2"></i>Write Article</a>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Main Blog Content -->
-<div class="blog-container">
-    <div class="blog-main-content">
-        <!-- Main Content Area -->
-        <div>
-            <!-- Featured Post -->
-            @if (featuredPosts.Any())
-            {
-                var featured = featuredPosts.First();
-                <div class="featured-post-large fade-in-up">
-                    @if (!string.IsNullOrEmpty(featured.FeaturedImage))
-                    {
-                        <img src="@featured.FeaturedImage" alt="@featured.Title" class="featured-post-image">
-                    }
-                    <div class="featured-post-content">
-                        <span class="featured-post-badge">
-                            <i class="fas fa-star me-1"></i>Featured
-                        </span>
-                        <h2 class="featured-post-title">
-                            <a href="/r/@(featured.Community?.Slug ?? "gsmsharing")/posts/@featured.Slug">@featured.Title</a>
-                        </h2>
-                        <p class="featured-post-excerpt">
-                            @(featured.Content?.Length > 300 ? featured.Content.Substring(0, 300) + "..." : featured.Content)
-                        </p>
-                        <div class="blog-post-meta">
-                            <div class="blog-post-author">
-                                <div class="blog-post-author-avatar">
-                                    @(featured.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
-                                </div>
-                                <span>@featured.User?.UserName</span>
-                            </div>
-                            <span><i class="fas fa-calendar me-1"></i>@GetTimeAgo(featured.CreatedAt)</span>
-                            <span><i class="fas fa-eye me-1"></i>@(featured.ViewCount ?? 0) views</span>
-                            <span><i class="fas fa-comments me-1"></i>@(featured.Comments?.Count ?? 0) comments</span>
-                        </div>
-                    </div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        @if (featuredPosts.Any())
+        {
+            var featured = featuredPosts.First();
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong><i class="fas fa-star me-2 text-primary"></i>Featured</strong>
+                    <a class="btn btn-sm btn-outline-primary" href="/r/@(featured.Community?.Slug ?? "gsmsharing")/posts/@featured.Slug">Open</a>
                 </div>
-            }
+                <div class="card-body">
+                    <h2 class="h5 mb-2">
+                        <a href="/r/@(featured.Community?.Slug ?? "gsmsharing")/posts/@featured.Slug">@featured.Title</a>
+                    </h2>
+                    <p class="text-muted mb-0">@(featured.Content?.Length > 220 ? featured.Content.Substring(0, 220) + "..." : featured.Content)</p>
+                </div>
+            </div>
+        }
 
-            <!-- Recent Posts Grid -->
-            <div class="row g-4 mb-5">
-                @foreach (var post in recentPosts.Take(6))
+        <div class="card">
+            <div class="card-header">
+                <strong><i class="fas fa-newspaper me-2 text-primary"></i>Latest Articles</strong>
+            </div>
+            <div class="card-body">
+                @foreach (var post in recentPosts.Take(12))
                 {
-                    <div class="col-md-6 fade-in-up">
-                        <div class="blog-post-card">
-                            @if (!string.IsNullOrEmpty(post.FeaturedImage))
-                            {
-                                <img src="@post.FeaturedImage" alt="@post.Title" class="blog-post-image">
-                            }
-                            <div class="blog-post-content">
-                                @if (post.Community != null)
-                                {
-                                    <span class="blog-post-category">@post.Community.Name</span>
-                                }
-                                <h3 class="blog-post-title">
-                                    <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">@post.Title</a>
-                                </h3>
-                                <p class="blog-post-excerpt">
-                                    @(post.Content?.Length > 150 ? post.Content.Substring(0, 150) + "..." : post.Content)
-                                </p>
-                                <div class="blog-post-meta">
-                                    <div class="blog-post-author">
-                                        <div class="blog-post-author-avatar">
-                                            @(post.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
-                                        </div>
-                                        <span>@post.User?.UserName</span>
-                                    </div>
-                                    <span><i class="fas fa-clock me-1"></i>@GetTimeAgo(post.CreatedAt)</span>
-                                </div>
-                            </div>
+                    <div class="py-2 @(post != recentPosts.Last() ? "border-bottom" : "")">
+                        <div class="fw-semibold">
+                            <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug">@post.Title</a>
+                        </div>
+                        <div class="text-muted small d-flex flex-wrap gap-3">
+                            <span><i class="fas fa-clock me-1"></i>@GetTimeAgo(post.CreatedAt)</span>
+                            <span><i class="fas fa-eye me-1"></i>@(post.ViewCount ?? 0)</span>
+                            <span><i class="fas fa-comments me-1"></i>@(post.Comments?.Count ?? 0)</span>
                         </div>
                     </div>
                 }
             </div>
-
-            <!-- View All Posts -->
-            <div class="text-center mb-5">
-                <a href="/Posts" class="btn btn-primary btn-lg">
-                    <i class="fas fa-arrow-right me-2"></i>View All Posts
-                </a>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="blog-sidebar">
-            <!-- Categories -->
-            <div class="card shadow-blog rounded-blog mb-4">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">
-                        <i class="fas fa-folder-open me-2 text-primary"></i>Categories
-                    </h5>
-                    <div class="list-group list-group-flush">
-                        @foreach (var category in categories.Take(8))
-                        {
-                            <a href="/category/@category.Slug" class="list-group-item list-group-item-action border-0 px-0">
-                                <i class="@(category.IconClass ?? "fas fa-folder") me-2 text-primary"></i>
-                                @category.Name
-                            </a>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- Popular Posts -->
-            <div class="card shadow-blog rounded-blog mb-4">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">
-                        <i class="fas fa-fire me-2 text-primary"></i>Popular Posts
-                    </h5>
-                    <div class="list-group list-group-flush">
-                        @foreach (var post in recentPosts.OrderByDescending(p => p.ViewCount).Take(5))
-                        {
-                            <a href="/r/@(post.Community?.Slug ?? "gsmsharing")/posts/@post.Slug" class="list-group-item list-group-item-action border-0 px-0 mb-2">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">@(post.Title.Length > 50 ? post.Title.Substring(0, 50) + "..." : post.Title)</h6>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-eye me-1"></i>@(post.ViewCount ?? 0) views
-                                </small>
-                            </a>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- Newsletter Signup -->
-            <div class="card shadow-blog rounded-blog bg-gradient-primary text-white">
-                <div class="card-body text-center">
-                    <h5 class="card-title mb-3">
-                        <i class="fas fa-envelope me-2"></i>Stay Updated
-                    </h5>
-                    <p class="mb-3">Get the latest mobile & IT tips delivered to your inbox.</p>
-                    <form>
-                        <div class="mb-3">
-                            <input type="email" class="form-control" placeholder="Your email">
-                        </div>
-                        <button type="submit" class="btn btn-light w-100">
-                            Subscribe
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
+
+    <aside class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header"><strong><i class="fas fa-layer-group me-2 text-primary"></i>Categories</strong></div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var c in categories.Take(12))
+                    {
+                        <a class="btn btn-sm btn-outline-primary" href="/category/@c.Slug">@c.Name</a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><strong><i class="fas fa-info-circle me-2 text-primary"></i>About</strong></div>
+            <div class="card-body">
+                <p class="text-muted mb-0">Blog-style reading experience with the new GSMSharing theme.</p>
+            </div>
+        </div>
+    </aside>
 </div>
 
 @functions {
     private string GetTimeAgo(DateTime? date)
     {
         if (date == null) return "just now";
-        
+
         var timeSpan = DateTime.UtcNow - date.Value;
-        
+
         if (timeSpan.TotalSeconds < 60)
             return $"{(int)timeSpan.TotalSeconds}s ago";
         if (timeSpan.TotalMinutes < 60)
@@ -187,8 +100,7 @@
             return $"{(int)timeSpan.TotalDays}d ago";
         if (timeSpan.TotalDays < 365)
             return $"{(int)(timeSpan.TotalDays / 30)}mo ago";
-        
+
         return $"{(int)(timeSpan.TotalDays / 365)}y ago";
     }
 }
-
