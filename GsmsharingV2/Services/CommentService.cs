@@ -2,6 +2,7 @@ using AutoMapper;
 using GsmsharingV2.DTOs;
 using GsmsharingV2.Interfaces;
 using GsmsharingV2.Models;
+using GsmsharingV2.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace GsmsharingV2.Services
@@ -11,15 +12,21 @@ namespace GsmsharingV2.Services
         private readonly ICommentRepository _commentRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<CommentService> _logger;
+        private readonly ApplicationDbContext _context;
+        private readonly GsmsharingV2.Interfaces.INotificationService _notificationService;
 
         public CommentService(
             ICommentRepository commentRepository,
             IMapper mapper,
-            ILogger<CommentService> logger)
+            ILogger<CommentService> logger,
+            ApplicationDbContext context,
+            GsmsharingV2.Interfaces.INotificationService notificationService)
         {
             _commentRepository = commentRepository;
             _mapper = mapper;
             _logger = logger;
+            _context = context;
+            _notificationService = notificationService;
         }
 
         public async Task<CommentDto?> GetByIdAsync(int id)
@@ -66,6 +73,25 @@ namespace GsmsharingV2.Services
             comment.UserId = userId;
 
             var created = await _commentRepository.CreateAsync(comment);
+            
+            // Create notification for post author if comment is on a post
+            if (createCommentDto.PostID > 0)
+            {
+                var post = await _context.Posts.FindAsync(createCommentDto.PostID);
+                if (post != null && post.UserId != userId)
+                {
+                    var userName = _context.Users.Find(userId)?.UserName ?? "Someone";
+                    await _notificationService.CreateNotificationAsync(
+                        post.UserId,
+                        "New Comment",
+                        $"{userName} commented on your post: {post.Title}",
+                        "comment",
+                        created.CommentID,
+                        "Comment"
+                    );
+                }
+            }
+            
             return _mapper.Map<CommentDto>(created);
         }
 

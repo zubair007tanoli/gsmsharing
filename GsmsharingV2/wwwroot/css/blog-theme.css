@@ -24,7 +24,7 @@
     --tech-green: #10b981;
     --tech-orange: #f97316;
     
-    /* Neutral Colors */
+    /* Neutral Colors - Light Mode */
     --gray-50: #f8fafc;
     --gray-100: #f1f5f9;
     --gray-200: #e2e8f0;
@@ -36,14 +36,14 @@
     --gray-800: #1e293b;
     --gray-900: #0f172a;
     
-    /* Background Colors */
+    /* Background Colors - Light Mode */
     --bg-primary: #ffffff;
     --bg-secondary: #f8fafc;
     --bg-tertiary: #f1f5f9;
     --bg-dark: #0f172a;
     --bg-card: #ffffff;
     
-    /* Text Colors */
+    /* Text Colors - Light Mode */
     --text-primary: #0f172a;
     --text-secondary: #475569;
     --text-muted: #64748b;
@@ -97,6 +97,64 @@
 }
 
 /* ============================================
+   Dark Mode Support
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark Mode Background Colors */
+        --bg-primary: #0b1220;
+        --bg-secondary: #0f1a2d;
+        --bg-tertiary: #1a2332;
+        --bg-card: rgba(255, 255, 255, 0.06);
+        
+        /* Dark Mode Text Colors */
+        --text-primary: rgba(248, 250, 252, 0.92);
+        --text-secondary: rgba(148, 163, 184, 0.9);
+        --text-muted: rgba(148, 163, 184, 0.72);
+        --text-light: rgba(148, 163, 184, 0.6);
+        
+        /* Dark Mode Border */
+        --border-color: rgba(148, 163, 184, 0.18);
+        
+        /* Dark Mode Shadows - More pronounced */
+        --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+        --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+}
+
+/* Manual dark mode toggle support */
+[data-theme="dark"],
+body.dark-mode {
+    /* Dark Mode Background Colors */
+    --bg-primary: #0b1220;
+    --bg-secondary: #0f1a2d;
+    --bg-tertiary: #1a2332;
+    --bg-card: rgba(255, 255, 255, 0.06);
+    
+    /* Dark Mode Text Colors */
+    --text-primary: rgba(248, 250, 252, 0.92);
+    --text-secondary: rgba(148, 163, 184, 0.9);
+    --text-muted: rgba(148, 163, 184, 0.72);
+    --text-light: rgba(148, 163, 184, 0.6);
+    
+    /* Dark Mode Border */
+    --border-color: rgba(148, 163, 184, 0.18);
+    
+    /* Dark Mode Shadows */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* ============================================
    Global Styles
    ============================================ */
 
@@ -114,6 +172,112 @@ body {
     background: var(--bg-secondary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode body background with beautiful gradients */
+@media (prefers-color-scheme: dark) {
+    body {
+        background:
+            radial-gradient(1200px 700px at 15% -10%, rgba(96, 165, 250, 0.25), transparent 55%),
+            radial-gradient(1000px 600px at 90% 0%, rgba(167, 139, 250, 0.18), transparent 55%),
+            radial-gradient(900px 600px at 50% 105%, rgba(52, 211, 153, 0.10), transparent 55%),
+            var(--bg-secondary);
+    }
+}
+
+[data-theme="dark"] body,
+body.dark-mode {
+    background:
+        radial-gradient(1200px 700px at 15% -10%, rgba(96, 165, 250, 0.25), transparent 55%),
+        radial-gradient(1000px 600px at 90% 0%, rgba(167, 139, 250, 0.18), transparent 55%),
+        radial-gradient(900px 600px at 50% 105%, rgba(52, 211, 153, 0.10), transparent 55%),
+        var(--bg-secondary);
+}
+
+/* Dark mode support for Bootstrap components */
+@media (prefers-color-scheme: dark) {
+    .card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
+        border-color: rgba(148, 163, 184, 0.18);
+        color: var(--text-primary);
+    }
+    
+    .card-header {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(148, 163, 184, 0.18);
+    }
+    
+    .form-control,
+    .form-select {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(148, 163, 184, 0.18);
+        color: var(--text-primary);
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(96, 165, 250, 0.5);
+        color: var(--text-primary);
+    }
+    
+    .form-control::placeholder {
+        color: rgba(148, 163, 184, 0.5);
+    }
+    
+    .alert {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(148, 163, 184, 0.18);
+        color: var(--text-primary);
+    }
+    
+    .text-muted {
+        color: var(--text-muted) !important;
+    }
+}
+
+[data-theme="dark"] .card,
+body.dark-mode .card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
+    border-color: rgba(148, 163, 184, 0.18);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .card-header,
+body.dark-mode .card-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(148, 163, 184, 0.18);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(148, 163, 184, 0.18);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus,
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control::placeholder,
+body.dark-mode .form-control::placeholder {
+    color: rgba(148, 163, 184, 0.5);
+}
+
+[data-theme="dark"] .alert,
+body.dark-mode .alert {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(148, 163, 184, 0.18);
+    color: var(--text-primary);
 }
 
 /* ============================================
@@ -128,7 +292,18 @@ body {
     top: 0;
     z-index: 1000;
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.98);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .blog-navbar {
+        background: rgba(11, 18, 32, 0.65);
+    }
+}
+
+[data-theme="dark"] .blog-navbar,
+body.dark-mode .blog-navbar {
+    background: rgba(11, 18, 32, 0.65);
 }
 
 .navbar-brand-blog {
@@ -881,6 +1056,23 @@ body {
     box-shadow: var(--shadow-md);
     transition: all var(--transition-base);
     border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Dark mode product cards */
+@media (prefers-color-scheme: dark) {
+    .product-card-modern {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
+        border-color: rgba(148, 163, 184, 0.18);
+    }
+}
+
+[data-theme="dark"] .product-card-modern,
+body.dark-mode .product-card-modern {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
+    border-color: rgba(148, 163, 184, 0.18);
 }
 
 .product-card-modern:hover {
@@ -894,6 +1086,18 @@ body {
     height: 250px;
     overflow: hidden;
     background: var(--gray-100);
+    transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .product-image-wrapper {
+        background: rgba(15, 26, 45, 0.5);
+    }
+}
+
+[data-theme="dark"] .product-image-wrapper,
+body.dark-mode .product-image-wrapper {
+    background: rgba(15, 26, 45, 0.5);
 }
 
 .product-image-modern {
@@ -914,6 +1118,20 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--gray-100);
+    transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .product-image-placeholder {
+        background: rgba(15, 26, 45, 0.5);
+        color: rgba(148, 163, 184, 0.6);
+    }
+}
+
+[data-theme="dark"] .product-image-placeholder,
+body.dark-mode .product-image-placeholder {
+    background: rgba(15, 26, 45, 0.5);
+    color: rgba(148, 163, 184, 0.6);
 }
 
 .product-overlay {
@@ -946,6 +1164,9 @@ body {
 
 .product-card-body {
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 }
 
 .product-title-modern {
@@ -1000,6 +1221,7 @@ body {
     padding: 0.75rem;
     border-radius: var(--border-radius);
     transition: all var(--transition-base);
+    margin-top: auto;
 }
 
 .product-buy-btn:hover {
@@ -1015,6 +1237,18 @@ body {
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     margin-bottom: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .product-detail-image-wrapper {
+        background: rgba(15, 26, 45, 0.5);
+    }
+}
+
+[data-theme="dark"] .product-detail-image-wrapper,
+body.dark-mode .product-detail-image-wrapper {
+    background: rgba(15, 26, 45, 0.5);
 }
 
 .product-detail-image {
@@ -1023,6 +1257,18 @@ body {
     object-fit: contain;
     max-height: 500px;
     background: white;
+    transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .product-detail-image {
+        background: rgba(15, 26, 45, 0.3);
+    }
+}
+
+[data-theme="dark"] .product-detail-image,
+body.dark-mode .product-detail-image {
+    background: rgba(15, 26, 45, 0.3);
 }
 
 .product-image-placeholder-large {
@@ -1033,6 +1279,71 @@ body {
     justify-content: center;
     background: var(--gray-100);
     border-radius: var(--border-radius-lg);
+    transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .product-image-placeholder-large {
+        background: rgba(15, 26, 45, 0.5);
+        color: rgba(148, 163, 184, 0.6);
+    }
+}
+
+[data-theme="dark"] .product-image-placeholder-large,
+body.dark-mode .product-image-placeholder-large {
+    background: rgba(15, 26, 45, 0.5);
+    color: rgba(148, 163, 184, 0.6);
+}
+
+/* Empty State */
+.empty-state-modern {
+    width: 100%;
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-50);
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.empty-state-modern i {
+    color: var(--gray-400);
+    margin-bottom: 1.5rem;
+    transition: color 0.3s ease;
+}
+
+.empty-state-modern h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.empty-state-modern p {
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    .empty-state-modern {
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .empty-state-modern i {
+        color: rgba(148, 163, 184, 0.5);
+    }
+}
+
+[data-theme="dark"] .empty-state-modern,
+body.dark-mode .empty-state-modern {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .empty-state-modern i,
+body.dark-mode .empty-state-modern i {
+    color: rgba(148, 163, 184, 0.5);
 }
 
 .product-detail-title {
@@ -1123,6 +1434,17 @@ body {
     background-color: var(--gray-50);
 }
 
+@media (prefers-color-scheme: dark) {
+    .featured-product-item:hover {
+        background-color: rgba(255, 255, 255, 0.06);
+    }
+}
+
+[data-theme="dark"] .featured-product-item:hover,
+body.dark-mode .featured-product-item:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
 .featured-product-thumb {
     width: 80px;
     height: 80px;
@@ -1137,11 +1459,25 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     transition: all var(--transition-base);
+    background: var(--bg-card);
 }
 
 .related-product-card:hover {
     box-shadow: var(--shadow-md);
     border-color: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+    .related-product-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(148, 163, 184, 0.18);
+    }
+}
+
+[data-theme="dark"] .related-product-card,
+body.dark-mode .related-product-card {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(148, 163, 184, 0.18);
 }
 
 .related-product-image {
@@ -1157,6 +1493,32 @@ body {
     padding: 1.5rem;
     background: var(--gray-50);
     border-radius: var(--border-radius);
+    transition: all var(--transition-base);
+}
+
+.review-card-modern:hover {
+    background: var(--gray-100);
+    box-shadow: var(--shadow-sm);
+}
+
+@media (prefers-color-scheme: dark) {
+    .review-card-modern {
+        background: rgba(255, 255, 255, 0.04);
+    }
+    
+    .review-card-modern:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+[data-theme="dark"] .review-card-modern,
+body.dark-mode .review-card-modern {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .review-card-modern:hover,
+body.dark-mode .review-card-modern:hover {
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .review-avatar-large {

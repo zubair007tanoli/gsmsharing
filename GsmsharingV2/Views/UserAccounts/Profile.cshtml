@@ -1,0 +1,242 @@
+@model GsmsharingV2.Models.ApplicationUser
+@{
+    ViewData["Title"] = Model.UserName + " - Profile";
+    var isOwnProfile = User.Identity?.IsAuthenticated == true && 
+                      User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.Id;
+}
+
+<div class="container mt-4">
+    <!-- Profile Header -->
+    <div class="card mb-4">
+        <div class="card-body p-0">
+            <!-- Cover Image -->
+            <div class="profile-cover" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
+                @if (isOwnProfile)
+                {
+                    <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-3">
+                        <i class="fas fa-camera me-2"></i>Change Cover
+                    </button>
+                }
+            </div>
+            
+            <div class="px-4 pb-4">
+                <div class="d-flex align-items-end" style="margin-top: -60px;">
+                    <!-- Avatar -->
+                    <div class="position-relative">
+                        <img src="@(Model.AvatarPath ?? "/images/default-avatar.png")" 
+                             class="rounded-circle border border-4 border-white" 
+                             width="120" height="120" 
+                             alt="Avatar"
+                             style="background: white;">
+                        @if (isOwnProfile)
+                        {
+                            <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" style="width: 36px; height: 36px;">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        }
+                    </div>
+                    
+                    <div class="ms-4 mb-2 flex-grow-1">
+                        <h2 class="mb-1">@Model.UserName</h2>
+                        <p class="text-muted mb-2">@Model.Email</p>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <span><i class="fas fa-calendar me-2"></i>Joined @Model.CreatedDate?.ToString("MMMM yyyy")</span>
+                            <span><i class="fas fa-map-marker-alt me-2"></i>@(Model.City ?? "Not specified")</span>
+                        </div>
+                    </div>
+                    
+                    @if (!isOwnProfile)
+                    {
+                        <div class="mb-2">
+                            <button class="btn btn-primary" id="followBtn">
+                                <i class="fas fa-user-plus me-2"></i>Follow
+                            </button>
+                            <button class="btn btn-outline-secondary">
+                                <i class="fas fa-envelope"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-2">
+                            <a href="/UserAccounts/EditProfile" class="btn btn-primary">
+                                <i class="fas fa-edit me-2"></i>Edit Profile
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#posts">
+                        <i class="fas fa-newspaper me-2"></i>Posts
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#comments">
+                        <i class="fas fa-comments me-2"></i>Comments
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#saved">
+                        <i class="fas fa-bookmark me-2"></i>Saved
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Posts Tab -->
+                <div class="tab-pane fade show active" id="posts">
+                    <div id="userPostsContainer">
+                        <!-- Posts will be loaded here -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comments Tab -->
+                <div class="tab-pane fade" id="comments">
+                    <div id="userCommentsContainer">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Saved Tab -->
+                <div class="tab-pane fade" id="saved">
+                    <div id="savedPostsContainer">
+                        <!-- Saved posts will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Stats Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h4 mb-1" id="postsCount">-</div>
+                            <small class="text-muted">Posts</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-1" id="commentsCount">-</div>
+                            <small class="text-muted">Comments</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-1" id="karmaCount">-</div>
+                            <small class="text-muted">Karma</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>About</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted" id="userBio">
+                        @(Model.UserProfile?.Bio ?? "No bio available")
+                    </p>
+                    @if (!string.IsNullOrEmpty(Model.UserProfile?.Website))
+                    {
+                        <p class="mb-1">
+                            <i class="fas fa-globe me-2"></i>
+                            <a href="@Model.UserProfile.Website" target="_blank">@Model.UserProfile.Website</a>
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <!-- AdSense -->
+            @await Component.InvokeAsync("AdSense", new { position = "sidebar" })
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const userId = '@Model.Id';
+        
+        // Load user posts
+        async function loadUserPosts() {
+            try {
+                const response = await fetch(`/api/Users/${userId}/Posts`);
+                const posts = await response.json();
+                document.getElementById('postsCount').textContent = posts.length;
+                
+                const container = document.getElementById('userPostsContainer');
+                if (posts.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center py-5">No posts yet</p>';
+                } else {
+                    container.innerHTML = posts.map(p => `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5><a href="/Posts/Details/${p.slug}">${p.title}</a></h5>
+                                <p class="text-muted small">${new Date(p.createdAt).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            }
+        }
+        
+        // Load user comments
+        async function loadUserComments() {
+            try {
+                const response = await fetch(`/api/Users/${userId}/Comments`);
+                const comments = await response.json();
+                document.getElementById('commentsCount').textContent = comments.length;
+                
+                const container = document.getElementById('userCommentsContainer');
+                if (comments.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center py-5">No comments yet</p>';
+                } else {
+                    container.innerHTML = comments.map(c => `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <p>${c.content}</p>
+                                <small class="text-muted">${new Date(c.createdAt).toLocaleDateString()}</small>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+        
+        // Load on tab click
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(e) {
+                if (e.target.dataset.bsTarget === '#posts') {
+                    loadUserPosts();
+                } else if (e.target.dataset.bsTarget === '#comments') {
+                    loadUserComments();
+                }
+            });
+        });
+        
+        // Load posts on page load
+        loadUserPosts();
+    </script>
+}
+

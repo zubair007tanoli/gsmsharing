@@ -68,7 +68,7 @@ namespace gsmsharing.Database
             builder.Entity<IdentityRole>().HasData(roles);
 
             // Configure Forum Entities
-            builder.Entity<ForumThread>().ToTable("UsersFourm");
+            builder.Entity<ForumThread>().ToTable("userforum");
             builder.Entity<ForumCategory>().ToTable("ForumCategory");
             builder.Entity<ForumReply>().ToTable("ForumReplys");
             builder.Entity<ForumComment>().ToTable("FourmComments");

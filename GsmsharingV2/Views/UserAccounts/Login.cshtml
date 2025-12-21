@@ -1,86 +1,343 @@
 @model GsmsharingV2.Controllers.LoginViewModel
 @{
     ViewData["Title"] = "Login - GSMSharing";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow-custom">
-                <div class="card-header bg-primary text-white text-center py-4">
-                    <i class="fas fa-sign-in-alt fa-3x mb-3"></i>
-                    <h2 class="mb-0">Welcome Back</h2>
-                    <p class="mb-0 opacity-75">Login to your GSMSharing account</p>
-                </div>
-                <div class="card-body p-4">
-                    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
-                    {
-                        <div class="alert alert-danger" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>@ViewBag.ErrorMessage
-                        </div>
-                    }
+@section Styles {
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
 
-                    <form asp-action="Login" method="post">
-                        @Html.AntiForgeryToken()
-                        
-                        <div class="mb-4">
-                            <label asp-for="Email" class="form-label">
-                                <i class="fas fa-envelope me-2"></i>Email Address
-                            </label>
-                            <input asp-for="Email" class="form-control form-control-lg" type="email" placeholder="your.email@example.com" required />
-                            <span asp-validation-for="Email" class="text-danger"></span>
-                        </div>
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+        }
 
-                        <div class="mb-4">
-                            <label asp-for="Password" class="form-label">
-                                <i class="fas fa-lock me-2"></i>Password
-                            </label>
-                            <div class="input-group">
-                                <input asp-for="Password" class="form-control form-control-lg" type="password" placeholder="Enter your password" required id="passwordInput" />
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye" id="toggleIcon"></i>
+        @@keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .login-header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 30px solid transparent;
+            border-right: 30px solid transparent;
+            border-top: 20px solid #667eea;
+        }
+
+        .login-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .login-body {
+            padding: 3rem 2.5rem;
+        }
+
+        .form-floating label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.875rem 2rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-login:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-social {
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .btn-social:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-social i {
+            margin-right: 0.5rem;
+        }
+
+        .divider {
+            position: relative;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: #e9ecef;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .password-toggle {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .alert-modern {
+            border-radius: 10px;
+            border: none;
+            padding: 1rem 1.5rem;
+            animation: shake 0.5s;
+        }
+
+        @@keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .remember-forgot {
+            font-size: 0.9rem;
+        }
+
+        .remember-forgot a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .remember-forgot a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .signup-link a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .signup-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .input-group-text {
+            background: white;
+            border-left: none;
+        }
+
+        .form-control:focus + .input-group-text {
+            border-color: #667eea;
+        }
+    </style>
+}
+
+<div class="login-container">
+    <div class="container login-wrapper">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="login-icon">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <h2 class="mb-2" style="font-weight: 700; font-size: 2rem;">Welcome Back</h2>
+                        <p class="mb-0" style="opacity: 0.9;">Login to your GSMSharing account</p>
+                    </div>
+                    
+                    <div class="login-body">
+                        @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+                        {
+                            <div class="alert alert-danger alert-modern mb-4" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>@ViewBag.ErrorMessage
+                            </div>
+                        }
+
+                        <form asp-action="Login" method="post">
+                            @Html.AntiForgeryToken()
+                            
+                            <div class="form-floating mb-3">
+                                <input asp-for="Email" class="form-control" type="email" placeholder="Email Address" required id="emailInput" />
+                                <label asp-for="Email">
+                                    <i class="fas fa-envelope me-2"></i>Email Address
+                                </label>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <div class="input-group">
+                                    <input asp-for="Password" class="form-control" type="password" placeholder="Password" required id="passwordInput" />
+                                    <label asp-for="Password" style="left: 0.75rem;">
+                                        <i class="fas fa-lock me-2"></i>Password
+                                    </label>
+                                    <span class="input-group-text password-toggle" id="togglePassword">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </span>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4 remember-forgot">
+                                <div class="form-check">
+                                    <input asp-for="RememberMe" class="form-check-input" type="checkbox" id="rememberMe" />
+                                    <label class="form-check-label" for="rememberMe">
+                                        Remember me
+                                    </label>
+                                </div>
+                                <a href="#" class="text-decoration-none">Forgot password?</a>
+                            </div>
+
+                            <div class="d-grid mb-4">
+                                <button type="submit" class="btn btn-login text-white btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Login
                                 </button>
                             </div>
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
 
-                        <div class="mb-4 d-flex justify-content-between align-items-center">
-                            <div class="form-check">
-                                <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
-                                <label asp-for="RememberMe" class="form-check-label">
-                                    Remember me
-                                </label>
+                            <div class="divider">
+                                <span class="text-muted bg-white px-3">or continue with</span>
                             </div>
-                            <a href="#" class="text-decoration-none">Forgot password?</a>
-                        </div>
 
-                        <div class="d-grid gap-2 mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-sign-in-alt me-2"></i>Login
-                            </button>
-                        </div>
+                            <div class="row g-2 mb-4">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-social w-100">
+                                        <i class="fab fa-google text-danger"></i>Google
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-social w-100">
+                                        <i class="fab fa-facebook text-primary"></i>Facebook
+                                    </button>
+                                </div>
+                            </div>
 
-                        <div class="text-center">
-                            <p class="mb-0">
-                                Don't have an account? 
-                                <a href="/UserAccounts/Register" class="text-decoration-none fw-bold">Sign up here</a>
-                            </p>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Social Login (Optional) -->
-            <div class="card shadow-custom mt-4">
-                <div class="card-body text-center">
-                    <p class="text-muted mb-3">Or login with</p>
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary">
-                            <i class="fab fa-google me-2"></i>Continue with Google
-                        </button>
-                        <button class="btn btn-outline-primary">
-                            <i class="fab fa-facebook me-2"></i>Continue with Facebook
-                        </button>
+                            <div class="signup-link">
+                                <p class="mb-0 text-muted">
+                                    Don't have an account? 
+                                    <a href="/UserAccounts/Register">Sign up here</a>
+                                </p>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>

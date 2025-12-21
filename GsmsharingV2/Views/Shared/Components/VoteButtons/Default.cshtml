@@ -1,0 +1,136 @@
+@model GsmsharingV2.ViewComponents.VoteButtonsViewModel
+
+<div class="vote-buttons" data-content-type="@Model.ContentType" data-content-id="@Model.ContentID">
+    <button type="button" 
+            class="vote-btn vote-up @(Model.UserVote == 1 ? "active" : "")" 
+            @(Model.IsAuthenticated ? "" : "disabled title='Login to vote'")
+            data-vote-type="1">
+        <i class="fas fa-arrow-up"></i>
+        <span class="vote-count">@Model.Upvotes</span>
+    </button>
+    
+    <button type="button" 
+            class="vote-btn vote-down @(Model.UserVote == -1 ? "active" : "")" 
+            @(Model.IsAuthenticated ? "" : "disabled title='Login to vote'")
+            data-vote-type="-1">
+        <i class="fas fa-arrow-down"></i>
+        <span class="vote-count">@Model.Downvotes</span>
+    </button>
+</div>
+
+<style>
+    .vote-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .vote-btn {
+        background: transparent;
+        border: 2px solid var(--border-color, #ddd);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        min-width: 60px;
+        color: var(--text-muted, #666);
+    }
+    
+    .vote-btn:hover:not(:disabled) {
+        border-color: var(--primary, #667eea);
+        background: rgba(102, 126, 234, 0.1);
+        transform: scale(1.05);
+    }
+    
+    .vote-btn.active {
+        border-color: var(--primary, #667eea);
+        background: rgba(102, 126, 234, 0.15);
+        color: var(--primary, #667eea);
+    }
+    
+    .vote-btn.vote-up.active {
+        border-color: #28a745;
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+    
+    .vote-btn.vote-down.active {
+        border-color: #dc3545;
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .vote-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .vote-count {
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .vote-btn i {
+        font-size: 1rem;
+    }
+</style>
+
+<script>
+    document.querySelectorAll('.vote-btn:not(:disabled)').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const container = this.closest('.vote-buttons');
+            const contentType = container.dataset.contentType;
+            const contentId = parseInt(container.dataset.contentId);
+            const voteType = parseInt(this.dataset.voteType);
+            
+            const upBtn = container.querySelector('.vote-up');
+            const downBtn = container.querySelector('.vote-down');
+            const upCount = upBtn.querySelector('.vote-count');
+            const downCount = downBtn.querySelector('.vote-count');
+            
+            try {
+                const response = await fetch('/api/Vote/Vote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({
+                        contentType: contentType,
+                        contentID: contentId,
+                        voteType: voteType
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update UI
+                    upBtn.classList.remove('active');
+                    downBtn.classList.remove('active');
+                    
+                    if (data.userVote === 1) {
+                        upBtn.classList.add('active');
+                    } else if (data.userVote === -1) {
+                        downBtn.classList.add('active');
+                    }
+                    
+                    upCount.textContent = data.upvotes || 0;
+                    downCount.textContent = data.downvotes || 0;
+                } else {
+                    if (response.status === 401) {
+                        window.location.href = '/UserAccounts/Login';
+                    }
+                }
+            } catch (error) {
+                console.error('Vote error:', error);
+            }
+        });
+    });
+</script>
+

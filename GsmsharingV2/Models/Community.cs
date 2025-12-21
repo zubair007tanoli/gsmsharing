@@ -16,6 +16,11 @@ namespace GsmsharingV2.Models
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public int? CategoryID { get; set; }
+        
+        // New SEO fields
+        public string MetaTitle { get; set; }
+        public string MetaDescription { get; set; }
+        public bool IsDeleted { get; set; } = false;
 
         // Navigation properties
         public Category Category { get; set; }

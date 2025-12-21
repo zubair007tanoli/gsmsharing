@@ -1,0 +1,280 @@
+@{
+    ViewData["Title"] = "Create Content - GSMSharing";
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-modern">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Create New Content
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Tab Navigation -->
+                    <ul class="nav nav-tabs nav-tabs-modern" id="contentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="blog-tab" data-bs-toggle="tab" data-bs-target="#blog" type="button" role="tab">
+                                <i class="fas fa-blog me-2"></i>Blog Post
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="mobilead-tab" data-bs-toggle="tab" data-bs-target="#mobilead" type="button" role="tab">
+                                <i class="fas fa-mobile-alt me-2"></i>Mobile Ad
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="mobilepart-tab" data-bs-toggle="tab" data-bs-target="#mobilepart" type="button" role="tab">
+                                <i class="fas fa-cog me-2"></i>Mobile Part Ad
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button" role="tab">
+                                <i class="fas fa-shopping-bag me-2"></i>Product
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="gsmblog-tab" data-bs-toggle="tab" data-bs-target="#gsmblog" type="button" role="tab">
+                                <i class="fas fa-newspaper me-2"></i>Gsm Blog
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content p-4" id="contentTabContent">
+                        <!-- Blog Post Tab -->
+                        <div class="tab-pane fade show active" id="blog" role="tabpanel">
+                            <form id="blogPostForm">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" name="Title" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Content *</label>
+                                    <textarea name="Content" class="form-control" rows="10" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tags (comma separated)</label>
+                                    <input type="text" name="Tags" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Meta Description</label>
+                                    <textarea name="MetaDis" class="form-control" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Image URL</label>
+                                    <input type="url" name="WebLinks" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="publish" value="1" class="form-check-input" checked />
+                                        <label class="form-check-label">Publish immediately</label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Create Blog Post
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Mobile Ad Tab -->
+                        <div class="tab-pane fade" id="mobilead" role="tabpanel">
+                            <form id="mobileAdForm">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" name="Title" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description *</label>
+                                    <textarea name="Discription" class="form-control" rows="5" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Price</label>
+                                    <input type="number" name="Price" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tags</label>
+                                    <input type="text" name="Tags" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="Publish" value="1" class="form-check-input" checked />
+                                        <label class="form-check-label">Publish immediately</label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Create Mobile Ad
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Mobile Part Ad Tab -->
+                        <div class="tab-pane fade" id="mobilepart" role="tabpanel">
+                            <form id="mobilePartAdForm">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" name="Title" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description *</label>
+                                    <textarea name="Discription" class="form-control" rows="5" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Price</label>
+                                    <input type="number" name="Price" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tags</label>
+                                    <input type="text" name="Tags" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="Publish" value="1" class="form-check-input" checked />
+                                        <label class="form-check-label">Publish immediately</label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Create Mobile Part Ad
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Product Tab -->
+                        <div class="tab-pane fade" id="product" role="tabpanel">
+                            <form id="productForm">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" name="Title" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description *</label>
+                                    <textarea name="ProductDiscription" class="form-control" rows="5" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Content</label>
+                                    <textarea name="Content" class="form-control" rows="10"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Keywords</label>
+                                    <input type="text" name="Keywords" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Price</label>
+                                    <input type="number" name="Price" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Image URL</label>
+                                    <input type="url" name="ImageLink" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Buy Link</label>
+                                    <input type="url" name="BuyLink" class="form-control" />
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Create Product
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Gsm Blog Tab -->
+                        <div class="tab-pane fade" id="gsmblog" role="tabpanel">
+                            <form id="gsmBlogForm">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <label class="form-label">Blog Title *</label>
+                                    <input type="text" name="BlogTitle" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description *</label>
+                                    <textarea name="BlogDiscription" class="form-control" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Content *</label>
+                                    <textarea name="BlogContent" class="form-control" rows="10" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Keywords</label>
+                                    <input type="text" name="BlogKeywords" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Thumbnail URL</label>
+                                    <input type="url" name="ThumbNailLink" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="Publish" value="true" class="form-check-input" checked />
+                                        <label class="form-check-label">Publish immediately</label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Create Gsm Blog
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/content-create.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+        // Handle form submissions
+        document.getElementById('blogPostForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitForm(this, '/Content/CreateBlogPost');
+        });
+
+        document.getElementById('mobileAdForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitForm(this, '/Content/CreateMobileAd');
+        });
+
+        document.getElementById('mobilePartAdForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitForm(this, '/Content/CreateMobilePartAd');
+        });
+
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitForm(this, '/Content/CreateProduct');
+        });
+
+        document.getElementById('gsmBlogForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitForm(this, '/Content/CreateGsmBlog');
+        });
+
+        async function submitForm(form, url) {
+            const formData = new FormData(form);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': form.querySelector('[name="__RequestVerificationToken"]').value
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                if (result.redirectUrl) {
+                    window.location.href = result.redirectUrl;
+                }
+            } else {
+                alert('Error: ' + (result.errors ? result.errors.join(', ') : 'Failed to create content'));
+            }
+        }
+    </script>
+}
+

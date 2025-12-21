@@ -1,7 +1,9 @@
 using GsmsharingV2.DTOs;
 using GsmsharingV2.Interfaces;
+using GsmsharingV2.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GsmsharingV2.Controllers
 {
@@ -10,11 +12,16 @@ namespace GsmsharingV2.Controllers
     {
         private readonly ICommentService _commentService;
         private readonly ILogger<CommentsController> _logger;
+        private readonly IHubContext<CommentHub> _commentHub;
 
-        public CommentsController(ICommentService commentService, ILogger<CommentsController> logger)
+        public CommentsController(
+            ICommentService commentService, 
+            ILogger<CommentsController> logger,
+            IHubContext<CommentHub> commentHub)
         {
             _commentService = commentService;
             _logger = logger;
+            _commentHub = commentHub;
         }
 
         [HttpGet]
@@ -38,6 +45,22 @@ namespace GsmsharingV2.Controllers
             try
             {
                 var comment = await _commentService.CreateAsync(createCommentDto, userId);
+                
+                // Send real-time notification via SignalR
+                if (createCommentDto.PostID > 0)
+                {
+                    var userName = User.Identity?.Name ?? "Anonymous";
+                    await _commentHub.Clients.Group($"post-{createCommentDto.PostID}")
+                        .SendAsync("ReceiveComment", new
+                        {
+                            CommentID = comment.CommentID,
+                            PostID = createCommentDto.PostID,
+                            Content = comment.Content,
+                            UserName = userName,
+                            CreatedAt = comment.CreatedAt
+                        });
+                }
+                
                 return Json(new { success = true, comment });
             }
             catch (Exception ex)

@@ -1,0 +1,31 @@
+@model string
+
+@{
+    var adUnitId = ViewData["AdUnitId"]?.ToString() ?? "ca-pub-xxxxxxxxxxxxxxxx";
+    var adFormat = ViewData["AdFormat"]?.ToString() ?? "auto";
+    var adSlot = ViewData["AdSlot"]?.ToString() ?? "";
+}
+
+@if (!string.IsNullOrEmpty(adSlot))
+{
+    <!-- AdSense Ad -->
+    <div class="adsense-container @Model" style="min-height: 100px; margin: 1rem 0;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="@adUnitId"
+             data-ad-slot="@adSlot"
+             data-ad-format="@adFormat"
+             data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+}
+else
+{
+    <!-- Placeholder for AdSense (replace with your actual AdSense code) -->
+    <div class="adsense-placeholder @Model" style="min-height: 100px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin: 1rem 0; border-radius: 8px;">
+        <small class="text-muted">AdSense Ad</small>
+    </div>
+}
+

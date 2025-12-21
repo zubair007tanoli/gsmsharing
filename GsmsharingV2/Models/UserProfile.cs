@@ -17,6 +17,12 @@ namespace GsmsharingV2.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsActive { get; set; }
+        
+        // New modern fields
+        public int Reputation { get; set; } = 0;
+        public bool IsBanned { get; set; } = false;
+        public DateTime? BannedUntil { get; set; }
+        public string BanReason { get; set; }
 
         // Navigation properties
         public ApplicationUser User { get; set; }

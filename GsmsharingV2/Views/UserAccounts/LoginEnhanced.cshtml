@@ -1,0 +1,275 @@
+@model GsmsharingV2.Controllers.LoginViewModel
+@{
+    ViewData["Title"] = "Login - GSMSharing";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var returnUrl = ViewData["ReturnUrl"]?.ToString();
+    // External logins will be configured in the controller
+    var externalLogins = ViewData["ExternalLogins"] as List<Microsoft.AspNetCore.Authentication.AuthenticationScheme> ?? new List<Microsoft.AspNetCore.Authentication.AuthenticationScheme>();
+}
+
+@section Styles {
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+            padding: 2rem 0;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 3rem;
+            position: relative;
+            z-index: 1;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .login-card h2 {
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-card .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-weight: 600;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0 1rem;
+            position: relative;
+            color: #666;
+        }
+
+        .external-login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+
+        .external-login-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            color: #667eea;
+        }
+
+        .external-login-btn.google { border-color: #db4437; }
+        .external-login-btn.google:hover { background: #db4437; color: white; }
+        .external-login-btn.microsoft { border-color: #00a4ef; }
+        .external-login-btn.microsoft:hover { background: #00a4ef; color: white; }
+        .external-login-btn.facebook { border-color: #1877f2; }
+        .external-login-btn.facebook:hover { background: #1877f2; color: white; }
+        .external-login-btn.github { border-color: #333; }
+        .external-login-btn.github:hover { background: #333; color: white; }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+}
+
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="login-card">
+                    <h2>Welcome Back</h2>
+                    <p class="subtitle">Sign in to continue to GSMSharing</p>
+
+                    @if (!string.IsNullOrEmpty(ViewData["ErrorMessage"]?.ToString()))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @ViewData["ErrorMessage"]
+                        </div>
+                    }
+
+                    <form asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                        <div class="form-group">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="Enter your email" required autofocus />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <input asp-for="Password" class="form-control" type="password" placeholder="Enter your password" required />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group form-check d-flex justify-content-between align-items-center">
+                            <div>
+                                <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                                <label asp-for="RememberMe" class="form-check-label">Remember me</label>
+                            </div>
+                            <a href="/UserAccounts/ForgotPassword" class="text-decoration-none">Forgot password?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-login text-white">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </button>
+                    </form>
+
+                    @if (externalLogins.Any())
+                    {
+                        <div class="divider">
+                            <span>Or continue with</span>
+                        </div>
+
+                        <div class="external-logins">
+                            @foreach (var provider in externalLogins)
+                            {
+                                <form asp-action="ExternalLogin" asp-route-provider="@provider.Name" method="post" class="d-inline w-100">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    
+                                    @if (provider.Name.Contains("Google"))
+                                    {
+                                        <button type="submit" class="external-login-btn google">
+                                            <i class="fab fa-google"></i>
+                                            Continue with Google
+                                        </button>
+                                    }
+                                    else if (provider.Name.Contains("Microsoft"))
+                                    {
+                                        <button type="submit" class="external-login-btn microsoft">
+                                            <i class="fab fa-microsoft"></i>
+                                            Continue with Microsoft
+                                        </button>
+                                    }
+                                    else if (provider.Name.Contains("Facebook"))
+                                    {
+                                        <button type="submit" class="external-login-btn facebook">
+                                            <i class="fab fa-facebook-f"></i>
+                                            Continue with Facebook
+                                        </button>
+                                    }
+                                    else if (provider.Name.Contains("GitHub"))
+                                    {
+                                        <button type="submit" class="external-login-btn github">
+                                            <i class="fab fa-github"></i>
+                                            Continue with GitHub
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="external-login-btn">
+                                            <i class="fas fa-sign-in-alt"></i>
+                                            Continue with @provider.DisplayName
+                                        </button>
+                                    }
+                                </form>
+                            }
+                        </div>
+                    }
+
+                    <div class="signup-link">
+                        <p class="mb-0 text-muted">Don't have an account? <a asp-action="Register">Sign up</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

@@ -93,6 +93,31 @@ function showReplyForm(parentCommentId) {
     });
 }
 
+// SignalR Comment Hub Connection
+let commentHubConnection = null;
+
+function initializeCommentHub(postId) {
+    if (commentHubConnection) {
+        commentHubConnection.invoke("JoinPostGroup", postId);
+        return;
+    }
+
+    commentHubConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/commentHub")
+        .build();
+
+    commentHubConnection.start().then(() => {
+        console.log("Comment Hub connected");
+        commentHubConnection.invoke("JoinPostGroup", postId);
+        
+        // Listen for new comments
+        commentHubConnection.on("ReceiveComment", function (comment) {
+            addCommentToDOM(comment);
+            updateCommentCount(1);
+        });
+    }).catch(err => console.error("Comment Hub connection error: ", err));
+}
+
 // Comment form submission
 document.getElementById('comment-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -115,6 +140,7 @@ document.getElementById('comment-form')?.addEventListener('submit', async functi
         const result = await response.json();
         if (result.success) {
             this.reset();
+            // SignalR will handle the real-time update, but we can also reload if needed
             loadComments(formData.PostID);
         } else {
             alert('Error posting comment');
@@ -124,6 +150,21 @@ document.getElementById('comment-form')?.addEventListener('submit', async functi
         alert('Error posting comment');
     }
 });
+
+function addCommentToDOM(comment) {
+    const commentsList = document.getElementById('comments-list');
+    if (!commentsList) return;
+    
+    const commentHtml = renderComment({
+        commentID: comment.CommentID,
+        content: comment.Content,
+        userName: comment.UserName,
+        createdAt: comment.CreatedAt
+    });
+    
+    commentsList.insertAdjacentHTML('afterbegin', commentHtml);
+    attachCommentListeners();
+}
 
 // Reply form submission
 function handleReplySubmit(e) {

@@ -1,0 +1,80 @@
+/* Tabbed Content Create Interface */
+
+.nav-tabs-modern {
+    border-bottom: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    padding: 0.5rem;
+}
+
+.nav-tabs-modern .nav-link {
+    border: none;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+    margin-right: 0.5rem;
+}
+
+.nav-tabs-modern .nav-link:hover {
+    color: var(--primary);
+    background: var(--bg-card);
+}
+
+.nav-tabs-modern .nav-link.active {
+    color: var(--primary);
+    background: var(--bg-card);
+    border-bottom: 3px solid var(--primary);
+}
+
+.tab-content {
+    min-height: 500px;
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form Styles */
+.form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+
+
+
+
+
+

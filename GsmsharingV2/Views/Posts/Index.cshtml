@@ -132,10 +132,10 @@
 
             <!-- Sidebar -->
             <div class="col-lg-4">
-                <div class="sticky-top" style="top: 80px;">
+                <div class="sticky-top sidebar-container" style="top: 100px;">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <div class="card mb-4">
+                        <div class="card mb-4 shadow-sm">
                             <div class="card-body text-center">
                                 <a href="/Posts/Create" class="btn btn-primary w-100">
                                     <i class="fas fa-plus-circle me-2"></i>Create Post
@@ -143,8 +143,20 @@
                             </div>
                         </div>
                     }
+                    @await Component.InvokeAsync("EngagingSidebar")
                 </div>
             </div>
+        </div>
+    </div>
+
+<style>
+    @@media (max-width: 991px) {
+        .sidebar-container {
+            position: static !important;
+            margin-top: 2rem;
+        }
+    }
+</style>
         </div>
     </div>
 </div>

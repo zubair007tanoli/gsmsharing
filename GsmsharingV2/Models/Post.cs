@@ -23,6 +23,20 @@ namespace GsmsharingV2.Models
         public DateTime? UpdatedAt { get; set; }
         public DateTime? PublishedAt { get; set; }
         public int? CommunityID { get; set; }
+        
+        // New SEO and modern fields
+        public string CanonicalUrl { get; set; }
+        public string FocusKeyword { get; set; }
+        public string Excerpt { get; set; }
+        public int Score { get; set; } = 0;
+        public int CommentCount { get; set; } = 0;
+        public int UpvoteCount { get; set; } = 0;
+        public int DownvoteCount { get; set; } = 0;
+        public bool IsLocked { get; set; } = false;
+        public bool IsPinned { get; set; } = false;
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
+        public string SchemaMarkup { get; set; } // JSON-LD structured data
 
         // Navigation properties
         public ApplicationUser User { get; set; }
@@ -30,6 +44,10 @@ namespace GsmsharingV2.Models
         public ICollection<Comment> Comments { get; set; }
         public ICollection<Reaction> Reactions { get; set; }
         public ICollection<PostTag> PostTags { get; set; }
+        public ICollection<PostVote> Votes { get; set; }
+        public ICollection<SavedPost> SavedBy { get; set; }
+        public ICollection<PostReport> Reports { get; set; }
+        public ICollection<PostHistory> History { get; set; }
     }
 }
 

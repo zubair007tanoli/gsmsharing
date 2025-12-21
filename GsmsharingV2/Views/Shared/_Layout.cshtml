@@ -10,7 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/blog-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dark-mode.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GsmsharingV2.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <header class="gs-header">
@@ -42,11 +45,20 @@
                     </form>
 
                     <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                        <li class="nav-item">
+                            @await Component.InvokeAsync("ThemeToggle")
+                        </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="btn btn-primary btn-sm" asp-controller="Posts" asp-action="Create">
+                                <a class="btn btn-primary btn-sm" asp-controller="Content" asp-action="Create">
                                     <i class="fas fa-plus-circle me-1"></i>Create
+                                </a>
+                            </li>
+                            <li class="nav-item position-relative">
+                                <a class="nav-link" href="#" id="notificationBell" role="button">
+                                    <i class="fas fa-bell"></i>
+                                    <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" id="notificationBadge" style="display: none;">0</span>
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
@@ -78,7 +90,17 @@
 
     <main role="main" class="gs-main">
         <div class="container py-4">
+            <!-- AdSense Top Banner -->
+            <div class="text-center mb-4" id="adsense-top">
+                <!-- AdSense will be injected here -->
+            </div>
+            
             @RenderBody()
+            
+            <!-- AdSense Bottom Banner -->
+            <div class="text-center mt-4" id="adsense-bottom">
+                <!-- AdSense will be injected here -->
+            </div>
         </div>
     </main>
 
@@ -111,7 +133,111 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- SignalR Connection Scripts -->
+    <script>
+        // SignalR Comment Hub Connection
+        const commentConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/commentHub")
+            .build();
+
+        commentConnection.start().then(() => {
+            console.log("Comment Hub connected");
+        }).catch(err => console.error("Comment Hub connection error: ", err));
+
+        // SignalR Notification Hub Connection
+        const notificationConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .build();
+
+        notificationConnection.start().then(() => {
+            console.log("Notification Hub connected");
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <text>
+                notificationConnection.invoke("JoinUserGroup", "@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value");
+                </text>
+            }
+        }).catch(err => console.error("Notification Hub connection error: ", err));
+
+        // Listen for notifications
+        notificationConnection.on("ReceiveNotification", function (notification) {
+            updateNotificationBadge();
+            showNotificationToast(notification);
+        });
+
+        function updateNotificationBadge() {
+            fetch('/Notifications/GetUnreadCount')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('notificationBadge');
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                });
+        }
+
+        function showNotificationToast(notification) {
+            // Create and show toast notification
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-primary border-0';
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${notification.title}: ${notification.content}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
+
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <text>
+            // Load notification count on page load
+            updateNotificationBadge();
+            </text>
+        }
+    </script>
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+            crossorigin="anonymous"></script>
+    <script>
+        // Inject AdSense ads
+        function injectAdSense(containerId, adFormat) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                const adDiv = document.createElement('ins');
+                adDiv.className = 'adsbygoogle';
+                adDiv.style.display = 'block';
+                adDiv.setAttribute('data-ad-client', 'ca-pub-YOUR_PUBLISHER_ID');
+                adDiv.setAttribute('data-ad-slot', 'YOUR_AD_SLOT_ID');
+                adDiv.setAttribute('data-ad-format', adFormat);
+                container.appendChild(adDiv);
+                try {
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                } catch (e) {
+                    console.error('AdSense error:', e);
+                }
+            }
+        }
+
+        // Inject ads when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            injectAdSense('adsense-top', 'auto');
+            injectAdSense('adsense-bottom', 'auto');
+            injectAdSense('adsense-sidebar-layout', 'auto');
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

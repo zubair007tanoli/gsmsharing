@@ -1,0 +1,96 @@
+@model IEnumerable<GsmsharingV2.Models.NewSchema.SystemSetting>
+@{
+    ViewData["Title"] = "System Settings";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4><i class="fas fa-cog me-2"></i>System Settings</h4>
+        </div>
+        <div class="card-body">
+            <form id="settingsForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row">
+                    @foreach (var setting in Model)
+                    {
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">@setting.SettingKey</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control setting-value" 
+                                       data-key="@setting.SettingKey" 
+                                       value="@setting.SettingValue" />
+                                <button type="button" class="btn btn-primary update-setting" 
+                                        data-key="@setting.SettingKey">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Last updated: @setting.LastUpdated.ToString("MMM dd, yyyy HH:mm")</small>
+                        </div>
+                    }
+                </div>
+                
+                <div class="mb-3">
+                    <h5>Add New Setting</h5>
+                    <div class="input-group">
+                        <input type="text" id="newSettingKey" class="form-control" placeholder="Setting Key" />
+                        <input type="text" id="newSettingValue" class="form-control" placeholder="Setting Value" />
+                        <button type="button" class="btn btn-success" id="addSetting">
+                            <i class="fas fa-plus me-2"></i>Add
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.update-setting').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const key = this.dataset.key;
+                const value = this.closest('.input-group').querySelector('.setting-value').value;
+                
+                fetch('@Url.Action("UpdateSetting")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
+                })
+                .then(() => {
+                    alert('Setting updated successfully!');
+                    location.reload();
+                })
+                .catch(err => alert('Error: ' + err));
+            });
+        });
+        
+        document.getElementById('addSetting')?.addEventListener('click', function() {
+            const key = document.getElementById('newSettingKey').value;
+            const value = document.getElementById('newSettingValue').value;
+            
+            if (!key || !value) {
+                alert('Please enter both key and value');
+                return;
+            }
+            
+            fetch('@Url.Action("UpdateSetting")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
+            })
+            .then(() => {
+                alert('Setting added successfully!');
+                location.reload();
+            })
+            .catch(err => alert('Error: ' + err));
+        });
+    </script>
+}
+

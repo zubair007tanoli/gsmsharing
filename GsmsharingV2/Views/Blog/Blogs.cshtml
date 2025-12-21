@@ -5,82 +5,171 @@
     var affiliateProducts = ViewBag.AffiliateProducts as IEnumerable<GsmsharingV2.Models.AffiliationProduct> ?? new List<GsmsharingV2.Models.AffiliationProduct>();
 }
 
-<div class="blog-container mt-4">
-    <div class="blog-main-content">
-        <!-- Main Content -->
-        <div>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="mb-2">
-                        <i class="fas fa-blog me-2 text-primary"></i>Blog Posts
-                    </h1>
-                    <p class="text-muted mb-0">Latest mobile & IT articles, reviews, and guides</p>
+<!-- Modern Blog Hero Section -->
+<div class="blog-hero-section mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="blog-hero-title">
+                    <i class="fas fa-blog me-3"></i>Mobile & IT Blog
+                </h1>
+                <p class="blog-hero-subtitle">
+                    Discover the latest mobile technology insights, repair guides, and industry news
+                </p>
+                <div class="blog-hero-stats d-flex gap-4 mt-4">
+                    <div class="stat-box">
+                        <div class="stat-number">@(Model?.Count() ?? 0)</div>
+                        <div class="stat-label">Articles</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">@(gsmBlogs.Count())</div>
+                        <div class="stat-label">Featured</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">@(Model?.Sum(b => b.views ?? 0) ?? 0)</div>
+                        <div class="stat-label">Total Views</div>
+                    </div>
                 </div>
+            </div>
+            <div class="col-lg-4 text-end">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a href="/Content/Create" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus-circle me-2"></i>Write Article
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main Blog Content -->
+        <div class="col-lg-8">
+            <!-- Filter Tabs -->
+            <div class="blog-filter-tabs mb-4">
+                <ul class="nav nav-pills">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="?">All Posts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="?sort=popular">Popular</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="?sort=recent">Recent</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="?sort=trending">Trending</a>
+                    </li>
+                </ul>
             </div>
 
             @if (Model != null && Model.Any())
             {
-                <div class="row g-4">
-                    @foreach (var blog in Model)
-                    {
-                        <div class="col-md-6 col-lg-4">
-                            <article class="blog-card-modern h-100">
-                                <div class="blog-image-container">
-                                    @if (!string.IsNullOrEmpty(blog.WebLinks))
+                <!-- Featured Blog Post (First One) -->
+                @if (Model.FirstOrDefault() != null)
+                {
+                    var featured = Model.First();
+                    <div class="blog-featured-card mb-5">
+                        <div class="row g-0">
+                            <div class="col-md-6">
+                                <div class="blog-featured-image">
+                                    @if (!string.IsNullOrEmpty(featured.WebLinks))
                                     {
-                                        <img src="@blog.WebLinks" alt="@blog.Title" class="blog-image-modern" onerror="this.src='/images/placeholder-blog.jpg'">
+                                        <img src="@featured.WebLinks" alt="@featured.Title" class="img-fluid">
                                     }
                                     else
                                     {
-                                        <div class="blog-image-placeholder">
-                                            <i class="fas fa-blog fa-3x text-muted"></i>
+                                        <div class="blog-featured-placeholder">
+                                            <i class="fas fa-blog fa-5x"></i>
                                         </div>
                                     }
-                                    <div class="blog-overlay">
-                                        <a href="/Blog/Details/@blog.BlogId" class="btn btn-light btn-sm">
-                                            <i class="fas fa-arrow-right me-1"></i>Read More
-                                        </a>
-                                    </div>
-                                    <span class="blog-category-badge">
-                                        <i class="fas fa-mobile-alt me-1"></i>Mobile
-                                    </span>
                                 </div>
-                                <div class="blog-card-content">
-                                    <h3 class="blog-title-modern">
-                                        <a href="/Blog/Details/@blog.BlogId" class="text-decoration-none">
-                                            @blog.Title
-                                        </a>
-                                    </h3>
-                                    <p class="blog-excerpt-modern">
-                                        @if (!string.IsNullOrEmpty(blog.MetaDis))
+                            </div>
+                            <div class="col-md-6">
+                                <div class="blog-featured-content">
+                                    <span class="blog-featured-badge">
+                                        <i class="fas fa-star me-1"></i>Featured
+                                    </span>
+                                    <h2 class="blog-featured-title">
+                                        <a href="/Blog/Details/@featured.BlogId">@featured.Title</a>
+                                    </h2>
+                                    <p class="blog-featured-excerpt">
+                                        @if (!string.IsNullOrEmpty(featured.MetaDis))
                                         {
-                                            @(blog.MetaDis.Length > 120 ? blog.MetaDis.Substring(0, 120) + "..." : blog.MetaDis)
-                                        }
-                                        else if (!string.IsNullOrEmpty(blog.Content))
-                                        {
-                                            @(blog.Content.Length > 120 ? blog.Content.Substring(0, 120) + "..." : blog.Content)
+                                            @(featured.MetaDis.Length > 200 ? featured.MetaDis.Substring(0, 200) + "..." : featured.MetaDis)
                                         }
                                     </p>
-                                    <div class="blog-meta-modern">
-                                        <div class="blog-author-modern">
-                                            <div class="author-avatar-small">
-                                                @(blog.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                                    <div class="blog-featured-meta">
+                                        <div class="author-info">
+                                            <div class="author-avatar">@(featured.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")</div>
+                                            <div>
+                                                <div class="author-name">@(featured.User?.UserName ?? "Anonymous")</div>
+                                                <div class="post-date">@GetTimeAgo(featured.CreationDate)</div>
                                             </div>
-                                            <span class="author-name">@(blog.User?.UserName ?? "Anonymous")</span>
                                         </div>
-                                        <div class="blog-stats">
-                                            <span class="stat-item">
-                                                <i class="fas fa-clock text-muted"></i>
-                                                <small>@GetTimeAgo(blog.CreationDate)</small>
-                                            </span>
-                                            <span class="stat-item">
-                                                <i class="fas fa-eye text-muted"></i>
-                                                <small>@(blog.views ?? 0)</small>
-                                            </span>
-                                            <span class="stat-item">
-                                                <i class="fas fa-thumbs-up text-muted"></i>
-                                                <small>@(blog.likes ?? 0)</small>
-                                            </span>
+                                        <div class="post-stats">
+                                            <span><i class="fas fa-eye"></i> @(featured.views ?? 0)</span>
+                                            <span><i class="fas fa-thumbs-up"></i> @(featured.likes ?? 0)</span>
+                                        </div>
+                                    </div>
+                                    <a href="/Blog/Details/@featured.BlogId" class="btn btn-primary mt-3">
+                                        Read Full Article <i class="fas fa-arrow-right ms-2"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Blog Grid -->
+                <div class="row g-4">
+                    @foreach (var blog in Model.Skip(1))
+                    {
+                        <div class="col-md-6">
+                            <article class="blog-card-modern-v2 h-100">
+                                <div class="blog-card-image-wrapper">
+                                    @if (!string.IsNullOrEmpty(blog.WebLinks))
+                                    {
+                                        <img src="@blog.WebLinks" alt="@blog.Title" class="blog-card-image">
+                                    }
+                                    else
+                                    {
+                                        <div class="blog-card-placeholder">
+                                            <i class="fas fa-blog fa-3x"></i>
+                                        </div>
+                                    }
+                                    <div class="blog-card-overlay">
+                                        <a href="/Blog/Details/@blog.BlogId" class="btn btn-light btn-sm">
+                                            <i class="fas fa-arrow-right me-1"></i>Read
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="blog-card-body-v2">
+                                    <div class="blog-card-meta-top">
+                                        <span class="blog-card-category">
+                                            <i class="fas fa-mobile-alt me-1"></i>Mobile
+                                        </span>
+                                        <span class="blog-card-date">@GetTimeAgo(blog.CreationDate)</span>
+                                    </div>
+                                    <h3 class="blog-card-title-v2">
+                                        <a href="/Blog/Details/@blog.BlogId">@blog.Title</a>
+                                    </h3>
+                                    <p class="blog-card-excerpt-v2">
+                                        @if (!string.IsNullOrEmpty(blog.MetaDis))
+                                        {
+                                            @(blog.MetaDis.Length > 150 ? blog.MetaDis.Substring(0, 150) + "..." : blog.MetaDis)
+                                        }
+                                    </p>
+                                    <div class="blog-card-footer-v2">
+                                        <div class="blog-card-author-v2">
+                                            <div class="author-avatar-mini">@(blog.User?.UserName?.Substring(0, 1).ToUpper() ?? "U")</div>
+                                            <span>@(blog.User?.UserName ?? "Anonymous")</span>
+                                        </div>
+                                        <div class="blog-card-stats-v2">
+                                            <span><i class="fas fa-eye"></i> @(blog.views ?? 0)</span>
+                                            <span><i class="fas fa-thumbs-up"></i> @(blog.likes ?? 0)</span>
                                         </div>
                                     </div>
                                 </div>
@@ -97,10 +186,12 @@
                             @if (ViewBag.CurrentPage > 1)
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)">Previous</a>
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)">
+                                        <i class="fas fa-chevron-left me-1"></i>Previous
+                                    </a>
                                 </li>
                             }
-                            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                            @for (int i = Math.Max(1, ViewBag.CurrentPage - 2); i <= Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2); i++)
                             {
                                 <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
                                     <a class="page-link" href="?page=@i">@i</a>
@@ -109,7 +200,9 @@
                             @if (ViewBag.CurrentPage < ViewBag.TotalPages)
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)">Next</a>
+                                    <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)">
+                                        Next<i class="fas fa-chevron-right ms-1"></i>
+                                    </a>
                                 </li>
                             }
                         </ul>
@@ -119,71 +212,88 @@
             else
             {
                 <div class="text-center py-5">
-                    <i class="fas fa-blog fa-4x text-muted mb-3"></i>
-                    <h3 class="mb-3">No blog posts found</h3>
-                    <p class="text-muted">Check back later for new articles!</p>
+                    <div class="empty-state-modern">
+                        <i class="fas fa-blog fa-4x mb-3"></i>
+                        <h3>No blog posts found</h3>
+                        <p class="text-muted">Check back later for new articles!</p>
+                    </div>
                 </div>
             }
         </div>
 
         <!-- Sidebar -->
-        <div class="blog-sidebar">
-            <!-- GsmBlog Posts -->
-            @if (gsmBlogs.Any())
-            {
-                <div class="card shadow-blog rounded-blog mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title mb-4">
-                            <i class="fas fa-fire me-2 text-primary"></i>Trending Articles
-                        </h5>
-                        <div class="list-group list-group-flush">
-                            @foreach (var gsmBlog in gsmBlogs)
+        <div class="col-lg-4">
+            <div class="blog-sidebar-sticky">
+                <!-- Random Data Widget -->
+                @await Component.InvokeAsync("RandomDataWidget")
+                
+                <!-- Trending Articles -->
+                @if (gsmBlogs.Any())
+                {
+                    <div class="blog-sidebar-card mb-4">
+                        <div class="blog-sidebar-header">
+                            <h5>
+                                <i class="fas fa-fire me-2 text-danger"></i>Trending Articles
+                            </h5>
+                        </div>
+                        <div class="blog-sidebar-content">
+                            @foreach (var gsmBlog in gsmBlogs.Take(5))
                             {
-                                <a href="/Blog/GsmBlogDetails/@gsmBlog.BlogId" class="list-group-item list-group-item-action border-0 px-0 mb-2">
-                                    <h6 class="mb-1">@(gsmBlog.BlogTitle?.Length > 60 ? gsmBlog.BlogTitle.Substring(0, 60) + "..." : gsmBlog.BlogTitle)</h6>
-                                    <small class="text-muted">
-                                        <i class="fas fa-eye me-1"></i>@(gsmBlog.BlogViews ?? 0) views
-                                    </small>
-                                </a>
+                                <div class="blog-sidebar-item">
+                                    <a href="/Blog/GsmBlogDetails/@gsmBlog.BlogId" class="blog-sidebar-link">
+                                        <h6>@(gsmBlog.BlogTitle?.Length > 60 ? gsmBlog.BlogTitle.Substring(0, 60) + "..." : gsmBlog.BlogTitle)</h6>
+                                        <div class="blog-sidebar-meta">
+                                            <span><i class="fas fa-eye"></i> @(gsmBlog.BlogViews ?? 0)</span>
+                                            <span><i class="fas fa-calendar"></i> @GetTimeAgo(gsmBlog.PublishDate)</span>
+                                        </div>
+                                    </a>
+                                </div>
                             }
                         </div>
                     </div>
-                </div>
-            }
+                }
 
-            <!-- Affiliate Products -->
-            @if (affiliateProducts.Any())
-            {
-                <div class="card shadow-blog rounded-blog mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title mb-4">
-                            <i class="fas fa-shopping-bag me-2 text-primary"></i>Featured Products
-                        </h5>
-                        @foreach (var product in affiliateProducts.Take(3))
-                        {
-                            <div class="affiliate-product-card mb-3">
-                                @if (!string.IsNullOrEmpty(product.ImageLink))
-                                {
-                                    <img src="@product.ImageLink" alt="@product.Title" class="affiliate-product-image" onerror="this.style.display='none'">
-                                }
-                                <div class="affiliate-product-content">
-                                    <h6 class="affiliate-product-title">@(product.Title?.Length > 50 ? product.Title.Substring(0, 50) + "..." : product.Title)</h6>
-                                    @if (product.Price.HasValue)
-                                    {
-                                        <div class="affiliate-product-price">$@product.Price</div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(product.BuyLink))
-                                    {
-                                        <a href="@product.BuyLink" target="_blank" class="affiliate-buy-button">
-                                            <i class="fas fa-shopping-cart me-2"></i>Buy Now
-                                        </a>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
+                <!-- AdSense Sidebar Ad -->
+                <div class="blog-sidebar-card mb-4" id="adsense-sidebar">
+                    <!-- AdSense will be injected here -->
                 </div>
-            }
+
+                <!-- Featured Products -->
+                @if (affiliateProducts.Any())
+                {
+                    <div class="blog-sidebar-card">
+                        <div class="blog-sidebar-header">
+                            <h5>
+                                <i class="fas fa-shopping-bag me-2 text-primary"></i>Featured Products
+                            </h5>
+                        </div>
+                        <div class="blog-sidebar-content">
+                            @foreach (var product in affiliateProducts.Take(3))
+                            {
+                                <div class="blog-sidebar-product">
+                                    @if (!string.IsNullOrEmpty(product.ImageLink))
+                                    {
+                                        <img src="@product.ImageLink" alt="@product.Title" class="blog-sidebar-product-image">
+                                    }
+                                    <div class="blog-sidebar-product-info">
+                                        <h6>@(product.Title?.Length > 40 ? product.Title.Substring(0, 40) + "..." : product.Title)</h6>
+                                        @if (product.Price.HasValue)
+                                        {
+                                            <div class="blog-sidebar-product-price">$@product.Price</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(product.BuyLink))
+                                        {
+                                            <a href="@product.BuyLink" target="_blank" class="btn btn-sm btn-primary mt-2">
+                                                <i class="fas fa-shopping-cart me-1"></i>Buy Now
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -210,3 +320,472 @@
     }
 }
 
+@section Styles {
+    <style>
+        /* Modern Blog Hero Section */
+        .blog-hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+            border-radius: 0 0 2rem 2rem;
+        }
+
+        .blog-hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+        }
+
+        .blog-hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+
+        .blog-hero-stats {
+            margin-top: 2rem;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        /* Blog Filter Tabs */
+        .blog-filter-tabs .nav-pills .nav-link {
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+            margin-right: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .blog-filter-tabs .nav-pills .nav-link.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        /* Featured Blog Card */
+        .blog-featured-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .blog-featured-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            min-height: 400px;
+        }
+
+        .blog-featured-placeholder {
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gray-100);
+        }
+
+        .blog-featured-content {
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .blog-featured-badge {
+            display: inline-block;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .blog-featured-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .blog-featured-title a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .blog-featured-excerpt {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .blog-featured-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .author-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .author-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .post-date {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .post-stats span {
+            margin-left: 1rem;
+            color: var(--text-muted);
+        }
+
+        /* Modern Blog Cards V2 */
+        .blog-card-modern-v2 {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .blog-card-modern-v2:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .blog-card-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+        }
+
+        .blog-card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .blog-card-modern-v2:hover .blog-card-image {
+            transform: scale(1.1);
+        }
+
+        .blog-card-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gray-100);
+            color: var(--text-muted);
+        }
+
+        .blog-card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .blog-card-modern-v2:hover .blog-card-overlay {
+            opacity: 1;
+        }
+
+        .blog-card-body-v2 {
+            padding: 1.5rem;
+        }
+
+        .blog-card-meta-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .blog-card-category {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .blog-card-date {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .blog-card-title-v2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .blog-card-title-v2 a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .blog-card-title-v2 a:hover {
+            color: var(--primary);
+        }
+
+        .blog-card-excerpt-v2 {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .blog-card-footer-v2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .blog-card-author-v2 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .author-avatar-mini {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .blog-card-stats-v2 span {
+            margin-left: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* Sidebar Styles - Fixed to prevent overlapping */
+        .blog-sidebar-sticky {
+            position: sticky;
+            top: 100px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Custom scrollbar for sidebar */
+        .blog-sidebar-sticky::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .blog-sidebar-sticky::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .blog-sidebar-sticky::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        .blog-sidebar-sticky::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .blog-sidebar-card {
+            background: var(--bg-card, #fff);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            border: 1px solid var(--border-color, #e0e0e0);
+        }
+
+        .blog-sidebar-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .blog-sidebar-header {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-bottom: none;
+        }
+
+        .blog-sidebar-header h5 {
+            margin: 0;
+            font-weight: 600;
+            color: white;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .blog-sidebar-content {
+            padding: 1.25rem;
+        }
+
+        .blog-sidebar-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color, #e0e0e0);
+        }
+
+        .blog-sidebar-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .blog-sidebar-link {
+            text-decoration: none;
+            color: var(--text-primary, #333);
+            display: block;
+            transition: transform 0.2s ease;
+        }
+
+        .blog-sidebar-link:hover {
+            transform: translateX(5px);
+            color: var(--primary, #667eea);
+        }
+
+        .blog-sidebar-link h6 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .blog-sidebar-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted, #666);
+        }
+
+        .blog-sidebar-product {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color, #e0e0e0);
+        }
+
+        .blog-sidebar-product:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .blog-sidebar-product-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .blog-sidebar-product-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .blog-sidebar-product-info h6 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .blog-sidebar-product-price {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--primary, #667eea);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @@media (max-width: 991px) {
+            .blog-sidebar-sticky {
+                position: static;
+                max-height: none;
+                margin-top: 2rem;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .blog-hero-title {
+                font-size: 2.5rem;
+            }
+
+            .blog-featured-content {
+                padding: 2rem;
+            }
+
+            .blog-featured-title {
+                font-size: 1.75rem;
+            }
+
+            .blog-sidebar-card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Inject AdSense in sidebar
+        document.addEventListener('DOMContentLoaded', function() {
+            injectAdSense('adsense-sidebar', 'auto');
+        });
+    </script>
+}

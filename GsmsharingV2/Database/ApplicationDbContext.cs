@@ -47,6 +47,18 @@ namespace GsmsharingV2.Database
         public DbSet<ChatRoom> ChatRooms { get; set; }
         public DbSet<ChatRoomMember> ChatRoomMembers { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        
+        // New modern tables
+        public DbSet<PostVote> PostVotes { get; set; }
+        public DbSet<CommentVote> CommentVotes { get; set; }
+        public DbSet<ForumVote> ForumVotes { get; set; }
+        public DbSet<PostReport> PostReports { get; set; }
+        public DbSet<CommentReport> CommentReports { get; set; }
+        public DbSet<UserBlock> UserBlocks { get; set; }
+        public DbSet<SocialShare> SocialShares { get; set; }
+        public DbSet<PostView> PostViews { get; set; }
+        public DbSet<SavedPost> SavedPosts { get; set; }
+        public DbSet<PostHistory> PostHistory { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -77,7 +89,7 @@ namespace GsmsharingV2.Database
             builder.Entity<IdentityRole>().HasData(roles);
 
             // Configure Forum Entities
-            builder.Entity<ForumThread>().ToTable("UsersFourm")
+            builder.Entity<ForumThread>().ToTable("userforum", "gsmsharing")
                 .HasKey(f => f.UserFourmID);
             
             // Map ForumThread column names (database uses lowercase)
@@ -196,6 +208,38 @@ namespace GsmsharingV2.Database
             builder.Entity<Comment>().ToTable("Comments").HasKey(c => c.CommentID);
             builder.Entity<Community>().ToTable("Communities").HasKey(c => c.CommunityID);
             builder.Entity<Category>().ToTable("Categories").HasKey(c => c.CategoryID);
+            
+            // Temporarily ignore new properties that may not exist in database yet
+            // Remove these .Ignore() calls after running db_modernized_fixes.sql
+            builder.Entity<Post>().Ignore(p => p.IsDeleted);
+            builder.Entity<Post>().Ignore(p => p.CanonicalUrl);
+            builder.Entity<Post>().Ignore(p => p.FocusKeyword);
+            builder.Entity<Post>().Ignore(p => p.Excerpt);
+            builder.Entity<Post>().Ignore(p => p.Score);
+            builder.Entity<Post>().Ignore(p => p.CommentCount);
+            builder.Entity<Post>().Ignore(p => p.UpvoteCount);
+            builder.Entity<Post>().Ignore(p => p.DownvoteCount);
+            builder.Entity<Post>().Ignore(p => p.IsLocked);
+            builder.Entity<Post>().Ignore(p => p.IsPinned);
+            builder.Entity<Post>().Ignore(p => p.DeletedAt);
+            builder.Entity<Post>().Ignore(p => p.SchemaMarkup);
+            // Temporarily ignore MetaTitle and MetaDescription if they don't exist in your database
+            // Remove these ignores after ensuring columns exist or after running db_modernized_fixes.sql
+            // builder.Entity<Post>().Ignore(p => p.MetaTitle);
+            // builder.Entity<Post>().Ignore(p => p.MetaDescription);
+            
+            builder.Entity<Comment>().Ignore(c => c.IsDeleted);
+            builder.Entity<Comment>().Ignore(c => c.UpvoteCount);
+            builder.Entity<Comment>().Ignore(c => c.DownvoteCount);
+            builder.Entity<Comment>().Ignore(c => c.IsEdited);
+            builder.Entity<Comment>().Ignore(c => c.EditedAt);
+            builder.Entity<Comment>().Ignore(c => c.DeletedAt);
+            
+            builder.Entity<Community>().Ignore(c => c.IsDeleted);
+            // Temporarily ignore MetaTitle and MetaDescription if they don't exist in your database
+            // Remove these ignores after ensuring columns exist or after running db_modernized_fixes.sql
+            builder.Entity<Community>().Ignore(c => c.MetaTitle);
+            builder.Entity<Community>().Ignore(c => c.MetaDescription);
             builder.Entity<Tags>().ToTable("Tags").HasKey(t => t.TagID);
             builder.Entity<Reaction>().ToTable("Reactions").HasKey(r => r.ReactionID);
             builder.Entity<UserProfile>().ToTable("UserProfiles").HasKey(up => up.UserProfileID);
@@ -511,6 +555,180 @@ namespace GsmsharingV2.Database
                 .WithOne(i => i.Ad)
                 .HasForeignKey(i => i.AdsId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // =============================================
+            // Configure New Modern Entity Relationships
+            // =============================================
+
+            // PostVotes
+            builder.Entity<PostVote>()
+                .ToTable("PostVotes")
+                .HasKey(pv => pv.VoteID);
+            builder.Entity<PostVote>()
+                .HasOne(pv => pv.Post)
+                .WithMany(p => p.Votes)
+                .HasForeignKey(pv => pv.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<PostVote>()
+                .HasOne(pv => pv.User)
+                .WithMany()
+                .HasForeignKey(pv => pv.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<PostVote>()
+                .HasIndex(pv => new { pv.PostID, pv.UserId })
+                .IsUnique();
+
+            // CommentVotes
+            builder.Entity<CommentVote>()
+                .ToTable("CommentVotes")
+                .HasKey(cv => cv.VoteID);
+            builder.Entity<CommentVote>()
+                .HasOne(cv => cv.Comment)
+                .WithMany(c => c.Votes)
+                .HasForeignKey(cv => cv.CommentID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<CommentVote>()
+                .HasOne(cv => cv.User)
+                .WithMany()
+                .HasForeignKey(cv => cv.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<CommentVote>()
+                .HasIndex(cv => new { cv.CommentID, cv.UserId })
+                .IsUnique();
+
+            // PostReports
+            builder.Entity<PostReport>()
+                .ToTable("PostReports")
+                .HasKey(pr => pr.ReportID);
+            builder.Entity<PostReport>()
+                .HasOne(pr => pr.Post)
+                .WithMany(p => p.Reports)
+                .HasForeignKey(pr => pr.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<PostReport>()
+                .HasOne(pr => pr.Reporter)
+                .WithMany()
+                .HasForeignKey(pr => pr.ReporterUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            builder.Entity<PostReport>()
+                .HasOne(pr => pr.Reviewer)
+                .WithMany()
+                .HasForeignKey(pr => pr.ReviewedBy)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // CommentReports
+            builder.Entity<CommentReport>()
+                .ToTable("CommentReports")
+                .HasKey(cr => cr.ReportID);
+            builder.Entity<CommentReport>()
+                .HasOne(cr => cr.Comment)
+                .WithMany(c => c.Reports)
+                .HasForeignKey(cr => cr.CommentID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<CommentReport>()
+                .HasOne(cr => cr.Reporter)
+                .WithMany()
+                .HasForeignKey(cr => cr.ReporterUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            builder.Entity<CommentReport>()
+                .HasOne(cr => cr.Reviewer)
+                .WithMany()
+                .HasForeignKey(cr => cr.ReviewedBy)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // UserBlocks
+            builder.Entity<UserBlock>()
+                .ToTable("UserBlocks")
+                .HasKey(ub => ub.BlockID);
+            builder.Entity<UserBlock>()
+                .HasOne(ub => ub.Blocker)
+                .WithMany()
+                .HasForeignKey(ub => ub.BlockerUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<UserBlock>()
+                .HasOne(ub => ub.Blocked)
+                .WithMany()
+                .HasForeignKey(ub => ub.BlockedUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            builder.Entity<UserBlock>()
+                .HasIndex(ub => new { ub.BlockerUserId, ub.BlockedUserId })
+                .IsUnique();
+
+            // SocialShares
+            builder.Entity<SocialShare>()
+                .ToTable("SocialShares")
+                .HasKey(ss => ss.ShareID);
+            builder.Entity<SocialShare>()
+                .HasOne(ss => ss.User)
+                .WithMany()
+                .HasForeignKey(ss => ss.SharedBy)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // PostViews
+            builder.Entity<PostView>()
+                .ToTable("PostViews")
+                .HasKey(pv => pv.ViewID);
+            builder.Entity<PostView>()
+                .HasOne(pv => pv.Post)
+                .WithMany()
+                .HasForeignKey(pv => pv.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<PostView>()
+                .HasOne(pv => pv.User)
+                .WithMany()
+                .HasForeignKey(pv => pv.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // SavedPosts
+            builder.Entity<SavedPost>()
+                .ToTable("SavedPosts")
+                .HasKey(sp => sp.SavedPostID);
+            builder.Entity<SavedPost>()
+                .HasOne(sp => sp.Post)
+                .WithMany(p => p.SavedBy)
+                .HasForeignKey(sp => sp.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<SavedPost>()
+                .HasOne(sp => sp.User)
+                .WithMany()
+                .HasForeignKey(sp => sp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<SavedPost>()
+                .HasIndex(sp => new { sp.PostID, sp.UserId })
+                .IsUnique();
+
+            // PostHistory
+            builder.Entity<PostHistory>()
+                .ToTable("PostHistory")
+                .HasKey(ph => ph.HistoryID);
+            builder.Entity<PostHistory>()
+                .HasOne(ph => ph.Post)
+                .WithMany(p => p.History)
+                .HasForeignKey(ph => ph.PostID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<PostHistory>()
+                .HasOne(ph => ph.Editor)
+                .WithMany()
+                .HasForeignKey(ph => ph.EditedBy)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // ForumVotes
+            builder.Entity<ForumVote>()
+                .ToTable("ForumVotes")
+                .HasKey(fv => fv.VoteID);
+            builder.Entity<ForumVote>()
+                .HasOne(fv => fv.ForumThread)
+                .WithMany()
+                .HasForeignKey(fv => fv.ForumThreadID)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<ForumVote>()
+                .HasOne(fv => fv.User)
+                .WithMany()
+                .HasForeignKey(fv => fv.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<ForumVote>()
+                .HasIndex(fv => new { fv.ForumThreadID, fv.UserId })
+                .IsUnique();
         }
     }
 }

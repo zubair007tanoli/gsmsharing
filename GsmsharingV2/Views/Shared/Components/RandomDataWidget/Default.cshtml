@@ -1,0 +1,119 @@
+@model GsmsharingV2.ViewComponents.RandomDataViewModel
+
+<div class="random-data-widget card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">
+            <i class="fas fa-random me-2"></i>Random Discoveries
+        </h6>
+    </div>
+    <div class="card-body">
+        @if (Model.RandomBlog != null)
+        {
+            <div class="random-item mb-3 pb-3 border-bottom">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="fas fa-blog text-primary mt-1"></i>
+                    <div class="flex-grow-1">
+                        <a href="/Blog/Details/@Model.RandomBlog.BlogId" class="text-decoration-none">
+                            <strong class="small">@(Model.RandomBlog.Title?.Length > 50 ? Model.RandomBlog.Title.Substring(0, 50) + "..." : Model.RandomBlog.Title)</strong>
+                        </a>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-eye"></i> @(Model.RandomBlog.views ?? 0) views
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (Model.RandomProduct != null)
+        {
+            <div class="random-item mb-3 pb-3 border-bottom">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="fas fa-shopping-bag text-success mt-1"></i>
+                    <div class="flex-grow-1">
+                        <a href="/Products/Details/@Model.RandomProduct.ProductId" class="text-decoration-none">
+                            <strong class="small">@(Model.RandomProduct.Title?.Length > 50 ? Model.RandomProduct.Title.Substring(0, 50) + "..." : Model.RandomProduct.Title)</strong>
+                        </a>
+                        @if (Model.RandomProduct.Price.HasValue)
+                        {
+                            <div class="text-primary small fw-bold">$@Model.RandomProduct.Price</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (Model.RandomForum != null)
+        {
+            <div class="random-item mb-3">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="fas fa-comments text-info mt-1"></i>
+                    <div class="flex-grow-1">
+                        <a href="/Forum/Details/@Model.RandomForum.UserFourmID" class="text-decoration-none">
+                            <strong class="small">@(Model.RandomForum.Title?.Length > 50 ? Model.RandomForum.Title.Substring(0, 50) + "..." : Model.RandomForum.Title)</strong>
+                        </a>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-user"></i> @(Model.RandomForum.User?.UserName ?? "Anonymous")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Stats -->
+        <div class="random-stats mt-3 pt-3 border-top">
+            <div class="row text-center">
+                <div class="col-6 mb-2">
+                    <div class="stat-value">@Model.TotalPosts</div>
+                    <div class="stat-label">Posts</div>
+                </div>
+                <div class="col-6 mb-2">
+                    <div class="stat-value">@Model.TotalBlogs</div>
+                    <div class="stat-label">Blogs</div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-value">@Model.TotalUsers</div>
+                    <div class="stat-label">Users</div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-value">@Model.TotalComments</div>
+                    <div class="stat-label">Comments</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .random-data-widget {
+        position: sticky;
+        top: 100px;
+    }
+
+    .random-item {
+        transition: all 0.3s ease;
+    }
+
+    .random-item:hover {
+        transform: translateX(5px);
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+
+
+
+
+
+

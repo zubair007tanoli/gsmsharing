@@ -1,0 +1,170 @@
+@model GsmsharingV2.ViewComponents.SocialShareViewModel
+
+<div class="social-share-container">
+    <div class="social-share-label">
+        <i class="fas fa-share-alt me-2"></i>Share:
+    </div>
+    <div class="social-share-buttons">
+        <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString(Model.Url)" 
+           target="_blank" 
+           class="social-share-btn facebook"
+           data-platform="facebook"
+           data-content-type="@Model.ContentType"
+           data-content-id="@Model.ContentID"
+           title="Share on Facebook">
+            <i class="fab fa-facebook-f"></i>
+        </a>
+        
+        <a href="https://twitter.com/intent/tweet?url=@Uri.EscapeDataString(Model.Url)&text=@Uri.EscapeDataString(Model.Title)" 
+           target="_blank" 
+           class="social-share-btn twitter"
+           data-platform="twitter"
+           data-content-type="@Model.ContentType"
+           data-content-id="@Model.ContentID"
+           title="Share on Twitter">
+            <i class="fab fa-twitter"></i>
+        </a>
+        
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString(Model.Url)" 
+           target="_blank" 
+           class="social-share-btn linkedin"
+           data-platform="linkedin"
+           data-content-type="@Model.ContentType"
+           data-content-id="@Model.ContentID"
+           title="Share on LinkedIn">
+            <i class="fab fa-linkedin-in"></i>
+        </a>
+        
+        <a href="https://wa.me/?text=@Uri.EscapeDataString(Model.Title + " " + Model.Url)" 
+           target="_blank" 
+           class="social-share-btn whatsapp"
+           data-platform="whatsapp"
+           data-content-type="@Model.ContentType"
+           data-content-id="@Model.ContentID"
+           title="Share on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+        
+        <a href="https://t.me/share/url?url=@Uri.EscapeDataString(Model.Url)&text=@Uri.EscapeDataString(Model.Title)" 
+           target="_blank" 
+           class="social-share-btn telegram"
+           data-platform="telegram"
+           data-content-type="@Model.ContentType"
+           data-content-id="@Model.ContentID"
+           title="Share on Telegram">
+            <i class="fab fa-telegram-plane"></i>
+        </a>
+        
+        <button type="button" 
+                class="social-share-btn copy-link"
+                data-platform="copy_link"
+                data-content-type="@Model.ContentType"
+                data-content-id="@Model.ContentID"
+                data-url="@Model.Url"
+                title="Copy link">
+            <i class="fas fa-link"></i>
+        </button>
+        
+        <a href="mailto:?subject=@Uri.EscapeDataString(Model.Title)&body=@Uri.EscapeDataString(Model.Url)" 
+           class="social-share-btn email"
+           data-platform="email"
+           data-content-type="@Model.ContentType"
+           data-content-id="@Model.ContentID"
+           title="Share via Email">
+            <i class="fas fa-envelope"></i>
+        </a>
+    </div>
+</div>
+
+<style>
+    .social-share-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 1rem;
+        background: var(--bg-card, #f8f9fa);
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    
+    .social-share-label {
+        font-weight: 600;
+        color: var(--text-primary, #333);
+    }
+    
+    .social-share-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .social-share-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: white;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    
+    .social-share-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        color: white;
+    }
+    
+    .social-share-btn.facebook { background: #1877f2; }
+    .social-share-btn.twitter { background: #1da1f2; }
+    .social-share-btn.linkedin { background: #0a66c2; }
+    .social-share-btn.whatsapp { background: #25d366; }
+    .social-share-btn.telegram { background: #0088cc; }
+    .social-share-btn.copy-link { background: #6c757d; }
+    .social-share-btn.email { background: #ea4335; }
+</style>
+
+<script>
+    // Track social shares
+    document.querySelectorAll('.social-share-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const platform = this.dataset.platform;
+            const contentType = this.dataset.contentType;
+            const contentId = this.dataset.contentId;
+            const url = this.dataset.url || window.location.href;
+            
+            // Copy link functionality
+            if (platform === 'copy_link') {
+                navigator.clipboard.writeText(url).then(() => {
+                    const icon = this.querySelector('i');
+                    const originalClass = icon.className;
+                    icon.className = 'fas fa-check';
+                    setTimeout(() => {
+                        icon.className = originalClass;
+                    }, 2000);
+                });
+                return;
+            }
+            
+            // Track share via AJAX
+            fetch('/api/SocialShare/Track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({
+                    contentType: contentType,
+                    contentID: parseInt(contentId),
+                    platform: platform
+                })
+            }).catch(err => console.log('Share tracking error:', err));
+        });
+    });
+</script>
+

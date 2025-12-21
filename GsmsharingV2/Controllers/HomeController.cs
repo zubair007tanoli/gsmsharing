@@ -63,21 +63,37 @@ namespace GsmsharingV2.Controllers
                     .ToListAsync();
 
                 // Forum Threads - Publish is tinyint (0 or 1)
-                var recentForums = await _context.UsersFourm
-                    .Include(f => f.User)
-                    .Include(f => f.Replies)
-                    .Where(f => f.Publish == 1)
-                    .OrderByDescending(f => f.CreationDate)
-                    .Take(8)
-                    .ToListAsync();
+                List<ForumThread> recentForums = new List<ForumThread>();
+                try
+                {
+                    recentForums = await _context.UsersFourm
+                        .Include(f => f.User)
+                        .Include(f => f.Replies)
+                        .Where(f => f.Publish == 1)
+                        .OrderByDescending(f => f.CreationDate)
+                        .Take(8)
+                        .ToListAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error loading forum threads: {Message}", ex.Message);
+                }
 
                 // Forum Activities (Recent Replies)
-                var forumActivities = await _context.ForumReplys
-                    .Include(fr => fr.User)
-                    .Include(fr => fr.Thread)
-                    .OrderByDescending(fr => fr.PublishDate)
-                    .Take(10)
-                    .ToListAsync();
+                List<ForumReply> forumActivities = new List<ForumReply>();
+                try
+                {
+                    forumActivities = await _context.ForumReplys
+                        .Include(fr => fr.User)
+                        .Include(fr => fr.Thread)
+                        .OrderByDescending(fr => fr.PublishDate)
+                        .Take(10)
+                        .ToListAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error loading forum activities: {Message}", ex.Message);
+                }
 
                 // Affiliate Products
                 var featuredProducts = await _context.AffiliationProducts
@@ -147,7 +163,15 @@ namespace GsmsharingV2.Controllers
                 var totalPosts = await _context.Posts.CountAsync();
                 var totalBlogs = await _context.MobilePosts.CountAsync(mp => mp.publish == 1);
                 var totalGsmBlogs = await _context.GsmBlogs.CountAsync(gb => gb.Publish == true);
-                var totalForums = await _context.UsersFourm.CountAsync(f => f.Publish == 1);
+                var totalForums = 0;
+                try
+                {
+                    totalForums = await _context.UsersFourm.CountAsync(f => f.Publish == 1);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error counting forum threads: {Message}", ex.Message);
+                }
                 var totalUsers = await _context.Users.CountAsync();
                 var totalProducts = await _context.AffiliationProducts.CountAsync();
                 var totalBlogComments = await _context.BlogComments.CountAsync();

@@ -27,9 +27,13 @@ try
     // Use Serilog for logging
     builder.Host.UseSerilog();
 
-// Database Configuration
+// Database Configuration - Old Database (Read-only for existing data)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("GsmsharingConnection")));
+
+// Database Configuration - New Database (Write for new content)
+builder.Services.AddDbContext<NewApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("GsmsharingConnectionNew")));
 
 // ASP.NET Core Identity Configuration
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -49,7 +53,36 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-}).AddCookie();
+})
+.AddCookie()
+// External Authentication Providers (configure in appsettings.json)
+.AddGoogle(options =>
+{
+    var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+    if (googleAuthNSection.Exists())
+    {
+        options.ClientId = googleAuthNSection["ClientId"] ?? "";
+        options.ClientSecret = googleAuthNSection["ClientSecret"] ?? "";
+    }
+})
+.AddMicrosoftAccount(options =>
+{
+    var microsoftAuthNSection = builder.Configuration.GetSection("Authentication:Microsoft");
+    if (microsoftAuthNSection.Exists())
+    {
+        options.ClientId = microsoftAuthNSection["ClientId"] ?? "";
+        options.ClientSecret = microsoftAuthNSection["ClientSecret"] ?? "";
+    }
+})
+.AddFacebook(options =>
+{
+    var facebookAuthNSection = builder.Configuration.GetSection("Authentication:Facebook");
+    if (facebookAuthNSection.Exists())
+    {
+        options.AppId = facebookAuthNSection["AppId"] ?? "";
+        options.AppSecret = facebookAuthNSection["AppSecret"] ?? "";
+    }
+});
 
 builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
 {
@@ -60,6 +93,9 @@ builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.Applic
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Add SignalR
+builder.Services.AddSignalR();
 
 // Register AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -78,6 +114,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IReactionService, ReactionService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
+builder.Services.AddScoped<GsmsharingV2.Interfaces.INotificationService, NotificationService>();
 
 var app = builder.Build();
 
@@ -113,6 +150,10 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Map SignalR hubs
+app.MapHub<GsmsharingV2.Hubs.CommentHub>("/commentHub");
+app.MapHub<GsmsharingV2.Hubs.NotificationHub>("/notificationHub");
 
 // Ensure database is created BEFORE app starts
 try

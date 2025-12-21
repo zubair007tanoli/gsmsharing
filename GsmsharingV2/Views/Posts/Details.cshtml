@@ -113,9 +113,11 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <div class="mb-4">
-                            <form>
+                            <form id="comment-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="PostID" value="@Model.PostID" />
                                 <div class="mb-3">
-                                    <textarea class="form-control" rows="3" placeholder="Write a comment..."></textarea>
+                                    <textarea name="Content" class="form-control" rows="3" placeholder="Write a comment..." required></textarea>
                                 </div>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-paper-plane me-2"></i>Post Comment
@@ -130,9 +132,10 @@
                             <a href="/UserAccounts/Login" class="alert-link">Login</a> to join the discussion
                         </div>
                     }
-                    <div class="comments-list">
-                        <p class="text-muted text-center py-4">No comments yet. Be the first to comment!</p>
+                    <div id="comments-list" class="comments-list">
+                        <p class="text-muted text-center py-4">Loading comments...</p>
                     </div>
+                    <div id="comment-count" style="display: none;">0</div>
                 </div>
             </div>
         </div>
@@ -193,3 +196,17 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/comments.js" asp-append-version="true"></script>
+    <script>
+        // Load comments when page loads and initialize SignalR
+        document.addEventListener('DOMContentLoaded', function() {
+            const postId = @Model.PostID;
+            if (postId) {
+                loadComments(postId);
+                initializeCommentHub(postId);
+            }
+        });
+    </script>
+}
