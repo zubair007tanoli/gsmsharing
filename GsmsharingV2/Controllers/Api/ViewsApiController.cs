@@ -49,7 +49,8 @@ namespace GsmsharingV2.Controllers.Api
                             UserId = userId,
                             IPAddress = ipAddress,
                             UserAgent = userAgent,
-                            ViewedAt = DateTime.UtcNow
+                            ViewedAt = DateTime.UtcNow,
+                            CreatedAt = DateTime.UtcNow
                         };
                         _context.PostViews.Add(view);
 

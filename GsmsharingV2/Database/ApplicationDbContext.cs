@@ -88,6 +88,13 @@ namespace GsmsharingV2.Database
             };
             builder.Entity<IdentityRole>().HasData(roles);
 
+            // Temporarily ignore ApplicationUser properties that may not exist in database yet
+            // Remove these .Ignore() calls after adding columns to AspNetUsers table
+            builder.Entity<ApplicationUser>().Ignore(u => u.AvatarPath);
+            builder.Entity<ApplicationUser>().Ignore(u => u.City);
+            builder.Entity<ApplicationUser>().Ignore(u => u.CreatedDate);
+            builder.Entity<ApplicationUser>().Ignore(u => u.UserProfile);
+
             // Configure Forum Entities
             builder.Entity<ForumThread>().ToTable("userforum", "gsmsharing")
                 .HasKey(f => f.UserFourmID);
@@ -608,7 +615,7 @@ namespace GsmsharingV2.Database
             builder.Entity<PostReport>()
                 .HasOne(pr => pr.Reporter)
                 .WithMany()
-                .HasForeignKey(pr => pr.ReporterUserId)
+                .HasForeignKey(pr => pr.ReportedBy)
                 .OnDelete(DeleteBehavior.NoAction);
             builder.Entity<PostReport>()
                 .HasOne(pr => pr.Reviewer)
@@ -628,7 +635,7 @@ namespace GsmsharingV2.Database
             builder.Entity<CommentReport>()
                 .HasOne(cr => cr.Reporter)
                 .WithMany()
-                .HasForeignKey(cr => cr.ReporterUserId)
+                .HasForeignKey(cr => cr.ReportedBy)
                 .OnDelete(DeleteBehavior.NoAction);
             builder.Entity<CommentReport>()
                 .HasOne(cr => cr.Reviewer)

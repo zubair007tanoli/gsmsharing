@@ -23,6 +23,7 @@ namespace GsmsharingV2.Models.NewSchema
         // Access
         public bool IsPremium { get; set; } = false;
         public int CreditCost { get; set; } = 0;
+        public decimal? PriceDisplay { get; set; }
 
         public int DownloadCount { get; set; } = 0;
         public bool IsActive { get; set; } = true;

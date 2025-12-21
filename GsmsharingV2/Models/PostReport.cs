@@ -4,9 +4,9 @@ namespace GsmsharingV2.Models
     {
         public int ReportID { get; set; }
         public int PostID { get; set; }
-        public string ReporterUserId { get; set; }
-        public string ReportReason { get; set; } // spam, harassment, inappropriate, copyright, misinformation, other
-        public string ReportDetails { get; set; }
+        public string ReportedBy { get; set; }
+        public string Reason { get; set; } // spam, harassment, inappropriate, copyright, misinformation, other
+        public string Details { get; set; }
         public string Status { get; set; } = "pending"; // pending, reviewed, dismissed, action_taken
         public string ReviewedBy { get; set; }
         public DateTime? ReviewedAt { get; set; }

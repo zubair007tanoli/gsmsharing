@@ -3,7 +3,7 @@ namespace GsmsharingV2.DTOs
     public class CategoryDto
     {
         public int CategoryID { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string Slug { get; set; }
         public int? ParentCategoryID { get; set; }
         public string ParentCategoryName { get; set; }
@@ -24,7 +24,7 @@ namespace GsmsharingV2.DTOs
 
     public class CreateCategoryDto
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string Description { get; set; }
         public int? ParentCategoryID { get; set; }
         public string MetaTitle { get; set; }
@@ -37,7 +37,7 @@ namespace GsmsharingV2.DTOs
     public class UpdateCategoryDto
     {
         public int CategoryID { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string Description { get; set; }
         public int? ParentCategoryID { get; set; }
         public string MetaTitle { get; set; }

@@ -6,6 +6,9 @@ using GsmsharingV2.Models;
 using GsmsharingV2.Repositories;
 using GsmsharingV2.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
+using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -49,40 +52,44 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // Authentication Configuration
-builder.Services.AddAuthentication(options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
-.AddCookie()
+.AddCookie();
+
 // External Authentication Providers (configure in appsettings.json)
-.AddGoogle(options =>
+// Only add providers if they have valid configuration values
+var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+if (googleAuthNSection.Exists() && !string.IsNullOrWhiteSpace(googleAuthNSection["ClientId"]))
 {
-    var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
-    if (googleAuthNSection.Exists())
+    authBuilder.AddGoogle(options =>
     {
         options.ClientId = googleAuthNSection["ClientId"] ?? "";
         options.ClientSecret = googleAuthNSection["ClientSecret"] ?? "";
-    }
-})
-.AddMicrosoftAccount(options =>
+    });
+}
+
+var microsoftAuthNSection = builder.Configuration.GetSection("Authentication:Microsoft");
+if (microsoftAuthNSection.Exists() && !string.IsNullOrWhiteSpace(microsoftAuthNSection["ClientId"]))
 {
-    var microsoftAuthNSection = builder.Configuration.GetSection("Authentication:Microsoft");
-    if (microsoftAuthNSection.Exists())
+    authBuilder.AddMicrosoftAccount(options =>
     {
         options.ClientId = microsoftAuthNSection["ClientId"] ?? "";
         options.ClientSecret = microsoftAuthNSection["ClientSecret"] ?? "";
-    }
-})
-.AddFacebook(options =>
+    });
+}
+
+var facebookAuthNSection = builder.Configuration.GetSection("Authentication:Facebook");
+if (facebookAuthNSection.Exists() && !string.IsNullOrWhiteSpace(facebookAuthNSection["AppId"]))
 {
-    var facebookAuthNSection = builder.Configuration.GetSection("Authentication:Facebook");
-    if (facebookAuthNSection.Exists())
+    authBuilder.AddFacebook(options =>
     {
         options.AppId = facebookAuthNSection["AppId"] ?? "";
         options.AppSecret = facebookAuthNSection["AppSecret"] ?? "";
-    }
-});
+    });
+}
 
 builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
 {
@@ -353,7 +360,9 @@ try
                 try
                 {
                     // Try to query the table to see if it exists
-                    await dbContext.Database.ExecuteSqlRawAsync($"SELECT TOP 1 * FROM {table.Key}");
+                    // Using FormattableString for safe SQL execution
+                    FormattableString sql = $"SELECT TOP 1 * FROM [{table.Key}]";
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync(sql);
                     logger.LogInformation("✅ {Table} table exists.", table.Key);
                 }
                 catch (Exception)

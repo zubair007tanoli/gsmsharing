@@ -11,6 +11,7 @@ namespace GsmsharingV2.Models
         public string Country { get; set; }
         public string City { get; set; }
         public string DeviceType { get; set; } // desktop, mobile, tablet
+        public DateTime ViewedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         
         // Navigation properties

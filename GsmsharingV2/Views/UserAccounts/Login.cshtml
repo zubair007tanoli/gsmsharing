@@ -6,6 +6,33 @@
 
 @section Styles {
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .gs-header,
+        .gs-footer {
+            display: none !important;
+        }
+        
+        .gs-main {
+            padding: 0 !important;
+            margin: 0 !important;
+            min-height: 100vh !important;
+        }
+        
+        .gs-main .container {
+            padding: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        
+        .gs-main .container > div {
+            margin: 0 !important;
+        }
+        
         .login-container {
             min-height: 100vh;
             display: flex;
@@ -13,6 +40,9 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             overflow: hidden;
+            margin: 0;
+            padding: 2rem 0;
+            width: 100%;
         }
 
         .login-container::before {
@@ -105,9 +135,26 @@
             font-weight: 500;
         }
 
+        .form-control {
+            color: #212529 !important;
+            background-color: #fff !important;
+        }
+        
         .form-control:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            color: #212529 !important;
+            background-color: #fff !important;
+        }
+        
+        .form-control::placeholder {
+            color: #6c757d !important;
+        }
+        
+        .form-label {
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
         }
 
         .btn-login {
@@ -202,6 +249,10 @@
             padding: 1rem 1.5rem;
             animation: shake 0.5s;
         }
+        
+        .alert-modern:empty {
+            display: none !important;
+        }
 
         @@keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -245,10 +296,20 @@
         .input-group-text {
             background: white;
             border-left: none;
+            border-color: #ced4da;
         }
-
-        .form-control:focus + .input-group-text {
+        
+        .input-group .form-control {
+            border-right: none;
+        }
+        
+        .input-group .form-control:focus {
+            border-right: none;
+        }
+        
+        .input-group .form-control:focus + .input-group-text {
             border-color: #667eea;
+            border-left-color: #ced4da;
         }
     </style>
 }
@@ -267,31 +328,43 @@
                     </div>
                     
                     <div class="login-body">
+                        @if (ViewData.ModelState.ErrorCount > 0)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-danger alert-modern mb-4" role="alert"></div>
+                        }
+                        
                         @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
                         {
                             <div class="alert alert-danger alert-modern mb-4" role="alert">
                                 <i class="fas fa-exclamation-circle me-2"></i>@ViewBag.ErrorMessage
                             </div>
                         }
+                        
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-modern mb-4" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                            </div>
+                        }
 
-                        <form asp-action="Login" method="post">
+                        <form asp-action="Login" method="post" asp-route-returnUrl="@ViewData["ReturnUrl"]">
                             @Html.AntiForgeryToken()
                             
                             <div class="form-floating mb-3">
-                                <input asp-for="Email" class="form-control" type="email" placeholder="Email Address" required id="emailInput" />
+                                <input asp-for="Email" class="form-control" type="email" placeholder="Email Address" required id="emailInput" value="@Model?.Email" />
                                 <label asp-for="Email">
                                     <i class="fas fa-envelope me-2"></i>Email Address
                                 </label>
                                 <span asp-validation-for="Email" class="text-danger small"></span>
                             </div>
 
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-lock me-2"></i>Password
+                                </label>
                                 <div class="input-group">
                                     <input asp-for="Password" class="form-control" type="password" placeholder="Password" required id="passwordInput" />
-                                    <label asp-for="Password" style="left: 0.75rem;">
-                                        <i class="fas fa-lock me-2"></i>Password
-                                    </label>
-                                    <span class="input-group-text password-toggle" id="togglePassword">
+                                    <span class="input-group-text password-toggle" id="togglePassword" style="cursor: pointer;">
                                         <i class="fas fa-eye" id="toggleIcon"></i>
                                     </span>
                                 </div>
@@ -349,18 +422,25 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script>
         // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('passwordInput');
-            const toggleIcon = document.getElementById('toggleIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.getElementById('togglePassword');
+            if (togglePassword) {
+                togglePassword.addEventListener('click', function() {
+                    const passwordInput = document.getElementById('passwordInput');
+                    const toggleIcon = document.getElementById('toggleIcon');
+                    
+                    if (passwordInput && toggleIcon) {
+                        if (passwordInput.type === 'password') {
+                            passwordInput.type = 'text';
+                            toggleIcon.classList.remove('fa-eye');
+                            toggleIcon.classList.add('fa-eye-slash');
+                        } else {
+                            passwordInput.type = 'password';
+                            toggleIcon.classList.remove('fa-eye-slash');
+                            toggleIcon.classList.add('fa-eye');
+                        }
+                    }
+                });
             }
         });
     </script>

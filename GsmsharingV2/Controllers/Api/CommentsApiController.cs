@@ -31,7 +31,7 @@ namespace GsmsharingV2.Controllers.Api
             try
             {
                 var comments = await _context.Comments
-                    .Where(c => c.PostID == postId && (c.IsDeleted == false || !c.IsDeleted.HasValue))
+                    .Where(c => c.PostID == postId && (c.IsDeleted == false || c.IsDeleted == null))
                     .Include(c => c.User)
                     .OrderBy(c => c.CreatedAt)
                     .Select(c => new
@@ -96,7 +96,7 @@ namespace GsmsharingV2.Controllers.Api
                 var post = await _context.Posts.FindAsync(request.PostID);
                 if (post != null)
                 {
-                    post.CommentCount = await _context.Comments.CountAsync(c => c.PostID == request.PostID && (c.IsDeleted == false || !c.IsDeleted.HasValue));
+                    post.CommentCount = await _context.Comments.CountAsync(c => c.PostID == request.PostID && (c.IsDeleted == false || c.IsDeleted == null));
                     _context.Posts.Update(post);
                     await _context.SaveChangesAsync();
                 }

@@ -17,7 +17,7 @@ namespace GsmsharingV2.DTOs
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public int? CategoryID { get; set; }
-        public string CategoryName { get; set; }
+        public string? CategoryName { get; set; }
         public int PostCount { get; set; }
     }
 

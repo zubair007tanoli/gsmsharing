@@ -16,7 +16,7 @@ namespace GsmsharingV2.Models
         public int DownvoteCount { get; set; } = 0;
         public bool IsEdited { get; set; } = false;
         public DateTime? EditedAt { get; set; }
-        public bool IsDeleted { get; set; } = false;
+        public bool? IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
 
         // Navigation properties

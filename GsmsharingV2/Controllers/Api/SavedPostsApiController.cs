@@ -61,7 +61,8 @@ namespace GsmsharingV2.Controllers.Api
                 {
                     PostID = request.PostID,
                     UserId = userId,
-                    SavedAt = DateTime.UtcNow
+                    SavedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 _context.SavedPosts.Add(savedPost);

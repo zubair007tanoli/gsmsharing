@@ -73,7 +73,7 @@ namespace GsmsharingV2.Controllers.Api
             try
             {
                 var comments = await _context.Comments
-                    .Where(c => c.UserId == userId && (c.IsDeleted == false || !c.IsDeleted.HasValue))
+                    .Where(c => c.UserId == userId && (c.IsDeleted == false || c.IsDeleted == null))
                     .Include(c => c.Post)
                     .OrderByDescending(c => c.CreatedAt)
                     .Skip((page - 1) * pageSize)
@@ -91,7 +91,7 @@ namespace GsmsharingV2.Controllers.Api
                     .ToListAsync();
 
                 var totalCount = await _context.Comments
-                    .CountAsync(c => c.UserId == userId && (c.IsDeleted == false || !c.IsDeleted.HasValue));
+                    .CountAsync(c => c.UserId == userId && (c.IsDeleted == false || c.IsDeleted == null));
 
                 return Ok(new
                 {
@@ -170,7 +170,7 @@ namespace GsmsharingV2.Controllers.Api
                     .CountAsync(p => p.UserId == userId && p.PostStatus == "published");
 
                 var commentsCount = await _context.Comments
-                    .CountAsync(c => c.UserId == userId && (c.IsDeleted == false || !c.IsDeleted.HasValue));
+                    .CountAsync(c => c.UserId == userId && (c.IsDeleted == false || c.IsDeleted == null));
 
                 // Calculate karma (sum of upvotes on posts and comments - downvotes)
                 var postUpvotes = await _context.Posts
@@ -183,11 +183,11 @@ namespace GsmsharingV2.Controllers.Api
 
                 var commentUpvotes = await _context.Comments
                     .Where(c => c.UserId == userId)
-                    .SumAsync(c => c.UpvoteCount ?? 0);
+                    .SumAsync(c => c.UpvoteCount);
 
                 var commentDownvotes = await _context.Comments
                     .Where(c => c.UserId == userId)
-                    .SumAsync(c => c.DownvoteCount ?? 0);
+                    .SumAsync(c => c.DownvoteCount);
 
                 var karma = (postUpvotes + commentUpvotes) - (postDownvotes + commentDownvotes);
 
