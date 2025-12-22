@@ -1,149 +1,121 @@
 @model GsmsharingV2.Models.Post
 @{
     ViewData["Title"] = "Create Post - GSMSharing";
+    // Force view refresh - Version 2.0
 }
 
 @section Styles {
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <style>
-        .create-post-container {
-            background: #f8f9fa;
+        .create-post-wrapper {
+            background: #f5f7fa;
             min-height: 100vh;
             padding: 2rem 0;
         }
 
-        .post-type-selector {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
+        .three-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
         }
 
-        .post-type-card {
-            flex: 1;
-            min-width: 150px;
-            padding: 1.5rem;
+        .column {
             background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
-        .post-type-card:hover {
-            border-color: #667eea;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        .left-column {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
         }
 
-        .post-type-card.active {
-            border-color: #667eea;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .middle-column {
+            min-height: 600px;
         }
 
-        .post-type-card i {
-            font-size: 2.5rem;
+        .right-column {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+        }
+
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-header i {
+            color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #4a5568;
             margin-bottom: 0.5rem;
             display: block;
+            font-size: 0.9rem;
         }
 
-        .section-tabs {
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 2rem;
+        .form-control, .form-select {
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.2s;
+            width: 100%;
+            font-size: 0.9rem;
         }
-
-        .section-tab {
-            padding: 1rem 2rem;
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: 600;
-            color: #6c757d;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .section-tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-
-        .section-content {
-            display: none;
-        }
-
-        .section-content.active {
-            display: block;
-            animation: fadeIn 0.3s;
-        }
-
-        @@keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-section {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .affiliate-section {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin-bottom: 1.5rem;
-        }
-
-        .affiliate-section label {
-            color: white;
-            font-weight: 600;
-        }
-
-        .affiliate-section .form-control {
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        .seo-preview {
-            background: #f8f9fa;
-            border-left: 4px solid #28a745;
-            padding: 1rem;
-            border-radius: 5px;
-            margin-top: 1rem;
-        }
-
-        .seo-preview-title {
-            color: #1a0dab;
-            font-size: 1.2rem;
-            font-weight: 400;
-            margin-bottom: 0.25rem;
+        
+        .form-control[type="file"] {
+            padding: 0.5rem;
             cursor: pointer;
         }
 
-        .seo-preview-title:hover {
-            text-decoration: underline;
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
         }
 
-        .seo-preview-url {
-            color: #006621;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
+        .character-count {
+            font-size: 0.75rem;
+            color: #718096;
+            text-align: right;
+            margin-top: 0.25rem;
         }
 
-        .seo-preview-description {
-            color: #545454;
-            font-size: 0.9rem;
-            line-height: 1.4;
+        .character-count.warning {
+            color: #ed8936;
         }
 
-        .tag-input {
-            border: 1px solid #ced4da;
-            border-radius: 5px;
+        .character-count.danger {
+            color: #e53e3e;
+        }
+
+        #contentEditor {
+            min-height: 400px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+        }
+
+        .tag-input-container {
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
             padding: 0.5rem;
             min-height: 50px;
             display: flex;
@@ -166,334 +138,442 @@
         .tag-remove {
             cursor: pointer;
             font-weight: bold;
+            opacity: 0.8;
+        }
+
+        .tag-remove:hover {
+            opacity: 1;
         }
 
         .image-preview-container {
-            position: relative;
             margin-top: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         .image-preview {
             max-width: 100%;
-            max-height: 400px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-height: 300px;
+            border-radius: 8px;
         }
 
-        .character-count {
+        .switch-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .switch-group:hover {
+            background: #f7fafc;
+        }
+
+        .form-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .form-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e0;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .seo-preview {
+            background: #f7fafc;
+            border-left: 4px solid #48bb78;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .seo-preview-title {
+            color: #1a0dab;
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-bottom: 0.25rem;
+            cursor: pointer;
+        }
+
+        .seo-preview-title:hover {
+            text-decoration: underline;
+        }
+
+        .seo-preview-url {
+            color: #006621;
             font-size: 0.875rem;
-            color: #6c757d;
-            text-align: right;
+            margin-bottom: 0.25rem;
+        }
+
+        .seo-preview-description {
+            color: #545454;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #f7fafc;
+        }
+
+        .info-box {
+            background: #edf2f7;
+            border-left: 4px solid #4299e1;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .info-box i {
+            color: #4299e1;
+            margin-right: 0.5rem;
+        }
+
+        .text-danger {
+            color: #e53e3e;
+            font-size: 0.875rem;
             margin-top: 0.25rem;
+            display: block;
+        }
+        
+        .text-muted {
+            color: #718096;
+        }
+        
+        .d-block {
+            display: block;
+        }
+        
+        .me-1 {
+            margin-right: 0.25rem;
+        }
+        
+        .me-2 {
+            margin-right: 0.5rem;
+        }
+        
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .flex-grow-1 {
+            flex-grow: 1;
+        }
+        
+        .border-0 {
+            border: 0;
         }
 
-        .character-count.warning {
-            color: #ffc107;
-        }
-
-        .character-count.danger {
-            color: #dc3545;
+        @@media (max-width: 1200px) {
+            .three-column-layout {
+                grid-template-columns: 1fr;
+            }
+            .left-column, .right-column {
+                position: static;
+            }
         }
     </style>
 }
 
-<div class="create-post-container">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-10 mx-auto">
-                <div class="form-section">
-                    <h2 class="mb-4"><i class="fas fa-plus-circle me-2 text-primary"></i>Create New Post</h2>
-                    
-                    <!-- Post Type Selector -->
-                    <div class="post-type-selector">
-                        <div class="post-type-card active" data-type="regular">
-                            <i class="fas fa-edit"></i>
-                            <div>Regular Post</div>
-                        </div>
-                        <div class="post-type-card" data-type="affiliate">
-                            <i class="fas fa-shopping-cart"></i>
-                            <div>Affiliate Marketing</div>
-                        </div>
-                        <div class="post-type-card" data-type="blog">
-                            <i class="fas fa-blog"></i>
-                            <div>Blog Post</div>
-                        </div>
-                        <div class="post-type-card" data-type="forum">
-                            <i class="fas fa-comments"></i>
-                            <div>Forum Discussion</div>
-                        </div>
+<div class="create-post-wrapper">
+    <div class="container-fluid px-4">
+        <!-- Page Header -->
+        <div style="margin-bottom: 2rem; text-align: center;">
+            <h1 style="font-size: 2rem; font-weight: 700; color: #2d3748; margin-bottom: 0.5rem;">
+                <i class="fas fa-plus-circle" style="color: #667eea; margin-right: 0.5rem;"></i>Create New Post
+            </h1>
+            <p style="color: #718096; font-size: 1rem;">Fill out the form below to create your post</p>
+        </div>
+        
+        <form asp-action="Create" method="post" enctype="multipart/form-data" id="createPostForm">
+            @Html.AntiForgeryToken()
+            
+            <div class="three-column-layout">
+                <!-- LEFT COLUMN: Basic Info & Community -->
+                <div class="column left-column">
+                    <div class="section-header">
+                        <i class="fas fa-info-circle"></i>
+                        Basic Information
                     </div>
 
-                    <form asp-action="Create" method="post" enctype="multipart/form-data" id="createPostForm">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" id="postType" name="PostType" value="regular" />
+                    <div class="form-group">
+                        <label asp-for="Title" class="form-label">Title *</label>
+                        <input asp-for="Title" class="form-control" placeholder="Enter post title..." required id="postTitle" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                        <div class="character-count" id="titleCount">0 / 500</div>
+                    </div>
 
-                        <!-- Section Tabs -->
-                        <div class="section-tabs">
-                            <button type="button" class="section-tab active" data-section="basic">
-                                <i class="fas fa-edit me-2"></i>Basic Info
-                            </button>
-                            <button type="button" class="section-tab" data-section="content">
-                                <i class="fas fa-align-left me-2"></i>Content
-                            </button>
-                            <button type="button" class="section-tab" data-section="seo">
-                                <i class="fas fa-search me-2"></i>SEO Settings
-                            </button>
-                            <button type="button" class="section-tab" data-section="affiliate" id="affiliateTab" style="display:none;">
-                                <i class="fas fa-shopping-cart me-2"></i>Affiliate Details
-                            </button>
-                            <button type="button" class="section-tab" data-section="settings">
-                                <i class="fas fa-cog me-2"></i>Settings
-                            </button>
+                    <div class="form-group">
+                        <label asp-for="CommunityID" class="form-label">Community *</label>
+                        <select asp-for="CommunityID" class="form-select" asp-items="@(new SelectList(ViewBag.Communities ?? new List<GsmsharingV2.Models.Community>(), "CommunityID", "Name"))" required>
+                            <option value="">Select a community</option>
+                        </select>
+                        <span asp-validation-for="CommunityID" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Excerpt" class="form-label">Excerpt</label>
+                        <textarea asp-for="Excerpt" class="form-control" rows="3" placeholder="Brief summary..." maxlength="1000" id="excerptInput"></textarea>
+                        <div class="character-count" id="excerptCount">0 / 1000</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <div class="tag-input-container" id="tagContainer">
+                            <input type="text" id="tagInput" class="border-0 flex-grow-1" placeholder="Type and press Enter..." />
                         </div>
+                        <input type="hidden" asp-for="Tags" id="tagsHidden" />
+                    </div>
 
-                        <!-- Basic Info Section -->
-                        <div class="section-content active" id="basicSection">
-                            <div class="form-section">
-                                <h4 class="mb-3"><i class="fas fa-info-circle me-2"></i>Basic Information</h4>
-                                
-                                <div class="mb-4">
-                                    <label asp-for="Title" class="form-label fw-bold">
-                                        <i class="fas fa-heading me-2"></i>Title *
-                                    </label>
-                                    <input asp-for="Title" class="form-control form-control-lg" placeholder="Enter a compelling title..." required id="postTitle" />
-                                    <span asp-validation-for="Title" class="text-danger"></span>
-                                    <div class="character-count" id="titleCount">0 / 60</div>
-                                    <small class="form-text text-muted">A clear, engaging title that captures attention</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label asp-for="CommunityID" class="form-label fw-bold">
-                                        <i class="fas fa-users me-2"></i>Community *
-                                    </label>
-                                    <select asp-for="CommunityID" class="form-select form-select-lg" asp-items="@(new SelectList(ViewBag.Communities, "CommunityID", "Name"))" required>
-                                        <option value="">Select a community</option>
-                                    </select>
-                                    <span asp-validation-for="CommunityID" class="text-danger"></span>
-                                    <small class="form-text text-muted">Choose the most relevant community for your post</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label asp-for="Excerpt" class="form-label fw-bold">
-                                        <i class="fas fa-quote-left me-2"></i>Excerpt
-                                    </label>
-                                    <textarea asp-for="Excerpt" class="form-control" rows="3" placeholder="Brief summary of your post (optional)" maxlength="500" id="excerptInput"></textarea>
-                                    <div class="character-count" id="excerptCount">0 / 500</div>
-                                    <small class="form-text text-muted">A short summary that appears in listings</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-tags me-2"></i>Tags
-                                    </label>
-                                    <div class="tag-input" id="tagContainer">
-                                        <input type="text" id="tagInput" class="border-0 flex-grow-1" placeholder="Type and press Enter to add tags..." />
-                                    </div>
-                                    <input type="hidden" asp-for="Tags" id="tagsHidden" />
-                                    <small class="form-text text-muted">Press Enter to add tags. Use tags to help people find your post.</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Content Section -->
-                        <div class="section-content" id="contentSection">
-                            <div class="form-section">
-                                <h4 class="mb-3"><i class="fas fa-align-left me-2"></i>Content</h4>
-                                
-                                <div class="mb-4">
-                                    <label asp-for="Content" class="form-label fw-bold">
-                                        <i class="fas fa-edit me-2"></i>Content *
-                                    </label>
-                                    <div id="contentEditor" style="min-height: 400px;"></div>
-                                    <textarea asp-for="Content" style="display: none;" required id="contentTextarea"></textarea>
-                                    <span asp-validation-for="Content" class="text-danger"></span>
-                                    <small class="form-text text-muted">Use the editor to format your content with rich text, images, links, and more</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-image me-2"></i>Featured Image
-                                    </label>
-                                    <input type="file" id="imageUpload" accept="image/*" class="form-control mb-2" />
-                                    <div class="image-preview-container" id="imagePreviewContainer" style="display:none;">
-                                        <img id="previewImg" class="image-preview" alt="Preview" />
-                                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="clearImagePreview()">
-                                            <i class="fas fa-times me-1"></i>Remove Image
-                                        </button>
-                                    </div>
-                                    <input asp-for="FeaturedImage" type="text" class="form-control mt-2" placeholder="Or enter image URL..." />
-                                    <span asp-validation-for="FeaturedImage" class="text-danger"></span>
-                                    <small class="form-text text-muted">Upload an image or provide a URL. Recommended size: 1200x630px</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SEO Section -->
-                        <div class="section-content" id="seoSection">
-                            <div class="form-section">
-                                <h4 class="mb-3"><i class="fas fa-search me-2"></i>SEO Settings</h4>
-                                
-                                <div class="mb-4">
-                                    <label asp-for="FocusKeyword" class="form-label fw-bold">
-                                        <i class="fas fa-key me-2"></i>Focus Keyword
-                                    </label>
-                                    <input asp-for="FocusKeyword" class="form-control" placeholder="e.g., mobile phone repair guide" />
-                                    <small class="form-text text-muted">Main keyword you want to rank for</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label asp-for="MetaTitle" class="form-label fw-bold">
-                                        <i class="fas fa-heading me-2"></i>Meta Title
-                                    </label>
-                                    <input asp-for="MetaTitle" class="form-control" placeholder="SEO optimized title (auto-filled from title)" maxlength="60" id="metaTitleInput" />
-                                    <div class="character-count" id="metaTitleCount">0 / 60</div>
-                                    <small class="form-text text-muted">Title for search engines (50-60 characters recommended)</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label asp-for="MetaDescription" class="form-label fw-bold">
-                                        <i class="fas fa-align-center me-2"></i>Meta Description
-                                    </label>
-                                    <textarea asp-for="MetaDescription" class="form-control" rows="3" placeholder="Brief description for search engines" maxlength="160" id="metaDescInput"></textarea>
-                                    <div class="character-count" id="metaDescCount">0 / 160</div>
-                                    <small class="form-text text-muted">Description shown in search results (150-160 characters recommended)</small>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label asp-for="CanonicalUrl" class="form-label fw-bold">
-                                        <i class="fas fa-link me-2"></i>Canonical URL
-                                    </label>
-                                    <input asp-for="CanonicalUrl" class="form-control" type="url" placeholder="https://example.com/canonical-url" />
-                                    <small class="form-text text-muted">Canonical URL to avoid duplicate content issues</small>
-                                </div>
-
-                                <!-- SEO Preview -->
-                                <div class="seo-preview" id="seoPreview">
-                                    <div class="seo-preview-title" id="previewTitle">Enter a title to see preview</div>
-                                    <div class="seo-preview-url" id="previewUrl">gsmsharing.com/r/community/posts/...</div>
-                                    <div class="seo-preview-description" id="previewDescription">Enter a meta description to see preview</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Affiliate Section -->
-                        <div class="section-content" id="affiliateSection">
-                            <div class="affiliate-section">
-                                <h4 class="mb-3"><i class="fas fa-shopping-cart me-2"></i>Affiliate Marketing Details</h4>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Product Name</label>
-                                        <input type="text" class="form-control" name="AffiliateProductName" placeholder="e.g., iPhone 15 Pro" />
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Product Price</label>
-                                        <input type="text" class="form-control" name="AffiliatePrice" placeholder="e.g., $999.99" />
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Affiliate Link / Product URL</label>
-                                    <input type="url" class="form-control" name="AffiliateUrl" placeholder="https://example.com/product?ref=..." />
-                                    <small class="form-text" style="opacity: 0.9;">Your affiliate or product link</small>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Affiliate Code / Coupon</label>
-                                        <input type="text" class="form-control" name="AffiliateCode" placeholder="e.g., SAVE20" />
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Discount Percentage</label>
-                                        <input type="number" class="form-control" name="DiscountPercent" placeholder="e.g., 20" min="0" max="100" />
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Product Description</label>
-                                    <textarea class="form-control" rows="3" name="AffiliateDescription" placeholder="Brief product description for affiliate marketing"></textarea>
-                                </div>
-
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="discloseAffiliate" name="DiscloseAffiliate" checked>
-                                    <label class="form-check-label" for="discloseAffiliate">
-                                        Disclose affiliate relationship (Recommended for compliance)
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Settings Section -->
-                        <div class="section-content" id="settingsSection">
-                            <div class="form-section">
-                                <h4 class="mb-3"><i class="fas fa-cog me-2"></i>Post Settings</h4>
-                                
-                                <div class="row mb-4">
-                                    <div class="col-md-6">
-                                        <label asp-for="PostStatus" class="form-label fw-bold">Post Status</label>
-                                        <select asp-for="PostStatus" class="form-select">
-                                            <option value="draft">Draft</option>
-                                            <option value="published" selected>Published</option>
-                                            <option value="archived">Archived</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold">Publish Date</label>
-                                        <input type="datetime-local" class="form-control" name="PublishDate" />
-                                        <small class="form-text text-muted">Schedule post for later (optional)</small>
-                                    </div>
-                                </div>
-
-                                <div class="row mb-4">
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" asp-for="AllowComments" checked id="allowComments">
-                                            <label class="form-check-label" for="allowComments">
-                                                <i class="fas fa-comments me-2"></i>Allow Comments
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" asp-for="IsFeatured" id="isFeatured">
-                                            <label class="form-check-label" for="isFeatured">
-                                                <i class="fas fa-star me-2"></i>Feature Post
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" asp-for="IsPromoted" id="isPromoted">
-                                            <label class="form-check-label" for="isPromoted">
-                                                <i class="fas fa-rocket me-2"></i>Promote Post
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    <strong>Note:</strong> Featured and Promoted posts may require admin approval or premium membership.
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Submit Buttons -->
-                        <div class="d-flex gap-3 justify-content-end mt-4">
-                            <a href="/Posts" class="btn btn-outline-secondary btn-lg">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </a>
-                            <button type="submit" name="action" value="draft" class="btn btn-outline-primary btn-lg">
-                                <i class="fas fa-save me-2"></i>Save as Draft
-                            </button>
-                            <button type="submit" name="action" value="publish" class="btn btn-primary btn-lg">
-                                <i class="fas fa-paper-plane me-2"></i>Publish Post
+                    <div class="form-group">
+                        <label class="form-label">Featured Image</label>
+                        <input type="file" id="imageUpload" name="imageFile" accept="image/*" class="form-control mb-2" />
+                        <input asp-for="FeaturedImage" type="text" class="form-control mt-2" placeholder="Or enter image URL..." />
+                        <div class="image-preview-container" id="imagePreviewContainer" style="display:none;">
+                            <img id="previewImg" class="image-preview" alt="Preview" />
+                            <button type="button" class="btn btn-outline btn-sm mt-2" onclick="clearImagePreview()">
+                                <i class="fas fa-times me-1"></i>Remove
                             </button>
                         </div>
-                    </form>
+                        <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: 0.5rem;">Upload an image file or provide a URL</small>
+                    </div>
+                </div>
+
+                <!-- MIDDLE COLUMN: Content Editor -->
+                <div class="column middle-column">
+                    <div class="section-header">
+                        <i class="fas fa-edit"></i>
+                        Content Editor
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Content" class="form-label">Content *</label>
+                        <div id="contentEditor"></div>
+                        <textarea asp-for="Content" style="display: none;" required id="contentTextarea"></textarea>
+                        <span asp-validation-for="Content" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: SEO & Settings -->
+                <div class="column right-column">
+                    <div class="section-header">
+                        <i class="fas fa-cog"></i>
+                        SEO & Settings
+                    </div>
+
+                    <!-- SEO Fields -->
+                    <div class="form-group">
+                        <label asp-for="FocusKeyword" class="form-label">Focus Keyword</label>
+                        <input asp-for="FocusKeyword" class="form-control" placeholder="Main keyword..." />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="MetaTitle" class="form-label">Meta Title</label>
+                        <input asp-for="MetaTitle" class="form-control" placeholder="SEO title..." maxlength="255" id="metaTitleInput" />
+                        <div class="character-count" id="metaTitleCount">0 / 255</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="MetaDescription" class="form-label">Meta Description</label>
+                        <textarea asp-for="MetaDescription" class="form-control" rows="3" placeholder="SEO description..." maxlength="500" id="metaDescInput"></textarea>
+                        <div class="character-count" id="metaDescCount">0 / 500</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="OgTitle" class="form-label">OG Title</label>
+                        <input asp-for="OgTitle" class="form-control" placeholder="Open Graph title..." maxlength="255" />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="OgDescription" class="form-label">OG Description</label>
+                        <textarea asp-for="OgDescription" class="form-control" rows="2" placeholder="Open Graph description..." maxlength="500"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="OgImage" class="form-label">OG Image URL</label>
+                        <input asp-for="OgImage" class="form-control" type="url" placeholder="https://..." />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CanonicalUrl" class="form-label">Canonical URL</label>
+                        <input asp-for="CanonicalUrl" class="form-control" type="url" placeholder="https://..." />
+                    </div>
+
+                    <!-- SEO Preview -->
+                    <div class="seo-preview" id="seoPreview">
+                        <div class="seo-preview-title" id="previewTitle">Enter a title to see preview</div>
+                        <div class="seo-preview-url" id="previewUrl">gsmsharing.com/posts/...</div>
+                        <div class="seo-preview-description" id="previewDescription">Enter a meta description to see preview</div>
+                    </div>
+
+                    <!-- Post Settings -->
+                    <div class="section-header" style="margin-top: 2rem;">
+                        <i class="fas fa-sliders-h"></i>
+                        Post Settings
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="PostStatus" class="form-label">Status</label>
+                        <select asp-for="PostStatus" class="form-select">
+                            <option value="draft">Draft</option>
+                            <option value="published" selected>Published</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+
+                    <div class="switch-group">
+                        <div>
+                            <label class="form-label" style="margin: 0;">Allow Comments</label>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Users can comment</small>
+                        </div>
+                        <label class="form-switch">
+                            <input type="checkbox" asp-for="AllowComments" checked />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="switch-group">
+                        <div>
+                            <label class="form-label" style="margin: 0;">Feature Post</label>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Show in featured</small>
+                        </div>
+                        <label class="form-switch">
+                            <input type="checkbox" asp-for="IsFeatured" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="switch-group">
+                        <div>
+                            <label class="form-label" style="margin: 0;">Promote Post</label>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Boost visibility</small>
+                        </div>
+                        <label class="form-switch">
+                            <input type="checkbox" asp-for="IsPromoted" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="switch-group">
+                        <div>
+                            <label class="form-label" style="margin: 0;">Pin Post</label>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Pin to top</small>
+                        </div>
+                        <label class="form-switch">
+                            <input type="checkbox" asp-for="IsPinned" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="switch-group">
+                        <div>
+                            <label class="form-label" style="margin: 0;">Lock Post</label>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Disable comments</small>
+                        </div>
+                        <label class="form-switch">
+                            <input type="checkbox" asp-for="IsLocked" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Featured and Promoted posts may require admin approval.
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <a href="/Posts" class="btn btn-outline" style="flex: 1;">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" name="action" value="draft" class="btn btn-outline" style="flex: 1;">
+                            <i class="fas fa-save me-2"></i>Draft
+                        </button>
+                        <button type="submit" name="action" value="publish" class="btn btn-primary" style="flex: 1;">
+                            <i class="fas fa-paper-plane me-2"></i>Publish
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -509,59 +589,24 @@
                     [{ 'header': [1, 2, 3, 4, false] }],
                     ['bold', 'italic', 'underline', 'strike'],
                     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'script': 'sub'}, { 'script': 'super' }],
                     [{ 'color': [] }, { 'background': [] }],
                     [{ 'align': [] }],
                     ['link', 'image', 'video', 'code-block'],
                     ['blockquote', 'clean']
                 ]
             },
-            placeholder: 'Write your post content here... Use the toolbar above to format your text.'
+            placeholder: 'Write your post content here...'
         });
 
-        // Sync Quill content to textarea
         quill.on('text-change', function() {
             document.getElementById('contentTextarea').value = quill.root.innerHTML;
-        });
-
-        // Post Type Selection
-        document.querySelectorAll('.post-type-card').forEach(card => {
-            card.addEventListener('click', function() {
-                document.querySelectorAll('.post-type-card').forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                const postType = this.dataset.type;
-                document.getElementById('postType').value = postType;
-                
-                // Show/hide affiliate tab
-                const affiliateTab = document.getElementById('affiliateTab');
-                if (postType === 'affiliate') {
-                    affiliateTab.style.display = 'block';
-                } else {
-                    affiliateTab.style.display = 'none';
-                    document.getElementById('affiliateSection').classList.remove('active');
-                }
-            });
-        });
-
-        // Section Tabs
-        document.querySelectorAll('.section-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                const section = this.dataset.section;
-                
-                // Update active tab
-                document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Update active section
-                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
-                document.getElementById(section + 'Section').classList.add('active');
-            });
         });
 
         // Character Counters
         function updateCounter(inputId, counterId, maxLength) {
             const input = document.getElementById(inputId);
             const counter = document.getElementById(counterId);
+            if (!input || !counter) return;
             
             input.addEventListener('input', function() {
                 const length = this.value.length;
@@ -572,32 +617,33 @@
             });
         }
 
-        updateCounter('postTitle', 'titleCount', 60);
-        updateCounter('excerptInput', 'excerptCount', 500);
-        updateCounter('metaTitleInput', 'metaTitleCount', 60);
-        updateCounter('metaDescInput', 'metaDescCount', 160);
+        updateCounter('postTitle', 'titleCount', 500);
+        updateCounter('excerptInput', 'excerptCount', 1000);
+        updateCounter('metaTitleInput', 'metaTitleCount', 255);
+        updateCounter('metaDescInput', 'metaDescCount', 500);
 
         // Auto-fill meta title from title
-        document.getElementById('postTitle').addEventListener('input', function() {
+        document.getElementById('postTitle')?.addEventListener('input', function() {
             const metaTitle = document.getElementById('metaTitleInput');
-            if (!metaTitle.value) {
-                metaTitle.value = this.value.substring(0, 60);
-                updateCounter('metaTitleInput', 'metaTitleCount', 60);
+            if (metaTitle && !metaTitle.value) {
+                metaTitle.value = this.value.substring(0, 255);
             }
             updateSEOPreview();
         });
 
         // Update SEO Preview
         function updateSEOPreview() {
-            const title = document.getElementById('metaTitleInput').value || document.getElementById('postTitle').value || 'Enter a title';
-            const description = document.getElementById('metaDescInput').value || 'Enter a meta description';
+            const title = document.getElementById('metaTitleInput')?.value || document.getElementById('postTitle')?.value || 'Enter a title';
+            const description = document.getElementById('metaDescInput')?.value || 'Enter a meta description';
             
-            document.getElementById('previewTitle').textContent = title.substring(0, 60);
-            document.getElementById('previewDescription').textContent = description.substring(0, 160);
+            const previewTitle = document.getElementById('previewTitle');
+            const previewDesc = document.getElementById('previewDescription');
+            if (previewTitle) previewTitle.textContent = title.substring(0, 60);
+            if (previewDesc) previewDesc.textContent = description.substring(0, 160);
         }
 
-        document.getElementById('metaTitleInput').addEventListener('input', updateSEOPreview);
-        document.getElementById('metaDescInput').addEventListener('input', updateSEOPreview);
+        document.getElementById('metaTitleInput')?.addEventListener('input', updateSEOPreview);
+        document.getElementById('metaDescInput')?.addEventListener('input', updateSEOPreview);
 
         // Tag Management
         const tags = [];
@@ -605,11 +651,11 @@
         const tagContainer = document.getElementById('tagContainer');
         const tagsHidden = document.getElementById('tagsHidden');
 
-        tagInput.addEventListener('keypress', function(e) {
+        tagInput?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const tag = this.value.trim();
-                if (tag && !tags.includes(tag) && tags.length < 10) {
+                if (tag && !tags.includes(tag) && tags.length < 20) {
                     tags.push(tag);
                     this.value = '';
                     updateTags();
@@ -621,8 +667,8 @@
             const tagsHtml = tags.map(tag => 
                 `<span class="tag">${tag} <span class="tag-remove" data-tag="${tag}">×</span></span>`
             ).join('');
-            tagContainer.innerHTML = tagsHtml + '<input type="text" id="tagInput" class="border-0 flex-grow-1" placeholder="Type and press Enter to add tags..." />';
-            tagsHidden.value = tags.join(',');
+            tagContainer.innerHTML = tagsHtml + '<input type="text" id="tagInput" class="border-0 flex-grow-1" placeholder="Type and press Enter..." />';
+            if (tagsHidden) tagsHidden.value = tags.join(',');
             
             document.querySelectorAll('.tag-remove').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -635,11 +681,21 @@
                 });
             });
             
-            document.getElementById('tagInput').addEventListener('keypress', arguments.callee.caller);
+            document.getElementById('tagInput')?.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const tag = this.value.trim();
+                    if (tag && !tags.includes(tag) && tags.length < 20) {
+                        tags.push(tag);
+                        this.value = '';
+                        updateTags();
+                    }
+                }
+            });
         }
 
         // Image Preview
-        document.getElementById('imageUpload').addEventListener('change', function(e) {
+        document.getElementById('imageUpload')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -658,12 +714,9 @@
         }
 
         // Form Submission
-        document.getElementById('createPostForm').addEventListener('submit', function(e) {
-            // Ensure content is synced
+        document.getElementById('createPostForm')?.addEventListener('submit', function(e) {
             document.getElementById('contentTextarea').value = quill.root.innerHTML;
-            
-            // Ensure tags are synced
-            tagsHidden.value = tags.join(',');
+            if (tagsHidden) tagsHidden.value = tags.join(',');
         });
     </script>
 }
