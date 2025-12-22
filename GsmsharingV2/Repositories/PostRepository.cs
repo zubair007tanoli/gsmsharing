@@ -71,14 +71,37 @@ namespace GsmsharingV2.Repositories
             post.CreatedAt = DateTime.UtcNow;
             post.UpdatedAt = DateTime.UtcNow;
             
+            // Generate SEO-friendly slug if not provided
             if (string.IsNullOrEmpty(post.Slug))
             {
                 post.Slug = GenerateSlug(post.Title);
             }
+            
+            // Ensure slug is unique within the community
+            post.Slug = await EnsureUniqueSlugAsync(post.Slug, post.CommunityID);
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
             return post;
+        }
+        
+        private async Task<string> EnsureUniqueSlugAsync(string baseSlug, int? communityId)
+        {
+            if (string.IsNullOrEmpty(baseSlug))
+                return baseSlug;
+                
+            var slug = baseSlug;
+            int counter = 1;
+            
+            while (await _context.Posts
+                .AnyAsync(p => p.Slug == slug && 
+                              (communityId == null || p.CommunityID == communityId)))
+            {
+                slug = $"{baseSlug}-{counter}";
+                counter++;
+            }
+            
+            return slug;
         }
 
         public async Task<Post> UpdateAsync(Post post)
@@ -153,14 +176,31 @@ namespace GsmsharingV2.Repositories
             if (string.IsNullOrEmpty(title))
                 return string.Empty;
 
-            return title.ToLower()
-                .Replace(" ", "-")
-                .Replace(".", "")
-                .Replace(",", "")
-                .Replace("!", "")
-                .Replace("?", "")
-                .Replace("'", "")
-                .Replace("\"", "");
+            // Convert to lowercase and trim
+            var slug = title.ToLower().Trim();
+            
+            // Remove special characters, keep only alphanumeric, spaces, and hyphens
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+            
+            // Replace multiple spaces/hyphens with single hyphen
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[\s_-]+", "-");
+            
+            // Remove leading/trailing hyphens
+            slug = slug.Trim('-');
+            
+            // Limit length for SEO (max 100 characters)
+            if (slug.Length > 100)
+            {
+                slug = slug.Substring(0, 100).TrimEnd('-');
+            }
+            
+            // Limit length for SEO (max 100 characters)
+            if (slug.Length > 100)
+            {
+                slug = slug.Substring(0, 100).TrimEnd('-');
+            }
+            
+            return slug;
         }
     }
 }

@@ -99,7 +99,12 @@ builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.Applic
 });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // Configure SEO-friendly routes
+    options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
+});
 
 // Add SignalR
 builder.Services.AddSignalR();
@@ -148,11 +153,22 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Custom route for Reddit-style post URLs
+// SEO-friendly routes
+app.MapControllerRoute(
+    name: "createPost",
+    pattern: "create-post",
+    defaults: new { controller = "Posts", action = "Create" });
+
 app.MapControllerRoute(
     name: "postBySlug",
     pattern: "r/{community}/posts/{slug}",
     defaults: new { controller = "Posts", action = "Details" });
+
+// Alternative SEO-friendly post URL pattern
+app.MapControllerRoute(
+    name: "postDetails",
+    pattern: "post/{slug}",
+    defaults: new { controller = "Posts", action = "Details", community = "" });
 
 app.MapControllerRoute(
     name: "default",

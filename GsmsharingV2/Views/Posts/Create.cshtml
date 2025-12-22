@@ -1,7 +1,6 @@
 @model GsmsharingV2.Models.Post
 @{
     ViewData["Title"] = "Create Post - GSMSharing";
-    // Force view refresh - Version 2.0
 }
 
 @section Styles {
@@ -376,14 +375,14 @@
 
                     <div class="form-group">
                         <label asp-for="Title" class="form-label">Title *</label>
-                        <input asp-for="Title" class="form-control" placeholder="Enter post title..." required id="postTitle" />
+                        <input name="Title" class="form-control" placeholder="Enter post title..." required id="postTitle" value="@Model?.Title" />
                         <span asp-validation-for="Title" class="text-danger"></span>
                         <div class="character-count" id="titleCount">0 / 500</div>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="CommunityID" class="form-label">Community *</label>
-                        <select asp-for="CommunityID" class="form-select" asp-items="@(new SelectList(ViewBag.Communities ?? new List<GsmsharingV2.Models.Community>(), "CommunityID", "Name"))" required>
+                        <select name="CommunityID" class="form-select" asp-items="@(new SelectList(ViewBag.Communities ?? new List<GsmsharingV2.Models.Community>(), "CommunityID", "Name", Model?.CommunityID))" required>
                             <option value="">Select a community</option>
                         </select>
                         <span asp-validation-for="CommunityID" class="text-danger"></span>
@@ -391,8 +390,20 @@
 
                     <div class="form-group">
                         <label asp-for="Excerpt" class="form-label">Excerpt</label>
-                        <textarea asp-for="Excerpt" class="form-control" rows="3" placeholder="Brief summary..." maxlength="1000" id="excerptInput"></textarea>
+                        <textarea name="Excerpt" class="form-control" rows="3" placeholder="Brief summary..." maxlength="1000" id="excerptInput">@Model?.Excerpt</textarea>
                         <div class="character-count" id="excerptCount">0 / 1000</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Slug" class="form-label">URL Slug (SEO-Friendly)</label>
+                        <input name="Slug" class="form-control" placeholder="auto-generated-from-title" id="slugInput" pattern="[a-z0-9-]+" value="@Model?.Slug" />
+                        <button type="button" class="btn btn-outline btn-sm mt-2" id="generateSlugBtn" style="width: 100%;">
+                            <i class="fas fa-magic me-2"></i>Generate SEO-Friendly Slug
+                        </button>
+                        <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                            SEO-friendly URL. Auto-generated from title. Use lowercase letters, numbers, and hyphens only.
+                        </small>
+                        <span asp-validation-for="Slug" class="text-danger"></span>
                     </div>
 
                     <div class="form-group">
@@ -400,13 +411,13 @@
                         <div class="tag-input-container" id="tagContainer">
                             <input type="text" id="tagInput" class="border-0 flex-grow-1" placeholder="Type and press Enter..." />
                         </div>
-                        <input type="hidden" asp-for="Tags" id="tagsHidden" />
+                        <input type="hidden" name="Tags" id="tagsHidden" value="@Model?.Tags" />
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Featured Image</label>
                         <input type="file" id="imageUpload" name="imageFile" accept="image/*" class="form-control mb-2" />
-                        <input asp-for="FeaturedImage" type="text" class="form-control mt-2" placeholder="Or enter image URL..." />
+                        <input name="FeaturedImage" type="text" class="form-control mt-2" placeholder="Or enter image URL..." value="@Model?.FeaturedImage" />
                         <div class="image-preview-container" id="imagePreviewContainer" style="display:none;">
                             <img id="previewImg" class="image-preview" alt="Preview" />
                             <button type="button" class="btn btn-outline btn-sm mt-2" onclick="clearImagePreview()">
@@ -427,7 +438,7 @@
                     <div class="form-group">
                         <label asp-for="Content" class="form-label">Content *</label>
                         <div id="contentEditor"></div>
-                        <textarea asp-for="Content" style="display: none;" required id="contentTextarea"></textarea>
+                        <textarea name="Content" style="display: none;" required id="contentTextarea">@Model?.Content</textarea>
                         <span asp-validation-for="Content" class="text-danger"></span>
                     </div>
                 </div>
@@ -442,45 +453,57 @@
                     <!-- SEO Fields -->
                     <div class="form-group">
                         <label asp-for="FocusKeyword" class="form-label">Focus Keyword</label>
-                        <input asp-for="FocusKeyword" class="form-control" placeholder="Main keyword..." />
+                        <input name="FocusKeyword" class="form-control" placeholder="Main keyword..." value="@Model?.FocusKeyword" />
                     </div>
 
                     <div class="form-group">
                         <label asp-for="MetaTitle" class="form-label">Meta Title</label>
-                        <input asp-for="MetaTitle" class="form-control" placeholder="SEO title..." maxlength="255" id="metaTitleInput" />
+                        <input name="MetaTitle" class="form-control" placeholder="SEO title..." maxlength="255" id="metaTitleInput" value="@Model?.MetaTitle" />
                         <div class="character-count" id="metaTitleCount">0 / 255</div>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="MetaDescription" class="form-label">Meta Description</label>
-                        <textarea asp-for="MetaDescription" class="form-control" rows="3" placeholder="SEO description..." maxlength="500" id="metaDescInput"></textarea>
+                        <textarea name="MetaDescription" class="form-control" rows="3" placeholder="SEO description..." maxlength="500" id="metaDescInput">@Model?.MetaDescription</textarea>
                         <div class="character-count" id="metaDescCount">0 / 500</div>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="OgTitle" class="form-label">OG Title</label>
-                        <input asp-for="OgTitle" class="form-control" placeholder="Open Graph title..." maxlength="255" />
+                        <input name="OgTitle" class="form-control" placeholder="Open Graph title..." maxlength="255" value="@Model?.OgTitle" />
                     </div>
 
                     <div class="form-group">
                         <label asp-for="OgDescription" class="form-label">OG Description</label>
-                        <textarea asp-for="OgDescription" class="form-control" rows="2" placeholder="Open Graph description..." maxlength="500"></textarea>
+                        <textarea name="OgDescription" class="form-control" rows="2" placeholder="Open Graph description..." maxlength="500">@Model?.OgDescription</textarea>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="OgImage" class="form-label">OG Image URL</label>
-                        <input asp-for="OgImage" class="form-control" type="url" placeholder="https://..." />
+                        <input name="OgImage" class="form-control" type="url" placeholder="https://..." value="@Model?.OgImage" />
                     </div>
 
                     <div class="form-group">
                         <label asp-for="CanonicalUrl" class="form-label">Canonical URL</label>
-                        <input asp-for="CanonicalUrl" class="form-control" type="url" placeholder="https://..." />
+                        <input name="CanonicalUrl" class="form-control" type="url" placeholder="https://..." value="@Model?.CanonicalUrl" />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Slug" class="form-label">URL Slug (SEO-Friendly)</label>
+                        <input name="Slug" class="form-control" placeholder="auto-generated-from-title" id="slugInput" pattern="[a-z0-9-]+" value="@Model?.Slug" />
+                        <button type="button" class="btn btn-outline btn-sm mt-2" id="generateSlugBtn" style="width: 100%;">
+                            <i class="fas fa-magic me-2"></i>Generate SEO-Friendly Slug
+                        </button>
+                        <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                            SEO-friendly URL. Auto-generated from title. Use lowercase letters, numbers, and hyphens only.
+                        </small>
+                        <span asp-validation-for="Slug" class="text-danger"></span>
                     </div>
 
                     <!-- SEO Preview -->
                     <div class="seo-preview" id="seoPreview">
                         <div class="seo-preview-title" id="previewTitle">Enter a title to see preview</div>
-                        <div class="seo-preview-url" id="previewUrl">gsmsharing.com/posts/...</div>
+                        <div class="seo-preview-url" id="previewUrl">https://gsmsharing.com/r/<span id="previewSlug">community/your-post-slug</span></div>
                         <div class="seo-preview-description" id="previewDescription">Enter a meta description to see preview</div>
                     </div>
 
@@ -492,10 +515,10 @@
 
                     <div class="form-group">
                         <label asp-for="PostStatus" class="form-label">Status</label>
-                        <select asp-for="PostStatus" class="form-select">
-                            <option value="draft">Draft</option>
-                            <option value="published" selected>Published</option>
-                            <option value="archived">Archived</option>
+                        <select name="PostStatus" class="form-select">
+                            <option value="draft" @(Model?.PostStatus == "draft" ? "selected" : "")>Draft</option>
+                            <option value="published" @(Model?.PostStatus == "published" || Model == null ? "selected" : "")>Published</option>
+                            <option value="archived" @(Model?.PostStatus == "archived" ? "selected" : "")>Archived</option>
                         </select>
                     </div>
 
@@ -505,7 +528,8 @@
                             <small class="text-muted d-block" style="font-size: 0.75rem;">Users can comment</small>
                         </div>
                         <label class="form-switch">
-                            <input type="checkbox" asp-for="AllowComments" checked />
+                            <input type="checkbox" name="AllowComments" value="true" @(Model?.AllowComments == true ? "checked" : "") />
+                            <input type="hidden" name="AllowComments" value="false" />
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -516,7 +540,8 @@
                             <small class="text-muted d-block" style="font-size: 0.75rem;">Show in featured</small>
                         </div>
                         <label class="form-switch">
-                            <input type="checkbox" asp-for="IsFeatured" />
+                            <input type="checkbox" name="IsFeatured" value="true" @(Model?.IsFeatured == true ? "checked" : "") />
+                            <input type="hidden" name="IsFeatured" value="false" />
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -527,7 +552,8 @@
                             <small class="text-muted d-block" style="font-size: 0.75rem;">Boost visibility</small>
                         </div>
                         <label class="form-switch">
-                            <input type="checkbox" asp-for="IsPromoted" />
+                            <input type="checkbox" name="IsPromoted" value="true" @(Model?.IsPromoted == true ? "checked" : "") />
+                            <input type="hidden" name="IsPromoted" value="false" />
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -538,7 +564,8 @@
                             <small class="text-muted d-block" style="font-size: 0.75rem;">Pin to top</small>
                         </div>
                         <label class="form-switch">
-                            <input type="checkbox" asp-for="IsPinned" />
+                            <input type="checkbox" name="IsPinned" value="true" @(Model?.IsPinned == true ? "checked" : "") />
+                            <input type="hidden" name="IsPinned" value="false" />
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -549,7 +576,8 @@
                             <small class="text-muted d-block" style="font-size: 0.75rem;">Disable comments</small>
                         </div>
                         <label class="form-switch">
-                            <input type="checkbox" asp-for="IsLocked" />
+                            <input type="checkbox" name="IsLocked" value="true" @(Model?.IsLocked == true ? "checked" : "") />
+                            <input type="hidden" name="IsLocked" value="false" />
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -622,12 +650,57 @@
         updateCounter('metaTitleInput', 'metaTitleCount', 255);
         updateCounter('metaDescInput', 'metaDescCount', 500);
 
-        // Auto-fill meta title from title
+        // Generate SEO-friendly slug from text
+        function generateSlug(text) {
+            if (!text) return '';
+            return text
+                .toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '') // Remove special characters
+                .replace(/[\s_]+/g, '-') // Replace spaces and underscores with hyphens
+                .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+                .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+        }
+
+        // Manual slug generation button
+        document.getElementById('generateSlugBtn')?.addEventListener('click', function() {
+            const title = document.getElementById('postTitle')?.value;
+            const slugInput = document.getElementById('slugInput');
+            if (title && slugInput) {
+                slugInput.value = generateSlug(title);
+                updateSEOPreview();
+            }
+        });
+
+        // Auto-fill meta title and slug from title
         document.getElementById('postTitle')?.addEventListener('input', function() {
             const metaTitle = document.getElementById('metaTitleInput');
             if (metaTitle && !metaTitle.value) {
                 metaTitle.value = this.value.substring(0, 255);
             }
+            
+            // Auto-generate slug from title (only if slug is empty)
+            const slugInput = document.getElementById('slugInput');
+            if (slugInput && !slugInput.value) {
+                const slug = generateSlug(this.value);
+                slugInput.value = slug;
+            }
+            
+            updateSEOPreview();
+        });
+
+        // Update slug preview when slug changes
+        document.getElementById('slugInput')?.addEventListener('input', function() {
+            // Clean the slug as user types
+            const cleaned = generateSlug(this.value);
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+            }
+            updateSEOPreview();
+        });
+
+        // Update community preview when community changes
+        document.getElementById('CommunityID')?.addEventListener('change', function() {
             updateSEOPreview();
         });
 
@@ -635,15 +708,55 @@
         function updateSEOPreview() {
             const title = document.getElementById('metaTitleInput')?.value || document.getElementById('postTitle')?.value || 'Enter a title';
             const description = document.getElementById('metaDescInput')?.value || 'Enter a meta description';
+            const slug = document.getElementById('slugInput')?.value || 'your-post-slug';
+            const communitySelect = document.getElementById('CommunityID');
+            const communityName = communitySelect?.options[communitySelect.selectedIndex]?.text?.toLowerCase().replace(/\s+/g, '-') || 'community';
             
             const previewTitle = document.getElementById('previewTitle');
             const previewDesc = document.getElementById('previewDescription');
+            const previewUrl = document.getElementById('previewUrl');
+            const previewSlug = document.getElementById('previewSlug');
+            
             if (previewTitle) previewTitle.textContent = title.substring(0, 60);
             if (previewDesc) previewDesc.textContent = description.substring(0, 160);
+            if (previewSlug) previewSlug.textContent = slug || 'your-post-slug';
+            if (previewUrl) {
+                const baseUrl = window.location.origin;
+                const seoUrl = `${baseUrl}/${communityName}/${slug || 'your-post-slug'}`;
+                previewUrl.innerHTML = seoUrl;
+            }
+        }
+
+        
+        // Update slug preview when slug changes
+        const slugInput = document.getElementById('slugInput');
+        if (slugInput) {
+            slugInput.addEventListener('input', function() {
+                // Clean the slug as user types
+                const cleaned = generateSlug(this.value);
+                if (cleaned !== this.value) {
+                    this.value = cleaned;
+                }
+                updateSEOPreview();
+            });
         }
 
         document.getElementById('metaTitleInput')?.addEventListener('input', updateSEOPreview);
         document.getElementById('metaDescInput')?.addEventListener('input', updateSEOPreview);
+        document.getElementById('slugInput')?.addEventListener('input', function() {
+            // Clean the slug as user types
+            const cleaned = generateSlug(this.value);
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+            }
+            updateSEOPreview();
+        });
+        
+        // Update preview when community changes
+        const communitySelect = document.getElementById('CommunityID');
+        if (communitySelect) {
+            communitySelect.addEventListener('change', updateSEOPreview);
+        }
 
         // Tag Management
         const tags = [];

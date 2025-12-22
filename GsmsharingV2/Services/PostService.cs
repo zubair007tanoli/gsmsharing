@@ -119,10 +119,33 @@ namespace GsmsharingV2.Services
             {
                 var post = _mapper.Map<Post>(createPostDto);
                 post.UserId = userId;
-                post.PostStatus = "published";
+                
+                // Set status (default to published if not specified)
+                post.PostStatus = createPostDto.PostStatus ?? "published";
                 post.CreatedAt = DateTime.UtcNow;
-                post.PublishedAt = DateTime.UtcNow;
+                post.UpdatedAt = DateTime.UtcNow;
+                
+                // Set PublishedAt only if status is published
+                if (post.PostStatus == "published")
+                {
+                    post.PublishedAt = DateTime.UtcNow;
+                }
+                
+                // Set defaults for nullable booleans
                 post.AllowComments = createPostDto.AllowComments ?? true;
+                post.IsFeatured = createPostDto.IsFeatured ?? false;
+                post.IsPromoted = createPostDto.IsPromoted ?? false;
+                
+                // Set non-nullable booleans
+                post.IsPinned = createPostDto.IsPinned;
+                post.IsLocked = createPostDto.IsLocked;
+                
+                // Initialize counters
+                post.ViewCount = 0;
+                post.CommentCount = 0;
+                post.UpvoteCount = 0;
+                post.DownvoteCount = 0;
+                post.Score = 0;
 
                 var createdPost = await _postRepository.CreateAsync(post);
                 return _mapper.Map<PostDto>(createdPost);

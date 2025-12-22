@@ -39,6 +39,7 @@ namespace GsmsharingV2.Controllers
         }
 
         [HttpGet]
+        [Route("/r/{community}/{slug}", Name = "PostDetails")]
         public async Task<IActionResult> Details(string community, string slug)
         {
             if (string.IsNullOrEmpty(community) || string.IsNullOrEmpty(slug))
@@ -60,29 +61,95 @@ namespace GsmsharingV2.Controllers
 
         [Authorize]
         [HttpGet]
+        [Route("/create-post", Name = "CreatePost")]
         public async Task<IActionResult> Create()
         {
             var communityDtos = await _communityService.GetAllAsync();
             var communities = _mapper.Map<IEnumerable<Community>>(communityDtos);
             ViewBag.Communities = communities;
-            return View();
+            // Initialize model with default values to avoid null reference issues
+            var model = new Post
+            {
+                AllowComments = true, // Default to true
+                PostStatus = "published"
+            };
+            return View(model);
         }
 
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Post post, IFormFile? imageFile)
+        public async Task<IActionResult> Create([FromForm] Post post, IFormFile? imageFile, string action)
         {
+            // Manually bind all properties to avoid nullable boolean binding issues
+            var createPostDto = new CreatePostDto
+            {
+                Title = Request.Form["Title"].ToString(),
+                Slug = Request.Form["Slug"].ToString(),
+                Content = Request.Form["Content"].ToString(),
+                Excerpt = Request.Form["Excerpt"].ToString(),
+                Tags = Request.Form["Tags"].ToString(),
+                FeaturedImage = Request.Form["FeaturedImage"].ToString(),
+                MetaTitle = Request.Form["MetaTitle"].ToString(),
+                MetaDescription = Request.Form["MetaDescription"].ToString(),
+                OgTitle = Request.Form["OgTitle"].ToString(),
+                OgDescription = Request.Form["OgDescription"].ToString(),
+                OgImage = Request.Form["OgImage"].ToString(),
+                CanonicalUrl = Request.Form["CanonicalUrl"].ToString(),
+                FocusKeyword = Request.Form["FocusKeyword"].ToString(),
+                CommunityID = int.TryParse(Request.Form["CommunityID"].ToString(), out var communityId) ? communityId : null
+            };
+            
+            // Handle post status based on action button
+            if (action == "draft")
+            {
+                createPostDto.PostStatus = "draft";
+            }
+            else
+            {
+                createPostDto.PostStatus = "published";
+            }
+            
+            // Handle nullable boolean checkboxes from form
+            createPostDto.AllowComments = Request.Form.ContainsKey("AllowComments") && Request.Form["AllowComments"].ToString() == "true";
+            createPostDto.IsFeatured = Request.Form.ContainsKey("IsFeatured") && Request.Form["IsFeatured"].ToString() == "true";
+            createPostDto.IsPromoted = Request.Form.ContainsKey("IsPromoted") && Request.Form["IsPromoted"].ToString() == "true";
+            
+            // Handle non-nullable booleans from form
+            createPostDto.IsPinned = Request.Form.ContainsKey("IsPinned") && Request.Form["IsPinned"].ToString() == "true";
+            createPostDto.IsLocked = Request.Form.ContainsKey("IsLocked") && Request.Form["IsLocked"].ToString() == "true";
+            
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(createPostDto.Title))
+            {
+                ModelState.AddModelError("Title", "Title is required");
+            }
+            if (createPostDto.CommunityID == null || createPostDto.CommunityID == 0)
+            {
+                ModelState.AddModelError("CommunityID", "Community is required");
+            }
+            if (string.IsNullOrWhiteSpace(createPostDto.Content))
+            {
+                ModelState.AddModelError("Content", "Content is required");
+            }
+            
             if (!ModelState.IsValid)
             {
                 var communityDtos = await _communityService.GetAllAsync();
                 var communities = _mapper.Map<IEnumerable<Community>>(communityDtos);
                 ViewBag.Communities = communities;
-                return View(post);
+                var model = new Post
+                {
+                    Title = createPostDto.Title,
+                    Content = createPostDto.Content,
+                    CommunityID = createPostDto.CommunityID,
+                    AllowComments = createPostDto.AllowComments ?? true,
+                    PostStatus = createPostDto.PostStatus
+                };
+                return View(model);
             }
 
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            var createPostDto = _mapper.Map<CreatePostDto>(post);
             
             // Handle image upload
             if (imageFile != null && imageFile.Length > 0)
@@ -107,7 +174,12 @@ namespace GsmsharingV2.Controllers
             var createdPostDto = await _postService.CreateAsync(createPostDto, userId);
             
             var communityDto = await _communityService.GetByIdAsync(createdPostDto.CommunityID ?? 0);
-            return RedirectToAction("Details", new { community = communityDto?.Slug ?? "gsmsharing", slug = createdPostDto.Slug });
+            
+            // SEO-optimized URL: /posts/{community-slug}/{post-slug}
+            return RedirectToAction("Details", new { 
+                community = communityDto?.Slug ?? "gsmsharing", 
+                slug = createdPostDto.Slug 
+            });
         }
 
         [Authorize]
