@@ -99,12 +99,7 @@ builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.Applic
 });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews(options =>
-{
-    // Configure SEO-friendly routes
-    options.LowercaseUrls = true;
-    options.LowercaseQueryStrings = true;
-});
+builder.Services.AddControllersWithViews();
 
 // Add SignalR
 builder.Services.AddSignalR();
@@ -157,6 +152,12 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "createPost",
     pattern: "create-post",
+    defaults: new { controller = "Posts", action = "Create" });
+
+// Allow /Posts/Create route
+app.MapControllerRoute(
+    name: "postsCreate",
+    pattern: "Posts/Create",
     defaults: new { controller = "Posts", action = "Create" });
 
 app.MapControllerRoute(

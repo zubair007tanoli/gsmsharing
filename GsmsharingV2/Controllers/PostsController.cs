@@ -61,12 +61,21 @@ namespace GsmsharingV2.Controllers
 
         [Authorize]
         [HttpGet]
-        [Route("/create-post", Name = "CreatePost")]
+
         public async Task<IActionResult> Create()
         {
-            var communityDtos = await _communityService.GetAllAsync();
-            var communities = _mapper.Map<IEnumerable<Community>>(communityDtos);
-            ViewBag.Communities = communities;
+            try
+            {
+                var communityDtos = await _communityService.GetAllAsync();
+                var communities = _mapper.Map<IEnumerable<Community>>(communityDtos);
+                ViewBag.Communities = communities ?? Enumerable.Empty<Community>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading communities for create post");
+                ViewBag.Communities = Enumerable.Empty<Community>();
+            }
+            
             // Initialize model with default values to avoid null reference issues
             var model = new Post
             {

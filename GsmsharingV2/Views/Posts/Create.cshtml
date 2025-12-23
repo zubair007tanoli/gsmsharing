@@ -503,7 +503,7 @@
                     <!-- SEO Preview -->
                     <div class="seo-preview" id="seoPreview">
                         <div class="seo-preview-title" id="previewTitle">Enter a title to see preview</div>
-                        <div class="seo-preview-url" id="previewUrl">https://gsmsharing.com/r/<span id="previewSlug">community/your-post-slug</span></div>
+                        <div class="seo-preview-url" id="previewUrl">https://gsmsharing.com/r/community/your-post-slug</div>
                         <div class="seo-preview-description" id="previewDescription">Enter a meta description to see preview</div>
                     </div>
 
@@ -515,10 +515,25 @@
 
                     <div class="form-group">
                         <label asp-for="PostStatus" class="form-label">Status</label>
-                        <select name="PostStatus" class="form-select">
-                            <option value="draft" @(Model?.PostStatus == "draft" ? "selected" : "")>Draft</option>
-                            <option value="published" @(Model?.PostStatus == "published" || Model == null ? "selected" : "")>Published</option>
-                            <option value="archived" @(Model?.PostStatus == "archived" ? "selected" : "")>Archived</option>
+                        <select name="PostStatus" class="form-select" id="postStatusSelect">
+                            @if (Model?.PostStatus == "draft")
+                            {
+                                <option value="draft" selected>Draft</option>
+                                <option value="published">Published</option>
+                                <option value="archived">Archived</option>
+                            }
+                            else if (Model?.PostStatus == "archived")
+                            {
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                                <option value="archived" selected>Archived</option>
+                            }
+                            else
+                            {
+                                <option value="draft">Draft</option>
+                                <option value="published" selected>Published</option>
+                                <option value="archived">Archived</option>
+                            }
                         </select>
                     </div>
 
@@ -719,11 +734,10 @@
             
             if (previewTitle) previewTitle.textContent = title.substring(0, 60);
             if (previewDesc) previewDesc.textContent = description.substring(0, 160);
-            if (previewSlug) previewSlug.textContent = slug || 'your-post-slug';
             if (previewUrl) {
                 const baseUrl = window.location.origin;
-                const seoUrl = `${baseUrl}/${communityName}/${slug || 'your-post-slug'}`;
-                previewUrl.innerHTML = seoUrl;
+                const seoUrl = `${baseUrl}/r/${communityName}/${slug || 'your-post-slug'}`;
+                previewUrl.textContent = seoUrl;
             }
         }
 

@@ -30,6 +30,10 @@ namespace GsmsharingV2.Database
         public DbSet<AffiliateProductNew> AffiliateProducts { get; set; }
         public DbSet<AffiliateClick> AffiliateClicks { get; set; }
 
+        // Posts & Communities
+        public DbSet<Community> Communities { get; set; }
+        public DbSet<Post> Posts { get; set; }
+
         // System
         public DbSet<SystemSetting> SystemSettings { get; set; }
         public DbSet<AdminLog> AdminLogs { get; set; }
@@ -128,6 +132,31 @@ namespace GsmsharingV2.Database
                 entity.ToTable("AdminLogs");
                 entity.HasKey(e => e.LogID);
                 entity.Property(e => e.LogID).UseIdentityColumn();
+            });
+
+            // Configure Communities
+            builder.Entity<Community>(entity =>
+            {
+                entity.ToTable("Communities");
+                entity.HasKey(e => e.CommunityID);
+                entity.Property(e => e.CommunityID).UseIdentityColumn();
+                entity.HasIndex(e => e.Slug).IsUnique();
+                entity.HasIndex(e => e.CreatorID);
+            });
+
+            // Configure Posts
+            builder.Entity<Post>(entity =>
+            {
+                entity.ToTable("Posts");
+                entity.HasKey(e => e.PostID);
+                entity.Property(e => e.PostID).UseIdentityColumn();
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.CommunityID);
+                entity.HasIndex(e => e.Slug);
+                entity.HasIndex(e => e.PostStatus);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.IsFeatured);
+                entity.HasIndex(e => e.IsPromoted);
             });
 
             // Relationships

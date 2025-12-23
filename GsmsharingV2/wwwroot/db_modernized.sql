@@ -261,6 +261,85 @@ CREATE TABLE AffiliateClicks (
 );
 
 -- =============================================
+-- SECTION 5.5: POSTS & COMMUNITIES (Reddit-Style)
+-- =============================================
+-- User-generated posts in communities with SEO and modern features
+
+CREATE TABLE Communities (
+    CommunityID BIGINT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(255) NOT NULL,
+    Slug NVARCHAR(255) NOT NULL UNIQUE,
+    Description NVARCHAR(MAX),
+    IconUrl NVARCHAR(500),
+    BannerUrl NVARCHAR(500),
+    CreatorID BIGINT FOREIGN KEY REFERENCES AspNetUsers(Id) ON DELETE SET NULL,
+    CategoryID BIGINT NULL,
+    MemberCount INT DEFAULT 0,
+    PostCount INT DEFAULT 0,
+    IsPrivate BIT DEFAULT 0,
+    IsDeleted BIT DEFAULT 0,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    INDEX IX_Communities_Slug (Slug),
+    INDEX IX_Communities_CreatorID (CreatorID)
+);
+
+CREATE TABLE Posts (
+    PostID BIGINT PRIMARY KEY IDENTITY(1,1),
+    UserId BIGINT FOREIGN KEY REFERENCES AspNetUsers(Id) ON DELETE SET NULL,
+    Title NVARCHAR(500) NOT NULL,
+    Slug NVARCHAR(500) NOT NULL,
+    Tags NVARCHAR(MAX),
+    Content NVARCHAR(MAX),
+    FeaturedImage NVARCHAR(1000),
+    Excerpt NVARCHAR(1000),
+    
+    -- SEO Fields
+    MetaTitle NVARCHAR(255),
+    MetaDescription NVARCHAR(500),
+    OgTitle NVARCHAR(255),
+    OgDescription NVARCHAR(500),
+    OgImage NVARCHAR(1000),
+    CanonicalUrl NVARCHAR(1000),
+    FocusKeyword NVARCHAR(100),
+    SchemaMarkup NVARCHAR(MAX), -- JSON-LD structured data
+    
+    -- Status & Visibility
+    PostStatus NVARCHAR(50) DEFAULT 'published', -- draft, published, archived
+    IsPromoted BIT DEFAULT 0,
+    IsFeatured BIT DEFAULT 0,
+    IsPinned BIT DEFAULT 0,
+    IsLocked BIT DEFAULT 0,
+    AllowComments BIT DEFAULT 1,
+    IsDeleted BIT DEFAULT 0,
+    
+    -- Engagement Metrics
+    ViewCount INT DEFAULT 0,
+    Score INT DEFAULT 0,
+    CommentCount INT DEFAULT 0,
+    UpvoteCount INT DEFAULT 0,
+    DownvoteCount INT DEFAULT 0,
+    
+    -- Relationships
+    CommunityID BIGINT FOREIGN KEY REFERENCES Communities(CommunityID) ON DELETE SET NULL,
+    
+    -- Timestamps
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    PublishedAt DATETIME2 NULL,
+    DeletedAt DATETIME2 NULL,
+    
+    -- Indexes
+    INDEX IX_Posts_UserId (UserId),
+    INDEX IX_Posts_CommunityID (CommunityID),
+    INDEX IX_Posts_Slug (Slug),
+    INDEX IX_Posts_PostStatus (PostStatus),
+    INDEX IX_Posts_CreatedAt (CreatedAt),
+    INDEX IX_Posts_IsFeatured (IsFeatured),
+    INDEX IX_Posts_IsPromoted (IsPromoted)
+);
+
+-- =============================================
 -- SECTION 6: SYSTEM LOGS & SETTINGS
 -- =============================================
 
