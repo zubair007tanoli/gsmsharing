@@ -242,3 +242,5 @@ Run the SQL script to create the Posts table:
 - Rich text editor supports full formatting
 
 
+
+

@@ -33,6 +33,11 @@ namespace GsmsharingV2.Database
         // Posts & Communities
         public DbSet<Community> Communities { get; set; }
         public DbSet<Post> Posts { get; set; }
+        
+        // Forum Posts (Reddit-style)
+        public DbSet<ForumPost> ForumPosts { get; set; }
+        public DbSet<PostMedia> PostMedia { get; set; }
+        public DbSet<ForumPostVote> ForumPostVotes { get; set; }
 
         // System
         public DbSet<SystemSetting> SystemSettings { get; set; }
@@ -101,6 +106,16 @@ namespace GsmsharingV2.Database
                 entity.HasIndex(e => e.MD5Checksum);
             });
 
+            // Configure AffiliatePartners
+            builder.Entity<AffiliatePartner>(entity =>
+            {
+                entity.ToTable("AffiliatePartners");
+                entity.HasKey(e => e.PartnerID);
+                entity.Property(e => e.PartnerID).UseIdentityColumn();
+                entity.HasIndex(e => e.PartnerType);
+                entity.HasIndex(e => e.IsActive);
+            });
+
             // Configure AffiliateProducts
             builder.Entity<AffiliateProductNew>(entity =>
             {
@@ -108,6 +123,12 @@ namespace GsmsharingV2.Database
                 entity.HasKey(e => e.ProductID);
                 entity.Property(e => e.ProductID).UseIdentityColumn();
                 entity.Property(e => e.PriceDisplay).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.OriginalPrice).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.DiscountPrice).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Rating).HasColumnType("decimal(3,2)");
+                entity.HasIndex(e => e.ASIN);
+                entity.HasIndex(e => e.Rating);
+                entity.HasIndex(e => e.PartnerID);
             });
 
             // Configure AffiliateClicks
@@ -116,7 +137,11 @@ namespace GsmsharingV2.Database
                 entity.ToTable("AffiliateClicks");
                 entity.HasKey(e => e.ClickID);
                 entity.Property(e => e.ClickID).UseIdentityColumn();
+                entity.Property(e => e.CommissionAmount).HasColumnType("decimal(18,2)");
+                entity.HasIndex(e => e.ProductID);
+                entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.ClickDate);
+                entity.HasIndex(e => e.Converted);
             });
 
             // Configure SystemSettings
@@ -157,6 +182,43 @@ namespace GsmsharingV2.Database
                 entity.HasIndex(e => e.CreatedAt);
                 entity.HasIndex(e => e.IsFeatured);
                 entity.HasIndex(e => e.IsPromoted);
+            });
+            
+            // Configure ForumPosts
+            builder.Entity<ForumPost>(entity =>
+            {
+                entity.ToTable("ForumPosts");
+                entity.HasKey(e => e.ForumPostID);
+                entity.Property(e => e.ForumPostID).UseIdentityColumn();
+                entity.HasIndex(e => e.CommunityID);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.PostType);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.Score);
+                entity.HasIndex(e => e.PostStatus);
+                entity.HasIndex(e => e.Slug);
+            });
+            
+            // Configure PostMedia
+            builder.Entity<PostMedia>(entity =>
+            {
+                entity.ToTable("PostMedia");
+                entity.HasKey(e => e.MediaID);
+                entity.Property(e => e.MediaID).UseIdentityColumn();
+                entity.HasIndex(e => e.ForumPostID);
+                entity.HasIndex(e => e.PostID);
+                entity.HasIndex(e => e.MediaType);
+            });
+            
+            // Configure ForumPostVotes
+            builder.Entity<ForumPostVote>(entity =>
+            {
+                entity.ToTable("ForumPostVotes");
+                entity.HasKey(e => e.VoteID);
+                entity.Property(e => e.VoteID).UseIdentityColumn();
+                entity.HasIndex(e => e.ForumPostID);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => new { e.ForumPostID, e.UserId }).IsUnique();
             });
 
             // Relationships
@@ -222,6 +284,19 @@ namespace GsmsharingV2.Database
                 .WithMany(p => p.ClicksData)
                 .HasForeignKey(c => c.ProductID)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            // Forum Post Relationships
+            builder.Entity<PostMedia>()
+                .HasOne(pm => pm.ForumPost)
+                .WithMany(fp => fp.Media)
+                .HasForeignKey(pm => pm.ForumPostID)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.Entity<ForumPostVote>()
+                .HasOne(fpv => fpv.ForumPost)
+                .WithMany(fp => fp.Votes)
+                .HasForeignKey(fpv => fpv.ForumPostID)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Note: User relationships are handled via foreign keys (UserID, BuyerID, SellerID, etc.)
             // We don't configure EF relationships to IdentityUser<long> to avoid Identity conflicts
