@@ -14,7 +14,7 @@
     var tags = Model.Post.Tags != null && Model.Post.Tags.Any() 
         ? string.Join(", ", Model.Post.Tags) 
         : $"{Model.Post.CommunityName}, discussion, forum";
-    var postUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.CommunitySlug}/post/{Model.Post.Slug}";
+    var postUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.CommunitySlug}/posts/{Model.Post.Slug}";
     var imageUrl = Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "image")
         ? Model.Post.Media.First(m => m.MediaType == "image").Url
         : $"{Context.Request.Scheme}://{Context.Request.Host}/images/default-og-image.png";

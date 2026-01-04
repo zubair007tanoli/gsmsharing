@@ -1,36 +1,41 @@
-using discussionspot9.Data.DbContext;
 using discussionspot9.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Text;
 
 namespace discussionspot9.Controllers
 {
-    public class SitemapController : Controller
+    [ApiController] // Add this for cleaner API behavior
+    [Route("")]
+    public class SitemapController : ControllerBase // Use ControllerBase instead of Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly ILogger<SitemapController> _logger;
         private readonly ISitemapService _sitemapService;
 
         public SitemapController(
-            ApplicationDbContext context, 
             ILogger<SitemapController> logger,
             ISitemapService sitemapService)
         {
-            _context = context;
             _logger = logger;
             _sitemapService = sitemapService;
         }
 
-        [HttpGet]
-        [Route("sitemap.xml")]
-        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)] // Cache for 1 hour
+        [HttpGet("sitemap.xml")]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
+        [Produces("application/xml")]
         public async Task<IActionResult> Sitemap()
         {
             try
             {
-                var sitemapXml = await _sitemapService.GenerateSitemapAsync(Request.Scheme, Request.Host.ToString());
-                return Content(sitemapXml, "application/xml", Encoding.UTF8);
+                var scheme = Request.Scheme;
+                var host = Request.Host.ToString();
+
+                var sitemapXml = await _sitemapService.GenerateSitemapAsync(scheme, host);
+
+                // Ensure no BOM or extra whitespace
+                sitemapXml = sitemapXml.Trim();
+
+                // Return with explicit charset
+                return Content(sitemapXml, "application/xml; charset=utf-8");
             }
             catch (Exception ex)
             {
@@ -39,15 +44,21 @@ namespace discussionspot9.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("sitemap-index.xml")]
+        [HttpGet("sitemap-index.xml")]
         [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
+        [Produces("application/xml")]
         public async Task<IActionResult> SitemapIndex()
         {
             try
             {
-                var sitemapIndexXml = await _sitemapService.GenerateSitemapIndexAsync(Request.Scheme, Request.Host.ToString());
-                return Content(sitemapIndexXml, "application/xml", Encoding.UTF8);
+                var scheme = Request.Scheme;
+                var host = Request.Host.ToString();
+
+                var sitemapIndexXml = await _sitemapService.GenerateSitemapIndexAsync(scheme, host);
+
+                sitemapIndexXml = sitemapIndexXml.Trim();
+
+                return Content(sitemapIndexXml, "application/xml; charset=utf-8");
             }
             catch (Exception ex)
             {
@@ -56,5 +67,21 @@ namespace discussionspot9.Controllers
             }
         }
 
+        [HttpGet("robots.txt")]
+        [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+        [Produces("text/plain")]
+        public IActionResult RobotsTxt()
+        {
+            var scheme = Request.Scheme;
+            var host = Request.Host.ToString();
+
+            var robotsTxt = new StringBuilder();
+            robotsTxt.AppendLine("User-agent: *");
+            robotsTxt.AppendLine("Allow: /");
+            robotsTxt.AppendLine();
+            robotsTxt.AppendLine($"Sitemap: {scheme}://{host}/sitemap.xml");
+
+            return Content(robotsTxt.ToString(), "text/plain; charset=utf-8");
+        }
     }
 }

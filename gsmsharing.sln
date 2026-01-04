@@ -23,6 +23,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FluxPDF", "FluxPDF\FluxPDF.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluxPDFApp", "FluxPDFApp\FluxPDFApp.csproj", "{ECAC9DFE-FF74-48CE-971A-3DA92CC8391B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fluxdox", "Fluxdox\Fluxdox.csproj", "{4DA39B72-4C46-4234-87C2-53E9D06048A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{ECAC9DFE-FF74-48CE-971A-3DA92CC8391B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ECAC9DFE-FF74-48CE-971A-3DA92CC8391B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ECAC9DFE-FF74-48CE-971A-3DA92CC8391B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DA39B72-4C46-4234-87C2-53E9D06048A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DA39B72-4C46-4234-87C2-53E9D06048A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DA39B72-4C46-4234-87C2-53E9D06048A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DA39B72-4C46-4234-87C2-53E9D06048A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

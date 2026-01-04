@@ -24,8 +24,10 @@ namespace discussionspot9.Middleware
                 // Don't process redirects for error pages or static files
                 var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
                 
+                // FIXED: Exclude AMP routes from canonical URL processing to prevent interference with AMP page serving
                 if (path.StartsWith("/home/error") || 
                     path.StartsWith("/error") ||
+                    path.StartsWith("/stories/amp/") ||  // Exclude AMP story routes
                     path.Contains(".css") || 
                     path.Contains(".js") || 
                     path.Contains(".ico") ||

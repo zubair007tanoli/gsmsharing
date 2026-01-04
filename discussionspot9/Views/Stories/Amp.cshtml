@@ -9,6 +9,8 @@
         if (url.StartsWith("/")) return baseUrl + url;
         return baseUrl + "/" + url;
     }
+    // Generate the canonical URL for this AMP story page
+    var canonicalUrl = MakeAbsolute(Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme) ?? "");
 }
 
 <!DOCTYPE html>
@@ -18,7 +20,8 @@
     <script async src="https://cdn.ampproject.org/v0.js"></script>
     <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
     <title>@Model.Title</title>
-    <link rel="canonical" href="@Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
+    <!-- FIXED: Canonical URL now points to the AMP page itself, not a non-existent Viewer action -->
+    <link rel="canonical" href="@canonicalUrl">
     <meta name="description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
     <meta name="keywords" content="@(Model.MetaKeywords ?? ExtractKeywords(Model.Title))">
     <meta name="author" content="@(Model.User?.UserName ?? "DiscussionSpot")">
@@ -26,7 +29,7 @@
     <meta property="og:title" content="@System.Net.WebUtility.HtmlEncode(Model.Title)">
     <meta property="og:description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
     <meta property="og:image" content="@MakeAbsolute(Model.Slides?.OrderBy(s => s.OrderIndex).Select(s => s.MediaUrl).FirstOrDefault() ?? "/Assets/Logo_Auth.png")">
-    <meta property="og:url" content="@Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)">
+    <meta property="og:url" content="@canonicalUrl">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@System.Net.WebUtility.HtmlEncode(Model.Title)">
     <meta name="twitter:description" content="@System.Net.WebUtility.HtmlEncode(Model.MetaDescription ?? Model.Description ?? $"Read {Model.Title} on DiscussionSpot")">
@@ -86,12 +89,13 @@
             imageUrls.Add(MakeAbsolute("/Assets/Logo_Auth.png"));
         }
         
-        // Build JSON-LD using Dictionary to properly handle @ symbols
+        // FIXED: Build JSON-LD with absolute URLs for all fields
         var jsonLd = new Dictionary<string, object>
         {
             ["@context"] = "https://schema.org",
             ["@type"] = "Article",
-            ["@id"] = Url.Action("Amp", "Stories", new { slug = Model.Slug }, Context.Request.Scheme),
+            ["@id"] = canonicalUrl,
+            ["url"] = canonicalUrl,
             ["headline"] = Model.Title ?? "",
             ["description"] = Model.Description ?? Model.MetaDescription ?? $"Read {Model.Title} on DiscussionSpot",
             ["datePublished"] = Model.CreatedAt.ToString("o"),
@@ -100,7 +104,7 @@
             {
                 ["@type"] = "Person",
                 ["name"] = Model.User?.UserName ?? "DiscussionSpot",
-                ["url"] = $"{Context.Request.Scheme}://{Context.Request.Host}/user/{Model.User?.UserName ?? ""}"
+                ["url"] = MakeAbsolute($"/user/{Model.User?.UserName ?? ""}")
             },
             ["publisher"] = new Dictionary<string, object>
             {
@@ -109,13 +113,13 @@
                 ["logo"] = new Dictionary<string, object>
                 {
                     ["@type"] = "ImageObject",
-                    ["url"] = $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png"
+                    ["url"] = MakeAbsolute("/Assets/Logo_Auth.png")
                 }
             },
             ["mainEntityOfPage"] = new Dictionary<string, object>
             {
                 ["@type"] = "WebPage",
-                ["@id"] = Url.Action("Viewer", "Stories", new { slug = Model.Slug }, Context.Request.Scheme)
+                ["@id"] = canonicalUrl
             },
             ["image"] = imageUrls,
             ["keywords"] = Model.MetaKeywords ?? ExtractKeywords(Model.Title),
@@ -260,8 +264,9 @@
             .FirstOrDefault() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
         var publisherLogo = MakeAbsolute(Model.PublisherLogo) ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png";
     }
+    <!-- FIXED: Changed 'title' attribute to 'amp-story-title' for proper AMP validation -->
     <amp-story standalone="standalone" 
-               title="@System.Net.WebUtility.HtmlEncode(Model.Title)"
+               amp-story-title="@System.Net.WebUtility.HtmlEncode(Model.Title)"
                publisher="@(Model.PublisherName ?? "DiscussionSpot")"
                publisher-logo-src="@publisherLogo"
                poster-portrait-src="@firstSlideImage"

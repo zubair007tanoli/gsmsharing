@@ -17,7 +17,7 @@ namespace GsmsharingV2.Repositories
         public async Task<ForumPost?> GetByIdAsync(long id)
         {
             return await _context.ForumPosts
-                .Include(fp => fp.Media.OrderBy(m => m.DisplayOrder))
+                .Include(fp => fp.Media)
                 .Include(fp => fp.Votes)
                 .FirstOrDefaultAsync(fp => fp.ForumPostID == id && !fp.IsDeleted);
         }
@@ -25,7 +25,7 @@ namespace GsmsharingV2.Repositories
         public async Task<ForumPost?> GetBySlugAsync(string slug)
         {
             return await _context.ForumPosts
-                .Include(fp => fp.Media.OrderBy(m => m.DisplayOrder))
+                .Include(fp => fp.Media)
                 .Include(fp => fp.Votes)
                 .FirstOrDefaultAsync(fp => fp.Slug == slug && !fp.IsDeleted);
         }
@@ -92,7 +92,7 @@ namespace GsmsharingV2.Repositories
 
         public async Task<IEnumerable<ForumPost>> GetTopPostsAsync(int count = 20, string timeframe = "all")
         {
-            var query = _context.ForumPosts
+            IQueryable<ForumPost> query = _context.ForumPosts
                 .Where(fp => !fp.IsDeleted && fp.PostStatus == "published")
                 .Include(fp => fp.Media);
 
@@ -370,6 +370,19 @@ namespace GsmsharingV2.Repositories
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
