@@ -1,0 +1,76 @@
+@{
+    ViewData["Title"] = "Intelligent PDF Merge";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+<p class="lead">Combine multiple PDFs into one with drag-and-drop reordering. Preserves bookmarks, orientation, and supports page range selection.</p>
+
+<div class="alert alert-info" role="alert">
+    <strong>Tip:</strong> You can drag and drop multiple PDF files or select them using the button below. After uploading, you can reorder pages.
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form asp-controller="Document" asp-action="UploadForMerge" method="post" enctype="multipart/form-data" 
+      hx-post="@Url.Action("UploadForMerge", "Document")" hx-target="#processingStatus" hx-swap="outerHTML" hx-encoding="multipart/form-data">
+    <div class="mb-3">
+        <label for="pdfFiles" class="form-label visually-hidden">Upload PDF Files</label>
+        <div id="pdfDropArea" class="file-drop-area mb-3">
+            <i class="fas fa-cloud-upload-alt icon-large"></i>
+            <p class="drop-text">Drag and drop your PDF files here, or click to browse</p>
+            <input type="file" id="pdfFiles" name="files" class="form-control d-none" multiple accept=".pdf" 
+                   hx-indicator="#pdfDropArea">
+        </div>
+        <small class="text-muted">Max 50MB per file for guest users. Pro users get higher limits.</small>
+    </div>
+
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg" 
+                hx-post="@Url.Action("UploadForMerge", "Document")" hx-target="#processingStatus" hx-swap="outerHTML" hx-encoding="multipart/form-data">
+            <i class="fas fa-upload me-2"></i> Upload & Merge PDFs
+        </button>
+    </div>
+</form>
+
+<div id="processingStatus" class="mt-4">
+    <div class="card d-none htmx-indicator">
+        <div class="card-body">
+            <h5 class="card-title">Processing... <i class="fas fa-spinner fa-spin"></i></h5>
+            <div class="progress-bar-container">
+                <div class="progress-bar" role="progressbar" id="mergeProgressBar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+            <p class="mt-2">Your PDFs are being merged. This may take a moment.</p>
+        </div>
+    </div>
+    <!-- This area could be updated via HTMX with progress or results -->
+</div>
+
+<h2 class="mt-5">Your Merged Documents</h2>
+<div class="row" id="mergedResults">
+    <div class="col-12">
+        <p class="text-muted">No merged documents yet. Upload files to get started!</p>
+        <!-- Dynamic content for merged files would appear here -->
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Placeholder for advanced drag-and-drop reordering logic
+        // This would involve a client-side library like SortableJS for the UI,
+        // and then sending the new order to the server.
+    </script>
+}

@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Image to PDF";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+<p class="lead">Convert raster images (JPG, PNG, HEIC) to PDF. Features include auto-rotation, selectable page sizes, and smart compression.</p>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form asp-controller="Document" asp-action="UploadForImageToPdf" method="post" enctype="multipart/form-data" 
+      hx-post="@Url.Action("UploadForImageToPdf", "Document")" hx-target="#processingStatus" hx-swap="outerHTML" hx-encoding="multipart/form-data">
+    <div class="mb-3">
+        <label for="imageFiles" class="form-label visually-hidden">Upload Image Files</label>
+        <div id="imageDropArea" class="file-drop-area mb-3">
+            <i class="fas fa-images icon-large"></i>
+            <p class="drop-text">Drag and drop your image files here, or click to browse</p>
+            <input type="file" id="imageFiles" name="files" class="form-control d-none" multiple accept=".jpg,.jpeg,.png,.heic"
+                   hx-indicator="#imageDropArea">
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="pageSize" class="form-label">Page Size</label>
+        <select class="form-select" id="pageSize" name="pageSize">
+            <option value="A4" selected>A4 (210 x 297 mm)</option>
+            <option value="Letter">Letter (8.5 x 11 in)</option>
+            <option value="Legal">Legal (8.5 x 14 in)</option>
+        </select>
+        <small class="text-muted">Choose the desired page size for the output PDF.</small>
+    </div>
+
+    <div class="d-grid gap-2 mb-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-file-pdf me-2"></i> Convert to PDF
+        </button>
+    </div>
+</form>
+
+<div id="processingStatus" class="mt-4">
+    <div class="card d-none htmx-indicator">
+        <div class="card-body">
+            <h5 class="card-title">Processing... <i class="fas fa-spinner fa-spin"></i></h5>
+            <p class="mt-2">Your images are being converted to PDF.</p>
+        </div>
+    </div>
+</div>
+
+<h2 class="mt-5">Your Converted PDFs</h2>
+<div class="row" id="convertedResults">
+    <div class="col-12">
+        <p class="text-muted">No converted PDFs yet. Upload images to get started!</p>
+    </div>
+</div>

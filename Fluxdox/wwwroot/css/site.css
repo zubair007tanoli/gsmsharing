@@ -29,3 +29,90 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* Custom styles for FluxDoc */
+.hero-section {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    padding: 80px 0;
+    text-align: center;
+}
+
+.feature-card {
+    border: none;
+    transition: transform 0.2s ease-in-out;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+.feature-card .card-body {
+    min-height: 180px; /* Ensure consistent height for cards */
+}
+
+.icon-large {
+    font-size: 3rem;
+    color: #007bff;
+    margin-bottom: 15px;
+}
+
+.pricing-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    transition: all 0.2s ease-in-out;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+.pricing-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.pricing-card .list-unstyled li i {
+    margin-right: 0.5rem;
+}
+
+.file-drop-area {
+    border: 2px dashed #007bff;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.file-drop-area.htmx-indicator {
+    border-color: #28a745; /* Green when processing */
+    background-color: #e2f0e6;
+}
+
+.file-drop-area.drag-over {
+    border-color: #28a745;
+    background-color: #e2f0e6;
+}
+
+.progress-bar-container {
+    height: 25px;
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: #007bff;
+    text-align: center;
+    color: white;
+    line-height: 25px;
+    transition: width 0.6s ease;
+}

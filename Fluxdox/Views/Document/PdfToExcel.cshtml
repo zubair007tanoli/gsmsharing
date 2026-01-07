@@ -1,0 +1,53 @@
+@{
+    ViewData["Title"] = "PDF to Excel (Smart Extract)";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+<p class="lead">Extract tabular data from PDFs into editable .xlsx files using our intelligent Camelot engine (Lattice & Stream modes).</p>
+
+<div class="alert alert-warning" role="alert">
+    <strong>"Finance Fiona" persona focus:</strong> We prioritize accuracy in table extraction, handling multi-page tables and merged cells.
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form asp-controller="Document" asp-action="UploadForPdfToExcel" method="post" enctype="multipart/form-data"
+      hx-post="@Url.Action("UploadForPdfToExcel", "Document")" hx-target="#processingStatus" hx-swap="outerHTML" hx-encoding="multipart/form-data">
+    <div class="mb-3">
+        <label for="pdfFile" class="form-label visually-hidden">Upload PDF File</label>
+        <div id="pdfDropArea" class="file-drop-area mb-3">
+            <i class="fas fa-file-pdf icon-large"></i>
+            <p class="drop-text">Drag and drop your PDF file here, or click to browse</p>
+            <input type="file" id="pdfFile" name="file" class="form-control d-none" accept=".pdf"
+                   hx-indicator="#pdfDropArea">
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 mb-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-file-excel me-2"></i> Extract to Excel
+        </button>
+    </div>
+</form>
+
+<div id="processingStatus" class="mt-4">
+    <div class="card d-none htmx-indicator">
+        <div class="card-body">
+            <h5 class="card-title">Processing... <i class="fas fa-spinner fa-spin"></i></h5>
+            <p class="mt-2">Extracting tables to Excel. This may take a moment for complex documents.</p>
+        </div>
+    </div>
+</div>
+
+<h2 class="mt-5">Your Extracted Excel Files</h2>
+<div class="row" id="extractedResults">
+    <div class="col-12">
+        <p class="text-muted">No extracted Excel files yet. Upload a PDF with tables to get started!</p>
+    </div>
+</div>

@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Searchable PDF (OCR)";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+<p class="lead">Convert scanned images and non-searchable PDFs into searchable PDF/A text layers with advanced OCR capabilities.</p>
+
+<div class="alert alert-success" role="alert">
+    <strong>"Archivist Alan" persona focus:</strong> Bulk OCR, data privacy, and handling of large files are key.
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["WarningMessage"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        @TempData["WarningMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form asp-controller="Document" asp-action="UploadForOcr" method="post" enctype="multipart/form-data"
+      hx-post="@Url.Action("UploadForOcr", "Document")" hx-target="#processingStatus" hx-swap="outerHTML" hx-encoding="multipart/form-data">
+    <div class="mb-3">
+        <label for="pdfFile" class="form-label visually-hidden">Upload PDF or Image File</label>
+        <div id="ocrDropArea" class="file-drop-area mb-3">
+            <i class="fas fa-file-upload icon-large"></i>
+            <p class="drop-text">Drag and drop your scanned PDF or Image file here, or click to browse</p>
+            <input type="file" id="pdfFile" name="file" class="form-control d-none" accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                   hx-indicator="#ocrDropArea">
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="ocrLanguage" class="form-label">OCR Language(s)</label>
+        <select class="form-select" id="ocrLanguage" name="language" multiple>
+            <option value="eng" selected>English</option>
+            <option value="spa">Spanish</option>
+            <option value="fra">French</option>
+            <option value="deu">German</option>
+            <option value="ita">Italian</option>
+            <option value="jpn">Japanese</option>
+            <option value="zhs">Chinese (Simplified)</option>
+            <!-- Add more languages as supported by Tesseract -->
+        </select>
+        <small class="text-muted">Select one or more languages for improved OCR accuracy.</small>
+    </div>
+
+    <div class="d-grid gap-2 mb-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-search me-2"></i> Make Searchable (OCR)
+        </button>
+    </div>
+</form>
+
+<div id="processingStatus" class="mt-4">
+    <div class="card d-none htmx-indicator">
+        <div class="card-body">
+            <h5 class="card-title">Processing... <i class="fas fa-spinner fa-spin"></i></h5>
+            <p class="mt-2">Performing OCR on your document. This may take some time for large files.</p>
+        </div>
+    </div>
+</div>
+
+<h2 class="mt-5">Your Searchable PDFs</h2>
+<div class="row" id="ocrResults">
+    <div class="col-12">
+        <p class="text-muted">No searchable PDFs yet. Upload a scanned document to get started!</p>
+    </div>
+</div>

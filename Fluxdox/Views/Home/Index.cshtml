@@ -1,8 +1,106 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home - FluxDoc";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero-section mb-5">
+    <div class="container">
+        <h1>Welcome to FluxDoc, your Next-Gen Hybrid PDF Platform</h1>
+        <p class="lead">Unlock the power of your documents with intelligent PDF manipulation, advanced data extraction, and AI-powered enhancements.</p>
+        <a asp-controller="Document" asp-action="Merge" class="btn btn-primary btn-lg mt-3 me-2"><i class="fas fa-compress-alt"></i> Start Merging PDFs</a>
+        <a asp-controller="Pricing" asp-action="Index" class="btn btn-outline-light btn-lg mt-3"><i class="fas fa-tags"></i> View Pricing Plans</a>
+    </div>
+</div>
+
+<div class="container text-center mb-5">
+    <h2>Why Choose FluxDoc?</h2>
+    <p class="lead">Harnessing the best of ASP.NET Core 10 and Python for unparalleled accuracy and performance.</p>
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="feature-card card p-4 mb-4">
+                <i class="fas fa-magic icon-large mb-3"></i>
+                <div class="card-body">
+                    <h5 class="card-title">Intelligent Processing</h5>
+                    <p class="card-text">Leveraging Python's data science libraries for high-fidelity OCR, smart table extraction, and image enhancement.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card card p-4 mb-4">
+                <i class="fas fa-cloud icon-large mb-3"></i>
+                <div class="card-body">
+                    <h5 class="card-title">Scalable & Secure</h5>
+                    <p class="card-text">Built on Kubernetes with Redis queues, ensuring high availability, performance, and AES-256 encryption.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card card p-4 mb-4">
+                <i class="fas fa-code icon-large mb-3"></i>
+                <div class="card-body">
+                    <h5 class="card-title">Developer Friendly API</h5>
+                    <p class="card-text">Integrate powerful document automation into your applications with our robust RESTful API.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <h2 class="text-center mb-4">Our Core Features</h2>
+    <div class="row">
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-compress-alt me-2"></i> PDF Merge</h5>
+                    <p class="card-text">Combine multiple PDFs effortlessly with drag-and-drop reordering and page selection.</p>
+                    <a asp-controller="Document" asp-action="Merge" class="btn btn-primary btn-sm mt-auto">Go to Tool</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-image me-2"></i> Image to PDF</h5>
+                    <p class="card-text">Convert various image formats (JPG, PNG, HEIC) into high-quality PDFs with smart compression.</p>
+                    <a asp-controller="Document" asp-action="ImageToPdf" class="btn btn-primary btn-sm mt-auto">Go to Tool</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-file-excel me-2"></i> PDF to Excel</h5>
+                    <p class="card-text">Accurately extract tabular data from PDFs into editable .xlsx files using smart algorithms.</p>
+                    <a asp-controller="Document" asp-action="PdfToExcel" class="btn btn-primary btn-sm mt-auto">Go to Tool</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-search me-2"></i> Searchable PDF (OCR)</h5>
+                    <p class="card-text">Transform scanned documents into searchable PDFs with advanced OCR, deskewing, and noise cleaning.</p>
+                    <a asp-controller="Document" asp-action="Ocr" class="btn btn-primary btn-sm mt-auto">Go to Tool</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-magic me-2"></i> Magic Color</h5>
+                    <p class="card-text">Enhance photos of documents by removing shadows and whitening backgrounds for perfect clarity.</p>
+                    <a asp-controller="Document" asp-action="MagicColor" class="btn btn-primary btn-sm mt-auto">Go to Tool</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-file-word me-2"></i> PDF to Word</h5>
+                    <p class="card-text">Convert PDFs to editable .docx documents, preserving original layouts and formatting.</p>
+                    <a asp-controller="Document" asp-action="PdfToWord" class="btn btn-primary btn-sm mt-auto">Go to Tool</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
