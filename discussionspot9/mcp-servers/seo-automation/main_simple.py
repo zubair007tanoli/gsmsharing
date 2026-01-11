@@ -3,6 +3,20 @@ SEO Automation MCP Server - SIMPLIFIED VERSION (No Ollama Required)
 This version works without Ollama for testing purposes
 """
 
+import sys
+import io
+
+# Fix Windows console encoding issues
+if sys.platform == 'win32':
+    # Set UTF-8 encoding for stdout/stderr on Windows
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    else:
+        # Fallback for older Python versions
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -110,14 +124,22 @@ if __name__ == "__main__":
         except ValueError:
             print(f"Invalid port argument: {sys.argv[1]}, using default 5001")
     
-    print("=" * 60)
-    print("🚀 SEO Automation MCP Server - SIMPLIFIED MODE")
-    print("=" * 60)
-    print(f"✅ Server starting on http://localhost:{PORT}")
-    print(f"✅ Health check: http://localhost:{PORT}/health")
-    print("⚠️  AI features disabled (Ollama not required)")
-    print("=" * 60)
-    print()
+    # Safe print function that handles encoding errors
+    def safe_print(text):
+        try:
+            print(text, flush=True)
+        except UnicodeEncodeError:
+            # Fallback to ASCII if encoding fails
+            print(text.encode('ascii', errors='replace').decode('ascii'), flush=True)
+    
+    safe_print("=" * 60)
+    safe_print("[MCP] SEO Automation MCP Server - SIMPLIFIED MODE")
+    safe_print("=" * 60)
+    safe_print(f"[OK] Server starting on http://localhost:{PORT}")
+    safe_print(f"[OK] Health check: http://localhost:{PORT}/health")
+    safe_print("[WARN] AI features disabled (Ollama not required)")
+    safe_print("=" * 60)
+    safe_print("")
     
     uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
 

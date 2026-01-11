@@ -1020,6 +1020,10 @@
         // Profile Share Dropdown Toggle - Make it global
         window.toggleProfileShare = function(event, dropdownId) {
             if (event) {
+                // Only prevent default if clicking the button, not the links
+                if (event.target.closest('.profile-share-option')) {
+                    return; // Let the link handle its own click
+                }
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -1146,6 +1150,11 @@
         
         // Close dropdown when clicking outside
         document.addEventListener('click', function(event) {
+            // Don't close if clicking on a share link (let it open)
+            if (event.target.closest('.profile-share-option')) {
+                return;
+            }
+            
             const wrappers = document.querySelectorAll('.profile-share-dropdown-wrapper');
             wrappers.forEach(wrapper => {
                 const dropdown = wrapper.querySelector('.profile-share-dropdown');

@@ -528,6 +528,7 @@ class SignalRManager {
         // ============================================
         const upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
         const downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
+        const voteScoreEl = document.getElementById(`voteScore-${postId}`); // Net score element
         const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
         const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
         
@@ -537,10 +538,21 @@ class SignalRManager {
             return;
         }
         
+        // Get current vote score (net score) from voteScore element if individual counts don't exist
+        let currentScore = 0;
+        if (voteScoreEl) {
+            currentScore = parseInt(voteScoreEl.textContent || '0');
+        } else if (upvoteCountEl && downvoteCountEl) {
+            const up = parseInt(upvoteCountEl.textContent || '0');
+            const down = parseInt(downvoteCountEl.textContent || '0');
+            currentScore = up - down;
+        }
+        
         // Store original state for revert on error
         const originalState = {
             upvoteCount: upvoteCountEl?.textContent || '0',
             downvoteCount: downvoteCountEl?.textContent || '0',
+            voteScore: voteScoreEl?.textContent || '0',
             upvoteActive: upvoteBtn?.classList.contains('active') || false,
             downvoteActive: downvoteBtn?.classList.contains('active') || false
         };
@@ -550,10 +562,20 @@ class SignalRManager {
         // Calculate optimistic count changes
         let currentUpvotes = parseInt(upvoteCountEl?.textContent || '0');
         let currentDownvotes = parseInt(downvoteCountEl?.textContent || '0');
+        
+        // If individual counts don't exist, estimate from score
+        if (!upvoteCountEl && !downvoteCountEl && voteScoreEl) {
+            // Estimate: assume score represents net votes
+            // This is approximate but works for optimistic UI
+            currentUpvotes = Math.max(0, currentScore);
+            currentDownvotes = Math.max(0, -currentScore);
+        }
+        
         let newUpvotes = currentUpvotes;
         let newDownvotes = currentDownvotes;
+        let newScore = currentScore;
         
-        console.log('🔢 Current counts - Up:', currentUpvotes, 'Down:', currentDownvotes);
+        console.log('🔢 Current counts - Up:', currentUpvotes, 'Down:', currentDownvotes, 'Score:', currentScore);
         
         const wasUpvoted = upvoteBtn?.classList.contains('active');
         const wasDownvoted = downvoteBtn?.classList.contains('active');
@@ -565,16 +587,19 @@ class SignalRManager {
             if (wasUpvoted) {
                 console.log('➖ Removing upvote');
                 newUpvotes = Math.max(0, newUpvotes - 1);
+                newScore = newUpvotes - newDownvotes;
                 upvoteBtn.classList.remove('active');
             } else if (wasDownvoted) {
                 console.log('🔄 Changing downvote to upvote');
                 newUpvotes++;
                 newDownvotes = Math.max(0, newDownvotes - 1);
+                newScore = newUpvotes - newDownvotes;
                 downvoteBtn.classList.remove('active');
                 upvoteBtn.classList.add('active');
             } else {
                 console.log('➕ Adding new upvote');
                 newUpvotes++;
+                newScore = newUpvotes - newDownvotes;
                 upvoteBtn.classList.add('active');
             }
         } else if (voteType === -1) {
@@ -582,21 +607,24 @@ class SignalRManager {
             if (wasDownvoted) {
                 console.log('➖ Removing downvote');
                 newDownvotes = Math.max(0, newDownvotes - 1);
+                newScore = newUpvotes - newDownvotes;
                 downvoteBtn.classList.remove('active');
             } else if (wasUpvoted) {
                 console.log('🔄 Changing upvote to downvote');
                 newUpvotes = Math.max(0, newUpvotes - 1);
                 newDownvotes++;
+                newScore = newUpvotes - newDownvotes;
                 upvoteBtn.classList.remove('active');
                 downvoteBtn.classList.add('active');
             } else {
                 console.log('➕ Adding new downvote');
                 newDownvotes++;
+                newScore = newUpvotes - newDownvotes;
                 downvoteBtn.classList.add('active');
             }
         }
         
-        console.log('🎯 Calculated new counts - Up:', newUpvotes, 'Down:', newDownvotes);
+        console.log('🎯 Calculated new counts - Up:', newUpvotes, 'Down:', newDownvotes, 'Score:', newScore);
         
         // Update UI IMMEDIATELY (optimistic)
         if (upvoteCountEl) {
@@ -607,6 +635,12 @@ class SignalRManager {
         if (downvoteCountEl) {
             downvoteCountEl.textContent = newDownvotes.toString();
             console.log('🔄 Optimistic downvote count set to:', newDownvotes);
+        }
+        
+        // CRITICAL FIX: Always update voteScore element if it exists
+        if (voteScoreEl) {
+            voteScoreEl.textContent = newScore.toString();
+            console.log('🔄 Optimistic vote score set to:', newScore);
         }
         
         console.log('✅ UI updated optimistically');
@@ -627,6 +661,9 @@ class SignalRManager {
             }
             if (downvoteCountEl) {
                 downvoteCountEl.textContent = originalState.downvoteCount;
+            }
+            if (voteScoreEl) {
+                voteScoreEl.textContent = originalState.voteScore;
             }
             if (upvoteBtn) {
                 originalState.upvoteActive ? upvoteBtn.classList.add('active') : upvoteBtn.classList.remove('active');
@@ -961,12 +998,14 @@ class SignalRManager {
         // Get vote display elements
         const upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
         const downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
+        const voteScoreEl = document.getElementById(`voteScore-${postId}`); // Net score element
         const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
         const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
         
         console.log('🔍 Elements found:', {
             upvoteCountEl: !!upvoteCountEl,
             downvoteCountEl: !!downvoteCountEl,
+            voteScoreEl: !!voteScoreEl,
             upvoteBtn: !!upvoteBtn,
             downvoteBtn: !!downvoteBtn
         });
@@ -974,10 +1013,12 @@ class SignalRManager {
         // Ensure we have numbers
         const upCount = parseInt(upvoteCount) || 0;
         const downCount = parseInt(downvoteCount) || 0;
+        const netScore = upCount - downCount;
         
         console.log('📊 Calculated values:', {
             upCount,
             downCount,
+            netScore,
             currentUserVote
         });
         
@@ -1008,6 +1049,19 @@ class SignalRManager {
             }, 200);
         } else {
             console.warn('⚠️ Downvote count element not found');
+        }
+        
+        // CRITICAL FIX: Update voteScore element if it exists (for DetailRedditStyle view)
+        if (voteScoreEl) {
+            voteScoreEl.textContent = netScore.toString();
+            console.log('✅ Vote score updated to:', netScore);
+            
+            // Animate vote score
+            voteScoreEl.style.transform = 'scale(1.2)';
+            voteScoreEl.style.transition = 'transform 0.2s ease';
+            setTimeout(() => {
+                voteScoreEl.style.transform = 'scale(1)';
+            }, 200);
         }
         
         // Update button states

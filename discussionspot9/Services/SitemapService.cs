@@ -50,13 +50,21 @@ namespace discussionspot9.Services
 
                         // 2. Communities
                         var communities = await _context.Communities
-                            .Where(c => !c.IsDeleted)
+                            .Where(c => !c.IsDeleted 
+                                && !string.IsNullOrWhiteSpace(c.Slug)
+                                && !string.IsNullOrWhiteSpace(c.Name)) // Ensure valid content
                             .OrderByDescending(c => c.CreatedAt)
                             .Take(10000)
                             .ToListAsync();
 
                         foreach (var community in communities)
                         {
+                            // Double-check slug is valid before adding to sitemap
+                            if (string.IsNullOrWhiteSpace(community.Slug))
+                            {
+                                continue; // Skip invalid communities
+                            }
+                            
                             var url = $"{scheme}://{host}/r/{EscapeUrl(community.Slug)}";
                             WriteUrl(xmlWriter, url, community.UpdatedAt, "daily", "0.9");
                         }
@@ -65,14 +73,25 @@ namespace discussionspot9.Services
                         var posts = await _context.Posts
                             .Include(p => p.Community)
                             .Include(p => p.Media)
-                            .Where(p => p.Status == "published" && p.Community != null && !p.Community.IsDeleted)
+                            .Where(p => p.Status == "published" 
+                                && p.Community != null 
+                                && !p.Community.IsDeleted
+                                && !string.IsNullOrWhiteSpace(p.Slug)
+                                && !string.IsNullOrWhiteSpace(p.Community.Slug)
+                                && !string.IsNullOrWhiteSpace(p.Title)) // Ensure valid content
                             .OrderByDescending(p => p.UpdatedAt)
                             .Take(50000)
                             .ToListAsync();
 
                         foreach (var post in posts)
                         {
-                            var postUrl = $"{scheme}://{host}/r/{EscapeUrl(post.Community!.Slug)}/posts/{EscapeUrl(post.Slug)}";
+                            // Double-check slugs are valid before adding to sitemap
+                            if (string.IsNullOrWhiteSpace(post.Slug) || string.IsNullOrWhiteSpace(post.Community!.Slug))
+                            {
+                                continue; // Skip invalid posts
+                            }
+                            
+                            var postUrl = $"{scheme}://{host}/r/{EscapeUrl(post.Community.Slug)}/posts/{EscapeUrl(post.Slug)}";
 
                             // START URL ELEMENT
                             xmlWriter.WriteStartElement("url");
@@ -102,13 +121,21 @@ namespace discussionspot9.Services
 
                         // 4. Published Stories with nested Images
                         var stories = await _context.Stories
-                            .Where(s => s.Status == "published")
+                            .Where(s => s.Status == "published"
+                                && !string.IsNullOrWhiteSpace(s.Slug)
+                                && !string.IsNullOrWhiteSpace(s.Title)) // Ensure valid content
                             .OrderByDescending(s => s.PublishedAt ?? s.UpdatedAt)
                             .Take(10000)
                             .ToListAsync();
 
                         foreach (var story in stories)
                         {
+                            // Double-check slug is valid before adding to sitemap
+                            if (string.IsNullOrWhiteSpace(story.Slug))
+                            {
+                                continue; // Skip invalid stories
+                            }
+                            
                             var storyUrl = $"{scheme}://{host}/stories/viewer/{EscapeUrl(story.Slug)}";
 
                             // START URL ELEMENT

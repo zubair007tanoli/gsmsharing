@@ -1,5 +1,8 @@
 @{
     ViewData["Title"] = "Page Not Found - 404";
+    ViewData["Description"] = "The page you're looking for doesn't exist or has been moved.";
+    ViewData["Robots"] = "noindex, nofollow"; // Prevent indexing of error pages
+    ViewData["CanonicalUrl"] = $"{Context.Request.Scheme}://{Context.Request.Host}/Error/404";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 

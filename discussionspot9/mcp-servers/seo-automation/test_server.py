@@ -1,8 +1,23 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Ultra-simple test server for MCP - No dependencies required!
 Uses only Python standard library
 """
+
+import sys
+import io
+
+# Fix Windows console encoding issues
+if sys.platform == 'win32':
+    # Set UTF-8 encoding for stdout/stderr on Windows
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    else:
+        # Fallback for older Python versions
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
@@ -85,19 +100,27 @@ if __name__ == '__main__':
     
     server = HTTPServer(('0.0.0.0', PORT), MCPHandler)
     
-    print("=" * 70, flush=True)
-    print("🚀 MCP SEO Automation Test Server", flush=True)
-    print("=" * 70, flush=True)
-    print(f"✅ Server running on http://localhost:{PORT}", flush=True)
-    print(f"✅ Health check: http://localhost:{PORT}/health", flush=True)
-    print("✅ No dependencies required - uses Python standard library only!", flush=True)
-    print("=" * 70, flush=True)
-    print("Press Ctrl+C to stop", flush=True)
-    print(flush=True)
+    # Safe print function that handles encoding errors
+    def safe_print(text):
+        try:
+            print(text, flush=True)
+        except UnicodeEncodeError:
+            # Fallback to ASCII if encoding fails
+            print(text.encode('ascii', errors='replace').decode('ascii'), flush=True)
+    
+    safe_print("=" * 70)
+    safe_print("[MCP] SEO Automation Test Server")
+    safe_print("=" * 70)
+    safe_print(f"[OK] Server running on http://localhost:{PORT}")
+    safe_print(f"[OK] Health check: http://localhost:{PORT}/health")
+    safe_print("[OK] No dependencies required - uses Python standard library only!")
+    safe_print("=" * 70)
+    safe_print("Press Ctrl+C to stop")
+    safe_print("")
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n\n🛑 Server stopped", flush=True)
+        safe_print("\n\n[STOP] Server stopped")
         server.shutdown()
 

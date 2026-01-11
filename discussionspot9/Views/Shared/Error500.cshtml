@@ -1,5 +1,8 @@
 @{
     ViewData["Title"] = "Server Error - 500";
+    ViewData["Description"] = "We're experiencing technical difficulties. Our team has been notified.";
+    ViewData["Robots"] = "noindex, nofollow"; // Prevent indexing of error pages
+    ViewData["CanonicalUrl"] = $"{Context.Request.Scheme}://{Context.Request.Host}/Error/500";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 

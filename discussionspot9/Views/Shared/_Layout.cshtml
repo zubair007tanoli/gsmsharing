@@ -13,7 +13,15 @@
     <meta name="description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more. Share knowledge, connect with like-minded people, and earn from your contributions.")">
     <meta name="keywords" content="@(ViewData["Keywords"] ?? "discussion forum, community, technology, gaming, knowledge sharing, online discussions")">
     <meta name="author" content="DiscussionSpot">
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <!-- Robots meta tag - allow override for error pages -->
+    @if (ViewData["Robots"] != null)
+    {
+        <meta name="robots" content="@ViewData["Robots"]">
+    }
+    else
+    {
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    }
     
     <!-- Canonical URL -->
     @if (ViewData["CanonicalUrl"] != null)
