@@ -71,6 +71,31 @@
 <link rel="preload" as="image" href="@hero" />
 <link rel="canonical" href="@storyUrl" />
 
+<!-- Google AdSense Auto Ads Script -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5934633595595089"
+     crossorigin="anonymous"></script>
+
+<!-- Google tag (gtag.js) for Google Analytics and Search Console -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-66EV1MV01K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-66EV1MV01K', {
+    'page_title': '@Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Title))',
+    'page_location': '@storyUrl',
+    'page_path': '@Url.Action("Viewer", "Stories", new { slug = Model.Slug })'
+  });
+  
+  // Track story view for Google Search Console
+  gtag('event', 'page_view', {
+    'content_type': 'story',
+    'content_id': '@Model.StoryId',
+    'content_title': '@Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Title))',
+    'content_slug': '@Model.Slug'
+  });
+</script>
+
 <!-- Primary Meta Tags -->
 <meta name="title" content="@storyTitle" />
 <meta name="description" content="@storyDescription" />
@@ -389,6 +414,19 @@
             <span>View Post</span>
         </a>
     }
+    
+    <!-- AdSense Display Ad - Non-intrusive placement -->
+    <div class="story-ads-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9998; max-width: 728px; width: 100%; padding: 0 1rem; pointer-events: auto;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-5934633595595089"
+             data-ad-slot="YOUR_AD_SLOT_ID"
+             data-ad-format="horizontal"
+             data-full-width-responsive="true"></ins>
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
 </div>
 
 <!-- Story Viewer Styles -->
@@ -1159,6 +1197,24 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎬 Story Viewer initializing...');
     
+    // Track story view in Google Analytics for Search Console
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'story_view', {
+            'event_category': 'Story',
+            'event_label': '@Model.Slug',
+            'value': @Model.StoryId,
+            'non_interaction': false
+        });
+        
+        // Track story engagement
+        gtag('event', 'story_start', {
+            'event_category': 'Story Engagement',
+            'event_label': '@Model.Slug',
+            'story_id': @Model.StoryId,
+            'story_title': '@Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Title))'
+        });
+    }
+    
     // Check if story-utils.js loaded properly
     if (typeof window.storyViewer === 'undefined') {
         console.warn('⚠️ story-utils.js not loaded, using fallback');
@@ -1492,5 +1548,19 @@ function initializeFallbackViewer() {
             }
         }
     });
+    
+    // Load Monetag.com ads after story viewer is initialized (works alongside AdSense)
+    // Delay to ensure story viewer is fully loaded and user has engaged with content
+    setTimeout(function() {
+        try {
+            (function(s) {
+                s.dataset.zone = '10422824';
+                s.src = 'https://gizokraijaw.net/vignette.min.js';
+            })([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));
+            console.log('✅ Monetag ads loaded for story');
+        } catch (e) {
+            console.warn('⚠️ Monetag script failed to load:', e);
+        }
+    }, 2000); // 2 second delay to ensure user engagement
 }
 </script>

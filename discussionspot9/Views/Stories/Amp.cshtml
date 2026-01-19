@@ -69,6 +69,9 @@
     <!-- AMP Analytics -->
     <script async custom-element="amp-analytics" src="https://cdn.ampproject.org/v0/amp-analytics-0.1.js"></script>
     
+    <!-- AMP AdSense -->
+    <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
+    
     <!-- AMP Story Bookend -->
     <script async custom-element="amp-story-bookend" src="https://cdn.ampproject.org/v0/amp-story-bookend-1.0.js"></script>
 
@@ -417,18 +420,63 @@
         }
         
         @* CRITICAL: amp-analytics must come BEFORE amp-story-bookend *@
-        <amp-analytics type="googleanalytics">
+        <amp-analytics type="gtag" data-credentials="include">
           <script type="application/json">
           {
-            "vars": { "account": "UA-XXXXX-Y" },
+            "vars": {
+              "gtag_id": "G-66EV1MV01K",
+              "config": {
+                "G-66EV1MV01K": {
+                  "page_title": "@System.Net.WebUtility.HtmlEncode(Model.Title)",
+                  "page_location": "@canonicalUrl",
+                  "content_type": "story",
+                  "content_id": "@Model.StoryId",
+                  "content_title": "@System.Net.WebUtility.HtmlEncode(Model.Title)"
+                }
+              }
+            },
             "triggers": {
-              "storyStart": { "on": "story-page-visible", "request": "pageview" },
-              "storyAdvance": { "on": "story-next", "request": "event", "vars": { "eventCategory": "Story", "eventAction": "Next" } },
-              "storyEnd": { "on": "story-end", "request": "event", "vars": { "eventCategory": "Story", "eventAction": "Complete" } }
+              "storyStart": {
+                "on": "story-page-visible",
+                "request": "pageview",
+                "vars": {
+                  "event_category": "Story",
+                  "event_action": "View",
+                  "event_label": "@Model.Slug"
+                }
+              },
+              "storyAdvance": {
+                "on": "story-next",
+                "request": "event",
+                "vars": {
+                  "event_category": "Story",
+                  "event_action": "Next",
+                  "event_label": "@Model.Slug"
+                }
+              },
+              "storyEnd": {
+                "on": "story-end",
+                "request": "event",
+                "vars": {
+                  "event_category": "Story",
+                  "event_action": "Complete",
+                  "event_label": "@Model.Slug"
+                }
+              }
             }
           }
           </script>
         </amp-analytics>
+        
+        @* Add AdSense ads to AMP story *@
+        <amp-ad width="300" height="250"
+                type="adsense"
+                data-ad-client="ca-pub-5934633595595089"
+                data-ad-slot="YOUR_AD_SLOT_ID"
+                data-auto-format="rspv"
+                data-full-width="">
+          <div overflow=""></div>
+        </amp-ad>
 
         @* CRITICAL: amp-story-bookend MUST be the LAST child of amp-story *@
         <amp-story-bookend layout="nodisplay">
