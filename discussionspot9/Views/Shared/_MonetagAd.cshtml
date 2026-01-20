@@ -1,0 +1,34 @@
+@* 
+    Monetag.com Ad Script
+    Programmatic ad network that works alongside AdSense
+    Uses vignette (pop-under) ad format
+    Zone ID: 10422824
+*@
+
+<!-- Monetag.com Ads - Load after page content to avoid blocking rendering -->
+<script>
+    (function() {
+        // Only load Monetag on non-AMP pages
+        if (document.querySelector('html[amp]') === null) {
+            // Load Monetag script after page is interactive
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadMonetag);
+            } else {
+                // Page already loaded, delay slightly to ensure content is rendered
+                setTimeout(loadMonetag, 1000);
+            }
+        }
+        
+        function loadMonetag() {
+            try {
+                (function(s) {
+                    s.dataset.zone = '10422824';
+                    s.src = 'https://gizokraijaw.net/vignette.min.js';
+                })([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));
+                console.log('✅ Monetag ads loaded');
+            } catch (e) {
+                console.warn('⚠️ Monetag script failed to load:', e);
+            }
+        }
+    })();
+</script>
