@@ -155,3 +155,9 @@ Guest: No login, 2 tasks/day, 50MB limit.
 Free Registered: 5 tasks/day, 100MB limit, Basic OCR (Low Priority).
 Pro ($9/mo): Unlimited tasks, 2GB limit, High Priority OCR, Secure Vault.
 API: Pay-per-use (per page processed).
+
+dotnet add package AWSSDK.S3
+   dotnet add package StackExchange.Redis
+   dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+   dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
+   dotnet add package Microsoft.AspNetCore.SignalR
