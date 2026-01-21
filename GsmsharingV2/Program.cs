@@ -140,8 +140,18 @@ else
 // Use custom exception handling middleware
 app.UseExceptionHandling();
 
+// Use response caching middleware
+app.UseMiddleware<ResponseCachingMiddleware>();
+
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Cache static files for 1 year
+        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=31536000");
+    }
+});
 
 app.UseRouting();
 

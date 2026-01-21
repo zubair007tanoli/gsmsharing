@@ -46,11 +46,16 @@
                         </div>
                     </div>
 
-                    <!-- Featured Image -->
+                    <!-- Featured Image with Lightbox -->
                     @if (!string.IsNullOrEmpty(Model.FeaturedImage))
                     {
                         <div class="mb-5">
-                            <img src="@Model.FeaturedImage" class="img-fluid rounded-modern shadow-modern" alt="@Model.Title" style="max-height: 500px; object-fit: cover; width: 100%;">
+                            <img src="@Model.FeaturedImage" 
+                                 data-src="@Model.FeaturedImage" 
+                                 class="img-fluid rounded-modern shadow-modern lightbox-image" 
+                                 alt="@Model.Title" 
+                                 style="max-height: 500px; object-fit: cover; width: 100%; cursor: pointer;"
+                                 loading="lazy">
                         </div>
                     }
 
