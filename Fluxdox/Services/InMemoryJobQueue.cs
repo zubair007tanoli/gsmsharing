@@ -14,10 +14,16 @@ namespace Fluxdox.Services
             return Task.CompletedTask;
         }
 
-        public Task<JobModel> GetAsync(string jobId)
+        public Task<JobModel?> GetAsync(string jobId)
         {
             _jobs.TryGetValue(jobId, out var job);
             return Task.FromResult(job);
+        }
+
+        public Task UpdateAsync(JobModel job)
+        {
+            _jobs[job.Id] = job;
+            return Task.CompletedTask;
         }
     }
 }

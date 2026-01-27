@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Fluxdox.Data;
-using Fluxdox.Services; // Add this using directive
+using Fluxdox.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +13,7 @@ builder.Services.AddRazorPages();          // Required for Razor Pages
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString)); // Using PostgreSQL as per PRD
+    options.Usesql(connectionString)); // Using PostgreSQL as per PRD
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
