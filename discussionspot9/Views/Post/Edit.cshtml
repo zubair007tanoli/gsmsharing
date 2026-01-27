@@ -1,4 +1,4 @@
-@model discussionspot9.Models.ViewModels.CreativeViewModels.EditPostViewModel
+﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.EditPostViewModel
 
 @{
     ViewData["Title"] = "Edit Post";
@@ -82,9 +82,11 @@
             </a>
         </div>
 
+        <!-- CRITICAL: Form must have enctype for file uploads -->
         <form asp-action="Edit" asp-route-id="@Model.PostId" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             
+            <!-- Hidden fields for model binding -->
             <input type="hidden" asp-for="PostId" />
             <input type="hidden" asp-for="CommunityId" />
             <input type="hidden" asp-for="CommunitySlug" />
@@ -118,12 +120,14 @@
                 <label class="form-label fw-bold">Content</label>
                 <div id="editor" style="min-height: 300px;"></div>
                 <textarea asp-for="Content" id="content-hidden" style="display: none;"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
             </div>
 
-            <!-- Image Management -->
+            <!-- 🔴 CRITICAL: IMAGE MANAGEMENT SECTION WITH ALL OPTIONS -->
             <div class="image-action-section">
                 <h5 class="mb-3"><i class="fas fa-images me-2"></i> Image Management</h5>
                 
+                <!-- Show existing media if any -->
                 @if (Model.ExistingMediaUrls != null && Model.ExistingMediaUrls.Any())
                 {
                     <div class="mb-3">
@@ -136,6 +140,7 @@
                         </div>
                     </div>
                     
+                    <!-- IMAGE ACTION OPTIONS - THIS WAS MISSING! -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">What would you like to do with images?</label>
                         <div class="form-check">
@@ -158,12 +163,20 @@
                         </div>
                     </div>
                 }
+                else
+                {
+                    <!-- If no existing media, default to "replace" -->
+                    <input type="hidden" name="ImageAction" value="replace" />
+                }
 
                 <!-- New Image Upload (shown when replace is selected or no existing images) -->
                 <div id="newImageUpload" style="@(Model.ExistingMediaUrls == null || !Model.ExistingMediaUrls.Any() ? "" : "display: none;")">
-                    <label class="form-label fw-bold">Upload New Images</label>
-                    <input type="file" name="MediaFiles" class="form-control" accept="image/*,video/*" multiple />
-                    <small class="text-muted">You can select multiple images or videos</small>
+                    <label class="form-label fw-bold">Upload New Images/Videos</label>
+                    <input type="file" id="mediaFiles" name="MediaFiles" class="form-control" accept="image/*,video/*" multiple />
+                    <small class="text-muted">You can select multiple images or videos (Max 10MB each)</small>
+                    <div id="fileCount" class="mt-2" style="display: none;">
+                        <small class="text-success"><i class="fas fa-check-circle"></i> <span id="selectedCount">0</span> file(s) selected</small>
+                    </div>
                 </div>
             </div>
 
@@ -172,6 +185,7 @@
                 <label class="form-label fw-bold">Tags</label>
                 <input type="text" asp-for="TagsInput" class="form-control" placeholder="tech, programming, tutorial (comma-separated)" />
                 <small class="text-muted">Separate tags with commas</small>
+                <span asp-validation-for="TagsInput" class="text-danger"></span>
             </div>
 
             <!-- Publishing Options -->
@@ -252,19 +266,47 @@
             document.getElementById('content-hidden').value = quill.root.innerHTML;
         });
 
-        // Handle image action radio buttons
+        // Handle image action radio buttons - SHOW/HIDE FILE INPUT
         document.querySelectorAll('input[name="ImageAction"]').forEach(radio => {
             radio.addEventListener('change', function() {
+                console.log('ImageAction changed to:', this.value);
+                var newImageUpload = document.getElementById('newImageUpload');
                 if (this.value === 'replace') {
-                    document.getElementById('newImageUpload').style.display = 'block';
+                    console.log('Showing file upload');
+                    newImageUpload.style.display = 'block';
+                    document.getElementById('mediaFiles').focus();
                 } else {
-                    document.getElementById('newImageUpload').style.display = 'none';
+                    console.log('Hiding file upload');
+                    newImageUpload.style.display = 'none';
+                    // Clear file selection if switching away from replace
+                    document.getElementById('mediaFiles').value = '';
+                    document.getElementById('fileCount').style.display = 'none';
                 }
             });
         });
 
-        // Form validation before submit
+        // Track file selection
+        var fileInput = document.getElementById('mediaFiles');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                var count = this.files.length;
+                var fileCountDiv = document.getElementById('fileCount');
+                var selectedCountSpan = document.getElementById('selectedCount');
+                
+                if (count > 0) {
+                    selectedCountSpan.textContent = count;
+                    fileCountDiv.style.display = 'block';
+                    console.log('📁 Files selected: ' + count);
+                } else {
+                    fileCountDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // Form validation before submit - COMPREHENSIVE
         document.querySelector('form').addEventListener('submit', function(e) {
+            console.log('Form submitted');
+            
             // Update hidden content field
             document.getElementById('content-hidden').value = quill.root.innerHTML;
             
@@ -272,12 +314,34 @@
             var title = document.querySelector('input[name="Title"]').value;
             if (!title || title.trim().length < 3) {
                 e.preventDefault();
-                alert('Title must be at least 3 characters long');
+                alert('❌ Title must be at least 3 characters long');
                 return false;
             }
+
+            // NEW VALIDATION: Check if ImageAction is "replace" and files are required
+            var imageAction = document.querySelector('input[name="ImageAction"]:checked');
+            if (imageAction && imageAction.value === 'replace') {
+                var mediaFiles = document.getElementById('mediaFiles');
+                
+                if (!mediaFiles || mediaFiles.files.length === 0) {
+                    e.preventDefault();
+                    alert('❌ You selected "Replace" but did not select any files.\n\nPlease:\n1. Select at least one image or video, OR\n2. Choose "Keep" to keep existing images, OR\n3. Choose "Remove" to remove all images');
+                    mediaFiles.focus();
+                    return false;
+                }
+                console.log('✅ Files validated. Submitting with ' + mediaFiles.files.length + ' file(s)');
+            }
             
+            console.log('✅ Form validation passed. Submitting...');
             return true;
         });
+
+        // Debug: Log ImageAction on page load
+        console.log('Edit form loaded');
+        var selectedAction = document.querySelector('input[name="ImageAction"]:checked');
+        if (selectedAction) {
+            console.log('Current ImageAction:', selectedAction.value);
+        }
     </script>
 }
 

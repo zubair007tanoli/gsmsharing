@@ -2,6 +2,7 @@ using GsmsharingV2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace GsmsharingV2.Controllers
@@ -191,6 +192,97 @@ namespace GsmsharingV2.Controllers
             }
             ViewData["ReturnUrl"] = returnUrl;
             return View(model);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Profile(string? username)
+        {
+            ApplicationUser user;
+            
+            if (string.IsNullOrEmpty(username))
+            {
+                // View own profile
+                user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+            }
+            else
+            {
+                // View other user's profile
+                user = await _userManager.FindByNameAsync(username);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+            }
+
+            // Get user statistics
+            var dbContext = HttpContext.RequestServices.GetRequiredService<Database.ApplicationDbContext>();
+            var postCount = await dbContext.Posts.CountAsync(p => p.UserId == user.Id && p.PostStatus == "published");
+            var commentCount = await dbContext.Comments.CountAsync(c => c.UserId == user.Id && c.IsApproved != false);
+            
+            // Calculate karma (upvotes - downvotes)
+            var upvotes = await dbContext.PostVotes.CountAsync(v => v.Post.UserId == user.Id && v.VoteType == 1) +
+                         await dbContext.CommentVotes.CountAsync(v => v.Comment.UserId == user.Id && v.VoteType == 1);
+            var downvotes = await dbContext.PostVotes.CountAsync(v => v.Post.UserId == user.Id && v.VoteType == -1) +
+                           await dbContext.CommentVotes.CountAsync(v => v.Comment.UserId == user.Id && v.VoteType == -1);
+            var karma = upvotes - downvotes;
+
+            ViewBag.PostCount = postCount;
+            ViewBag.CommentCount = commentCount;
+            ViewBag.Karma = karma;
+            ViewBag.Upvotes = upvotes;
+            ViewBag.Downvotes = downvotes;
+
+            return View(user);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Dashboard()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login");
+            }
+
+            var dbContext = HttpContext.RequestServices.GetRequiredService<Database.ApplicationDbContext>();
+            
+            // Get user statistics
+            var postCount = await dbContext.Posts.CountAsync(p => p.UserId == user.Id);
+            var publishedPostCount = await dbContext.Posts.CountAsync(p => p.UserId == user.Id && p.PostStatus == "published");
+            var draftPostCount = await dbContext.Posts.CountAsync(p => p.UserId == user.Id && p.PostStatus == "draft");
+            var commentCount = await dbContext.Comments.CountAsync(c => c.UserId == user.Id);
+            var totalViews = await dbContext.Posts.Where(p => p.UserId == user.Id).SumAsync(p => p.ViewCount ?? 0);
+            
+            // Recent activity
+            var recentPosts = await dbContext.Posts
+                .Where(p => p.UserId == user.Id)
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(5)
+                .Select(p => new { p.PostID, p.Title, p.CreatedAt, p.ViewCount, p.UpvoteCount, p.DownvoteCount })
+                .ToListAsync();
+
+            var recentComments = await dbContext.Comments
+                .Where(c => c.UserId == user.Id)
+                .OrderByDescending(c => c.CreatedAt)
+                .Take(5)
+                .Select(c => new { c.CommentID, c.Content, c.CreatedAt, c.UpvoteCount })
+                .ToListAsync();
+
+            ViewBag.PostCount = postCount;
+            ViewBag.PublishedPostCount = publishedPostCount;
+            ViewBag.DraftPostCount = draftPostCount;
+            ViewBag.CommentCount = commentCount;
+            ViewBag.TotalViews = totalViews;
+            ViewBag.RecentPosts = recentPosts;
+            ViewBag.RecentComments = recentComments;
+
+            return View(user);
         }
 
         private IActionResult RedirectToLocal(string? returnUrl)

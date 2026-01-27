@@ -1,89 +1,144 @@
-// Reactions Management JavaScript
+// Reactions System JavaScript
+(function() {
+    'use strict';
 
-const reactionEmojis = {
-    'like': '👍',
-    'love': '❤️',
-    'laugh': '😂',
-    'wow': '😮',
-    'sad': '😢',
-    'angry': '😠'
-};
+    const emojiMap = {
+        'like': '👍',
+        'love': '❤️',
+        'laugh': '😂',
+        'wow': '😮',
+        'sad': '😢',
+        'angry': '😡'
+    };
 
-function loadReactions(postId, commentId) {
-    const container = document.getElementById('reactions-container') || 
-                     document.querySelector(`[data-comment-id="${commentId}"] .reactions-container`);
-    
-    if (!container) return;
-    
-    fetch(`/Reactions/GetSummary?postId=${postId || ''}&commentId=${commentId || ''}`)
-        .then(response => response.json())
-        .then(summaries => {
-            if (summaries.length === 0) {
-                container.innerHTML = '<div class="reactions-container"><button class="reaction-btn" data-reaction="like"><span class="reaction-emoji">👍</span> Like</button></div>';
-            } else {
-                container.innerHTML = summaries.map(summary => renderReactionButton(summary, postId, commentId)).join('');
+    function initializeReactions() {
+        // Initialize reaction triggers
+        document.querySelectorAll('.reaction-trigger').forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const postId = this.id.replace('reactionTrigger-', '');
+                toggleReactionPicker(postId);
+            });
+        });
+
+        // Initialize emoji buttons
+        document.querySelectorAll('.reaction-emoji').forEach(emoji => {
+            emoji.addEventListener('click', handleReactionClick);
+        });
+
+        // Close pickers on outside click
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.reaction-section')) {
+                document.querySelectorAll('.reaction-picker').forEach(picker => {
+                    picker.style.display = 'none';
+                });
+            }
+        });
+    }
+
+    function toggleReactionPicker(postId) {
+        const picker = document.getElementById(`reactionPicker-${postId}`);
+        if (picker) {
+            picker.style.display = picker.style.display === 'none' ? 'flex' : 'none';
+        }
+    }
+
+    async function handleReactionClick(e) {
+        e.stopPropagation();
+        const btn = e.currentTarget;
+        const reaction = btn.dataset.reaction;
+        const postId = parseInt(btn.dataset.postId);
+        const commentId = btn.dataset.commentId ? parseInt(btn.dataset.commentId) : null;
+        
+        if (!postId && !commentId) {
+            console.error('No post or comment ID provided');
+            return;
+        }
+        
+        btn.disabled = true;
+        
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            
+            const response = await fetch('/api/Reactions/Add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token || ''
+                },
+                body: JSON.stringify({
+                    postID: postId || null,
+                    commentID: commentId || null,
+                    reactionType: reaction
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Reaction failed');
             }
             
-            attachReactionListeners(postId, commentId);
-        })
-        .catch(error => {
-            console.error('Error loading reactions:', error);
-        });
-}
-
-function renderReactionButton(summary, postId, commentId) {
-    const emoji = reactionEmojis[summary.reactionType] || '👍';
-    const activeClass = summary.userHasReacted ? 'active' : '';
-    
-    return `
-        <button class="reaction-btn ${activeClass}" 
-                data-reaction="${summary.reactionType}"
-                data-post-id="${postId || ''}"
-                data-comment-id="${commentId || ''}">
-            <span class="reaction-emoji">${emoji}</span>
-            <span class="reaction-count">${summary.count}</span>
-        </button>
-    `;
-}
-
-function attachReactionListeners(postId, commentId) {
-    document.querySelectorAll('.reaction-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reactionType = this.dataset.reaction;
-            const postId = this.dataset.postId || null;
-            const commentId = this.dataset.commentId || null;
+            const data = await response.json();
             
-            toggleReaction(reactionType, postId ? parseInt(postId) : null, commentId ? parseInt(commentId) : null);
-        });
-    });
-}
-
-function toggleReaction(reactionType, postId, commentId) {
-    const reactionData = {
-        ReactionType: reactionType,
-        PostID: postId,
-        CommentID: commentId
-    };
-    
-    fetch('/Reactions/Toggle', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-        },
-        body: JSON.stringify(reactionData)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            loadReactions(postId, commentId);
-        } else {
-            alert('Error toggling reaction');
+            if (data.success) {
+                // Reload reactions display
+                if (postId) {
+                    loadReactions(postId, null);
+                } else if (commentId) {
+                    loadReactions(null, commentId);
+                }
+                
+                // Close picker
+                if (postId) {
+                    document.getElementById(`reactionPicker-${postId}`).style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Reaction error:', error);
+        } finally {
+            btn.disabled = false;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error toggling reaction');
-    });
-}
+    }
 
+    async function loadReactions(postId, commentId) {
+        try {
+            const url = postId 
+                ? `/api/Reactions/Get?postID=${postId}`
+                : `/api/Reactions/Get?commentID=${commentId}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) return;
+            
+            const reactions = await response.json();
+            
+            const displayId = postId 
+                ? `reactionsDisplay-${postId}`
+                : `reactionsDisplay-comment-${commentId}`;
+            
+            const display = document.getElementById(displayId);
+            if (!display) return;
+            
+            if (reactions && reactions.length > 0) {
+                display.innerHTML = reactions.map(r => 
+                    `<span class="reaction-badge" title="${r.reactionType}">
+                        ${emojiMap[r.reactionType] || '👍'} ${r.count}
+                    </span>`
+                ).join('');
+            } else {
+                display.innerHTML = '';
+            }
+        } catch (error) {
+            console.error('Error loading reactions:', error);
+        }
+    }
+
+    // Export functions
+    window.initializeReactions = initializeReactions;
+    window.loadReactions = loadReactions;
+    
+    // Auto-initialize
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeReactions);
+    } else {
+        initializeReactions();
+    }
+})();

@@ -439,6 +439,20 @@
                         <label asp-for="Content" class="form-label">Content *</label>
                         <div id="contentEditor"></div>
                         <textarea name="Content" style="display: none;" required id="contentTextarea">@Model?.Content</textarea>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="editor-stats">
+                                <span id="wordCount" class="text-muted small">0 words</span>
+                                <span class="text-muted mx-2">•</span>
+                                <span id="charCount" class="text-muted small">0 characters</span>
+                            </div>
+                            <div class="editor-shortcuts text-muted small">
+                                <span><kbd>Ctrl+B</kbd> Bold</span>
+                                <span class="mx-1">•</span>
+                                <span><kbd>Ctrl+I</kbd> Italic</span>
+                                <span class="mx-1">•</span>
+                                <span><kbd>Ctrl+K</kbd> Link</span>
+                            </div>
+                        </div>
                         <span asp-validation-for="Content" class="text-danger"></span>
                     </div>
                 </div>
