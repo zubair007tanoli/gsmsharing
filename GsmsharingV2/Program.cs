@@ -122,6 +122,7 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IReactionService, ReactionService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<GsmsharingV2.Interfaces.INotificationService, NotificationService>();
+builder.Services.AddScoped<IMobileSpecsService, MobileSpecsService>();
 
 var app = builder.Build();
 

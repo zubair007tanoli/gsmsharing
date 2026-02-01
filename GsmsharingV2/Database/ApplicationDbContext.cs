@@ -19,9 +19,13 @@ namespace GsmsharingV2.Database
         public DbSet<MobileAd> MobileAds { get; set; }
         public DbSet<MobilePartAd> MobilePartAds { get; set; }
         public DbSet<AdImage> AdsImage { get; set; }
+        public DbSet<MobilePartCategory> MobilePartCategories { get; set; }
+        public DbSet<MobilePartCompatibility> MobilePartCompatibilities { get; set; }
 
         // Mobile Specs
         public DbSet<MobileSpecs> MobileSpecs { get; set; }
+        public DbSet<MobileBrand> MobileBrands { get; set; }
+        public DbSet<MobileModel> MobileModels { get; set; }
 
         // Blog Tables (from existing database)
         public DbSet<MobilePost> MobilePosts { get; set; }
@@ -88,12 +92,11 @@ namespace GsmsharingV2.Database
             };
             builder.Entity<IdentityRole>().HasData(roles);
 
-            // Temporarily ignore ApplicationUser properties that may not exist in database yet
-            // Remove these .Ignore() calls after adding columns to AspNetUsers table
-            builder.Entity<ApplicationUser>().Ignore(u => u.AvatarPath);
-            builder.Entity<ApplicationUser>().Ignore(u => u.City);
-            builder.Entity<ApplicationUser>().Ignore(u => u.CreatedDate);
-            builder.Entity<ApplicationUser>().Ignore(u => u.UserProfile);
+            // Configure ApplicationUser properties (now enabled after database migration)
+            // builder.Entity<ApplicationUser>().Ignore(u => u.AvatarPath);
+            // builder.Entity<ApplicationUser>().Ignore(u => u.City);
+            // builder.Entity<ApplicationUser>().Ignore(u => u.CreatedDate);
+            // builder.Entity<ApplicationUser>().Ignore(u => u.UserProfile);
 
             // Configure Forum Entities
             builder.Entity<ForumThread>().ToTable("userforum", "gsmsharing")
@@ -126,6 +129,33 @@ namespace GsmsharingV2.Database
             // Configure Mobile Specs
             builder.Entity<MobileSpecs>().ToTable("MobileSpecs")
                 .HasKey(ms => ms.Specid);
+            
+            // Configure Mobile Brands
+            builder.Entity<MobileBrand>().ToTable("MobileBrands")
+                .HasKey(mb => mb.BrandID);
+            builder.Entity<MobileBrand>()
+                .HasIndex(mb => mb.Slug)
+                .IsUnique();
+            
+            // Configure Mobile Models
+            builder.Entity<MobileModel>().ToTable("MobileModels")
+                .HasKey(mm => mm.ModelID);
+            builder.Entity<MobileModel>()
+                .HasIndex(mm => mm.Slug)
+                .IsUnique();
+            
+            // Mobile Model Relationships
+            builder.Entity<MobileModel>()
+                .HasOne(mm => mm.Brand)
+                .WithMany(mb => mb.Models)
+                .HasForeignKey(mm => mm.BrandID)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.Entity<MobileModel>()
+                .HasOne(mm => mm.User)
+                .WithMany()
+                .HasForeignKey(mm => mm.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configure Blog Tables
             builder.Entity<MobilePost>().ToTable("MobilePosts")
@@ -216,37 +246,32 @@ namespace GsmsharingV2.Database
             builder.Entity<Community>().ToTable("Communities").HasKey(c => c.CommunityID);
             builder.Entity<Category>().ToTable("Categories").HasKey(c => c.CategoryID);
             
-            // Temporarily ignore new properties that may not exist in database yet
-            // Remove these .Ignore() calls after running db_modernized_fixes.sql
-            builder.Entity<Post>().Ignore(p => p.IsDeleted);
-            builder.Entity<Post>().Ignore(p => p.CanonicalUrl);
-            builder.Entity<Post>().Ignore(p => p.FocusKeyword);
-            builder.Entity<Post>().Ignore(p => p.Excerpt);
-            builder.Entity<Post>().Ignore(p => p.Score);
-            builder.Entity<Post>().Ignore(p => p.CommentCount);
-            builder.Entity<Post>().Ignore(p => p.UpvoteCount);
-            builder.Entity<Post>().Ignore(p => p.DownvoteCount);
-            builder.Entity<Post>().Ignore(p => p.IsLocked);
-            builder.Entity<Post>().Ignore(p => p.IsPinned);
-            builder.Entity<Post>().Ignore(p => p.DeletedAt);
-            builder.Entity<Post>().Ignore(p => p.SchemaMarkup);
-            // Temporarily ignore MetaTitle and MetaDescription if they don't exist in your database
-            // Remove these ignores after ensuring columns exist or after running db_modernized_fixes.sql
-            // builder.Entity<Post>().Ignore(p => p.MetaTitle);
-            // builder.Entity<Post>().Ignore(p => p.MetaDescription);
+            // Configure Post SEO and modern fields (now enabled after database migration)
+            // builder.Entity<Post>().Ignore(p => p.IsDeleted);
+            // builder.Entity<Post>().Ignore(p => p.CanonicalUrl);
+            // builder.Entity<Post>().Ignore(p => p.FocusKeyword);
+            // builder.Entity<Post>().Ignore(p => p.Excerpt);
+            // builder.Entity<Post>().Ignore(p => p.Score);
+            // builder.Entity<Post>().Ignore(p => p.CommentCount);
+            // builder.Entity<Post>().Ignore(p => p.UpvoteCount);
+            // builder.Entity<Post>().Ignore(p => p.DownvoteCount);
+            // builder.Entity<Post>().Ignore(p => p.IsLocked);
+            // builder.Entity<Post>().Ignore(p => p.IsPinned);
+            // builder.Entity<Post>().Ignore(p => p.DeletedAt);
+            // builder.Entity<Post>().Ignore(p => p.SchemaMarkup);
             
-            builder.Entity<Comment>().Ignore(c => c.IsDeleted);
-            builder.Entity<Comment>().Ignore(c => c.UpvoteCount);
-            builder.Entity<Comment>().Ignore(c => c.DownvoteCount);
-            builder.Entity<Comment>().Ignore(c => c.IsEdited);
-            builder.Entity<Comment>().Ignore(c => c.EditedAt);
-            builder.Entity<Comment>().Ignore(c => c.DeletedAt);
+            // Configure Comment modern fields (now enabled after database migration)
+            // builder.Entity<Comment>().Ignore(c => c.IsDeleted);
+            // builder.Entity<Comment>().Ignore(c => c.UpvoteCount);
+            // builder.Entity<Comment>().Ignore(c => c.DownvoteCount);
+            // builder.Entity<Comment>().Ignore(c => c.IsEdited);
+            // builder.Entity<Comment>().Ignore(c => c.EditedAt);
+            // builder.Entity<Comment>().Ignore(c => c.DeletedAt);
             
-            builder.Entity<Community>().Ignore(c => c.IsDeleted);
-            // Temporarily ignore MetaTitle and MetaDescription if they don't exist in your database
-            // Remove these ignores after ensuring columns exist or after running db_modernized_fixes.sql
-            builder.Entity<Community>().Ignore(c => c.MetaTitle);
-            builder.Entity<Community>().Ignore(c => c.MetaDescription);
+            // Configure Community SEO fields (now enabled after database migration)
+            // builder.Entity<Community>().Ignore(c => c.IsDeleted);
+            // builder.Entity<Community>().Ignore(c => c.MetaTitle);
+            // builder.Entity<Community>().Ignore(c => c.MetaDescription);
             builder.Entity<Tags>().ToTable("Tags").HasKey(t => t.TagID);
             builder.Entity<Reaction>().ToTable("Reactions").HasKey(r => r.ReactionID);
             builder.Entity<UserProfile>().ToTable("UserProfiles").HasKey(up => up.UserProfileID);

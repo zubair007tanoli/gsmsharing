@@ -720,12 +720,13 @@ app.UseHttpsRedirection();
 // Static files (simplified configuration)
 app.UseStaticFiles();
 
-// GOOGLE SEARCH CONSOLE FIX: Canonical URL enforcement
-app.UseCanonicalUrls();
-
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// GOOGLE SEARCH CONSOLE FIX: Canonical URL enforcement
+// CRITICAL FIX: Moved AFTER authentication to preserve cookies across redirects
+app.UseCanonicalUrls();
 
 // Map SignalR hubs AFTER routing and authentication
 app.MapHub<PostHub>("/posthub");
