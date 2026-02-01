@@ -30,6 +30,7 @@ namespace discussionspot9.Controllers
         private readonly IStoryGenerationService _storyGenerationService;
         private readonly IReportService _reportService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IMediaOptimizationService _mediaOptimizationService;
         
         public PostController(
             IPostService postService,
@@ -46,7 +47,8 @@ namespace discussionspot9.Controllers
             discussionspot9.Services.EnhancedSeoService enhancedSeoService,
             IStoryGenerationService storyGenerationService,
             IReportService reportService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            IMediaOptimizationService mediaOptimizationService)
         {
             _postService = postService;
             _communityService = communityService;
@@ -63,6 +65,7 @@ namespace discussionspot9.Controllers
             _storyGenerationService = storyGenerationService;
             _reportService = reportService;
             _fileStorageService = fileStorageService;
+            _mediaOptimizationService = mediaOptimizationService;
         }
         [HttpGet]
         [Route("r/{communitySlug}/posts/{postSlug}")]
@@ -1175,7 +1178,20 @@ namespace discussionspot9.Controllers
                             var mediaType = file.ContentType.StartsWith("image/") ? "image" : "video";
                             var folder = mediaType == "image" ? "posts/images" : "posts/videos";
                             var savedUrl = await _fileStorageService.SaveFileAsync(file, folder);
-                            
+                            // Compress video to reduce size (requires FFmpeg on server; otherwise original URL is used)
+                            if (mediaType == "video")
+                            {
+                                try
+                                {
+                                    var compressedUrl = await _mediaOptimizationService.CompressVideoAsync(savedUrl);
+                                    if (compressedUrl != savedUrl)
+                                        savedUrl = compressedUrl;
+                                }
+                                catch (Exception compEx)
+                                {
+                                    _logger.LogWarning(compEx, "Video compression skipped for {FileName}", file.FileName);
+                                }
+                            }
                             var media = new Media
                             {
                                 PostId = post.PostId,

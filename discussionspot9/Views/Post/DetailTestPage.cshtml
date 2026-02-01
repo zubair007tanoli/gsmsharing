@@ -15,9 +15,12 @@
         ? string.Join(", ", Model.Post.Tags) 
         : $"{Model.Post.CommunityName}, discussion, forum";
     var postUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/r/{Model.Post.CommunitySlug}/posts/{Model.Post.Slug}";
-    var imageUrl = Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "image")
-        ? Model.Post.Media.First(m => m.MediaType == "image").Url
-        : $"{Context.Request.Scheme}://{Context.Request.Host}/images/default-og-image.png";
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    // Use first image for social sharing; if no image, use first video thumbnail (click bait for video posts)
+    var firstImage = Model.Post.Media?.FirstOrDefault(m => m.MediaType == "image");
+    var firstVideo = Model.Post.Media?.FirstOrDefault(m => m.MediaType == "video");
+    var imageUrl = firstImage?.Url ?? firstVideo?.ThumbnailUrl ?? $"{baseUrl}/images/default-og-image.png";
+    if (!string.IsNullOrEmpty(imageUrl) && imageUrl.StartsWith("/")) { imageUrl = baseUrl + imageUrl; }
 }
 
 
@@ -288,23 +291,20 @@
                             </div>
                         }
 
-                        @* Render Video Embed if videos are present in Media list or Model.Url is a video link *@
+                        @* Video player: native <video> with poster for playback on page *@
                         @if (Model.Post.Media != null && Model.Post.Media.Any(m => m.MediaType == "video"))
                         {
                             @foreach (var videoItem in Model.Post.Media.Where(m => m.MediaType == "video"))
                             {
+                                var videoSrc = videoItem.Url?.StartsWith("/") == true ? (Context.Request.Scheme + "://" + Context.Request.Host + videoItem.Url) : videoItem.Url;
+                                var posterUrl = !string.IsNullOrEmpty(videoItem.ThumbnailUrl) ? (videoItem.ThumbnailUrl.StartsWith("/") ? Context.Request.Scheme + "://" + Context.Request.Host + videoItem.ThumbnailUrl : videoItem.ThumbnailUrl) : "";
                                 <div class="video-embed">
-                                    <h5>Video Demonstration</h5>
+                                    <h5>Video</h5>
                                     <div class="video-container">
-                                        <div class="video-overlay" id="videoOverlay-@videoItem.MediaId">
-                                            @* Unique ID for each video overlay *@
-                                            <div class="play-button">
-                                                <i class="fas fa-play"></i>
-                                            </div>
-                                        </div>
-                                        <img src="@(videoItem.ThumbnailUrl ?? "https://placehold.co/800x450/cccccc/333333?text=Video+Thumbnail")" alt="Video Thumbnail" style="width:100%">
-                                        @* The actual video iframe/embed will be loaded by JS after clicking overlay *@
-                                        <input type="hidden" id="videoSource-@videoItem.MediaId" value="@videoItem.Url" />
+                                        <video controls preload="metadata" class="post-video-player" poster="@posterUrl" playsinline>
+                                            <source src="@videoSrc" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
                                     </div>
                                 </div>
                             }

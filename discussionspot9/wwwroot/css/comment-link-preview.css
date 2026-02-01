@@ -155,6 +155,20 @@
     font-size: 0.75rem;
 }
 
+/* Inline "Link" text replacement (hides raw URL, shows user-friendly label) */
+.comment-inline-link-replacement {
+    display: inline;
+    color: #667eea;
+    text-decoration: underline;
+    font-weight: 500;
+    margin: 0 2px;
+    white-space: nowrap;
+}
+.comment-inline-link-replacement:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
 /* Dark theme support */
 [data-theme="dark"] .comment-link-preview-card {
     background: #2d3748;

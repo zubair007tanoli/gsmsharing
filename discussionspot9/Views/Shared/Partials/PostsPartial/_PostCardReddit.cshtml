@@ -1,18 +1,18 @@
-﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
+@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
 @using discussionspot9.Helpers
 
-<article class="card mb-3 post-card">
+<article class="card mb-3 post-card" data-post-id="@Model.PostId">
     <div class="card-body">
         <div class="d-flex">
             <!-- Vote Section -->
             <div class="vote-section me-3 text-center">
                 <button class="btn btn-sm btn-link vote-btn upvote @(Model.CurrentUserVote == 1 ? "active" : "")"
-                        data-post-id="@Model.PostId" data-vote-type="1">
+                        id="upvoteBtn-@Model.PostId" data-post-id="@Model.PostId" data-vote-type="1">
                     <i class="fas fa-arrow-up"></i>
                 </button>
-                <div class="vote-count fw-bold">@Html.FormatCount(Model.Score)</div>
+                <div class="vote-count fw-bold" id="voteScore-@Model.PostId">@Html.FormatCount(Model.Score)</div>
                 <button class="btn btn-sm btn-link vote-btn downvote @(Model.CurrentUserVote == -1 ? "active" : "")"
-                        data-post-id="@Model.PostId" data-vote-type="-1">
+                        id="downvoteBtn-@Model.PostId" data-post-id="@Model.PostId" data-vote-type="-1">
                     <i class="fas fa-arrow-down"></i>
                 </button>
             </div>

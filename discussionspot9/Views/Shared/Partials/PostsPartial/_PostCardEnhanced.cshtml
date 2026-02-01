@@ -1,4 +1,4 @@
-﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
+@model discussionspot9.Models.ViewModels.CreativeViewModels.PostCardViewModel
 @using discussionspot9.Helpers
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
@@ -114,12 +114,12 @@
     <div class="post-actions">
         <div class="vote-buttons">
             <button class="vote-btn upvote @(Model.CurrentUserVote == 1 ? "active" : "")"
-                    data-vote-type="1" @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
+                    id="upvoteBtn-@Model.PostId" data-post-id="@Model.PostId" data-vote-type="1" @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
                 <i class="fas fa-arrow-up"></i>
             </button>
-            <span class="vote-count @Model.VoteCountCssClass">@Model.FormattedScore</span>
+            <span class="vote-count @Model.VoteCountCssClass" id="voteScore-@Model.PostId">@Model.FormattedScore</span>
             <button class="vote-btn downvote @(Model.CurrentUserVote == -1 ? "active" : "")"
-                    data-vote-type="-1" @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
+                    id="downvoteBtn-@Model.PostId" data-post-id="@Model.PostId" data-vote-type="-1" @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
                 <i class="fas fa-arrow-down"></i>
             </button>
         </div>

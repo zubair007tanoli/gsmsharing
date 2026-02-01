@@ -1,4 +1,4 @@
-﻿using discussionspot9.Data.DbContext;
+using discussionspot9.Data.DbContext;
 using discussionspot9.Helpers;
 using discussionspot9.Interfaces;
 using discussionspot9.Models.Domain;
@@ -12,13 +12,15 @@ namespace discussionspot9.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IMediaOptimizationService _mediaOptimizationService;
         private readonly ILogger<PostTest> _logger;
         private readonly IStoryGenerationService _storyGenerationService;
 
-        public PostTest(ApplicationDbContext context, IFileStorageService fileStorageService, ILogger<PostTest> logger, IStoryGenerationService storyGenerationService)
+        public PostTest(ApplicationDbContext context, IFileStorageService fileStorageService, IMediaOptimizationService mediaOptimizationService, ILogger<PostTest> logger, IStoryGenerationService storyGenerationService)
         {
             _context = context;
             _fileStorageService = fileStorageService;
+            _mediaOptimizationService = mediaOptimizationService;
             _logger = logger;
             _storyGenerationService = storyGenerationService;
         }
@@ -352,9 +354,21 @@ namespace discussionspot9.Services
                     // Save the actual file to disk
                     _logger.LogInformation("💾 Saving {MediaType} file to disk...", mediaType);
                     var fileUrl = await _fileStorageService.SaveFileAsync(file, $"posts/{mediaType}s");
-                    
+                    // Compress video to reduce size (requires FFmpeg on server; otherwise original URL is used)
+                    if (mediaType == "video")
+                    {
+                        try
+                        {
+                            var compressedUrl = await _mediaOptimizationService.CompressVideoAsync(fileUrl);
+                            if (compressedUrl != fileUrl)
+                                fileUrl = compressedUrl;
+                        }
+                        catch (Exception compEx)
+                        {
+                            _logger.LogWarning(compEx, "Video compression skipped for {FileName}", file.FileName);
+                        }
+                    }
                     _logger.LogInformation("✅ File saved successfully to: {FileUrl}", fileUrl);
-                    
                     // Ensure the URL is properly formatted for web access
                     if (!fileUrl.StartsWith("/") && !fileUrl.StartsWith("http"))
                     {

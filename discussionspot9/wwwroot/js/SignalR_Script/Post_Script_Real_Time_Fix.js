@@ -106,12 +106,10 @@ class SignalRManager {
             this.showNotification(msg, 'success');
         });
         
-        // This handler for receiving comments remains the same and is working correctly.
-        this.postConnection.on("ReceiveComment", (htmlContent, commentId, parentCommentId) => {
+        // ReceiveComment: insert HTML then run link preview (replace URL text with "Link" + preview cards)
+        this.postConnection.on("ReceiveComment", async (htmlContent, commentId, parentCommentId) => {
             const optimisticComment = document.getElementById('optimistic-comment-placeholder');
-            if (optimisticComment) {
-                optimisticComment.remove();
-            }
+            if (optimisticComment) optimisticComment.remove();
 
             if (!htmlContent) {
                 console.error("Received null comment HTML from server.");
@@ -120,25 +118,27 @@ class SignalRManager {
 
             const targetContainer = parentCommentId
                 ? document.getElementById(`commentReplies-${parentCommentId}`)
-                : document.querySelector('.comment-list');
+                : document.querySelector('.comment-list, #commentsThread');
+            if (!targetContainer) {
+                console.error(`Could not find container for comment. ParentID: ${parentCommentId || 'none'}`);
+                document.querySelectorAll('.reply-form').forEach(f => { f.classList.add('d-none'); const t = f.querySelector('textarea'); if (t) t.value = ''; });
+                return;
+            }
 
-            if (targetContainer) {
-                targetContainer.insertAdjacentHTML('beforeend', htmlContent);
-                
-                // Update comment count only for top-level comments
-                if (!parentCommentId) {
-                    this.updateCommentCount(1);
-                }
-                
-                // Process link previews for the newly added comment
-                if (window.CommentLinkPreview) {
-                    const newComment = targetContainer.lastElementChild;
-                    if (newComment && newComment.classList.contains('comment-item')) {
-                        window.CommentLinkPreview.processComment(newComment);
+            targetContainer.insertAdjacentHTML('beforeend', htmlContent);
+            if (!parentCommentId) this.updateCommentCount(1);
+
+            // Process link preview for the new comment (replace URL text with "Link", add preview cards)
+            const newComment = targetContainer.lastElementChild;
+            if (newComment && window.CommentLinkPreview) {
+                const isComment = newComment.classList && (newComment.classList.contains('comment-item') || newComment.classList.contains('comment-item-reddit'));
+                if (isComment) {
+                    try {
+                        await window.CommentLinkPreview.processComment(newComment);
+                    } catch (e) {
+                        console.warn('Comment link preview failed for new comment:', e);
                     }
                 }
-            } else {
-                console.error(`Could not find container for comment. ParentID: ${parentCommentId || 'none'}`);
             }
 
             document.querySelectorAll('.reply-form').forEach(form => {
@@ -194,8 +194,8 @@ class SignalRManager {
             return;
         }
 
-        // --- Post Vote ---
-        const postVoteBtn = target.closest('.post-container .vote-btn');
+        // --- Post Vote --- (match both .post-container and .post-card; require data-post-id)
+        const postVoteBtn = target.closest('.vote-btn[data-post-id]');
         if (postVoteBtn) {
             event.preventDefault();
             console.log('🎯 Post vote button clicked');
@@ -526,11 +526,22 @@ class SignalRManager {
         // ============================================
         // OPTIMISTIC UI UPDATE (INSTANT FEEDBACK)
         // ============================================
-        const upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
-        const downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
-        const voteScoreEl = document.getElementById(`voteScore-${postId}`); // Net score element
-        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
-        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
+        let upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
+        let downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
+        let voteScoreEl = document.getElementById(`voteScore-${postId}`); // Net score element
+        let upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
+        let downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
+        
+        // Fallback: find elements inside the post card (for list/card views without IDs)
+        if (!upvoteBtn || !downvoteBtn) {
+            const anyEl = document.querySelector(`[data-post-id="${postId}"]`);
+            const card = anyEl?.classList?.contains('vote-btn') ? anyEl.closest('.post-card, .post-container') : (anyEl?.closest?.('.post-card, .post-container') || anyEl);
+            if (card) {
+                upvoteBtn = upvoteBtn || card.querySelector('.vote-btn.upvote, .vote-btn.vote-up');
+                downvoteBtn = downvoteBtn || card.querySelector('.vote-btn.downvote, .vote-btn.vote-down');
+                voteScoreEl = voteScoreEl || card.querySelector(`#voteScore-${postId}, .vote-count, .vote-score`);
+            }
+        }
         
         if (!upvoteBtn || !downvoteBtn) {
             console.error('❌ Vote UI elements not found for post:', postId);
@@ -995,12 +1006,22 @@ class SignalRManager {
             currentUserVote: typeof currentUserVote
         });
         
-        // Get vote display elements
-        const upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
-        const downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
-        const voteScoreEl = document.getElementById(`voteScore-${postId}`); // Net score element
-        const upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
-        const downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
+        // Get vote display elements (by ID first, then fallback to card-based lookup)
+        let upvoteCountEl = document.getElementById(`upvoteCount-${postId}`);
+        let downvoteCountEl = document.getElementById(`downvoteCount-${postId}`);
+        let voteScoreEl = document.getElementById(`voteScore-${postId}`); // Net score element
+        let upvoteBtn = document.getElementById(`upvoteBtn-${postId}`);
+        let downvoteBtn = document.getElementById(`downvoteBtn-${postId}`);
+        
+        if (!voteScoreEl || !upvoteBtn || !downvoteBtn) {
+            const anyEl = document.querySelector(`[data-post-id="${postId}"]`);
+            const card = anyEl?.classList?.contains('vote-btn') ? anyEl.closest('.post-card, .post-container') : (anyEl?.closest?.('.post-card, .post-container') || anyEl);
+            if (card) {
+                upvoteBtn = upvoteBtn || card.querySelector('.vote-btn.upvote, .vote-btn.vote-up');
+                downvoteBtn = downvoteBtn || card.querySelector('.vote-btn.downvote, .vote-btn.vote-down');
+                voteScoreEl = voteScoreEl || card.querySelector(`#voteScore-${postId}, .vote-count, .vote-score`);
+            }
+        }
         
         console.log('🔍 Elements found:', {
             upvoteCountEl: !!upvoteCountEl,

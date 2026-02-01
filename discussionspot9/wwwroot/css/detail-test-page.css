@@ -350,6 +350,15 @@
     padding: 0 1.5rem 1.5rem;
 }
 
+.detail-test-page .post-video-player {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    background: #000;
+    display: block;
+}
+
 .detail-test-page .video-overlay {
     position: absolute;
     top: 0;
