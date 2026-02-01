@@ -10,12 +10,18 @@
     <!-- Suppress common nullable-analysis warnings to reduce noise for now -->
     <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8604;CS8618;CS8619;CS8621;CS8632;CS8669;CS8714</NoWarn>
   </PropertyGroup>
+  <!-- If build still fails with OutOfMemoryException in StaticWebAssetsManifest, run: dotnet build -p:StaticWebAssetsEnabled=false -->
 
   <ItemGroup>
     <Compile Remove="Database\**" />
     <Content Remove="Database\**" />
     <EmbeddedResource Remove="Database\**" />
     <None Remove="Database\**" />
+    <!-- Exclude large/debug files from static web assets to avoid OutOfMemoryException during manifest generation -->
+    <Content Remove="wwwroot\**\*.har" />
+    <Content Remove="wwwroot\**\*.sql" />
+    <Content Remove="wwwroot\*.har" />
+    <Content Remove="wwwroot\*.sql" />
   </ItemGroup>
 
   <ItemGroup>
