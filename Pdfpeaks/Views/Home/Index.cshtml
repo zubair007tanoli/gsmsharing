@@ -1,0 +1,851 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<style>
+    /* Hero Section */
+    .hero-section {
+        padding: 4rem 0 3rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        background: var(--gradient-1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1.5rem;
+        animation: fadeInUp 0.8s ease;
+    }
+
+    .hero-subtitle {
+        font-size: 1.3rem;
+        color: var(--text-light);
+        margin-bottom: 2rem;
+        animation: fadeInUp 0.8s ease 0.2s backwards;
+    }
+
+    .hero-features {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+        animation: fadeInUp 0.8s ease 0.4s backwards;
+    }
+
+    .hero-feature {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+
+        .hero-feature i {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Tools Section */
+    .tools-section {
+        padding: 2rem 0 3rem;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+    }
+
+    .section-subtitle {
+        text-align: center;
+        color: var(--text-light);
+        font-size: 1.1rem;
+        margin-bottom: 3rem;
+    }
+
+    /* Tool Cards */
+    .tool-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+        box-shadow: var(--card-shadow);
+        border: 2px solid transparent;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInScale 0.6s ease backwards;
+    }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-1);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 0;
+        }
+
+        .tool-card:hover::before {
+            opacity: 0.03;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--hover-shadow);
+            border-color: var(--primary-color);
+        }
+
+        .tool-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+    .tool-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        border-radius: 20px;
+        transition: all 0.4s ease;
+        position: relative;
+    }
+
+    .tool-card:hover .tool-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Different gradient backgrounds for tool icons */
+    .tool-icon.gradient-1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .tool-icon.gradient-2 {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .tool-icon.gradient-3 {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .tool-icon.gradient-4 {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .tool-icon.gradient-5 {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .tool-icon.gradient-6 {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+
+    .tool-icon.gradient-7 {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+
+    .tool-icon.gradient-8 {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    }
+
+    .tool-icon.gradient-9 {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    }
+
+    .tool-icon.gradient-10 {
+        background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%);
+    }
+
+    .tool-icon.gradient-11 {
+        background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+    }
+
+    .tool-icon.gradient-12 {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .tool-icon i {
+        color: #fff;
+    }
+
+    .tool-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+        color: var(--text-dark);
+    }
+
+    .tool-description {
+        font-size: 0.9rem;
+        color: var(--text-light);
+        line-height: 1.6;
+    }
+
+    @@keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Staggered animation delay for cards */
+    .tool-card:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .tool-card:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+
+    .tool-card:nth-child(3) {
+        animation-delay: 0.2s;
+    }
+
+    .tool-card:nth-child(4) {
+        animation-delay: 0.25s;
+    }
+
+    .tool-card:nth-child(5) {
+        animation-delay: 0.3s;
+    }
+
+    .tool-card:nth-child(6) {
+        animation-delay: 0.35s;
+    }
+
+    .tool-card:nth-child(7) {
+        animation-delay: 0.4s;
+    }
+
+    .tool-card:nth-child(8) {
+        animation-delay: 0.45s;
+    }
+
+    .tool-card:nth-child(9) {
+        animation-delay: 0.5s;
+    }
+
+    .tool-card:nth-child(10) {
+        animation-delay: 0.55s;
+    }
+
+    .tool-card:nth-child(11) {
+        animation-delay: 0.6s;
+    }
+
+    .tool-card:nth-child(12) {
+        animation-delay: 0.65s;
+    }
+
+    /* Premium Badge */
+    .tool-card-premium {
+        position: relative;
+    }
+
+    .premium-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: var(--gradient-1);
+        color: #fff;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        z-index: 10;
+        box-shadow: 0 4px 15px rgba(233, 64, 87, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+        .premium-badge i {
+            font-size: 0.7rem;
+            margin-right: 0.2rem;
+        }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 4px 15px rgba(233, 64, 87, 0.3);
+        }
+
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(233, 64, 87, 0.5);
+        }
+    }
+
+    /* Scanning Tools Section Styling */
+    .tools-section:nth-of-type(2) {
+        background: linear-gradient(135deg, rgba(233, 64, 87, 0.03) 0%, rgba(138, 86, 172, 0.03) 100%);
+        padding: 3rem 0;
+        margin-top: 2rem;
+        border-radius: 30px;
+    }
+
+        .tools-section:nth-of-type(2) .section-title {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+    /* Features Section */
+    .features-section {
+        padding: 4rem 0;
+        background: #fff;
+        border-radius: 30px;
+        margin: 3rem 0;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    }
+
+    .feature-box {
+        text-align: center;
+        padding: 2rem;
+        transition: all 0.3s ease;
+    }
+
+        .feature-box:hover {
+            transform: translateY(-5px);
+        }
+
+    .feature-icon {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gradient-1);
+        border-radius: 50%;
+        font-size: 2rem;
+        color: #fff;
+    }
+
+    .feature-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+    }
+
+    .feature-text {
+        color: var(--text-light);
+        line-height: 1.6;
+    }
+
+    /* AdSense Placeholder */
+    .ad-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin: 3rem 0;
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+        }
+
+        .tool-icon {
+            width: 70px;
+            height: 70px;
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <h1 class="hero-title">Every tool you need to work with PDFs</h1>
+        <p class="hero-subtitle">All-in-one solution for your PDF needs. Fast, secure, and completely free!</p>
+
+        <div class="hero-features">
+            <div class="hero-feature">
+                <i class="fas fa-check-circle"></i>
+                <span>100% Free</span>
+            </div>
+            <div class="hero-feature">
+                <i class="fas fa-lock"></i>
+                <span>Secure & Private</span>
+            </div>
+            <div class="hero-feature">
+                <i class="fas fa-bolt"></i>
+                <span>Lightning Fast</span>
+            </div>
+            <div class="hero-feature">
+                <i class="fas fa-cloud"></i>
+                <span>No Installation</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Tools Section -->
+<section class="tools-section">
+    <div class="container">
+        <h2 class="section-title">Popular PDF Tools</h2>
+        <p class="section-subtitle">Choose from our wide range of professional PDF tools</p>
+
+        <div class="row g-4">
+            <!-- Merge PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-1">
+                        <i class="fas fa-object-group"></i>
+                    </div>
+                    <h3 class="tool-title">Merge PDF</h3>
+                    <p class="tool-description">Combine multiple PDFs into one document</p>
+                </div>
+            </div>
+
+            <!-- Split PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-2">
+                        <i class="fas fa-cut"></i>
+                    </div>
+                    <h3 class="tool-title">Split PDF</h3>
+                    <p class="tool-description">Extract pages from your PDF file</p>
+                </div>
+            </div>
+
+            <!-- Compress PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-3">
+                        <i class="fas fa-compress-alt"></i>
+                    </div>
+                    <h3 class="tool-title">Compress PDF</h3>
+                    <p class="tool-description">Reduce PDF file size without losing quality</p>
+                </div>
+            </div>
+
+            <!-- PDF to Word -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-4">
+                        <i class="fas fa-file-word"></i>
+                    </div>
+                    <h3 class="tool-title">PDF to Word</h3>
+                    <p class="tool-description">Convert PDF to editable Word document</p>
+                </div>
+            </div>
+
+            <!-- Word to PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-5">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <h3 class="tool-title">Word to PDF</h3>
+                    <p class="tool-description">Convert Word documents to PDF format</p>
+                </div>
+            </div>
+
+            <!-- PDF to Excel -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-6">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <h3 class="tool-title">PDF to Excel</h3>
+                    <p class="tool-description">Convert PDF tables to Excel spreadsheets</p>
+                </div>
+            </div>
+
+            <!-- PDF to PowerPoint -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-7">
+                        <i class="fas fa-file-powerpoint"></i>
+                    </div>
+                    <h3 class="tool-title">PDF to PowerPoint</h3>
+                    <p class="tool-description">Convert PDF to editable presentation</p>
+                </div>
+            </div>
+
+            <!-- PDF to JPG -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-8">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <h3 class="tool-title">PDF to JPG</h3>
+                    <p class="tool-description">Convert PDF pages to image files</p>
+                </div>
+            </div>
+
+            <!-- JPG to PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-9">
+                        <i class="fas fa-images"></i>
+                    </div>
+                    <h3 class="tool-title">JPG to PDF</h3>
+                    <p class="tool-description">Convert images to PDF documents</p>
+                </div>
+            </div>
+
+            <!-- Sign PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-10">
+                        <i class="fas fa-signature"></i>
+                    </div>
+                    <h3 class="tool-title">Sign PDF</h3>
+                    <p class="tool-description">Add your signature to PDF documents</p>
+                </div>
+            </div>
+
+            <!-- Watermark PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-11">
+                        <i class="fas fa-stamp"></i>
+                    </div>
+                    <h3 class="tool-title">Watermark PDF</h3>
+                    <p class="tool-description">Add watermark to protect your documents</p>
+                </div>
+            </div>
+
+            <!-- Rotate PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-12">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h3 class="tool-title">Rotate PDF</h3>
+                    <p class="tool-description">Rotate PDF pages to the right orientation</p>
+                </div>
+            </div>
+
+            <!-- Unlock PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-1">
+                        <i class="fas fa-unlock"></i>
+                    </div>
+                    <h3 class="tool-title">Unlock PDF</h3>
+                    <p class="tool-description">Remove password protection from PDFs</p>
+                </div>
+            </div>
+
+            <!-- Protect PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-2">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="tool-title">Protect PDF</h3>
+                    <p class="tool-description">Add password security to your PDFs</p>
+                </div>
+            </div>
+
+            <!-- Organize PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-3">
+                        <i class="fas fa-sort"></i>
+                    </div>
+                    <h3 class="tool-title">Organize PDF</h3>
+                    <p class="tool-description">Reorder, delete, and add PDF pages</p>
+                </div>
+            </div>
+
+            <!-- Edit PDF -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-4">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <h3 class="tool-title">Edit PDF</h3>
+                    <p class="tool-description">Add text, images, and shapes to PDFs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Scanning Tools Section -->
+<section class="tools-section" style="padding-top: 1rem;">
+    <div class="container">
+        <h2 class="section-title">Scanning & Document Tools</h2>
+        <p class="section-subtitle">Professional document scanning and enhancement tools</p>
+
+        <div class="row g-4">
+            <!-- ID Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card tool-card-premium">
+                    <div class="premium-badge">
+                        <i class="fas fa-star"></i> Popular
+                    </div>
+                    <div class="tool-icon gradient-5">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <h3 class="tool-title">ID Scanner</h3>
+                    <p class="tool-description">Scan and digitize ID cards, passports, and licenses</p>
+                </div>
+            </div>
+
+            <!-- Document Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card tool-card-premium">
+                    <div class="premium-badge">
+                        <i class="fas fa-star"></i> Popular
+                    </div>
+                    <div class="tool-icon gradient-6">
+                        <i class="fas fa-scanner"></i>
+                    </div>
+                    <h3 class="tool-title">Document Scanner</h3>
+                    <p class="tool-description">Scan documents with auto edge detection</p>
+                </div>
+            </div>
+
+            <!-- Photo Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-7">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h3 class="tool-title">Photo Scanner</h3>
+                    <p class="tool-description">Digitize physical photos in high quality</p>
+                </div>
+            </div>
+
+            <!-- Document Cleanup -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card tool-card-premium">
+                    <div class="premium-badge">
+                        <i class="fas fa-star"></i> New
+                    </div>
+                    <div class="tool-icon gradient-8">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3 class="tool-title">Document Cleanup</h3>
+                    <p class="tool-description">Remove shadows, enhance clarity, and fix skew</p>
+                </div>
+            </div>
+
+            <!-- OCR Text Recognition -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-9">
+                        <i class="fas fa-font"></i>
+                    </div>
+                    <h3 class="tool-title">OCR Scanner</h3>
+                    <p class="tool-description">Extract text from images and scanned documents</p>
+                </div>
+            </div>
+
+            <!-- Business Card Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-10">
+                        <i class="fas fa-address-card"></i>
+                    </div>
+                    <h3 class="tool-title">Business Card Scanner</h3>
+                    <p class="tool-description">Scan and save contact information instantly</p>
+                </div>
+            </div>
+
+            <!-- Receipt Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-11">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <h3 class="tool-title">Receipt Scanner</h3>
+                    <p class="tool-description">Digitize receipts for expense tracking</p>
+                </div>
+            </div>
+
+            <!-- Batch Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-12">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3 class="tool-title">Batch Scanner</h3>
+                    <p class="tool-description">Scan multiple documents at once</p>
+                </div>
+            </div>
+
+            <!-- Image Enhancer -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-1">
+                        <i class="fas fa-adjust"></i>
+                    </div>
+                    <h3 class="tool-title">Image Enhancer</h3>
+                    <p class="tool-description">Improve image quality and brightness</p>
+                </div>
+            </div>
+
+            <!-- Background Remover -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-2">
+                        <i class="fas fa-eraser"></i>
+                    </div>
+                    <h3 class="tool-title">Background Remover</h3>
+                    <p class="tool-description">Remove background from scanned images</p>
+                </div>
+            </div>
+
+            <!-- Whiteboard Scanner -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-3">
+                        <i class="fas fa-chalkboard"></i>
+                    </div>
+                    <h3 class="tool-title">Whiteboard Scanner</h3>
+                    <p class="tool-description">Capture and enhance whiteboard content</p>
+                </div>
+            </div>
+
+            <!-- Color Correction -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="tool-card">
+                    <div class="tool-icon gradient-4">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3 class="tool-title">Color Correction</h3>
+                    <p class="tool-description">Auto-adjust colors in scanned documents</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- AdSense Section -->
+<section class="container">
+    <div class="ad-container">
+        <!-- AdSense Ad Unit -->
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-5934633595595089"
+             data-ad-slot="YOUR_AD_SLOT_ID"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+            (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="container">
+    <div class="features-section">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Secure & Private</h3>
+                    <p class="feature-text">Your files are automatically deleted after processing. We prioritize your privacy and security.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="feature-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3 class="feature-title">Lightning Fast</h3>
+                    <p class="feature-text">Our advanced algorithms ensure quick processing without compromising quality.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="feature-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="feature-title">100% Free</h3>
+                    <p class="feature-text">All tools are completely free with no hidden costs or subscription fees.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Add click event to tool cards
+        document.querySelectorAll('.tool-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Add your navigation logic here
+                const title = this.querySelector('.tool-title').textContent;
+                console.log('Tool clicked:', title);
+                // Example: window.location.href = '/Tool/' + title.replace(/\s+/g, '');
+            });
+        });
+
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.tool-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+}
