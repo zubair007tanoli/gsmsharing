@@ -92,6 +92,58 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+// Configure cookie settings BEFORE authentication
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "DiscussionSpot9Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+
+    // Use consistent, secure settings
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    }
+    else
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax; // Changed from None to Lax for same-site navigation
+    }
+
+    options.LoginPath = "/Account/Auth";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ReturnUrlParameter = "returnUrl";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.SlidingExpiration = true;
+});
+
+// Configure external authentication cookie
+builder.Services.ConfigureExternalCookie(options =>
+{
+    options.Cookie.Name = "DiscussionSpot9ExternalAuth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    }
+    else
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax; // Changed from None to Lax
+    }
+
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+});
+
+// Add data protection service
+builder.Services.AddDataProtection()
+    .SetApplicationName("DiscussionSpot9");
+
 string? missingGoogleAuthPath = null;
 var googleCredentialWarnings = new List<string>();
 
@@ -275,53 +327,6 @@ builder.Services.AddSingleton(new discussionspot9.Models.Configuration.GoogleOAu
     googleClientId,
     googleClientSecret,
     missingGoogleAuthPath));
-// ADD THIS SECTION:
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.Name = "DiscussionSpot9Auth";
-    options.Cookie.HttpOnly = true;
-    // Use secure, cross-site compatible settings for external providers
-    if (builder.Environment.IsDevelopment())
-    {
-        // In development, use Lax for localhost (works with HTTP)
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // allow http on localhost
-        options.Cookie.SameSite = SameSiteMode.Lax; // Lax works with HTTP in development
-    }
-    else
-    {
-        // In production, use None for external logins (requires HTTPS)
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.None; // required for external login redirects
-    }
-    options.LoginPath = "/Account/Auth";
-    options.LogoutPath = "/Account/Logout";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-    options.ReturnUrlParameter = "returnUrl"; // Explicitly set return URL parameter name
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-    options.SlidingExpiration = true;
-    options.Cookie.IsEssential = true;
-});
-
-// Ensure the external cookie also allows cross-site redirects
-builder.Services.ConfigureExternalCookie(options =>
-{
-    if (builder.Environment.IsDevelopment())
-    {
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.SameSite = SameSiteMode.Lax; // Lax works with HTTP in development
-    }
-    else
-    {
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.None; // None requires HTTPS
-    }
-    options.Cookie.Name = "DiscussionSpot9ExternalAuth";
-    options.Cookie.HttpOnly = true;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(5); // Short expiry for external auth
-});
-// ADD DATA PROTECTION:
-builder.Services.AddDataProtection()
-    .SetApplicationName("DiscussionSpot9");
 
 // Response Compression for faster page loads
 builder.Services.AddResponseCompression(options =>
