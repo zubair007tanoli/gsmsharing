@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Login - PdfPeaks";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header text-center py-4" style="background: var(--gradient-1);">
+                    <i class="fas fa-user-circle fa-3x text-white mb-3"></i>
+                    <h3 class="text-white fw-bold">Welcome Back</h3>
+                    <p class="text-white-50 mb-0">Sign in to your account</p>
+                </div>
+                <div class="card-body p-5">
+                    <form>
+                        <div class="mb-4">
+                            <label for="email" class="form-label fw-bold text-dark">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-envelope text-muted"></i>
+                                </span>
+                                <input type="email" class="form-control border-start-0" id="email" placeholder="Enter your email" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-bold text-dark">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-lock text-muted"></i>
+                                </span>
+                                <input type="password" class="form-control border-start-0" id="password" placeholder="Enter your password" required>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember">
+                                <label class="form-check-label" for="remember">Remember me</label>
+                            </div>
+                            <a href="/UserAccounts/ForgotPassword" class="text-decoration-none" style="color: var(--primary-color);">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="btn w-100 py-3 fw-bold text-white" style="background: var(--gradient-1); border-radius: 10px; transition: all 0.3s ease;">
+                            Sign In <i class="fas fa-sign-in-alt ms-2"></i>
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Don't have an account? 
+                            <a href="/UserAccounts/Register" class="text-decoration-none fw-bold" style="color: var(--primary-color);">Sign Up</a>
+                        </p>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <p class="text-muted mb-3">Or continue with</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="/UserAccounts/GoogleLogin" class="btn btn-outline-secondary border shadow-sm px-4 py-2 text-dark" style="transition: all 0.3s ease;">
+                                <i class="fab fa-google" style="color: #db4437;"></i> <span class="ms-2">Google</span>
+                            </a>
+                            <a href="/UserAccounts/GitHubLogin" class="btn btn-outline-secondary border shadow-sm px-4 py-2 text-dark" style="transition: all 0.3s ease;">
+                                <i class="fab fa-github" style="color: #333;"></i> <span class="ms-2">GitHub</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+    
+    .input-group-text {
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .form-control {
+        border-radius: 0 10px 10px 0;
+    }
+    
+    .form-control:focus, .form-control:focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(233, 64, 87, 0.3);
+    }
+    
+    .btn-outline-secondary:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: #fff !important;
+    }
+    
+    .btn-outline-secondary:hover .fab.fa-google,
+    .btn-outline-secondary:hover .fab.fa-github {
+        color: #fff !important;
+    }
+</style>

@@ -1,0 +1,255 @@
+@{
+    ViewData["Title"] = "Contact Us - PdfPeaks";
+}
+
+<style>
+    .contact-section {
+        padding: 4rem 0;
+    }
+
+    .contact-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: var(--card-shadow);
+        height: 100%;
+    }
+
+    .contact-info-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+    }
+
+    .contact-icon {
+        width: 50px;
+        height: 50px;
+        background: var(--gradient-1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: #fff;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .contact-info-content h5 {
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+        color: var(--text-dark);
+    }
+
+    .contact-info-content p {
+        color: var(--text-light);
+        margin: 0;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(233, 64, 87, 0.1);
+    }
+
+    .contact-form-section {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: var(--card-shadow);
+    }
+
+    .alert-custom {
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        border: none;
+    }
+
+    .alert-success-custom {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: #1a1a1a;
+    }
+
+    .alert-danger-custom {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: #fff;
+    }
+</style>
+
+<section class="contact-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="hero-title">Get in Touch</h1>
+            <p class="hero-subtitle">Have questions? We'd love to hear from you</p>
+        </div>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success-custom alert-custom mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                @TempData["Success"]
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger-custom alert-custom mb-4" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                @TempData["Error"]
+            </div>
+        }
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="contact-card">
+                    <h3 class="mb-4 fw-bold">Contact Information</h3>
+                    
+                    <div class="contact-info-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="contact-info-content">
+                            <h5>Our Location</h5>
+                            <p>123 PDF Street<br>Digital City, DC 12345</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-info-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-info-content">
+                            <h5>Email Us</h5>
+                            <p>support@pdftoolspro.com<br>sales@pdftoolspro.com</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-info-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-info-content">
+                            <h5>Phone</h5>
+                            <p>+1 (555) 123-4567<br>Mon - Fri: 9AM - 6PM EST</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-info-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-comment-alt"></i>
+                        </div>
+                        <div class="contact-info-content">
+                            <h5>Live Chat</h5>
+                            <p>Available 24/7<br>Average response time: 2 min</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">Follow Us</h5>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="btn btn-outline-secondary rounded-circle p-3" style="width: 45px; height: 45px;">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary rounded-circle p-3" style="width: 45px; height: 45px;">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary rounded-circle p-3" style="width: 45px; height: 45px;">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary rounded-circle p-3" style="width: 45px; height: 45px;">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="contact-form-section">
+                    <h3 class="mb-4 fw-bold">Send us a Message</h3>
+                    
+                    <form action="/Home/Contact" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Your Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="john@example.com" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="subject" class="form-label">Subject *</label>
+                                <select class="form-select" id="subject" name="subject" required>
+                                    <option value="">Select a subject</option>
+                                    <option value="General">General Inquiry</option>
+                                    <option value="Support">Technical Support</option>
+                                    <option value="Sales">Sales Question</option>
+                                    <option value="Billing">Billing & Payments</option>
+                                    <option value="Partnership">Partnership Opportunity</option>
+                                    <option value="Feedback">Feedback & Suggestions</option>
+                                    <option value="Bug">Report a Bug</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="message" class="form-label">Message *</label>
+                                <textarea class="form-control" id="message" name="message" rows="5" placeholder="How can we help you?" required></textarea>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newsletter">
+                                    <label class="form-check-label" for="newsletter">
+                                        Subscribe to our newsletter for updates and tips
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-lg px-5 py-3 fw-bold text-white" style="background: var(--gradient-1); border-radius: 10px;">
+                                    <i class="fas fa-paper-plane me-2"></i> Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="mt-5">
+            <h2 class="text-center mb-4 fw-bold">Frequently Asked Questions</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-4" style="border-radius: 15px;">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-lock me-2" style="color: var(--primary-color);"></i>Is my data secure?</h5>
+                        <p class="text-muted mb-0">Yes! All files are encrypted during transfer and automatically deleted from our servers after processing.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-4" style="border-radius: 15px;">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-credit-card me-2" style="color: var(--primary-color);"></i>What payment methods?</h5>
+                        <p class="text-muted mb-0">We accept all major credit cards, PayPal, and bank transfers for Enterprise plans.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-4" style="border-radius: 15px;">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-ban me-2" style="color: var(--primary-color);"></i>Can I cancel anytime?</h5>
+                        <p class="text-muted mb-0">Absolutely! Cancel anytime from your account settings. No cancellation fees or long-term commitments.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

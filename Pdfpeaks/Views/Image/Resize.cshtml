@@ -1,0 +1,511 @@
+@{
+    ViewData["Title"] = "Resize Image - PdfPeaks";
+}
+
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-aspect-ratio"></i> Resize Image
+                </h1>
+                <p class="lead text-muted">Change image dimensions with high-quality resizing</p>
+            </div>
+
+            <div class="row">
+                <!-- Upload Section -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-4 text-center bg-light">
+                                <div class="mb-3">
+                                    <i class="bi bi-cloud-upload display-4 text-primary"></i>
+                                </div>
+                                <h5 class="mb-2">Drop your image here</h5>
+                                <p class="text-muted mb-3">or</p>
+                                <label class="btn btn-primary">
+                                    <i class="bi bi-folder-plus"></i> Select Image
+                                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resize Options -->
+                    <div id="resizeOptions" class="card shadow-sm mb-4 d-none">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-sliders"></i> Resize Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Aspect Ratio -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Aspect Ratio:</label>
+                                <select id="aspectRatio" class="form-select">
+                                    <option value="free">Free (No constraint)</option>
+                                    <option value="16:9">16:9 (Widescreen)</option>
+                                    <option value="4:3">4:3 (Standard)</option>
+                                    <option value="1:1">1:1 (Square)</option>
+                                    <option value="3:2">3:2 (Photo)</option>
+                                    <option value="2:3">2:3 (Portrait Photo)</option>
+                                    <option value="9:16">9:16 (Stories)</option>
+                                </select>
+                            </div>
+
+                            <!-- Resize Mode -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Resize Mode:</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="resizeMode" id="modeStretch" value="stretch" checked>
+                                    <label class="btn btn-outline-primary" for="modeStretch">
+                                        <i class="bi bi-arrows-fullscreen"></i> Stretch
+                                    </label>
+                                    <input type="radio" class="btn-check" name="resizeMode" id="modeCrop" value="crop">
+                                    <label class="btn btn-outline-primary" for="modeCrop">
+                                        <i class="bi bi-crop"></i> Crop
+                                    </label>
+                                    <input type="radio" class="btn-check" name="resizeMode" id="modePad" value="pad">
+                                    <label class="btn btn-outline-primary" for="modePad">
+                                        <i class="bi bi-bounding-box"></i> Pad
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Dimensions -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <label class="form-label">Width (px):</label>
+                                    <input type="number" id="targetWidth" class="form-control" min="1" value="800">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Height (px):</label>
+                                    <input type="number" id="targetHeight" class="form-control" min="1" value="600">
+                                </div>
+                            </div>
+
+                            <!-- Percentage -->
+                            <div class="mb-4">
+                                <label class="form-label">Or resize by percentage:</label>
+                                <div class="input-group">
+                                    <input type="range" id="percentageSlider" class="form-range" min="10" max="200" value="100">
+                                    <span class="input-group-text" id="percentageValue">100%</span>
+                                </div>
+                            </div>
+
+                            <!-- Presets -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Quick Presets:</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1920" data-height="1080">
+                                        HD 1080p
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1280" data-height="720">
+                                        HD 720p
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="800" data-height="600">
+                                        SVGA
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="640" data-height="480">
+                                        VGA
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1080" data-height="1080">
+                                        Instagram
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1200" data-height="630">
+                                        Facebook
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <button id="resizeBtn" class="btn btn-success w-100" disabled>
+                                <i class="bi bi-check-circle"></i> Apply Resize
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="col-lg-8">
+                    <div id="previewContainer" class="card shadow-sm d-none">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-eye"></i> Preview</h5>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary active" data-scale="fit">
+                                    <i class="bi bi-fullscreen"></i> Fit
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" data-scale="100">
+                                    <i class="bi bi-zoom-in"></i> 100%
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body bg-dark">
+                            <div id="imagePreview" class="position-relative d-flex justify-content-center align-items-center" style="min-height: 400px;">
+                                <div id="loadingSpinner" class="text-white">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Original</small>
+                                    <strong id="originalSize">-</strong>
+                                </div>
+                                <div class="col-4">
+                                    <i class="bi bi-arrow-right text-primary"></i>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">New Size</small>
+                                    <strong id="newSize">-</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyPreview" class="card shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-image display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">No image selected</h4>
+                            <p class="text-muted">Upload an image to see the preview and resize options</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Result -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-check-circle-fill text-success display-1"></i>
+                        </div>
+                        <h3 class="card-title">@TempData["Success"]</h3>
+                        <p class="text-muted">@TempData["Info"]</p>
+                        <div class="d-flex justify-content-center gap-3 mt-4">
+                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg">
+                                <i class="bi bi-download"></i> Download Resized Image
+                            </a>
+                            <a asp-action="Resize" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-repeat"></i> Resize Another
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Error Alert -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-3 text-white">Processing image...</h4>
+    </div>
+</div>
+
+<!-- Hidden canvas for image processing -->
+<canvas id="previewCanvas" style="display: none;"></canvas>
+
+@section Styles {
+    <style>
+        .drop-zone {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone:hover {
+            background-color: #e3f2fd !important;
+            border-color: #0d6efd !important;
+        }
+        
+        .btn-check:checked + label {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            color: white !important;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .resize-overlay {
+            position: absolute;
+            border: 2px dashed #0d6efd;
+            background: rgba(13, 110, 253, 0.1);
+            cursor: move;
+        }
+        
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #0d6efd;
+            border-radius: 50%;
+        }
+        
+        .resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+        .resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+        .resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+        .resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-overlay .spinner-container {
+            text-align: center;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const emptyPreview = document.getElementById('emptyPreview');
+            const imagePreview = document.getElementById('imagePreview');
+            const resizeOptions = document.getElementById('resizeOptions');
+            const resizeBtn = document.getElementById('resizeBtn');
+            const targetWidth = document.getElementById('targetWidth');
+            const targetHeight = document.getElementById('targetHeight');
+            const aspectRatio = document.getElementById('aspectRatio');
+            const percentageSlider = document.getElementById('percentageSlider');
+            const percentageValue = document.getElementById('percentageValue');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const previewCanvas = document.getElementById('previewCanvas');
+            
+            let originalImage = null;
+            let originalWidth = 0;
+            let originalHeight = 0;
+            
+            // Aspect ratio values (width / height)
+            const aspectRatios = {
+                'free': null,
+                '16:9': 16/9,
+                '4:3': 4/3,
+                '1:1': 1,
+                '3:2': 3/2,
+                '2:3': 2/3,
+                '9:16': 9/16
+            };
+            
+            // Drop zone events
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropZone.classList.add('bg-primary', 'text-white');
+            });
+            
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('bg-primary', 'text-white');
+            });
+            
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('bg-primary', 'text-white');
+                
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    handleFile(file);
+                } else {
+                    alert('Please select an image file.');
+                }
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+            
+            dropZone.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // Handle file
+            function handleFile(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage = new Image();
+                    originalImage.onload = function() {
+                        originalWidth = originalImage.width;
+                        originalHeight = originalImage.height;
+                        
+                        // Show preview
+                        showPreview();
+                        
+                        // Set default dimensions
+                        targetWidth.value = originalWidth;
+                        targetHeight.value = originalHeight;
+                        
+                        // Update UI
+                        document.getElementById('originalSize').textContent = 
+                            `${originalWidth} × ${originalHeight}`;
+                        document.getElementById('newSize').textContent = 
+                            `${originalWidth} × ${originalHeight}`;
+                        
+                        previewContainer.classList.remove('d-none');
+                        emptyPreview.classList.add('d-none');
+                        resizeOptions.classList.remove('d-none');
+                        resizeBtn.disabled = false;
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Show preview
+            function showPreview() {
+                imagePreview.innerHTML = `<img src="${originalImage.src}" class="preview-image" id="previewImg">`;
+            }
+            
+            // Aspect ratio change
+            aspectRatio.addEventListener('change', function() {
+                updateDimensionsFromRatio();
+            });
+            
+            function updateDimensionsFromRatio() {
+                const ratio = aspectRatios[aspectRatio.value];
+                if (ratio !== null) {
+                    const newRatio = originalWidth / originalHeight;
+                    if (ratio !== newRatio) {
+                        // Adjust based on selected ratio
+                        if (originalWidth / originalHeight > ratio) {
+                            // Width is larger, adjust height
+                            targetHeight.value = Math.round(originalWidth / ratio);
+                        } else {
+                            // Height is larger, adjust width
+                            targetWidth.value = Math.round(originalHeight * ratio);
+                        }
+                    } else {
+                        targetWidth.value = originalWidth;
+                        targetHeight.value = originalHeight;
+                    }
+                }
+                updateNewSize();
+            }
+            
+            // Dimension inputs
+            targetWidth.addEventListener('input', function() {
+                if (aspectRatios[aspectRatio.value] !== null) {
+                    targetHeight.value = Math.round(targetWidth.value / aspectRatios[aspectRatio.value]);
+                }
+                updateNewSize();
+            });
+            
+            targetHeight.addEventListener('input', function() {
+                if (aspectRatios[aspectRatio.value] !== null) {
+                    targetWidth.value = Math.round(targetHeight.value * aspectRatios[aspectRatio.value]);
+                }
+                updateNewSize();
+            });
+            
+            // Percentage slider
+            percentageSlider.addEventListener('input', function() {
+                const percent = this.value;
+                percentageValue.textContent = percent + '%';
+                
+                targetWidth.value = Math.round(originalWidth * percent / 100);
+                targetHeight.value = Math.round(originalHeight * percent / 100);
+                updateNewSize();
+            });
+            
+            // Presets
+            document.querySelectorAll('[data-width]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    targetWidth.value = this.dataset.width;
+                    targetHeight.value = this.dataset.height;
+                    
+                    // Set aspect ratio to free for custom sizes
+                    aspectRatio.value = 'free';
+                    updateNewSize();
+                });
+            });
+            
+            // Update new size display
+            function updateNewSize() {
+                document.getElementById('newSize').textContent = 
+                    `${targetWidth.value} × ${targetHeight.value}`;
+            }
+            
+            // Resize mode buttons
+            document.querySelectorAll('input[name="resizeMode"]').forEach(radio => {
+                radio.addEventListener('change', updateNewSize);
+            });
+            
+            // Resize button
+            resizeBtn.addEventListener('click', async function() {
+                if (!originalImage) return;
+                
+                const mode = document.querySelector('input[name="resizeMode"]:checked').value;
+                
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0] || await fetchFileFromImage());
+                formData.append('width', targetWidth.value);
+                formData.append('height', targetHeight.value);
+                formData.append('mode', mode);
+                
+                loadingOverlay.classList.remove('d-none');
+                
+                try {
+                    const response = await fetch('@Url.Action("Resize")', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.text();
+                    document.body.innerHTML = result;
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while resizing the image.');
+                } finally {
+                    loadingOverlay.classList.add('d-none');
+                }
+            });
+            
+            // Helper to get file from image
+            async function fetchFileFromImage() {
+                return new Promise(resolve => {
+                    previewCanvas.width = originalWidth;
+                    previewCanvas.height = originalHeight;
+                    const ctx = previewCanvas.getContext('2d');
+                    ctx.drawImage(originalImage, 0, 0);
+                    previewCanvas.toBlob(blob => {
+                        resolve(new File([blob], 'image.png', { type: 'image/png' }));
+                    }, 'image/png');
+                });
+            }
+        });
+    </script>
+}

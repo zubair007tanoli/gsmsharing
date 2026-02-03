@@ -1,0 +1,385 @@
+@{
+    ViewData["Title"] = "Image Tools - PdfPeaks";
+}
+
+<!-- Hero Section -->
+<section class="hero-section text-center py-5">
+    <div class="container">
+        <h1 class="display-3 fw-bold text-primary mb-4">
+            <i class="bi bi-images"></i> Every tool you need to work with images
+        </h1>
+        <p class="lead text-muted mb-5">
+            Resize, crop, compress, convert, rotate and edit images with just a few clicks
+        </p>
+    </div>
+</section>
+
+<!-- Image Tools Grid -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Resize Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Resize" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-aspect-ratio text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Resize Image</h4>
+                        <p class="card-text text-muted">Change image dimensions while maintaining quality.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Crop Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Crop" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-crop text-info"></i>
+                        </div>
+                        <h4 class="card-title">Crop Image</h4>
+                        <p class="card-text text-muted">Crop your images to remove unwanted areas.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Rotate Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Rotate" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-arrow-clockwise text-success"></i>
+                        </div>
+                        <h4 class="card-title">Rotate Image</h4>
+                        <p class="card-text text-muted">Rotate your images by any angle.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Flip Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Flip" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-arrow-left-right text-warning"></i>
+                        </div>
+                        <h4 class="card-title">Flip Image</h4>
+                        <p class="card-text text-muted">Flip images horizontally or vertically.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Compress Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Compress" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-zip text-danger"></i>
+                        </div>
+                        <h4 class="card-title">Compress Image</h4>
+                        <p class="card-text text-muted">Reduce image file size while maintaining quality.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Convert" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-arrow-repeat text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Convert Image</h4>
+                        <p class="card-text text-muted">Convert images between different formats.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to JPG -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToJpg" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-image text-warning"></i>
+                        </div>
+                        <h4 class="card-title">Convert to JPG</h4>
+                        <p class="card-text text-muted">Convert any image format to JPG.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to PNG -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToPng" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-image text-info"></i>
+                        </div>
+                        <h4 class="card-title">Convert to PNG</h4>
+                        <p class="card-text text-muted">Convert any image format to PNG.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to WebP -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToWebp" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-globe text-success"></i>
+                        </div>
+                        <h4 class="card-title">Convert to WebP</h4>
+                        <p class="card-text text-muted">Convert images to WebP format for web optimization.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to GIF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToGif" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-film text-secondary"></i>
+                        </div>
+                        <h4 class="card-title">Convert to GIF</h4>
+                        <p class="card-text text-muted">Convert images to animated or static GIF format.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to BMP -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToBmp" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-square text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Convert to BMP</h4>
+                        <p class="card-text text-muted">Convert images to BMP format.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to ICO -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToIco" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-app text-warning"></i>
+                        </div>
+                        <h4 class="card-title">Convert to ICO</h4>
+                        <p class="card-text text-muted">Create favicons and app icons from your images.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Image to PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ToPdf" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-pdf text-danger"></i>
+                        </div>
+                        <h4 class="card-title">Image to PDF</h4>
+                        <p class="card-text text-muted">Convert your images to PDF documents.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- PDF to Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="FromPdf" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-image text-primary"></i>
+                        </div>
+                        <h4 class="card-title">PDF to Image</h4>
+                        <p class="card-text text-muted">Extract images from PDF documents.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Edit Image -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Edit" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-pencil-square text-success"></i>
+                        </div>
+                        <h4 class="card-title">Edit Image</h4>
+                        <p class="card-text text-muted">Apply filters, adjustments and effects to images.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Image
+                        </span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Why choose PdfPeaks for images?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-lightning text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4>Fast Processing</h4>
+                    <p class="text-muted">Process your images in seconds with our optimized algorithms</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-image text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4>High Quality</h4>
+                    <p class="text-muted">Maintain the best quality for all your image transformations</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4>Secure Processing</h4>
+                    <p class="text-muted">Your images are automatically deleted from our servers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Styles {
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 80px 0;
+        }
+        
+        .tool-card {
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            border-color: #0d6efd;
+        }
+        
+        .tool-card:hover .card-footer .btn {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .tool-icon {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tool-icon i {
+            font-size: 4rem;
+        }
+        
+        .tool-card .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-card .card-text {
+            font-size: 0.9rem;
+            min-height: 48px;
+        }
+        
+        .tool-card .card-footer {
+            padding: 1rem;
+        }
+        
+        .tool-card .card-footer .btn {
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+    </style>
+}

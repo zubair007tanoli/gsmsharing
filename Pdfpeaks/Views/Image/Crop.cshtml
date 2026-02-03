@@ -1,0 +1,637 @@
+@{
+    ViewData["Title"] = "Crop Image - PdfPeaks";
+}
+
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-crop"></i> Crop Image
+                </h1>
+                <p class="lead text-muted">Remove unwanted areas from your images</p>
+            </div>
+
+            <div class="row">
+                <!-- Upload Section -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-4 text-center bg-light">
+                                <div class="mb-3">
+                                    <i class="bi bi-cloud-upload display-4 text-primary"></i>
+                                </div>
+                                <h5 class="mb-2">Drop your image here</h5>
+                                <p class="text-muted mb-3">or</p>
+                                <label class="btn btn-primary">
+                                    <i class="bi bi-folder-plus"></i> Select Image
+                                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crop Options -->
+                    <div id="cropOptions" class="card shadow-sm mb-4 d-none">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-sliders"></i> Crop Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Aspect Ratio Presets -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Aspect Ratio:</label>
+                                <select id="aspectRatio" class="form-select">
+                                    <option value="free">Free (No constraint)</option>
+                                    <option value="1:1">1:1 (Square)</option>
+                                    <option value="4:3">4:3 (Standard)</option>
+                                    <option value="3:2">3:2 (Photo)</option>
+                                    <option value="16:9">16:9 (Widescreen)</option>
+                                    <option value="9:16">9:16 (Stories)</option>
+                                    <option value="2:3">2:3 (Portrait)</option>
+                                    <option value="3:4">3:4 (Instagram Portrait)</option>
+                                    <option value="5:8">5:8 (Classic Photo)</option>
+                                </select>
+                            </div>
+
+                            <!-- Common Sizes -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Common Sizes:</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1920" data-height="1080">
+                                        1920×1080
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1280" data-height="720">
+                                        1280×720
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1080" data-height="1080">
+                                        1080×1080
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="1080" data-height="1920">
+                                        1080×1920
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="800" data-height="600">
+                                        800×600
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-width="640" data-height="480">
+                                        640×480
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Manual Dimensions -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <label class="form-label">Width (px):</label>
+                                    <input type="number" id="cropWidth" class="form-control" min="1" placeholder="Auto">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Height (px):</label>
+                                    <input type="number" id="cropHeight" class="form-control" min="1" placeholder="Auto">
+                                </div>
+                            </div>
+
+                            <!-- Position -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Position:</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="cropPosition" id="posCenter" value="center" checked>
+                                    <label class="btn btn-outline-primary" for="posCenter">
+                                        <i class="bi bi-bounding-box"></i> Center
+                                    </label>
+                                    <input type="radio" class="btn-check" name="cropPosition" id="posTopLeft" value="top-left">
+                                    <label class="btn btn-outline-primary" for="posTopLeft">
+                                        <i class="bi bi-square"></i> Top-Left
+                                    </label>
+                                    <input type="radio" class="btn-check" name="cropPosition" id="posBottomRight" value="bottom-right">
+                                    <label class="btn btn-outline-primary" for="posBottomRight">
+                                        <i class="bi bi-square"></i> Bottom-Right
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <button id="cropBtn" class="btn btn-success w-100" disabled>
+                                <i class="bi bi-check-circle"></i> Apply Crop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="col-lg-8">
+                    <div id="previewContainer" class="card shadow-sm d-none">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-eye"></i> Preview</h5>
+                        </div>
+                        <div class="card-body bg-dark" style="min-height: 500px;">
+                            <div id="cropPreviewContainer" class="position-relative d-flex justify-content-center align-items-center" style="overflow: hidden;">
+                                <img id="sourceImage" class="img-fluid" src="" alt="Preview">
+                                <div id="cropOverlay" class="crop-overlay">
+                                    <div id="cropRectangle" class="crop-rectangle">
+                                        <div class="resize-handle nw"></div>
+                                        <div class="resize-handle ne"></div>
+                                        <div class="resize-handle sw"></div>
+                                        <div class="resize-handle se"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <small class="text-muted d-block">Original</small>
+                                    <strong id="originalDimensions">-</strong>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block">Crop Size</small>
+                                    <strong id="cropDimensions">-</strong>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block">Position</small>
+                                    <strong id="cropPositionDisplay">Center</strong>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block">Output</small>
+                                    <strong id="outputDimensions">-</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyPreview" class="card shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-image display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">No image selected</h4>
+                            <p class="text-muted">Upload an image to see the preview and crop options</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Result -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-check-circle-fill text-success display-1"></i>
+                        </div>
+                        <h3 class="card-title">@TempData["Success"]</h3>
+                        <p class="text-muted">@TempData["Info"]</p>
+                        <div class="d-flex justify-content-center gap-3 mt-4">
+                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg">
+                                <i class="bi bi-download"></i> Download Cropped Image
+                            </a>
+                            <a asp-action="Crop" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-repeat"></i> Crop Another
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Error Alert -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-3 text-white">Processing image...</h4>
+    </div>
+</div>
+
+<!-- Hidden canvas for image processing -->
+<canvas id="cropCanvas" style="display: none;"></canvas>
+
+@section Styles {
+    <style>
+        .drop-zone {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone:hover {
+            background-color: #e3f2fd !important;
+            border-color: #0d6efd !important;
+        }
+        
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        .crop-rectangle {
+            position: absolute;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            cursor: move;
+        }
+        
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border: 2px solid #0d6efd;
+            border-radius: 2px;
+        }
+        
+        .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-overlay .spinner-container {
+            text-align: center;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const emptyPreview = document.getElementById('emptyPreview');
+            const sourceImage = document.getElementById('sourceImage');
+            const cropOverlay = document.getElementById('cropOverlay');
+            const cropRectangle = document.getElementById('cropRectangle');
+            const cropWidth = document.getElementById('cropWidth');
+            const cropHeight = document.getElementById('cropHeight');
+            const aspectRatio = document.getElementById('aspectRatio');
+            const cropBtn = document.getElementById('cropBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const cropCanvas = document.getElementById('cropCanvas');
+            
+            let originalImage = null;
+            let originalWidth = 0;
+            let originalHeight = 0;
+            let cropX = 0;
+            let cropY = 0;
+            let cropW = 0;
+            let cropH = 0;
+            let isDragging = false;
+            let isResizing = false;
+            let resizeHandle = null;
+            let startX, startY, startW, startH, startCX, startCY;
+            
+            const aspectRatios = {
+                'free': null,
+                '1:1': 1,
+                '4:3': 4/3,
+                '3:2': 3/2,
+                '16:9': 16/9,
+                '9:16': 9/16,
+                '2:3': 2/3,
+                '3:4': 3/4,
+                '5:8': 5/8
+            };
+            
+            // Drop zone events
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropZone.classList.add('bg-primary', 'text-white');
+            });
+            
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('bg-primary', 'text-white');
+            });
+            
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('bg-primary', 'text-white');
+                
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    handleFile(file);
+                } else {
+                    alert('Please select an image file.');
+                }
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+            
+            dropZone.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // Handle file
+            function handleFile(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage = new Image();
+                    originalImage.onload = function() {
+                        originalWidth = originalImage.width;
+                        originalHeight = originalImage.height;
+                        
+                        // Set image source
+                        sourceImage.src = originalImage.src;
+                        
+                        // Update UI
+                        document.getElementById('originalDimensions').textContent = 
+                            `${originalWidth} × ${originalHeight}`;
+                        
+                        previewContainer.classList.remove('d-none');
+                        emptyPreview.classList.add('d-none');
+                        
+                        // Initialize crop rectangle
+                        initCropRectangle();
+                        updateCropDisplay();
+                        
+                        cropBtn.disabled = false;
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Initialize crop rectangle
+            function initCropRectangle() {
+                const ratio = aspectRatios[aspectRatio.value];
+                
+                if (ratio !== null) {
+                    // Calculate based on aspect ratio
+                    if (originalWidth / originalHeight > ratio) {
+                        // Image is wider, height is limiting factor
+                        cropH = originalHeight * 0.8;
+                        cropW = cropH * ratio;
+                    } else {
+                        // Image is taller, width is limiting factor
+                        cropW = originalWidth * 0.8;
+                        cropH = cropW / ratio;
+                    }
+                } else {
+                    // Free crop - use 80% of image
+                    cropW = originalWidth * 0.8;
+                    cropH = originalHeight * 0.8;
+                }
+                
+                // Center the crop
+                cropX = (originalWidth - cropW) / 2;
+                cropY = (originalHeight - cropH) / 2;
+                
+                updateCropRectangleUI();
+            }
+            
+            // Update crop rectangle UI
+            function updateCropRectangleUI() {
+                const containerWidth = sourceImage.clientWidth;
+                const containerHeight = sourceImage.clientHeight;
+                const scaleX = containerWidth / originalWidth;
+                const scaleY = containerHeight / originalHeight;
+                const scale = Math.min(scaleX, scaleY);
+                
+                const offsetX = (containerWidth - originalWidth * scale) / 2;
+                const offsetY = (containerHeight - originalHeight * scale) / 2;
+                
+                cropRectangle.style.left = `${offsetX + cropX * scale}px`;
+                cropRectangle.style.top = `${offsetY + cropY * scale}px`;
+                cropRectangle.style.width = `${cropW * scale}px`;
+                cropRectangle.style.height = `${cropH * scale}px`;
+                
+                updateCropDisplay();
+            }
+            
+            // Update crop display
+            function updateCropDisplay() {
+                document.getElementById('cropDimensions').textContent = 
+                    `${Math.round(cropW)} × ${Math.round(cropH)}`;
+                document.getElementById('outputDimensions').textContent = 
+                    `${Math.round(cropW)} × ${Math.round(cropH)}`;
+                
+                cropWidth.value = Math.round(cropW);
+                cropHeight.value = Math.round(cropH);
+            }
+            
+            // Crop rectangle events
+            cropRectangle.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('resize-handle')) {
+                    isResizing = true;
+                    resizeHandle = e.target.className.split(' ')[1];
+                } else {
+                    isDragging = true;
+                }
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                startW = cropW;
+                startH = cropH;
+                startCX = cropX;
+                startCY = cropY;
+                
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging && !isResizing) return;
+                
+                const scaleX = cropW / cropRectangle.offsetWidth;
+                const scaleY = cropH / cropRectangle.offsetHeight;
+                const dx = (e.clientX - startX) * scaleX;
+                const dy = (e.clientY - startY) * scaleY;
+                
+                if (isDragging) {
+                    cropX = Math.max(0, Math.min(originalWidth - cropW, startCX + dx));
+                    cropY = Math.max(0, Math.min(originalHeight - cropH, startCY + dy));
+                } else if (isResizing) {
+                    const ratio = aspectRatios[aspectRatio.value];
+                    
+                    if (resizeHandle.includes('e')) {
+                        cropW = Math.max(10, Math.min(originalWidth - cropX, startW + dx));
+                        if (ratio !== null) {
+                            cropH = cropW / ratio;
+                        }
+                    }
+                    if (resizeHandle.includes('w')) {
+                        const newW = Math.max(10, Math.min(startW - dx, originalWidth));
+                        cropW = newW;
+                        cropX = Math.max(0, startCX + (startW - newW));
+                        if (ratio !== null) {
+                            cropH = cropW / ratio;
+                        }
+                    }
+                    if (resizeHandle.includes('s')) {
+                        cropH = Math.max(10, Math.min(originalHeight - cropY, startH + dy));
+                        if (ratio !== null) {
+                            cropW = cropH * ratio;
+                        }
+                    }
+                    if (resizeHandle.includes('n')) {
+                        const newH = Math.max(10, Math.min(startH - dy, originalHeight));
+                        cropH = newH;
+                        cropY = Math.max(0, startCY + (startH - newH));
+                        if (ratio !== null) {
+                            cropW = cropH * ratio;
+                        }
+                    }
+                    
+                    // Ensure crop stays within bounds
+                    if (cropX + cropW > originalWidth) {
+                        cropX = originalWidth - cropW;
+                    }
+                    if (cropY + cropH > originalHeight) {
+                        cropY = originalHeight - cropH;
+                    }
+                }
+                
+                updateCropRectangleUI();
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                isResizing = false;
+                resizeHandle = null;
+            });
+            
+            // Aspect ratio change
+            aspectRatio.addEventListener('change', function() {
+                const ratio = aspectRatios[this.value];
+                if (ratio !== null) {
+                    // Adjust crop to maintain ratio
+                    if (cropW / cropH > ratio) {
+                        cropW = cropH * ratio;
+                    } else {
+                        cropH = cropW / ratio;
+                    }
+                    
+                    // Ensure within bounds
+                    if (cropX + cropW > originalWidth) {
+                        cropX = originalWidth - cropW;
+                    }
+                    if (cropY + cropH > originalHeight) {
+                        cropY = originalHeight - cropH;
+                    }
+                }
+                
+                updateCropRectangleUI();
+            });
+            
+            // Manual dimension inputs
+            cropWidth.addEventListener('change', function() {
+                const newWidth = parseInt(this.value);
+                if (newWidth > 0 && newWidth <= originalWidth) {
+                    cropW = newWidth;
+                    const ratio = aspectRatios[aspectRatio.value];
+                    if (ratio !== null) {
+                        cropH = cropW / ratio;
+                    }
+                    updateCropRectangleUI();
+                }
+            });
+            
+            cropHeight.addEventListener('change', function() {
+                const newHeight = parseInt(this.value);
+                if (newHeight > 0 && newHeight <= originalHeight) {
+                    cropH = newHeight;
+                    const ratio = aspectRatios[aspectRatio.value];
+                    if (ratio !== null) {
+                        cropW = cropH * ratio;
+                    }
+                    updateCropRectangleUI();
+                }
+            });
+            
+            // Preset buttons
+            document.querySelectorAll('[data-width]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ratio = parseInt(this.dataset.width) / parseInt(this.dataset.height);
+                    
+                    cropW = parseInt(this.dataset.width);
+                    cropH = parseInt(this.dataset.height);
+                    
+                    // Center crop
+                    cropX = Math.max(0, (originalWidth - cropW) / 2);
+                    cropY = Math.max(0, (originalHeight - cropH) / 2);
+                    
+                    aspectRatio.value = 'free';
+                    updateCropRectangleUI();
+                });
+            });
+            
+            // Crop button
+            cropBtn.addEventListener('click', async function() {
+                if (!originalImage) return;
+                
+                const ctx = cropCanvas.getContext('2d');
+                cropCanvas.width = Math.round(cropW);
+                cropCanvas.height = Math.round(cropH);
+                
+                ctx.drawImage(
+                    originalImage,
+                    cropX, cropY, cropW, cropH,  // Source crop
+                    0, 0, cropW, cropH           // Destination
+                );
+                
+                // Convert to blob
+                cropCanvas.toBlob(async function(blob) {
+                    const formData = new FormData();
+                    formData.append('file', new File([blob], 'image.png', { type: 'image/png' }));
+                    formData.append('x', Math.round(cropX));
+                    formData.append('y', Math.round(cropY));
+                    formData.append('width', Math.round(cropW));
+                    formData.append('height', Math.round(cropH));
+                    
+                    loadingOverlay.classList.remove('d-none');
+                    
+                    try {
+                        const response = await fetch('@Url.Action("Crop")', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.text();
+                        document.body.innerHTML = result;
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred while cropping the image.');
+                    } finally {
+                        loadingOverlay.classList.add('d-none');
+                    }
+                }, 'image/png');
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (originalImage) {
+                    updateCropRectangleUI();
+                }
+            });
+        });
+    </script>
+}

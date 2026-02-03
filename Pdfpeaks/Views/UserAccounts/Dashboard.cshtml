@@ -1,0 +1,240 @@
+@{
+    ViewData["Title"] = "Dashboard - PdfPeaks";
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <img src="https://via.placeholder.com/100" alt="Profile" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover; border: 4px solid var(--primary-color);">
+                        <h5 class="fw-bold mb-1">John Doe</h5>
+                        <p class="text-muted mb-0">Premium Member</p>
+                        <span class="badge mt-2" style="background: var(--gradient-1);">Pro Plan</span>
+                    </div>
+                    <hr>
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <a href="/UserAccounts/Dashboard" class="text-decoration-none d-flex align-items-center p-2 rounded" style="background: rgba(233, 64, 87, 0.1); color: var(--primary-color);">
+                                <i class="fas fa-tachometer-alt me-3"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="mb-3">
+                            <a href="/UserAccounts/Profile" class="text-decoration-none d-flex align-items-center p-2 rounded" style="color: var(--text-dark); transition: all 0.3s ease;">
+                                <i class="fas fa-user me-3"></i> My Profile
+                            </a>
+                        </li>
+                        <li class="mb-3">
+                            <a href="#" class="text-decoration-none d-flex align-items-center p-2 rounded" style="color: var(--text-dark); transition: all 0.3s ease;">
+                                <i class="fas fa-history me-3"></i> Conversion History
+                            </a>
+                        </li>
+                        <li class="mb-3">
+                            <a href="#" class="text-decoration-none d-flex align-items-center p-2 rounded" style="color: var(--text-dark); transition: all 0.3s ease;">
+                                <i class="fas fa-star me-3"></i> Favorites
+                            </a>
+                        </li>
+                        <li class="mb-3">
+                            <a href="/UserAccounts/Settings" class="text-decoration-none d-flex align-items-center p-2 rounded" style="color: var(--text-dark); transition: all 0.3s ease;">
+                                <i class="fas fa-cog me-3"></i> Settings
+                            </a>
+                        </li>
+                        <li class="mb-3">
+                            <a href="/UserAccounts/Logout" class="text-decoration-none d-flex align-items-center p-2 rounded" style="color: #dc3545; transition: all 0.3s ease;">
+                                <i class="fas fa-sign-out-alt me-3"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 20px;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-muted mb-1">Total Conversions</p>
+                                    <h3 class="fw-bold mb-0">1,284</h3>
+                                </div>
+                                <div class="tool-icon gradient-1" style="width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-file-pdf text-white fa-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-success mt-3 mb-0"><i class="fas fa-arrow-up"></i> 12% this month</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 20px;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-muted mb-1">Files Processed</p>
+                                    <h3 class="fw-bold mb-0">3,567</h3>
+                                </div>
+                                <div class="tool-icon gradient-2" style="width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-file-alt text-white fa-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-success mt-3 mb-0"><i class="fas fa-arrow-up"></i> 8% this month</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 20px;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-muted mb-1">Storage Used</p>
+                                    <h3 class="fw-bold mb-0">2.4 GB</h3>
+                                </div>
+                                <div class="tool-icon gradient-3" style="width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-cloud-upload-alt text-white fa-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-muted mt-3 mb-0">of 5 GB limit</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
+                <div class="card-header bg-white py-4 border-0">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-history me-2" style="color: var(--primary-color);"></i> Recent Activity</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 py-3">File Name</th>
+                                    <th class="py-3">Type</th>
+                                    <th class="py-3">Date</th>
+                                    <th class="py-3">Status</th>
+                                    <th class="px-4 py-3">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <i class="fas fa-file-pdf me-2" style="color: var(--primary-color);"></i> document.pdf
+                                    </td>
+                                    <td class="py-3">PDF to Word</td>
+                                    <td class="py-3">Feb 3, 2026</td>
+                                    <td class="py-3"><span class="badge bg-success">Completed</span></td>
+                                    <td class="px-4 py-3">
+                                        <button class="btn btn-sm btn-outline-primary me-2"><i class="fas fa-download"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <i class="fas fa-file-pdf me-2" style="color: var(--primary-color);"></i> report.pdf
+                                    </td>
+                                    <td class="py-3">Compress PDF</td>
+                                    <td class="py-3">Feb 2, 2026</td>
+                                    <td class="py-3"><span class="badge bg-success">Completed</span></td>
+                                    <td class="px-4 py-3">
+                                        <button class="btn btn-sm btn-outline-primary me-2"><i class="fas fa-download"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <i class="fas fa-file-pdf me-2" style="color: var(--primary-color);"></i> presentation.pdf
+                                    </td>
+                                    <td class="py-3">Merge PDF</td>
+                                    <td class="py-3">Feb 1, 2026</td>
+                                    <td class="py-3"><span class="badge bg-warning">Processing</span></td>
+                                    <td class="px-4 py-3">
+                                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="fas fa-clock"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-12">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-bolt me-2" style="color: var(--secondary-color);"></i> Quick Actions</h5>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="#" class="card text-decoration-none border-0 shadow-sm h-100" style="border-radius: 20px; transition: all 0.3s ease;">
+                        <div class="card-body text-center py-4">
+                            <div class="tool-icon gradient-1 mx-auto mb-3" style="width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-compress-arrows-alt text-white"></i>
+                            </div>
+                            <h6 class="fw-bold">Compress</h6>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="#" class="card text-decoration-none border-0 shadow-sm h-100" style="border-radius: 20px; transition: all 0.3s ease;">
+                        <div class="card-body text-center py-4">
+                            <div class="tool-icon gradient-2 mx-auto mb-3" style="width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-object-group text-white"></i>
+                            </div>
+                            <h6 class="fw-bold">Merge</h6>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="#" class="card text-decoration-none border-0 shadow-sm h-100" style="border-radius: 20px; transition: all 0.3s ease;">
+                        <div class="card-body text-center py-4">
+                            <div class="tool-icon gradient-3 mx-auto mb-3" style="width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-cut text-white"></i>
+                            </div>
+                            <h6 class="fw-bold">Split</h6>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="#" class="card text-decoration-none border-0 shadow-sm h-100" style="border-radius: 20px; transition: all 0.3s ease;">
+                        <div class="card-body text-center py-4">
+                            <div class="tool-icon gradient-4 mx-auto mb-3" style="width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-exchange-alt text-white"></i>
+                            </div>
+                            <h6 class="fw-bold">Convert</h6>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .list-unstyled a:hover {
+        background: rgba(233, 64, 87, 0.1) !important;
+    }
+    
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+</style>

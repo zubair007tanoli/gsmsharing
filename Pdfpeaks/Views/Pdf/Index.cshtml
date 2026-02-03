@@ -1,0 +1,421 @@
+@{
+    ViewData["Title"] = "PDF Tools - PdfPeaks";
+}
+
+<!-- Hero Section -->
+<section class="hero-section text-center py-5">
+    <div class="container">
+        <h1 class="display-3 fw-bold text-primary mb-4">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Every tool you need to work with PDFs
+        </h1>
+        <p class="lead text-muted mb-5">
+            Merge, split, compress, convert, rotate, unlock and watermark PDFs with just a few clicks
+        </p>
+    </div>
+</section>
+
+<!-- PDF Tools Grid -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Merge PDFs -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Merge" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-union text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Merge PDF</h4>
+                        <p class="card-text text-muted">Combine PDFs in the order you want with the easiest PDF merger available.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF Files
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Split PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Split" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-scissors text-info"></i>
+                        </div>
+                        <h4 class="card-title">Split PDF</h4>
+                        <p class="card-text text-muted">Separate one page or a whole set for easy conversion into independent PDF files.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Compress PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Compress" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-zip text-success"></i>
+                        </div>
+                        <h4 class="card-title">Compress PDF</h4>
+                        <p class="card-text text-muted">Reduce the size of your PDF while maintaining the best quality possible.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to Word -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertToWord" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-word text-primary"></i>
+                        </div>
+                        <h4 class="card-title">PDF to Word</h4>
+                        <p class="card-text text-muted">Convert your PDFs to the most popular document formats with ease.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to Excel -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertToExcel" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-excel text-success"></i>
+                        </div>
+                        <h4 class="card-title">PDF to Excel</h4>
+                        <p class="card-text text-muted">Pull data straight from your PDFs to make them into Excel spreadsheets.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert to PowerPoint -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertToPowerPoint" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-ppt text-danger"></i>
+                        </div>
+                        <h4 class="card-title">PDF to PowerPoint</h4>
+                        <p class="card-text text-muted">Convert your PDFs to PowerPoint presentations for easy editing.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert from Word -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertFromWord" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-word text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Word to PDF</h4>
+                        <p class="card-text text-muted">Convert your Word documents to PDF format with ease.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Word File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert from Excel -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertFromExcel" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-excel text-success"></i>
+                        </div>
+                        <h4 class="card-title">Excel to PDF</h4>
+                        <p class="card-text text-muted">Convert your Excel spreadsheets to PDF documents.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select Excel File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Convert from PowerPoint -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertFromPowerPoint" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-ppt text-danger"></i>
+                        </div>
+                        <h4 class="card-title">PowerPoint to PDF</h4>
+                        <p class="card-text text-muted">Convert your presentations to PDF documents.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PPT File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- PDF to JPG -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertToJpg" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-image text-warning"></i>
+                        </div>
+                        <h4 class="card-title">PDF to JPG</h4>
+                        <p class="card-text text-muted">Extract images from your PDF or convert each page into JPG files.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- JPG to PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertFromJpg" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-image text-primary"></i>
+                        </div>
+                        <h4 class="card-title">JPG to PDF</h4>
+                        <p class="card-text text-muted">Convert JPG images to PDF format easily.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select JPG Files
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- PDF to PNG -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="ConvertToPng" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-file-earmark-image text-info"></i>
+                        </div>
+                        <h4 class="card-title">PDF to PNG</h4>
+                        <p class="card-text text-muted">Convert PDF pages to high-quality PNG images.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Organize PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Organize" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-sort-down text-secondary"></i>
+                        </div>
+                        <h4 class="card-title">Organize PDF</h4>
+                        <p class="card-text text-muted">Sort pages of your PDF file exactly how you want.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Rotate PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Rotate" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-arrow-clockwise text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Rotate PDF</h4>
+                        <p class="card-text text-muted">Rotate your PDF pages individually or all at once.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Edit PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Edit" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-pencil-square text-success"></i>
+                        </div>
+                        <h4 class="card-title">Edit PDF</h4>
+                        <p class="card-text text-muted">Add text, shapes, images and annotations to your PDF.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Unlock PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Unlock" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-unlock text-warning"></i>
+                        </div>
+                        <h4 class="card-title">Unlock PDF</h4>
+                        <p class="card-text text-muted">Remove password security from PDF files.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Protect PDF -->
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="Protect" class="tool-card card h-100 text-decoration-none">
+                    <div class="card-body text-center p-4">
+                        <div class="tool-icon mb-3">
+                            <i class="bi bi-shield-lock text-danger"></i>
+                        </div>
+                        <h4 class="card-title">Protect PDF</h4>
+                        <p class="card-text text-muted">Add password protection to your PDF files.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <span class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Select PDF File
+                        </span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Why choose PdfPeaks?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-lightning text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4>Fast & Easy</h4>
+                    <p class="text-muted">Process your files in seconds with our optimized servers</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-shield-check text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4>Secure</h4>
+                    <p class="text-muted">Your files are automatically deleted from our servers after processing</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-gem text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4>High Quality</h4>
+                    <p class="text-muted">Maintain the best quality for all your PDF operations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Styles {
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 80px 0;
+        }
+        
+        .tool-card {
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            border-color: #0d6efd;
+        }
+        
+        .tool-card:hover .card-footer .btn {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .tool-icon {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tool-icon i {
+            font-size: 4rem;
+        }
+        
+        .tool-card .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tool-card .card-text {
+            font-size: 0.9rem;
+            min-height: 48px;
+        }
+        
+        .tool-card .card-footer {
+            padding: 1rem;
+        }
+        
+        .tool-card .card-footer .btn {
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+    </style>
+}

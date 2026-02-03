@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pdftoolspro.com/sitemap.xml
+
+# Disallow admin areas
+Disallow: /Admin/
+Disallow: /UserAccounts/
+Disallow: /Api/
+
+# Disallow sensitive directories
+Disallow: /temp/
+Disallow: /logs/
