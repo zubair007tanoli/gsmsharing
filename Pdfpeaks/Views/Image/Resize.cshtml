@@ -24,10 +24,9 @@
                                 </div>
                                 <h5 class="mb-2">Drop your image here</h5>
                                 <p class="text-muted mb-3">or</p>
-                                <label class="btn btn-primary">
+                                <button type="button" class="btn btn-primary" id="selectImageBtn">
                                     <i class="bi bi-folder-plus"></i> Select Image
-                                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
-                                </label>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -186,10 +185,23 @@
                         </div>
                         <h3 class="card-title">@TempData["Success"]</h3>
                         <p class="text-muted">@TempData["Info"]</p>
-                        <div class="d-flex justify-content-center gap-3 mt-4">
-                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg">
+                        
+                        <!-- Interactive Image Preview -->
+                        @if (TempData["DownloadUrl"] != null)
+                        {
+                            <div class="my-4 interactive-image-container" style="max-width: 500px; margin: 0 auto;">
+                                <img src="@TempData["DownloadUrl"]" alt="Resized Image Preview" 
+                                     class="img-fluid preview-image" style="cursor: grab;"/>
+                            </div>
+                        }
+                        
+                        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg" data-download="@TempData["DownloadUrl"]" data-filename="@TempData["FileName"]">
                                 <i class="bi bi-download"></i> Download Resized Image
                             </a>
+                            <button type="button" class="btn btn-outline-primary btn-lg" onclick="showShareModal('Resized Image', '@TempData["DownloadUrl"]', 'Check out my resized image from PdfPeaks!')">
+                                <i class="bi bi-share"></i> Share
+                            </button>
                             <a asp-action="Resize" class="btn btn-outline-secondary btn-lg">
                                 <i class="bi bi-arrow-repeat"></i> Resize Another
                             </a>
@@ -349,9 +361,12 @@
                 if (file) handleFile(file);
             });
             
-            dropZone.addEventListener('click', function() {
-                fileInput.click();
-            });
+            const selectImageBtn = document.getElementById('selectImageBtn');
+            if (selectImageBtn) {
+                selectImageBtn.addEventListener('click', function() {
+                    fileInput.click();
+                });
+            }
             
             // Handle file
             function handleFile(file) {

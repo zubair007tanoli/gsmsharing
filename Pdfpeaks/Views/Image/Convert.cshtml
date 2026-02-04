@@ -310,7 +310,10 @@
                 <i class="fas fa-cloud-upload-alt"></i>
             </div>
             <p class="upload-text">Drag & drop your image here</p>
-            <p class="upload-hint">or click to browse (JPG, PNG, WebP, GIF, BMP, TIFF)</p>
+            <p class="upload-hint">or</p>
+            <button type="button" class="btn btn-primary btn-lg" id="selectImageBtn">
+                <i class="fas fa-folder-open"></i> Select Image
+            </button>
             <input type="file" id="fileInput" accept="image/*" style="display: none;">
         </div>
 
@@ -386,9 +389,13 @@
                 <i class="fas fa-exchange-alt"></i>
                 Convert Image
             </button>
-            <button type="button" class="btn-tool btn-success" id="downloadBtn" style="display: none;">
+            <a id="downloadBtn" class="btn-tool btn-success" style="display: none; text-decoration: none;">
                 <i class="fas fa-download"></i>
                 Download
+            </a>
+            <button type="button" class="btn-tool btn-secondary" id="shareBtn" style="display: none;">
+                <i class="fas fa-share-alt"></i>
+                Share
             </button>
             <button type="button" class="btn-tool btn-secondary" id="clearBtn">
                 <i class="fas fa-trash-alt"></i>
@@ -425,8 +432,13 @@
 
             let currentFile = null;
             let outputFormat = 'jpg';
+            let downloadUrl = '';
+            let outputFileName = '';
 
-            uploadZone.addEventListener('click', () => fileInput.click());
+            const selectImageBtn = document.getElementById('selectImageBtn');
+            if (selectImageBtn) {
+                selectImageBtn.addEventListener('click', () => fileInput.click());
+            }
 
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
@@ -512,20 +524,60 @@
                 downloadBtn.style.display = 'none';
             });
 
-            convertBtn.addEventListener('click', () => {
+            convertBtn.addEventListener('click', async () => {
                 if (!currentFile) return;
 
                 processingOverlay.classList.add('active');
 
-                setTimeout(() => {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', currentFile);
+                    formData.append('targetFormat', outputFormat);
+                    formData.append('quality', '85');
+
+                    const response = await fetch('/Image/Convert', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
                     processingOverlay.classList.remove('active');
-                    outputPreview.classList.add('active');
-                    downloadBtn.style.display = 'flex';
-                }, 1500);
+
+                    if (result.success) {
+                        outputPreview.classList.add('active');
+                        downloadUrl = result.downloadUrl;
+                        outputFileName = result.fileName;
+                        
+                        // Update download button
+                        downloadBtn.href = result.downloadUrl;
+                        downloadBtn.style.display = 'flex';
+                        
+                        // Show share button
+                        document.getElementById('shareBtn').style.display = 'flex';
+                        
+                        outputDesc.textContent = outputFormat.toUpperCase() + ' format - Ready for download';
+                    } else {
+                        alert('Conversion failed: ' + result.message);
+                    }
+                } catch (error) {
+                    processingOverlay.classList.remove('active');
+                    alert('An error occurred during conversion.');
+                    console.error(error);
+                }
             });
 
             downloadBtn.addEventListener('click', () => {
-                alert(`Download ${outputFormat.toUpperCase()} file functionality would be implemented here.`);
+                if (downloadUrl) {
+                    window.PdfPeaks.downloadFile(downloadUrl, outputFileName);
+                }
+            });
+
+            // Share button functionality
+            document.getElementById('shareBtn').addEventListener('click', () => {
+                if (downloadUrl) {
+                    window.PdfPeaks.showShareModal('Converted Image', downloadUrl, 'Check out my converted image from PdfPeaks!');
+                }
             });
         });
     </script>

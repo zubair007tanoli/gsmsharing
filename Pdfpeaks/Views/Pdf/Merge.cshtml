@@ -4,13 +4,13 @@
 
 <div class="container-fluid py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-10">
+        <div class="col-lg-12">
             <!-- Header -->
             <div class="text-center mb-5">
                 <h1 class="display-4 fw-bold text-primary">
                     <i class="bi bi-files"></i> Merge PDF Files
                 </h1>
-                <p class="lead text-muted">Combine multiple PDF files into one document</p>
+                <p class="lead text-muted">Combine multiple PDF files into one document with visual preview</p>
             </div>
 
             <!-- Drop Zone -->
@@ -22,10 +22,9 @@
                         </div>
                         <h4 class="mb-2">Drag & Drop PDF files here</h4>
                         <p class="text-muted mb-3">or</p>
-                        <label class="btn btn-primary btn-lg">
+                        <button type="button" class="btn btn-primary btn-lg" id="selectFilesBtn">
                             <i class="bi bi-folder-plus"></i> Select PDF Files
-                            <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
-                        </label>
+                        </button>
                         <p class="text-muted mt-3 mb-0">
                             <small>Maximum file size: 100MB per file</small>
                         </p>
@@ -33,7 +32,7 @@
                 </div>
             </div>
 
-            <!-- File List with Reorder -->
+            <!-- File List with Preview -->
             <div id="fileListContainer" class="card shadow-sm mb-4 @(TempData["Success"] != null ? "d-none" : "")">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
@@ -47,18 +46,23 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <ul id="fileList" class="list-group list-group-flush file-list">
+                    <div id="fileList" class="file-list">
                         <!-- Files will be added here dynamically -->
-                    </ul>
+                    </div>
                     <div id="emptyState" class="text-center py-4 text-muted">
                         <i class="bi bi-file-earmark-pdf display-4"></i>
                         <p class="mt-2">No files selected yet</p>
                     </div>
                 </div>
                 <div class="card-footer bg-white">
-                    <button id="mergeBtn" class="btn btn-success btn-lg w-100" disabled>
-                        <i class="bi bi-union"></i> Merge PDF Files
-                    </button>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <span class="text-muted">Total pages: <strong id="totalPages">0</strong></span>
+                        </div>
+                        <button id="mergeBtn" class="btn btn-success btn-lg" disabled>
+                            <i class="bi bi-union"></i> Merge PDF Files
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -73,10 +77,13 @@
                         <h3 class="card-title">@TempData["Success"]</h3>
                         <p class="text-muted">@TempData["Info"]</p>
                         
-                        <div class="d-flex justify-content-center gap-3 mt-4">
-                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg">
+                        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg" data-download="@TempData["DownloadUrl"]" data-filename="@TempData["FileName"]">
                                 <i class="bi bi-download"></i> Download Merged PDF
                             </a>
+                            <button type="button" class="btn btn-outline-primary btn-lg" onclick="showShareModal('Merged PDF', '@TempData["DownloadUrl"]', 'Check out this merged PDF from PdfPeaks!')">
+                                <i class="bi bi-share"></i> Share
+                            </button>
                             <a asp-action="Merge" class="btn btn-outline-secondary btn-lg">
                                 <i class="bi bi-arrow-repeat"></i> Merge More Files
                             </a>
@@ -108,6 +115,12 @@
     </div>
 </div>
 
+<!-- PDF.js Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+
 @section Styles {
     <style>
         .drop-zone {
@@ -121,132 +134,320 @@
             border-color: #0d6efd !important;
         }
         
-        .drop-zone .transition-all {
-            transition: all 0.3s ease;
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
         
         .file-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
             cursor: grab;
             transition: all 0.2s ease;
-            user-select: none;
+            border: 1px solid #e9ecef;
         }
         
         .file-item:hover {
-            background-color: #f8f9fa;
+            background: #e9ecef;
         }
         
         .file-item.dragging {
             opacity: 0.5;
             transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
         .file-item .drag-handle {
             cursor: grab;
             color: #adb5bd;
+            font-size: 1.2rem;
         }
         
         .file-item .drag-handle:hover {
             color: #0d6efd;
         }
         
-        .file-item .file-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .file-item .file-name {
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .file-item .file-size {
-            font-size: 0.875rem;
-            color: #6c757d;
-        }
-        
-        .file-item .remove-btn {
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        
-        .file-item:hover .remove-btn {
-            opacity: 1;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+        .file-item .file-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #e94057 0%, #f27121 100%);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
+            color: #fff;
+            font-size: 1.2rem;
         }
         
-        .loading-overlay .spinner-container {
+        .file-item .file-info {
+            flex: 1;
+        }
+        
+        .file-item .file-name {
+            font-weight: 600;
+            color: #2d2d3f;
+            margin-bottom: 0.25rem;
+        }
+        
+        .file-item .file-meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .file-item .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .file-item .file-actions button {
+            padding: 0.5rem;
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item .file-actions button:hover {
+            background: #e9ecef;
+            color: #0d6efd;
+        }
+        
+        .file-item .file-actions button.delete:hover {
+            color: #dc3545;
+        }
+        
+        .file-item .page-preview {
+            width: 60px;
+            height: 85px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .file-item .page-preview canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .drag-placeholder {
+            border: 2px dashed #0d6efd;
+            background: rgba(13, 110, 253, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
             text-align: center;
-        }
-        
-        .sortable-ghost {
-            opacity: 0.4;
-        }
-        
-        .sortable-drag {
-            cursor: grabbing !important;
+            color: #0d6efd;
         }
     </style>
 }
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const dropZone = document.getElementById('dropZone');
             const fileInput = document.getElementById('fileInput');
             const fileList = document.getElementById('fileList');
-            const fileCount = document.getElementById('fileCount');
             const emptyState = document.getElementById('emptyState');
+            const fileCount = document.getElementById('fileCount');
             const clearAllBtn = document.getElementById('clearAllBtn');
             const mergeBtn = document.getElementById('mergeBtn');
+            const totalPages = document.getElementById('totalPages');
             const loadingOverlay = document.getElementById('loadingOverlay');
             
             let files = [];
-            let sortable;
+            let draggedItem = null;
+            let totalPageCount = 0;
+
+            // Drop zone events - only trigger file input from the select button, not the drop zone itself
+            const selectFilesBtn = document.getElementById('selectFilesBtn');
+            if (selectFilesBtn) {
+                selectFilesBtn.addEventListener('click', () => fileInput.click());
+            }
             
-            // Initialize Sortable
-            function initSortable() {
-                if (sortable) {
-                    sortable.destroy();
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+                fileInput.value = '';
+            });
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            async function handleFiles(fileList) {
+                loadingOverlay.classList.remove('d-none');
+                
+                for (const file of fileList) {
+                    if (file.type !== 'application/pdf') continue;
+                    
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                        
+                        const fileData = {
+                            id: Date.now() + Math.random(),
+                            file: file,
+                            pdfBytes: new Uint8Array(arrayBuffer),
+                            name: file.name,
+                            size: file.size,
+                            pageCount: pdfDoc.numPages,
+                            pdfDoc: pdfDoc
+                        };
+                        
+                        files.push(fileData);
+                        totalPageCount += pdfDoc.numPages;
+                    } catch (error) {
+                        console.error('Error loading PDF:', error);
+                    }
                 }
                 
-                sortable = new Sortable(fileList, {
-                    animation: 150,
-                    handle: '.drag-handle',
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    onEnd: function(evt) {
-                        // Reorder files array
-                        const movedFile = files.splice(evt.oldIndex, 1)[0];
-                        files.splice(evt.newIndex, 0, movedFile);
-                        updateFileIndices();
+                renderFileList();
+                loadingOverlay.classList.add('d-none');
+            }
+
+            async function renderFileList() {
+                fileList.innerHTML = '';
+                
+                for (const fileData of files) {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.dataset.id = fileData.id;
+                    fileItem.draggable = true;
+                    
+                    // Render first page preview
+                    const pagePreview = document.createElement('div');
+                    pagePreview.className = 'page-preview';
+                    try {
+                        const page = await fileData.pdfDoc.getPage(1);
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        const scale = 0.15;
+                        const viewport = page.getViewport({ scale });
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        await page.render({ canvasContext: context, viewport }).promise;
+                        pagePreview.appendChild(canvas);
+                    } catch (e) {
+                        pagePreview.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 bg-light"><i class="bi bi-file-pdf text-muted"></i></div>';
                     }
-                });
+                    
+                    fileItem.innerHTML = `
+                        <div class="drag-handle"><i class="bi bi-grip-vertical"></i></div>
+                        <div class="file-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+                        <div class="file-info">
+                            <div class="file-name">${fileData.name}</div>
+                            <div class="file-meta">${formatSize(fileData.size)} - ${fileData.pageCount} pages</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="move-up" title="Move up"><i class="bi bi-arrow-up"></i></button>
+                            <button class="move-down" title="Move down"><i class="bi bi-arrow-down"></i></button>
+                            <button class="delete" title="Remove"><i class="bi bi-x"></i></button>
+                        </div>
+                    `;
+                    fileItem.insertBefore(pagePreview, fileItem.querySelector('.file-info'));
+                    
+                    // Event listeners
+                    fileItem.querySelector('.move-up').addEventListener('click', () => moveFile(fileData.id, -1));
+                    fileItem.querySelector('.move-down').addEventListener('click', () => moveFile(fileData.id, 1));
+                    fileItem.querySelector('.delete').addEventListener('click', () => removeFile(fileData.id));
+                    
+                    // Drag events
+                    fileItem.addEventListener('dragstart', (e) => {
+                        draggedItem = fileItem;
+                        fileItem.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    
+                    fileItem.addEventListener('dragend', () => {
+                        fileItem.classList.remove('dragging');
+                        draggedItem = null;
+                    });
+                    
+                    fileItem.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        if (draggedItem !== fileItem) {
+                            const rect = fileItem.getBoundingClientRect();
+                            const midY = rect.top + rect.height / 2;
+                            if (e.clientY < midY) {
+                                fileList.insertBefore(draggedItem, fileItem);
+                            } else {
+                                fileList.insertBefore(draggedItem, fileItem.nextSibling);
+                            }
+                        }
+                    });
+                    
+                    fileItem.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        if (draggedItem && draggedItem !== fileItem) {
+                            // Reorder files array based on DOM order
+                            reorderFiles();
+                        }
+                    });
+                    
+                    fileList.appendChild(fileItem);
+                }
+                
+                updateUI();
             }
-            
-            // Update file indices in data attributes
-            function updateFileIndices() {
-                const items = fileList.querySelectorAll('.file-item');
-                items.forEach((item, index) => {
-                    item.dataset.index = index;
-                });
+
+            function reorderFiles() {
+                const newOrder = [];
+                const fileItems = fileList.querySelectorAll('.file-item');
+                for (const item of fileItems) {
+                    const id = parseFloat(item.dataset.id);
+                    const fileData = files.find(f => f.id === id);
+                    if (fileData) newOrder.push(fileData);
+                }
+                files = newOrder;
             }
-            
-            // Format file size
+
+            function moveFile(id, direction) {
+                const index = files.findIndex(f => f.id === id);
+                if (index < 0) return;
+                
+                const newIndex = index + direction;
+                if (newIndex < 0 || newIndex >= files.length) return;
+                
+                [files[index], files[newIndex]] = [files[newIndex], files[index]];
+                renderFileList();
+            }
+
+            function removeFile(id) {
+                const fileData = files.find(f => f.id === id);
+                if (fileData) {
+                    totalPageCount -= fileData.pageCount;
+                }
+                files = files.filter(f => f.id !== id);
+                renderFileList();
+            }
+
+            function updateUI() {
+                const count = files.length;
+                fileCount.textContent = count;
+                totalPages.textContent = totalPageCount;
+                emptyState.style.display = count === 0 ? 'block' : 'none';
+                clearAllBtn.disabled = count === 0;
+                mergeBtn.disabled = count < 2;
+            }
+
             function formatSize(bytes) {
                 if (bytes === 0) return '0 Bytes';
                 const k = 1024;
@@ -254,168 +455,54 @@
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
-            
-            // Add file to list
-            function addFile(file) {
-                const id = Date.now() + Math.random().toString(36).substr(2, 9);
-                const fileData = {
-                    id: id,
-                    file: file,
-                    name: file.name,
-                    size: file.size
-                };
-                files.push(fileData);
-                
-                const li = document.createElement('li');
-                li.className = 'list-group-item file-item d-flex align-items-center gap-3 py-3';
-                li.dataset.id = id;
-                li.dataset.index = files.length - 1;
-                
-                li.innerHTML = `
-                    <div class="drag-handle">
-                        <i class="bi bi-grip-vertical fs-4"></i>
-                    </div>
-                    <div class="file-icon text-danger">
-                        <i class="bi bi-file-earmark-pdf-fill fs-3"></i>
-                    </div>
-                    <div class="file-info">
-                        <div class="file-name" title="${file.name}">${file.name}</div>
-                        <div class="file-size">${formatSize(file.size)}</div>
-                    </div>
-                    <button type="button" class="btn btn-link remove-btn text-danger" onclick="removeFile('${id}')">
-                        <i class="bi bi-x-circle fs-5"></i>
-                    </button>
-                `;
-                
-                fileList.appendChild(li);
-                updateUI();
-                initSortable();
-            }
-            
-            // Remove file
-            window.removeFile = function(id) {
-                files = files.filter(f => f.id !== id);
-                const li = fileList.querySelector(`[data-id="${id}"]`);
-                if (li) li.remove();
-                updateUI();
-            };
-            
-            // Update UI state
-            function updateUI() {
-                const count = files.length;
-                fileCount.textContent = count;
-                
-                if (count > 0) {
-                    emptyState.classList.add('d-none');
-                    fileList.classList.remove('d-none');
-                    clearAllBtn.disabled = false;
-                    mergeBtn.disabled = count < 2;
-                } else {
-                    emptyState.classList.remove('d-none');
-                    fileList.classList.add('d-none');
-                    clearAllBtn.disabled = true;
-                    mergeBtn.disabled = true;
-                }
-            }
-            
-            // Clear all files
-            clearAllBtn.addEventListener('click', function() {
+
+            // Clear all
+            clearAllBtn.addEventListener('click', () => {
                 files = [];
-                fileList.innerHTML = '';
-                fileInput.value = '';
-                updateUI();
+                totalPageCount = 0;
+                renderFileList();
             });
-            
-            // Drop zone events
-            dropZone.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.classList.add('drag-over');
-            });
-            
-            dropZone.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.classList.remove('drag-over');
-            });
-            
-            dropZone.addEventListener('drop', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropZone.classList.remove('drag-over');
-                
-                const droppedFiles = e.dataTransfer.files;
-                handleFiles(droppedFiles);
-            });
-            
-            // File input change
-            fileInput.addEventListener('change', function(e) {
-                handleFiles(e.target.files);
-                fileInput.value = '';
-            });
-            
-            // Handle files
-            function handleFiles(fileList) {
-                for (let file of fileList) {
-                    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                        addFile(file);
-                    } else {
-                        alert(`Invalid file: ${file.name}. Please select PDF files only.`);
-                    }
-                }
-            }
-            
-            // Click on drop zone
-            dropZone.addEventListener('click', function() {
-                fileInput.click();
-            });
-            
+
             // Merge button
-            mergeBtn.addEventListener('click', async function() {
+            mergeBtn.addEventListener('click', async () => {
                 if (files.length < 2) return;
                 
-                const formData = new FormData();
-                
-                // Add files in current order
-                files.forEach((f, index) => {
-                    formData.append('files', f.file);
-                });
-                
-                // Add sort order
-                const sortOrder = files.map((_, index) => index);
-                formData.append('sortOrder', JSON.stringify(sortOrder));
-                
-                // Show loading
                 loadingOverlay.classList.remove('d-none');
                 
                 try {
-                    const response = await fetch('@Url.Action("Merge")', {
+                    const formData = new FormData();
+                    const fileBlobs = files.map(f => new Blob([f.pdfBytes], { type: 'application/pdf' }));
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        formData.append('files', fileBlobs[i], files[i].name);
+                    }
+                    
+                    // Get sort order from current DOM order
+                    reorderFiles();
+                    const sortOrder = files.map((_, i) => i);
+                    formData.append('sortOrder', JSON.stringify(sortOrder));
+                    
+                    const response = await fetch('/Pdf/Merge', {
                         method: 'POST',
                         body: formData
                     });
                     
-                    const result = await response.json();
-                    
-                    if (result.success || response.redirected) {
-                        window.location.reload();
+                    if (response.redirected) {
+                        window.location.href = response.url;
                     } else {
-                        alert(result.error || 'An error occurred while merging files.');
+                        const result = await response.json();
+                        if (result.success) {
+                            window.location.href = result.downloadUrl || '/Pdf/Merge';
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
                     }
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred while processing your files.');
-                } finally {
-                    loadingOverlay.classList.add('d-none');
+                    console.error('Error merging PDFs:', error);
+                    alert('An error occurred while merging the PDFs.');
                 }
-            });
-            
-            // Prevent default drag behavior on document
-            document.addEventListener('dragover', function(e) {
-                e.preventDefault();
-            });
-            
-            document.addEventListener('drop', function(e) {
-                e.preventDefault();
+                
+                loadingOverlay.classList.add('d-none');
             });
         });
     </script>
