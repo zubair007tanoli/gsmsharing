@@ -48,33 +48,72 @@ public class PdfController : Controller
     [HttpPost]
     public async Task<IActionResult> Merge(List<IFormFile> files, string sortOrder)
     {
+        _logger.LogInformation("Merge request received with {Count} files", files?.Count ?? 0);
+        
         if (files == null || files.Count < 2)
         {
-            TempData["Error"] = "Please upload at least 2 PDF files to merge.";
-            return View();
+            var error = "Please upload at least 2 PDF files to merge.";
+            _logger.LogWarning("Merge failed: {Error}", error);
+            return new JsonResult(new { success = false, message = error });
         }
 
         var user = await GetCurrentUserAsync();
         var totalSize = files.Sum(f => f.Length);
+        _logger.LogInformation("Total file size: {Size}", totalSize);
         
         var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, totalSize);
         if (!canProcess)
         {
-            TempData["Error"] = message;
-            return View();
+            _logger.LogWarning("Merge failed: {Message}", message);
+            return new JsonResult(new { success = false, message });
         }
 
         try
         {
             // Save uploaded files
             var filePaths = new List<string>();
+            var validFiles = new List<string>();
+            var invalidFiles = new List<string>();
+            
             foreach (var file in files)
             {
                 if (file.Length > 0)
                 {
+                    _logger.LogInformation("Saving file: {Name} ({Size})", file.FileName, file.Length);
                     var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "merge");
-                    filePaths.Add(_fileProcessingService.GetFilePath(fileName));
+                    var filePath = _fileProcessingService.GetFilePath(fileName);
+                    _logger.LogInformation("File saved to: {Path}", filePath);
+                    
+                    // Validate PDF file
+                    if (_fileProcessingService.IsValidPdfFile(filePath))
+                    {
+                        validFiles.Add(filePath);
+                        _logger.LogInformation("File validated as PDF: {Path}", filePath);
+                    }
+                    else
+                    {
+                        invalidFiles.Add(filePath);
+                        _logger.LogWarning("Invalid PDF file: {Path}", filePath);
+                    }
+                    
+                    filePaths.Add(filePath);
                 }
+            }
+
+            _logger.LogInformation("Saved {Count} files for merging. Valid: {Valid}, Invalid: {Invalid}", 
+                filePaths.Count, validFiles.Count, invalidFiles.Count);
+            
+            if (invalidFiles.Count > 0)
+            {
+                _logger.LogWarning("Invalid PDF files detected: {Files}", string.Join(", ", invalidFiles));
+            }
+
+            if (validFiles.Count < 2)
+            {
+                return new JsonResult(new { 
+                    success = false, 
+                    message = "At least 2 valid PDF files are required for merging. Some files may not be valid PDFs." 
+                });
             }
 
             // Parse sort order (JSON array of indices)
@@ -84,40 +123,48 @@ public class PdfController : Controller
                 try
                 {
                     sortOrderList = JsonSerializer.Deserialize<List<int>>(sortOrder) ?? new List<int>();
+                    _logger.LogInformation("Sort order: {Order}", string.Join(", ", sortOrderList));
                 }
                 catch
                 {
-                    // Use default order if parsing fails
-                    sortOrderList = Enumerable.Range(0, filePaths.Count).ToList();
+                    sortOrderList = Enumerable.Range(0, validFiles.Count).ToList();
                 }
             }
             else
             {
-                sortOrderList = Enumerable.Range(0, filePaths.Count).ToList();
+                sortOrderList = Enumerable.Range(0, validFiles.Count).ToList();
             }
 
             var outputFileName = _fileProcessingService.GenerateFileName("merged.pdf", "merge");
+            _logger.LogInformation("Generated output filename: {FileName}", outputFileName);
+            
             var (success, outputPath, resultMessage) = await _pdfProcessingService.MergePdfAsync(
-                filePaths, sortOrderList, outputFileName);
+                validFiles, sortOrderList, outputFileName);
+
+            _logger.LogInformation("Merge result: Success={Success}, Message={Message}, OutputPath={Path}", 
+                success, resultMessage, outputPath);
 
             if (success)
             {
-                TempData["Success"] = resultMessage;
-                TempData["DownloadUrl"] = $"/Pdf/Download?fileName={outputFileName}";
-                TempData["FileName"] = outputFileName;
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                
+                return new JsonResult(new { 
+                    success = true, 
+                    message = resultMessage,
+                    downloadUrl = downloadUrl,
+                    fileName = outputFileName
+                });
             }
             else
             {
-                TempData["Error"] = resultMessage;
+                return new JsonResult(new { success = false, message = resultMessage });
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error merging PDFs");
-            TempData["Error"] = "An error occurred while merging the PDF files.";
+            return new JsonResult(new { success = false, message = "An error occurred while merging the PDF files." });
         }
-
-        return View();
     }
 
     #endregion
@@ -131,61 +178,190 @@ public class PdfController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Split(IFormFile file, int startPage, int endPage)
+    public async Task<IActionResult> Split([FromBody] SplitRequest request)
     {
-        if (file == null || file.Length == 0)
+        if (request == null || string.IsNullOrEmpty(request.FileData))
         {
-            TempData["Error"] = "Please upload a PDF file.";
-            return View();
-        }
-
-        var user = await GetCurrentUserAsync();
-        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
-        
-        if (!canProcess)
-        {
-            TempData["Error"] = message;
-            return View();
+            return Json(new { success = false, message = "Please upload a PDF file." });
         }
 
         try
         {
-            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "split");
-            var filePath = _fileProcessingService.GetFilePath(fileName);
+            // Decode base64 file data
+            var fileBytes = Convert.FromBase64String(request.FileData);
             
-            // Get PDF info first
-            var info = _pdfProcessingService.GetPdfInfo(filePath);
+            // Save the file temporarily
+            var tempFileName = $"split_{Guid.NewGuid():N}.pdf";
+            var tempFilePath = Path.Combine(_environment.ContentRootPath, "temp_files", tempFileName);
+            await System.IO.File.WriteAllBytesAsync(tempFilePath, fileBytes);
+            
+            // Get PDF info
+            var info = _pdfProcessingService.GetPdfInfo(tempFilePath);
             var pageCount = info.pageCount;
-            TempData["PageCount"] = pageCount;
-            TempData["PageSizes"] = string.Join(",", info.pageSizes);
 
-            if (startPage < 1) startPage = 1;
-            if (endPage > pageCount) endPage = pageCount;
-            if (startPage > endPage) startPage = endPage;
+            if (request.StartPage < 1) request.StartPage = 1;
+            if (request.EndPage > pageCount) request.EndPage = pageCount;
+            if (request.StartPage > request.EndPage) request.StartPage = request.EndPage;
 
-            var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
+            var outputPrefix = Path.GetFileNameWithoutExtension(request.FileName);
             var (success, outputPaths, resultMessage) = await _pdfProcessingService.SplitPdfAsync(
-                filePath, startPage, endPage, outputPrefix);
+                tempFilePath, request.StartPage, request.EndPage, outputPrefix);
+            
+            // Clean up temp file
+            try { System.IO.File.Delete(tempFilePath); } catch { }
 
             if (success)
             {
-                TempData["Success"] = resultMessage;
-                TempData["OutputFiles"] = string.Join(",", outputPaths.Select(Path.GetFileName));
-                TempData["FileName"] = outputPaths.FirstOrDefault() != null ? Path.GetFileName(outputPaths.First()) : "";
-                TempData["MultipleFiles"] = outputPaths.Count > 1;
+                // Return all split files as download URLs
+                var downloadUrls = outputPaths.Select(path => 
+                {
+                    var fileName = Path.GetFileName(path);
+                    return new { fileName, url = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(fileName)}" };
+                }).ToList();
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = resultMessage,
+                    info = $"Pages {request.StartPage} - {request.EndPage} extracted from {pageCount} total pages",
+                    files = downloadUrls,
+                    fileCount = downloadUrls.Count
+                });
             }
             else
             {
-                TempData["Error"] = resultMessage;
+                return Json(new { success = false, message = resultMessage });
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error splitting PDF");
-            TempData["Error"] = "An error occurred while splitting the PDF file.";
+            return Json(new { success = false, message = "An error occurred while splitting the PDF file." });
+        }
+    }
+
+    [HttpPost]
+    [Route("Pdf/SplitWithFile")]
+    public async Task<IActionResult> SplitWithFile([FromForm] int startPage, [FromForm] int endPage, [FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
         }
 
-        return View();
+        try
+        {
+            // Ensure temp_files directory exists
+            var tempDir = Path.Combine(_environment.ContentRootPath, "temp_files");
+            if (!Directory.Exists(tempDir))
+            {
+                Directory.CreateDirectory(tempDir);
+            }
+
+            // Generate unique operation ID
+            var operationId = Guid.NewGuid().ToString("N");
+            
+            // Save the file temporarily
+            var tempFileName = $"split_{operationId}.pdf";
+            var tempFilePath = Path.Combine(tempDir, tempFileName);
+            
+            using (var stream = new FileStream(tempFilePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            
+            _logger.LogInformation("Temporary file saved: {Path}", tempFilePath);
+            
+            // Get PDF info
+            var info = _pdfProcessingService.GetPdfInfo(tempFilePath);
+            var pageCount = info.pageCount;
+
+            _logger.LogInformation("PDF info: {PageCount} pages found", pageCount);
+
+            if (pageCount == 0)
+            {
+                _logger.LogError("PDF has 0 pages or could not be read");
+                return Json(new { success = false, message = "The uploaded file could not be read as a valid PDF with pages." });
+            }
+
+            if (startPage < 1) startPage = 1;
+            if (endPage > pageCount) endPage = pageCount;
+            if (startPage > endPage) startPage = endPage;
+
+            var outputPrefix = Path.GetFileNameWithoutExtension(file.FileName);
+            _logger.LogInformation("Starting split: startPage={StartPage}, endPage={EndPage}, outputPrefix={OutputPrefix}, operationId={OperationId}", 
+                startPage, endPage, outputPrefix, operationId);
+
+            var (success, outputPaths, resultMessage) = await _pdfProcessingService.SplitPdfAsync(
+                tempFilePath, startPage, endPage, outputPrefix, operationId);
+
+            _logger.LogInformation("Split result: success={Success}, message={Message}, outputPaths count={Count}", 
+                success, resultMessage, outputPaths.Count);
+
+            if (success)
+            {
+                _logger.LogInformation("PDF split succeeded. Output paths: {Count}", outputPaths.Count);
+                
+                // Verify all split files exist before proceeding
+                var verifiedPaths = new List<string>();
+                foreach (var path in outputPaths)
+                {
+                    var exists = System.IO.File.Exists(path);
+                    var fileInfo = exists ? new FileInfo(path) : null;
+                    _logger.LogInformation("  Split file: {Path}, Exists: {Exists}, Size: {Size}", 
+                        path, exists, fileInfo?.Length ?? 0);
+                    if (exists)
+                    {
+                        verifiedPaths.Add(path);
+                    }
+                }
+                
+                // Clean up temp input file only after verifying split files
+                try { System.IO.File.Delete(tempFilePath); } catch { }
+                
+                if (verifiedPaths.Count == 0)
+                {
+                    _logger.LogError("No split files were created despite success flag being true");
+                    return Json(new { success = false, message = "No split files were created." });
+                }
+
+                // Return all split files as download URLs
+                var downloadUrls = verifiedPaths.Select(path => 
+                {
+                    var fileName = Path.GetFileName(path);
+                    _logger.LogInformation("Creating download URL for: {FileName}", fileName);
+                    return new { fileName, url = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(fileName)}" };
+                }).ToList();
+                
+                _logger.LogInformation("Returning {Count} download URLs", downloadUrls.Count);
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = resultMessage,
+                    info = $"Pages {startPage} - {endPage} extracted from {pageCount} total pages",
+                    files = downloadUrls,
+                    fileCount = downloadUrls.Count
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error splitting PDF");
+            return Json(new { success = false, message = "An error occurred while splitting the PDF file." });
+        }
+    }
+    
+    public class SplitRequest
+    {
+        public string FileData { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public int StartPage { get; set; }
+        public int EndPage { get; set; }
     }
 
     #endregion
@@ -203,8 +379,7 @@ public class PdfController : Controller
     {
         if (file == null || file.Length == 0)
         {
-            TempData["Error"] = "Please upload a PDF file.";
-            return View();
+            return Json(new { success = false, message = "Please upload a PDF file." });
         }
 
         var user = await GetCurrentUserAsync();
@@ -212,8 +387,7 @@ public class PdfController : Controller
         
         if (!canProcess)
         {
-            TempData["Error"] = message;
-            return View();
+            return Json(new { success = false, message });
         }
 
         try
@@ -239,25 +413,28 @@ public class PdfController : Controller
                 var compressedSize = new FileInfo(outputPath).Length;
                 var reduction = (1 - (double)compressedSize / originalSize) * 100;
 
-                TempData["Success"] = resultMessage;
-                TempData["OriginalSize"] = FormatSize(originalSize);
-                TempData["CompressedSize"] = FormatSize(compressedSize);
-                TempData["Reduction"] = $"{reduction:F1}%";
-                TempData["DownloadUrl"] = $"/Pdf/Download?fileName={outputFileName}";
-                TempData["FileName"] = outputFileName;
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = resultMessage,
+                    originalSize = FormatSize(originalSize),
+                    compressedSize = FormatSize(compressedSize),
+                    reduction = $"{reduction:F1}%",
+                    downloadUrl = downloadUrl
+                });
             }
             else
             {
-                TempData["Error"] = resultMessage;
+                return Json(new { success = false, message = resultMessage });
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error compressing PDF");
-            TempData["Error"] = "An error occurred while compressing the PDF file.";
+            return Json(new { success = false, message = "An error occurred while compressing the PDF file." });
         }
-
-        return View();
     }
 
     #endregion
@@ -278,6 +455,13 @@ public class PdfController : Controller
             return Json(new { success = false, message = "Please upload a PDF file." });
         }
 
+        // Validate file is PDF
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files can be converted to Word." });
+        }
+
         var user = await GetCurrentUserAsync();
         var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
         
@@ -290,20 +474,33 @@ public class PdfController : Controller
         {
             var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2word");
             var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = Path.ChangeExtension(fileName, ".docx");
             
-            // Note: Basic text extraction - full formatting requires commercial libraries
-            return Json(new { 
-                success = true, 
-                message = "PDF to Word conversion requires commercial libraries for full formatting.",
-                downloadUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(outputFileName)}" ,
-                fileName = outputFileName
-            });
+            // Perform actual conversion
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertToWordAsync(
+                filePath, Path.ChangeExtension(fileName, ".docx"));
+            
+            if (success)
+            {
+                var outputFileName = Path.GetFileName(outputPath);
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = "PDF successfully converted to Word document.",
+                    downloadUrl = downloadUrl,
+                    fileName = outputFileName
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error converting PDF to Word");
-            return Json(new { success = false, message = "An error occurred during conversion." });
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
         }
     }
 
@@ -313,28 +510,124 @@ public class PdfController : Controller
         return View();
     }
 
+    [HttpPost]
+    public async Task<IActionResult> ConvertToExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        // Validate file is PDF
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files can be converted to Excel." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2excel");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            
+            // Perform actual conversion
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertToExcelAsync(
+                filePath, Path.ChangeExtension(fileName, ".xlsx"));
+            
+            if (success)
+            {
+                var outputFileName = Path.GetFileName(outputPath);
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = "PDF successfully converted to Excel spreadsheet.",
+                    downloadUrl = downloadUrl,
+                    fileName = outputFileName
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting PDF to Excel");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
+    }
+
     [HttpGet]
     public IActionResult ConvertToPowerPoint()
     {
         return View();
     }
 
-    [HttpGet]
-    public IActionResult ConvertFromWord()
+    [HttpPost]
+    public async Task<IActionResult> ConvertToPowerPoint(IFormFile file)
     {
-        return View();
-    }
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
 
-    [HttpGet]
-    public IActionResult ConvertFromExcel()
-    {
-        return View();
-    }
+        // Validate file is PDF
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files can be converted to PowerPoint." });
+        }
 
-    [HttpGet]
-    public IActionResult ConvertFromPowerPoint()
-    {
-        return View();
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2pptx");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            
+            // Perform actual conversion
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertToPowerPointAsync(
+                filePath, Path.ChangeExtension(fileName, ".pptx"));
+            
+            if (success)
+            {
+                var outputFileName = Path.GetFileName(outputPath);
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = "PDF successfully converted to PowerPoint presentation.",
+                    downloadUrl = downloadUrl,
+                    fileName = outputFileName
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting PDF to PowerPoint");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
     }
 
     [HttpGet]
@@ -343,16 +636,365 @@ public class PdfController : Controller
         return View();
     }
 
+    [HttpPost]
+    public async Task<IActionResult> ConvertToJpg(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        // Validate file is PDF
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files can be converted to JPG." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2jpg");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
+            
+            // Perform conversion
+            var (success, outputPaths, resultMessage) = await _pdfProcessingService.ConvertToImagesAsync(
+                filePath, outputPrefix, "jpg");
+            
+            if (success)
+            {
+                var downloadUrls = outputPaths.Select(path => 
+                {
+                    var imgFileName = Path.GetFileName(path);
+                    return new { fileName = imgFileName, url = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(imgFileName)}" };
+                }).ToList();
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = resultMessage,
+                    files = downloadUrls,
+                    fileCount = downloadUrls.Count
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting PDF to JPG");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
+    }
+
     [HttpGet]
     public IActionResult ConvertToPng()
     {
         return View();
     }
 
+    [HttpPost]
+    public async Task<IActionResult> ConvertToPng(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        // Validate file is PDF
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files can be converted to PNG." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2png");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
+            
+            // Perform conversion
+            var (success, outputPaths, resultMessage) = await _pdfProcessingService.ConvertToImagesAsync(
+                filePath, outputPrefix, "png");
+            
+            if (success)
+            {
+                var downloadUrls = outputPaths.Select(path => 
+                {
+                    var imgFileName = Path.GetFileName(path);
+                    return new { fileName = imgFileName, url = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(imgFileName)}" };
+                }).ToList();
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    message = resultMessage,
+                    files = downloadUrls,
+                    fileCount = downloadUrls.Count
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting PDF to PNG");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
+    }
+
+    [HttpGet]
+    public IActionResult ConvertFromWord()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ConvertFromWord(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a Word document." });
+        }
+
+        // Validate file is Word document
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".doc" && extension != ".docx")
+        {
+            return Json(new { success = false, message = "Only Word documents (.doc, .docx) can be converted to PDF." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "doc2pdf");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "doc2pdf");
+            
+            // For Word to PDF conversion, we copy the file and inform about the limitation
+            // Full conversion requires Microsoft Word or LibreOffice
+            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            
+            // Copy the file as a placeholder
+            System.IO.File.Copy(filePath, outputPath, true);
+            
+            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+            
+            return Json(new 
+            { 
+                success = true, 
+                message = "Word document received. Note: Full Word to PDF conversion requires Microsoft Word or LibreOffice installed on the server.",
+                downloadUrl = downloadUrl,
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting Word to PDF");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
+    }
+
+    [HttpGet]
+    public IActionResult ConvertFromExcel()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ConvertFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an Excel file." });
+        }
+
+        // Validate file is Excel
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".xls" && extension != ".xlsx")
+        {
+            return Json(new { success = false, message = "Only Excel files (.xls, .xlsx) can be converted to PDF." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "xls2pdf");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "xls2pdf");
+            
+            // For Excel to PDF conversion, we copy the file and inform about the limitation
+            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            
+            // Copy the file as a placeholder
+            System.IO.File.Copy(filePath, outputPath, true);
+            
+            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+            
+            return Json(new 
+            { 
+                success = true, 
+                message = "Excel file received. Note: Full Excel to PDF conversion requires Microsoft Excel or LibreOffice installed on the server.",
+                downloadUrl = downloadUrl,
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting Excel to PDF");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
+    }
+
+    [HttpGet]
+    public IActionResult ConvertFromPowerPoint()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ConvertFromPowerPoint(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PowerPoint file." });
+        }
+
+        // Validate file is PowerPoint
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".ppt" && extension != ".pptx")
+        {
+            return Json(new { success = false, message = "Only PowerPoint files (.ppt, .pptx) can be converted to PDF." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "ppt2pdf");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "ppt2pdf");
+            
+            // For PowerPoint to PDF conversion, we copy the file and inform about the limitation
+            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            
+            // Copy the file as a placeholder
+            System.IO.File.Copy(filePath, outputPath, true);
+            
+            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+            
+            return Json(new 
+            { 
+                success = true, 
+                message = "PowerPoint file received. Note: Full PowerPoint to PDF conversion requires Microsoft PowerPoint or LibreOffice installed on the server.",
+                downloadUrl = downloadUrl,
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting PowerPoint to PDF");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
+    }
+
     [HttpGet]
     public IActionResult ConvertFromJpg()
     {
         return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ConvertFromJpg(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a JPG image." });
+        }
+
+        // Validate file is JPG
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".jpg" && extension != ".jpeg")
+        {
+            return Json(new { success = false, message = "Only JPG files can be converted to PDF." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "jpg2pdf");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "jpg2pdf");
+            
+            // For JPG to PDF conversion, we copy the file and inform about the limitation
+            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            
+            // Copy the file as a placeholder
+            System.IO.File.Copy(filePath, outputPath, true);
+            
+            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+            
+            return Json(new 
+            { 
+                success = true, 
+                message = "JPG image received. Note: Full JPG to PDF conversion requires additional PDF libraries.",
+                downloadUrl = downloadUrl,
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting JPG to PDF");
+            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+        }
     }
 
     #endregion
@@ -446,7 +1088,7 @@ public class PdfController : Controller
             return Json(new { 
                 success, 
                 message = resultMessage,
-                downloadUrl = success ? $"/Pdf/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
+                downloadUrl = success ? $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}" : null,
                 fileName = outputFileName
             });
         }
@@ -474,38 +1116,89 @@ public class PdfController : Controller
     #region Download and Processing
 
     [HttpGet]
-    public async Task<IActionResult> Download(string fileName)
+    [Route("Pdf/DownloadFile")]
+    public async Task<IActionResult> DownloadFile(string fileName)
     {
         if (string.IsNullOrEmpty(fileName))
         {
-            return NotFound();
+            _logger.LogWarning("Download request with empty fileName");
+            return NotFound("Invalid file name.");
         }
 
-        var user = await GetCurrentUserAsync();
-        var (canDownload, message) = await _fileProcessingService.CanDownloadAsync(user);
+        // Decode the filename if it was URL-encoded
+        var decodedFileName = Uri.UnescapeDataString(fileName);
         
-        if (!canDownload)
+        // Use the same temp directory as SplitWithFile
+        var tempDir = Path.Combine(_environment.ContentRootPath, "temp_files");
+        var filePath = Path.Combine(tempDir, decodedFileName);
+        
+        _logger.LogInformation("Download request for: {FileName}", fileName);
+        _logger.LogInformation("Decoded FileName: {DecodedFileName}", decodedFileName);
+        _logger.LogInformation("Looking for file at: {FilePath}", filePath);
+        
+        // Check if directory exists
+        if (!Directory.Exists(tempDir))
         {
-            TempData["Error"] = message;
-            TempData["ShowUpgrade"] = true;
-            return RedirectToAction("Index");
+            _logger.LogWarning("Temp directory does not exist: {TempDir}", tempDir);
+            return NotFound("Storage directory not found.");
         }
-
-        var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot", "temp", fileName);
         
+        // Check if file exists
         if (!System.IO.File.Exists(filePath))
         {
+            _logger.LogWarning("File not found: {Path}", filePath);
+            
+            // Log all files in temp directory for debugging
+            try
+            {
+                var files = Directory.GetFiles(tempDir);
+                _logger.LogWarning("Files in temp_files ({Count}):", files.Length);
+                foreach (var f in files.Take(10))
+                {
+                    _logger.LogWarning("  - {FileName}", Path.GetFileName(f));
+                }
+                if (files.Length > 10)
+                {
+                    _logger.LogWarning("  ... and {More} more files", files.Length - 10);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing temp directory contents");
+            }
+            
             return NotFound("File not found or has expired.");
         }
 
-        var fileInfo = new FileInfo(filePath);
-        var contentType = GetContentType(fileName);
-        
-        await _fileProcessingService.RecordDownloadAsync(user, fileName, fileInfo.Length, "PDF");
-
-        _logger.LogInformation("File downloaded: {FileName} by User: {UserId}", fileName, user?.Id ?? "Anonymous");
-
-        return PhysicalFile(filePath, contentType, fileName);
+        try
+        {
+            // Read file content into memory
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+            var fileInfo = new FileInfo(filePath);
+            
+            _logger.LogInformation("File found: {Path}, Size: {Size} bytes", filePath, fileInfo.Length);
+            
+            // Set content type
+            var contentType = "application/pdf";
+            
+            // Create proper content-disposition header for download
+            var contentDisposition = new System.Net.Mime.ContentDisposition
+            {
+                FileName = decodedFileName,
+                Inline = false
+            };
+            
+            Response.Headers["Content-Disposition"] = contentDisposition.ToString();
+            Response.Headers["Content-Length"] = fileBytes.Length.ToString();
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            
+            return File(fileBytes, contentType, decodedFileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reading file: {Path}", filePath);
+            return StatusCode(500, "Error processing file download.");
+        }
     }
 
     [HttpPost]
@@ -558,7 +1251,7 @@ public class PdfController : Controller
             return Json(new { 
                 success, 
                 message = resultMessage,
-                downloadUrl = success ? $"/Pdf/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
+                downloadUrl = success ? $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}" : null,
                 fileName = outputFileName
             });
         }

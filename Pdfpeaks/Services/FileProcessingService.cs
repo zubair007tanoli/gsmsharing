@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Pdfpeaks.Models;
 
 namespace Pdfpeaks.Services;
@@ -31,12 +30,29 @@ public class FileProcessingService
         _serviceProvider = serviceProvider;
         _logger = logger;
         _environment = environment;
-        _tempFilePath = Path.Combine(environment.ContentRootPath, "wwwroot", "temp");
+        _tempFilePath = Path.Combine(environment.ContentRootPath, "temp_files");
         
         // Ensure temp directory exists
-        if (!Directory.Exists(_tempFilePath))
+        EnsureTempDirectory();
+    }
+
+    private void EnsureTempDirectory()
+    {
+        try
         {
-            Directory.CreateDirectory(_tempFilePath);
+            if (!Directory.Exists(_tempFilePath))
+            {
+                Directory.CreateDirectory(_tempFilePath);
+                _logger.LogInformation("Created temp directory: {Path}", _tempFilePath);
+            }
+            else
+            {
+                _logger.LogInformation("Temp directory already exists: {Path}", _tempFilePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating temp directory: {Path}", _tempFilePath);
         }
     }
 
@@ -161,6 +177,50 @@ public class FileProcessingService
     }
 
     /// <summary>
+    /// Check if a file is a valid PDF by checking its magic bytes
+    /// </summary>
+    public bool IsValidPdfFile(string filePath)
+    {
+        try
+        {
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning("File does not exist: {Path}", filePath);
+                return false;
+            }
+
+            var fileInfo = new FileInfo(filePath);
+            if (fileInfo.Length == 0)
+            {
+                _logger.LogWarning("File is empty: {Path}", filePath);
+                return false;
+            }
+
+            // Check PDF magic bytes (%PDF-)
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            var header = new byte[5];
+            stream.ReadExactly(header, 0, 5);
+            var headerStr = System.Text.Encoding.ASCII.GetString(header);
+            
+            if (headerStr.StartsWith("%PDF-"))
+            {
+                _logger.LogInformation("Valid PDF header detected for: {Path}", filePath);
+                return true;
+            }
+            else
+            {
+                _logger.LogWarning("Invalid PDF header for: {Path}. Header: {Header}", filePath, headerStr);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating PDF file: {Path}", filePath);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Save uploaded file to temp directory
     /// </summary>
     public async Task<string> SaveUploadedFileAsync(IFormFile file, string operationType)
@@ -168,8 +228,13 @@ public class FileProcessingService
         var fileName = GenerateFileName(file.FileName, operationType);
         var filePath = Path.Combine(_tempFilePath, fileName);
 
+        _logger.LogInformation("Saving file: {Name} to {Path}", file.FileName, filePath);
+
         await using var stream = new FileStream(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
+
+        var fileInfo = new FileInfo(filePath);
+        _logger.LogInformation("File saved successfully: {Path} ({Size} bytes)", filePath, fileInfo.Length);
 
         return fileName;
     }

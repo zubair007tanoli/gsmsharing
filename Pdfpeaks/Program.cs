@@ -7,8 +7,18 @@ using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to accept larger request bodies (for PDF uploads)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 150_000_000; // 150MB
+});
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options => 
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
 // Try to add DbContext - skip if no connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

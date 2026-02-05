@@ -16,7 +16,7 @@
             <!-- Upload Section -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
-                    <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-5 text-center bg-light">
+                    <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-5 text-center bg-light" style="position: relative;">
                         <div class="mb-3">
                             <i class="bi bi-cloud-upload display-1 text-primary"></i>
                         </div>
@@ -28,6 +28,8 @@
                         <p class="text-muted mt-3 mb-0">
                             <small>Maximum file size: 100MB</small>
                         </p>
+                        <!-- Hidden file input -->
+                        <input type="file" id="fileInput" accept=".pdf" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
                     </div>
                 </div>
             </div>
@@ -77,47 +79,27 @@
             </div>
 
             <!-- Success Result -->
-            @if (TempData["Success"] != null)
-            {
-                <div id="resultContainer" class="card shadow-sm mb-4">
-                    <div class="card-body text-center">
-                        <div class="mb-4">
-                            <i class="bi bi-check-circle-fill text-success display-1"></i>
-                        </div>
-                        <h3 class="card-title">@TempData["Success"]</h3>
-                        <p class="text-muted">@TempData["Info"]</p>
-                        
-                        @if (TempData["MultipleFiles"] != null && (bool?)TempData["MultipleFiles"] == true)
-                        {
-                            <div class="alert alert-success mt-4">
-                                <h5><i class="bi bi-box-seam"></i> Split Files Generated</h5>
-                                <p>Your PDF has been split into multiple files.</p>
-                            </div>
-                        }
-                        
-                        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
-                            @if (TempData["MultipleFiles"] != null && (bool?)TempData["MultipleFiles"] == true)
-                            {
-                                <span class="btn btn-primary btn-lg disabled">
-                                    <i class="bi bi-download"></i> Download All Files
-                                </span>
-                            }
-                            else
-                            {
-                                <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg" data-download="@TempData["DownloadUrl"]" data-filename="@TempData["FileName"]">
-                                    <i class="bi bi-download"></i> Download
-                                </a>
-                            }
-                            <button type="button" class="btn btn-outline-primary btn-lg" onclick="showShareModal('Split PDF', '@TempData["DownloadUrl"]', 'Check out this split PDF from PdfPeaks!')">
-                                <i class="bi bi-share"></i> Share
-                            </button>
-                            <a asp-action="Split" class="btn btn-outline-secondary btn-lg">
-                                <i class="bi bi-arrow-repeat"></i> Split Another File
-                            </a>
-                        </div>
+            <div id="resultContainer" class="card shadow-sm mb-4" style="display: none;">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success display-1"></i>
+                    </div>
+                    <h3 class="card-title" id="splitSuccessMessage">PDF Split Successfully!</h3>
+                    <p class="text-muted" id="splitInfoMessage">Your split PDF is ready.</p>
+                    
+                    <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+                        <a id="splitDownloadBtn" href="#" class="btn btn-primary btn-lg">
+                            <i class="bi bi-download"></i> Download Split PDF
+                        </a>
+                        <button id="shareBtn" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-share"></i> Share
+                        </button>
+                        <button id="splitAnotherBtn" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-repeat"></i> Split Another File
+                        </button>
                     </div>
                 </div>
-            }
+            </div>
 
             <!-- Error Alert -->
             @if (TempData["Error"] != null)
@@ -254,6 +236,7 @@
             
             let pdfDoc = null;
             let pdfBytes = null;
+            let originalFile = null;  // Store the original file object
             let selectedPages = new Set();
             let currentFileName = '';
 
@@ -292,6 +275,7 @@
                     return;
                 }
                 
+                originalFile = file;  // Store the original file object
                 currentFileName = file.name;
                 document.getElementById('pdfFileName').textContent = file.name;
                 
@@ -302,9 +286,11 @@
                 try {
                     const arrayBuffer = await file.arrayBuffer();
                     pdfBytes = new Uint8Array(arrayBuffer);
+                    console.log('PDF loaded: file size =', pdfBytes.length, 'bytes');
                     
-                    // Load PDF document
-                    pdfDoc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+                    // Load PDF document using PDF.js v3+ syntax
+                    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+                    pdfDoc = await loadingTask.promise;
                     document.getElementById('pdfPageCount').textContent = pdfDoc.numPages;
                     
                     // Render pages
@@ -316,7 +302,9 @@
                     updateSelection();
                 } catch (error) {
                     console.error('Error loading PDF:', error);
-                    alert('Error loading PDF. Please try another file.');
+                    alert('Error loading PDF: ' + error.message + '. Please try another file.');
+                    pdfBytes = null;
+                    originalFile = null;
                 }
                 
                 loadingOverlay.classList.add('d-none');
@@ -325,7 +313,7 @@
             async function renderPage(pageNum) {
                 const page = await pdfDoc.getPage(pageNum);
                 const scale = 0.3;
-                const viewport = page.getViewport({ scale });
+                const viewport = page.getViewport({ scale: scale });
                 
                 const pageItem = document.createElement('div');
                 pageItem.className = 'pdf-page-item';
@@ -426,7 +414,18 @@
 
             // Split button
             splitBtn.addEventListener('click', async () => {
-                if (selectedPages.size === 0) return;
+                if (selectedPages.size === 0) {
+                    alert('Please select pages to split.');
+                    return;
+                }
+                
+                if (!originalFile) {
+                    console.error('originalFile is null or undefined');
+                    alert('Please upload a PDF file first.');
+                    return;
+                }
+                
+                console.log('Starting split. Original file:', originalFile.name, 'Size:', originalFile.size);
                 
                 const selectedArray = Array.from(selectedPages).sort((a, b) => a - b);
                 const startPage = Math.min(...selectedArray);
@@ -436,32 +435,118 @@
                 loadingOverlay.querySelector('h4').textContent = 'Splitting PDF...';
                 
                 try {
+                    // Use the original file object directly with FormData
                     const formData = new FormData();
-                    formData.append('file', new Blob([pdfBytes], { type: 'application/pdf' }), currentFileName);
+                    formData.append('file', originalFile);
                     formData.append('startPage', startPage);
                     formData.append('endPage', endPage);
                     
-                    const response = await fetch('/Pdf/Split', {
+                    console.log('Sending split request for pages:', startPage, '-', endPage, 'File size:', originalFile.size);
+                    
+                    const response = await fetch('/Pdf/SplitWithFile', {
                         method: 'POST',
                         body: formData
                     });
                     
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else {
-                        const result = await response.json();
-                        if (result.success) {
-                            window.location.href = result.downloadUrl || '/Pdf/Split';
-                        } else {
-                            alert('Error: ' + result.message);
+                    console.log('Response status:', response.status);
+                    
+                    const result = await response.json();
+                    console.log('Response result:', result);
+                    
+                    loadingOverlay.classList.add('d-none');
+                    
+                    if (result.success) {
+                        console.log('Split successful:', result);
+                        
+                        // Hide preview and show result
+                        document.getElementById('dropZone').closest('.card').style.display = 'none';
+                        document.getElementById('pdfPreviewContainer').style.display = 'none';
+                        document.getElementById('resultContainer').style.display = 'block';
+                        
+                        // Update result messages
+                        document.getElementById('splitSuccessMessage').textContent = result.message || 'PDF Split Successfully!';
+                        document.getElementById('splitInfoMessage').textContent = result.info || `Pages ${startPage} - ${endPage} extracted`;
+                        
+                        // Setup download button
+                        const downloadBtn = document.getElementById('splitDownloadBtn');
+                        if (result.files && result.files.length > 0) {
+                            const downloadUrl = result.files[0].url;
+                            const fileName = result.files[0].fileName;
+                            
+                            console.log('Download URL set to:', downloadUrl);
+                            console.log('File name:', fileName);
+                            
+                            // Remove any existing event listeners
+                            downloadBtn.removeAttribute('href');
+                            
+                            // Set up click handler for programmatic download
+                            downloadBtn.onclick = function(e) {
+                                e.preventDefault();
+                                
+                                console.log('Download button clicked, URL:', downloadUrl);
+                                
+                                // Create XMLHttpRequest for download
+                                const xhr = new XMLHttpRequest();
+                                xhr.open('GET', downloadUrl, true);
+                                xhr.responseType = 'blob';
+                                
+                                xhr.onload = function() {
+                                    if (xhr.status === 200) {
+                                        // Create blob link and download
+                                        const blob = xhr.response;
+                                        const blobUrl = window.URL.createObjectURL(blob);
+                                        
+                                        const link = document.createElement('a');
+                                        link.href = blobUrl;
+                                        link.download = fileName;
+                                        link.style.display = 'none';
+                                        
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        
+                                        // Clean up
+                                        setTimeout(function() {
+                                            document.body.removeChild(link);
+                                            window.URL.revokeObjectURL(blobUrl);
+                                        }, 100);
+                                        
+                                        console.log('Download completed for:', fileName);
+                                    } else {
+                                        console.error('Download failed, status:', xhr.status);
+                                        alert('Download failed. Please try again.');
+                                    }
+                                };
+                                
+                                xhr.onerror = function() {
+                                    console.error('Download error:', xhr.statusText);
+                                    alert('Download error. Please try again.');
+                                };
+                                
+                                xhr.send();
+                            };
                         }
+                        
+                        // Share button
+                        document.getElementById('shareBtn').onclick = function() {
+                            if (typeof showShareModal === 'function') {
+                                const downloadUrl = result.files && result.files.length > 0 ? result.files[0].url : '';
+                                showShareModal('Split PDF', downloadUrl, 'Check out this split PDF from PdfPeaks!');
+                            }
+                        };
+                    } else {
+                        console.error('Split failed:', result);
+                        alert('Error: ' + (result.message || 'An error occurred while splitting the PDF.'));
                     }
                 } catch (error) {
                     console.error('Error splitting PDF:', error);
-                    alert('An error occurred while splitting the PDF.');
+                    loadingOverlay.classList.add('d-none');
+                    alert('An error occurred while splitting the PDF: ' + error.message);
                 }
-                
-                loadingOverlay.classList.add('d-none');
+            });
+            
+            // Split another button
+            document.getElementById('splitAnotherBtn').addEventListener('click', function() {
+                location.reload();
             });
         });
     </script>

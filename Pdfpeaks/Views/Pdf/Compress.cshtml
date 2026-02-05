@@ -16,15 +16,15 @@
             <!-- Drop Zone -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
-                    <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-5 text-center bg-light">
+                    <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-5 text-center bg-light" style="position: relative;">
                         <div class="mb-3">
                             <i class="bi bi-cloud-upload display-1 text-primary"></i>
                         </div>
                         <h4 class="mb-2">Drop your PDF file here</h4>
                         <p class="text-muted mb-3">or</p>
-                        <label class="btn btn-primary btn-lg">
+                        <label class="btn btn-primary btn-lg" style="position: relative; z-index: 1;">
                             <i class="bi bi-folder-plus"></i> Select PDF File
-                            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+                            <input type="file" id="fileInput" accept=".pdf" multiple style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;">
                         </label>
                         <p class="text-muted mt-3 mb-0">
                             <small>Maximum file size: 100MB</small>
@@ -97,56 +97,52 @@
             </div>
 
             <!-- Success Result -->
-            @if (TempData["Success"] != null)
-            {
-                <div id="resultContainer" class="card shadow-sm mb-4">
-                    <div class="card-body text-center">
-                        <div class="mb-4">
-                            <i class="bi bi-check-circle-fill text-success display-1"></i>
-                        </div>
-                        <h3 class="card-title">@TempData["Success"]</h3>
-                        
-                        <div class="row justify-content-center mt-4">
-                            <div class="col-md-8">
-                                <div class="card bg-light">
-                                    <div class="card-body">
-                                        <div class="row text-center">
-                                            <div class="col-4">
-                                                <small class="text-muted">Original Size</small>
-                                                <div class="fw-bold">@TempData["OriginalSize"]</div>
-                                            </div>
-                                            <div class="col-4">
-                                                <i class="bi bi-arrow-right text-primary fs-4"></i>
-                                                <div class="text-success fw-bold">@TempData["Reduction"]</div>
-                                                <small class="text-muted">Reduction</small>
-                                            </div>
-                                            <div class="col-4">
-                                                <small class="text-muted">Compressed</small>
-                                                <div class="fw-bold">@TempData["CompressedSize"]</div>
-                                            </div>
+            <div id="resultContainer" class="card shadow-sm mb-4" style="display: none;">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success display-1"></i>
+                    </div>
+                    <h3 class="card-title" id="successMessage">PDF Compressed Successfully!</h3>
+                    
+                    <div class="row justify-content-center mt-4">
+                        <div class="col-md-8">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-muted">Original Size</small>
+                                            <div class="fw-bold" id="originalSize">-</div>
                                         </div>
-                                        
-                                        <!-- Progress bar showing compression -->
-                                        <div class="progress mt-3" style="height: 8px;">
-                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                 style="width: @TempData["Reduction"]"></div>
+                                        <div class="col-4">
+                                            <i class="bi bi-arrow-right text-primary fs-4"></i>
+                                            <div class="text-success fw-bold" id="reduction">-</div>
+                                            <small class="text-muted">Reduction</small>
                                         </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">Compressed</small>
+                                            <div class="fw-bold" id="compressedSize">-</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress bar showing compression -->
+                                    <div class="progress mt-3" style="height: 8px;">
+                                        <div class="progress-bar bg-success" id="reductionBar" role="progressbar" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="d-flex justify-content-center gap-3 mt-4">
-                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg">
-                                <i class="bi bi-download"></i> Download Compressed PDF
-                            </a>
-                            <a asp-action="Compress" class="btn btn-outline-secondary btn-lg">
-                                <i class="bi bi-arrow-repeat"></i> Compress Another File
-                            </a>
-                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <a id="downloadBtn" href="#" class="btn btn-primary btn-lg">
+                            <i class="bi bi-download"></i> Download Compressed PDF
+                        </a>
+                        <button id="compressAnotherBtn" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-repeat"></i> Compress Another File
+                        </button>
                     </div>
                 </div>
-            }
+            </div>
 
             <!-- Error Alert -->
             @if (TempData["Error"] != null)
@@ -291,6 +287,7 @@
                 formData.append('quality', quality);
                 
                 loadingOverlay.classList.remove('d-none');
+                compressBtn.disabled = true;
                 
                 try {
                     const response = await fetch('@Url.Action("Compress")', {
@@ -298,14 +295,66 @@
                         body: formData
                     });
                     
-                    const result = await response.text();
-                    document.body.innerHTML = result;
+                    const result = await response.json();
+                    
+                    loadingOverlay.classList.add('d-none');
+                    
+                    if (result.success) {
+                        console.log('Compression successful:', result);
+                        
+                        // Show result section
+                        document.getElementById('dropZone').closest('.card').style.display = 'none';
+                        document.getElementById('compressOptions').style.display = 'none';
+                        document.getElementById('resultContainer').style.display = 'block';
+                        
+                        // Update result info
+                        document.getElementById('successMessage').textContent = result.message || 'PDF Compressed Successfully!';
+                        document.getElementById('originalSize').textContent = result.originalSize;
+                        document.getElementById('compressedSize').textContent = result.compressedSize;
+                        document.getElementById('reduction').textContent = result.reduction;
+                        document.getElementById('reductionBar').style.width = result.reduction;
+                        
+                        // Setup download button
+                        const downloadBtn = document.getElementById('downloadBtn');
+                        downloadBtn.href = result.downloadUrl;
+                        
+                        // Manual download with visual feedback
+                        downloadBtn.onclick = function(e) {
+                            e.preventDefault();
+                            console.log('Manual download clicked, URL:', result.downloadUrl);
+                            
+                            // Create a temporary anchor and click it
+                            const tempLink = document.createElement('a');
+                            tempLink.href = result.downloadUrl;
+                            tempLink.target = '_blank';
+                            document.body.appendChild(tempLink);
+                            tempLink.click();
+                            document.body.removeChild(tempLink);
+                        };
+                        
+                        // Try automatic download
+                        setTimeout(() => {
+                            console.log('Attempting auto-download...');
+                            downloadBtn.click();
+                        }, 500);
+                        
+                        compressBtn.disabled = false;
+                    } else {
+                        console.error('Compression failed:', result);
+                        alert(result.message || 'An error occurred while compressing the PDF.');
+                        compressBtn.disabled = false;
+                    }
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('An error occurred while compressing the PDF.');
-                } finally {
                     loadingOverlay.classList.add('d-none');
+                    alert('An error occurred while compressing the PDF: ' + error.message);
+                    compressBtn.disabled = false;
                 }
+            });
+            
+            // Compress another button
+            document.getElementById('compressAnotherBtn').addEventListener('click', function() {
+                location.reload();
             });
         });
     </script>

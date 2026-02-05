@@ -4,7 +4,10 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
+using PdfSharpCore.Pdf;
+using PdfSharpCore.Drawing;
 using Pdfpeaks.Models;
 
 namespace Pdfpeaks.Services;
@@ -20,7 +23,7 @@ public class ImageProcessingService
     public ImageProcessingService(ILogger<ImageProcessingService> logger, IWebHostEnvironment environment)
     {
         _logger = logger;
-        _tempFilePath = Path.Combine(environment.ContentRootPath, "wwwroot", "temp");
+        _tempFilePath = Path.Combine(environment.ContentRootPath, "temp_files");
         
         if (!Directory.Exists(_tempFilePath))
         {
@@ -182,6 +185,7 @@ public class ImageProcessingService
                 "jpg" or "jpeg" => new JpegEncoder(),
                 "bmp" => new BmpEncoder(),
                 "gif" => new GifEncoder(),
+                "webp" => new WebpEncoder(),
                 _ => new PngEncoder()
             };
             
@@ -211,13 +215,44 @@ public class ImageProcessingService
                 return (false, "", "Input file not found.");
             }
 
+            // Load the image
+            using var image = await Image.LoadAsync(inputPath);
+            
+            // Create a new PDF document
+            var document = new PdfDocument();
+            document.Info.Title = Path.GetFileNameWithoutExtension(inputPath);
+            
+            // Create a page with the same aspect ratio as the image
+            var page = document.AddPage();
+            
+            // Set page size to match image dimensions (in points)
+            // 1 inch = 72 points
+            double imageWidth = image.Width * 72.0 / image.Metadata.HorizontalResolution;
+            double imageHeight = image.Height * 72.0 / image.Metadata.VerticalResolution;
+            
+            page.Width = imageWidth;
+            page.Height = imageHeight;
+            
+            // Create XGraphics object for drawing
+            using var gfx = XGraphics.FromPdfPage(page);
+            
+            // Save image to a temporary file in a format PDF can use
+            var tempImagePath = Path.Combine(_tempFilePath, $"temp_{Guid.NewGuid():N}.png");
+            await image.SaveAsync(tempImagePath, new PngEncoder());
+            
+            // Load the image into XImage
+            using var xImage = XImage.FromFile(tempImagePath);
+            
+            // Draw the image on the PDF page
+            gfx.DrawImage(xImage, 0, 0, imageWidth, imageHeight);
+            
+            // Clean up temp image
+            try { File.Delete(tempImagePath); } catch { }
+            
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            document.Save(outputPath);
             
-            // Note: Full image to PDF conversion requires additional PDF library
-            // For now, copy the file with a PDF extension as placeholder
-            await Task.CompletedTask;
-            
-            _logger.LogInformation("Image to PDF conversion initiated");
+            _logger.LogInformation("Image converted to PDF: {Input} -> {Output}", inputPath, outputPath);
             return (true, outputPath, "Successfully converted image to PDF.");
         }
         catch (Exception ex)

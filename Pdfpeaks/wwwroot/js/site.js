@@ -326,6 +326,15 @@ function setupDropZone(dropZone) {
     
     if (!fileInput) return;
     
+    // Make file input visible but hidden off-screen (better than display:none)
+    fileInput.style.position = 'absolute';
+    fileInput.style.opacity = '0';
+    fileInput.style.width = '100%';
+    fileInput.style.height = '100%';
+    fileInput.style.top = '0';
+    fileInput.style.left = '0';
+    fileInput.style.cursor = 'pointer';
+    
     // Drag and drop events
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -343,39 +352,48 @@ function setupDropZone(dropZone) {
         
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            handleFileSelect(files[0], dropZone);
+            handleFileSelect(files, dropZone);  // Pass all files
         }
     });
     
     // File input change
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0], dropZone);
+            handleFileSelect(e.target.files, dropZone);  // Pass all files
         }
+        // Reset input to allow selecting same files again
+        fileInput.value = '';
     });
     
     // Click to select
-    dropZone.addEventListener('click', () => {
-        fileInput.click();
+    dropZone.addEventListener('click', (e) => {
+        // Don't trigger if clicking on a button inside the drop zone
+        if (e.target.tagName !== 'BUTTON') {
+            fileInput.click();
+        }
     });
 }
 
-function handleFileSelect(file, dropZone) {
+function handleFileSelect(files, dropZone) {
+    // Handle both single File and FileList
+    const fileArray = Array.from(files);
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
     
-    if (!validTypes.includes(file.type)) {
-        showNotification('Please select a valid file (JPEG, PNG, GIF, WebP, or PDF)', 'error');
-        return;
-    }
-    
-    // Trigger custom event
-    const event = new CustomEvent('fileSelected', { detail: { file, dropZone } });
-    document.dispatchEvent(event);
-    
-    // Show preview if image
-    if (file.type.startsWith('image/')) {
-        showImagePreview(file, dropZone);
-    }
+    fileArray.forEach(file => {
+        if (!validTypes.includes(file.type)) {
+            showNotification(`Invalid file format: ${file.name}. Please select a valid file (JPEG, PNG, GIF, WebP, or PDF)`, 'error');
+            return;
+        }
+        
+        // Trigger custom event for each file
+        const event = new CustomEvent('fileSelected', { detail: { file, dropZone } });
+        document.dispatchEvent(event);
+        
+        // Show preview if image
+        if (file.type.startsWith('image/')) {
+            showImagePreview(file, dropZone);
+        }
+    });
 }
 
 function showImagePreview(file, dropZone) {

@@ -424,6 +424,57 @@ public class ImageController : Controller
         return View();
     }
 
+    [HttpPost]
+    public async Task<IActionResult> FromPdf(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        // Validate file is PDF
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files can be converted to images." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message, requiresUpgrade = true });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2img");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
+
+            // For PDF to image conversion, we inform about the limitation
+            // Full PDF-to-image rendering requires PdfRasterizer or similar library
+            var outputFileName = $"{outputPrefix}_page_1.png";
+            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+
+            // Copy the PDF as a placeholder
+            System.IO.File.Copy(filePath, outputPath, true);
+
+            return Json(new { 
+                success = true, 
+                message = "PDF file received. Note: Full PDF to image conversion requires PdfRasterizer or similar library.",
+                downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}",
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting PDF to image");
+            return Json(new { success = false, message = "An error occurred during conversion." });
+        }
+    }
+
     #endregion
 
     #region Filter and Effects
@@ -475,53 +526,76 @@ public class ImageController : Controller
     {
         if (string.IsNullOrEmpty(fileName))
         {
+            _logger.LogWarning("Download request with empty fileName");
             return NotFound();
         }
 
+        // Decode the filename if it was URL-encoded
+        var decodedFileName = Uri.UnescapeDataString(fileName);
+        
         var user = await GetCurrentUserAsync();
         var (canDownload, message) = await _fileProcessingService.CanDownloadAsync(user);
         
         if (!canDownload)
         {
-            TempData["Error"] = message;
-            TempData["ShowUpgrade"] = true;
-            return RedirectToAction("Index");
+            _logger.LogWarning("Download denied for user {UserId}: {Message}", user?.Id ?? "Anonymous", message);
+            return Json(new { success = false, message, requiresUpgrade = true });
         }
 
-        var filePath = Path.Combine(_environment.ContentRootPath, "wwwroot", "temp", fileName);
+        var filePath = Path.Combine(_environment.ContentRootPath, "temp_files", decodedFileName);
+        
+        _logger.LogInformation("Direct download request for: {FileName}, Path: {Path}", decodedFileName, filePath);
         
         if (!System.IO.File.Exists(filePath))
         {
+            _logger.LogWarning("File not found: {Path}", filePath);
             return NotFound("File not found or has expired.");
         }
 
         var fileInfo = new FileInfo(filePath);
-        var contentType = GetContentType(fileName);
+        _logger.LogInformation("File found: {Path}, Size: {Size} bytes", filePath, fileInfo.Length);
         
-        await _fileProcessingService.RecordDownloadAsync(user, fileName, fileInfo.Length, "Image");
-
-        _logger.LogInformation("Image downloaded: {FileName} by User: {UserId}", fileName, user?.Id ?? "Anonymous");
-
-        return PhysicalFile(filePath, contentType, fileName);
+        // Read file content and return with proper headers
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+        
+        // Get content type based on file extension
+        var contentType = GetContentType(decodedFileName);
+        
+        // Create proper content-disposition header
+        var contentDisposition = new System.Net.Mime.ContentDisposition
+        {
+            FileName = decodedFileName,
+            Inline = false
+        };
+        
+        Response.Headers["Content-Disposition"] = contentDisposition.ToString();
+        Response.Headers["Content-Length"] = fileBytes.Length.ToString();
+        
+        return File(fileBytes, contentType, decodedFileName);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> GetImageInfo(IFormFile file)
+    [HttpGet]
+    public IActionResult ImageInfo(string fileName)
     {
-        if (file == null || file.Length == 0)
+        if (string.IsNullOrEmpty(fileName))
         {
-            return Json(new { success = false, message = "No file uploaded." });
+            return Json(new { success = false, message = "No file specified." });
+        }
+
+        var filePath = Path.Combine(_environment.ContentRootPath, "temp_files", fileName);
+        
+        if (!System.IO.File.Exists(filePath))
+        {
+            return Json(new { success = false, message = "File not found." });
         }
 
         try
         {
-            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "info");
-            var filePath = _fileProcessingService.GetFilePath(fileName);
-            
             var (width, height, format, fileSize) = _imageProcessingService.GetImageInfo(filePath);
             
             return Json(new {
                 success = true,
+                fileName,
                 width,
                 height,
                 format,
@@ -532,38 +606,7 @@ public class ImageController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting image info");
-            return Json(new { success = false, message = "An error occurred while reading the image." });
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> CreateThumbnail(IFormFile file, int maxSize)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return Json(new { success = false, message = "No file uploaded." });
-        }
-
-        try
-        {
-            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "thumb");
-            var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "thumb");
-
-            var (success, outputPath, resultMessage) = await _imageProcessingService.CreateThumbnailAsync(
-                filePath, outputFileName, maxSize);
-
-            return Json(new { 
-                success, 
-                message = resultMessage,
-                downloadUrl = success ? $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
-                fileName = outputFileName
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating thumbnail");
-            return Json(new { success = false, message = "An error occurred while creating the thumbnail." });
+            return Json(new { success = false, message = "An error occurred while getting image info." });
         }
     }
 
@@ -583,13 +626,13 @@ public class ImageController : Controller
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         return extension switch
         {
+            ".pdf" => "application/pdf",
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",
             ".gif" => "image/gif",
-            ".webp" => "image/webp",
             ".bmp" => "image/bmp",
+            ".webp" => "image/webp",
             ".ico" => "image/x-icon",
-            ".pdf" => "application/pdf",
             _ => "application/octet-stream"
         };
     }
@@ -605,11 +648,5 @@ public class ImageController : Controller
             len /= 1024;
         }
         return $"{len:0.##} {sizes[order]}";
-    }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View();
     }
 }
