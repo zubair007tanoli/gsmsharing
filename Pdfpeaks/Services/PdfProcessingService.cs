@@ -4,6 +4,9 @@ using PdfSharpCore.Drawing;
 using Pdfpeaks.Models;
 using System.Text;
 using System.Diagnostics;
+using System.Drawing;
+using Xceed.Document.NET;
+using Xceed.Words.NET;
 
 namespace Pdfpeaks.Services;
 
@@ -560,7 +563,7 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Convert PDF to Word document (.docx) using HTML format
+    /// Convert PDF to Word document (.docx) using DocX library
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToWordAsync(
         string inputFile, string outputFileName)
@@ -572,56 +575,87 @@ public class PdfProcessingService
                 return (false, "", "Input file not found.");
             }
 
-            using var document = PdfReader.Open(inputFile);
+            _logger.LogInformation("Starting PDF to Word conversion: {Input}", inputFile);
+
+            using var inputDocument = PdfReader.Open(inputFile);
             
             var pageTexts = new List<string>();
             
-            for (int i = 0; i < document.Pages.Count; i++)
+            // Extract text from each page
+            for (int i = 0; i < inputDocument.Pages.Count; i++)
             {
-                var pageText = ExtractTextFromPage(document, i);
+                var pageText = ExtractTextFromPage(inputDocument, i);
                 pageTexts.Add(pageText);
             }
 
-            // Create HTML content that Word can open
-            var htmlContent = $@"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""UTF-8"">
-    <title>Converted from PDF</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
-        h1 {{ color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }}
-        .page-header {{ color: #666; font-size: 14px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; background-color: #f5f5f5; padding: 8px; }}
-        .page-break {{ page-break-before: always; margin: 20px 0; border-top: 1px dashed #ccc; }}
-        pre {{ white-space: pre-wrap; word-wrap: break-word; background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd; }}
-    </style>
-</head>
-<body>
-    <h1>PDF to Word Conversion</h1>
-    <p><strong>Source:</strong> {EscapeHtml(Path.GetFileName(inputFile))}</p>
-    <p><strong>Total Pages:</strong> {document.Pages.Count}</p>
-    <hr/>
-    
-";
-
-            for (int i = 0; i < pageTexts.Count; i++)
+            // Create DOCX document using DocX
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            
+            using (var doc = DocX.Create(outputPath))
             {
-                htmlContent += $"<div class='page-header'>Page {i + 1}</div>\n";
-                htmlContent += $"<pre>{EscapeHtml(pageTexts[i])}</pre>\n";
-                if (i < pageTexts.Count - 1)
+                // Add title
+                var title = doc.InsertParagraph("PDF to Word Conversion");
+                title.FontSize(24);
+                title.Font("Arial");
+                title.Color(Color.FromArgb(51, 51, 51));
+                title.Alignment = Alignment.center;
+                
+                // Add source info
+                var sourceInfo = doc.InsertParagraph($"Source: {Path.GetFileName(inputFile)}");
+                sourceInfo.FontSize(12);
+                sourceInfo.Font("Arial");
+                sourceInfo.Color(Color.FromArgb(102, 102, 102));
+                
+                var pageCountInfo = doc.InsertParagraph($"Total Pages: {inputDocument.Pages.Count}");
+                pageCountInfo.FontSize(12);
+                pageCountInfo.Font("Arial");
+                pageCountInfo.Color(Color.FromArgb(102, 102, 102));
+                
+                doc.InsertParagraph(""); // Empty line
+                doc.InsertParagraph("-").Color(Color.FromArgb(204, 204, 204)); // Divider
+                doc.InsertParagraph(""); // Empty line
+                
+                // Add content from each page
+                for (int i = 0; i < pageTexts.Count; i++)
                 {
-                    htmlContent += "<div class='page-break'></div>\n";
+                    // Page header
+                    var pageHeader = doc.InsertParagraph($"Page {i + 1}");
+                    pageHeader.FontSize(14);
+                    pageHeader.Font("Arial");
+                    pageHeader.Color(Color.FromArgb(51, 51, 51));
+                    pageHeader.Bold();
+                    
+                    // Page content
+                    if (!string.IsNullOrWhiteSpace(pageTexts[i]))
+                    {
+                        var content = doc.InsertParagraph(pageTexts[i]);
+                        content.FontSize(11);
+                        content.Font("Arial");
+                        content.Color(Color.FromArgb(51, 51, 51));
+                    }
+                    else
+                    {
+                        var emptyNote = doc.InsertParagraph("[No text content on this page]");
+                        emptyNote.FontSize(11);
+                        emptyNote.Font("Arial");
+                        emptyNote.Color(Color.FromArgb(153, 153, 153));
+                        emptyNote.Italic();
+                    }
+                    
+                    // Add page break between pages (except for the last page)
+                    if (i < pageTexts.Count - 1)
+                    {
+                        doc.InsertParagraph("").InsertPageBreakAfterSelf();
+                    }
                 }
+
+                // Save the document
+                doc.Save();
             }
 
-            htmlContent += "</body></html>";
-
-            var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            await File.WriteAllBytesAsync(outputPath, Encoding.UTF8.GetBytes(htmlContent));
-            
             _logger.LogInformation("PDF converted to Word: {Input} -> {Output}", inputFile, outputPath);
             
-            return (true, outputPath, $"Successfully converted PDF with {document.Pages.Count} pages to Word format.");
+            return (true, outputPath, $"Successfully converted PDF with {inputDocument.Pages.Count} pages to Word format.");
         }
         catch (Exception ex)
         {
