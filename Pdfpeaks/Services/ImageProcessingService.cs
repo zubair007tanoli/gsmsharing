@@ -225,10 +225,11 @@ public class ImageProcessingService
             // Create a page with the same aspect ratio as the image
             var page = document.AddPage();
             
-            // Set page size to match image dimensions (in points)
-            // 1 inch = 72 points
-            double imageWidth = image.Width * 72.0 / image.Metadata.HorizontalResolution;
-            double imageHeight = image.Height * 72.0 / image.Metadata.VerticalResolution;
+            // Set page size to match image dimensions (in points). 1 inch = 72 points.
+            double dpiX = image.Metadata.HorizontalResolution > 0 ? image.Metadata.HorizontalResolution : 72;
+            double dpiY = image.Metadata.VerticalResolution > 0 ? image.Metadata.VerticalResolution : 72;
+            double imageWidth = image.Width * 72.0 / dpiX;
+            double imageHeight = image.Height * 72.0 / dpiY;
             
             page.Width = imageWidth;
             page.Height = imageHeight;

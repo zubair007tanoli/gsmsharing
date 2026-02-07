@@ -1,15 +1,140 @@
 @{
     ViewData["Title"] = "Rotate PDF - Rotate PDF Pages";
 }
-<div class="tool-page" style="padding: 2rem 0;">
+<div class="tool-page py-5">
     <div class="container">
-        <div class="tool-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">Rotate PDF</h1>
-            <p class="tool-description" style="color: var(--text-light);">Rotate PDF pages to the correct orientation</p>
+        <div class="tool-header text-center mb-4">
+            <h1 class="tool-title fw-bold">Rotate PDF</h1>
+            <p class="tool-description text-muted">Rotate PDF pages to the correct orientation</p>
         </div>
-        <div class="upload-zone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-            <p>Drag & drop your PDF file here</p>
+        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer" style="min-height: 200px;">
+                    <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
+                </div>
+                <div id="fileSection" class="d-none mt-3">
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
+                        <span id="fileNameDisplay" class="fw-bold"></span>
+                        <span class="badge bg-primary" id="pageCountBadge"></span>
+                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pages to rotate</label>
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="selectAll">All pages</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSelection">Clear</button>
+                        </div>
+                        <div id="pageCheckboxes" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rotation</label>
+                        <select id="degrees" class="form-select" style="max-width: 120px;">
+                            <option value="90">90° Clockwise</option>
+                            <option value="180">180°</option>
+                            <option value="-90">90° Counter-clockwise</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="rotateBtn">
+                        <i class="fas fa-sync-alt me-2"></i> Rotate PDF
+                    </button>
+                </div>
+                <div id="loadingState" class="d-none mt-3 text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 mb-0">Rotating...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+@section Scripts {
+<script>
+(function() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileSection = document.getElementById('fileSection');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const pageCountBadge = document.getElementById('pageCountBadge');
+    const pageCheckboxes = document.getElementById('pageCheckboxes');
+    const degrees = document.getElementById('degrees');
+    const rotateBtn = document.getElementById('rotateBtn');
+    const loadingState = document.getElementById('loadingState');
+    const clearFile = document.getElementById('clearFile');
+    const selectAll = document.getElementById('selectAll');
+    const clearSelection = document.getElementById('clearSelection');
+
+    let currentFile = null;
+    let pageCount = 0;
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
+    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+
+    function handleFile(file) {
+        if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Please select a PDF file.'); return; }
+        currentFile = file;
+        fileNameDisplay.textContent = file.name;
+        getPdfInfo();
+    }
+
+    function getPdfInfo() {
+        const fd = new FormData();
+        fd.append('file', currentFile);
+        fetch('/Pdf/GetPdfInfo', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    pageCount = data.pageCount || 0;
+                    pageCountBadge.textContent = pageCount + ' page(s)';
+                    pageCheckboxes.innerHTML = '';
+                    for (let i = 1; i <= pageCount; i++) {
+                        const label = document.createElement('label');
+                        label.className = 'btn btn-outline-secondary';
+                        label.innerHTML = '<input type="checkbox" class="me-1 page-cb" value="' + i + '"> Page ' + i;
+                        pageCheckboxes.appendChild(label);
+                    }
+                    uploadZone.classList.add('d-none');
+                    fileSection.classList.remove('d-none');
+                } else { alert(data.message || 'Could not read PDF'); }
+            })
+            .catch(() => alert('Failed to read PDF info'));
+    }
+
+    function getSelectedPages() {
+        const cbs = document.querySelectorAll('.page-cb:checked');
+        return Array.from(cbs).map(cb => parseInt(cb.value, 10)).sort((a,b) => a - b);
+    }
+
+    selectAll.addEventListener('click', () => document.querySelectorAll('.page-cb').forEach(cb => cb.checked = true));
+    clearSelection.addEventListener('click', () => document.querySelectorAll('.page-cb').forEach(cb => cb.checked = false));
+    clearFile.addEventListener('click', () => { currentFile = null; fileSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
+
+    rotateBtn.addEventListener('click', async () => {
+        if (!currentFile) return;
+        const pages = getSelectedPages();
+        if (pages.length === 0) { alert('Select at least one page.'); return; }
+        rotateBtn.disabled = true;
+        loadingState.classList.remove('d-none');
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('degrees', parseInt(degrees.value, 10));
+        pages.forEach(p => formData.append('pageNumbers', p));
+        try {
+            const res = await fetch('/Pdf/Rotate', { method: 'POST', body: formData });
+            const result = await res.json();
+            loadingState.classList.add('d-none');
+            rotateBtn.disabled = false;
+            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
+            else { alert(result.message || 'Rotate failed'); }
+        } catch (e) {
+            loadingState.classList.add('d-none');
+            rotateBtn.disabled = false;
+            alert('Error: ' + e.message);
+        }
+    });
+})();
+</script>
+}

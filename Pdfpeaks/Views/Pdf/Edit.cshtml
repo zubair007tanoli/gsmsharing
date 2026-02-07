@@ -1,15 +1,87 @@
 @{
-    ViewData["Title"] = "Edit PDF - Add Text, Images & Annotations";
+    ViewData["Title"] = "Edit PDF - Add Text to PDF";
 }
-<div class="tool-page" style="padding: 2rem 0;">
+<div class="tool-page py-5">
     <div class="container">
-        <div class="tool-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">Edit PDF</h1>
-            <p class="tool-description" style="color: var(--text-light);">Add text, images, and annotations to your PDF</p>
+        <div class="tool-header text-center mb-4">
+            <h1 class="tool-title fw-bold">Edit PDF</h1>
+            <p class="tool-description text-muted">Add text to your PDF</p>
         </div>
-        <div class="upload-zone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-            <p>Drag & drop your PDF file here</p>
+        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
+                    <i class="fas fa-edit fa-4x text-primary mb-3"></i>
+                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
+                </div>
+                <div id="formSection" class="d-none mt-3">
+                    <div class="mb-3 d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
+                        <span id="fileNameDisplay" class="fw-bold text-truncate"></span>
+                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Text to add</label>
+                        <textarea id="text" class="form-control" rows="3" placeholder="Enter text to overlay on the PDF"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Page number</label>
+                        <input type="number" id="pageNumber" class="form-control" value="1" min="1" style="max-width: 100px;" />
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="editBtn">
+                        <i class="fas fa-plus me-2"></i> Add Text to PDF
+                    </button>
+                </div>
+                <div id="loadingState" class="d-none mt-3 text-center">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2 mb-0">Adding text...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+@section Scripts {
+<script>
+(function() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const formSection = document.getElementById('formSection');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const text = document.getElementById('text');
+    const pageNumber = document.getElementById('pageNumber');
+    const editBtn = document.getElementById('editBtn');
+    const loadingState = document.getElementById('loadingState');
+    const clearFile = document.getElementById('clearFile');
+    let currentFile = null;
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files.length) { currentFile = e.target.files[0]; fileNameDisplay.textContent = currentFile.name; uploadZone.classList.add('d-none'); formSection.classList.remove('d-none'); } });
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
+    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) { currentFile = e.dataTransfer.files[0]; fileNameDisplay.textContent = currentFile.name; uploadZone.classList.add('d-none'); formSection.classList.remove('d-none'); } });
+    clearFile.addEventListener('click', () => { currentFile = null; formSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
+
+    editBtn.addEventListener('click', async () => {
+        if (!currentFile) return;
+        if (!text.value.trim()) { alert('Please enter text to add.'); return; }
+        editBtn.disabled = true;
+        loadingState.classList.remove('d-none');
+        const fd = new FormData();
+        fd.append('file', currentFile);
+        fd.append('text', text.value.trim());
+        fd.append('pageNumber', parseInt(pageNumber.value, 10) || 1);
+        try {
+            const res = await fetch('/Pdf/EditAddText', { method: 'POST', body: fd });
+            const result = await res.json();
+            loadingState.classList.add('d-none');
+            editBtn.disabled = false;
+            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
+            else { alert(result.message || 'Add text failed'); }
+        } catch (e) {
+            loadingState.classList.add('d-none');
+            editBtn.disabled = false;
+            alert('Error: ' + e.message);
+        }
+    });
+})();
+</script>
+}

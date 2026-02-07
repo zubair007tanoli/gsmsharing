@@ -2,11 +2,10 @@ using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.IO;
 using PdfSharpCore.Drawing;
 using Pdfpeaks.Models;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 using System.Drawing;
-using Xceed.Document.NET;
-using Xceed.Words.NET;
 
 namespace Pdfpeaks.Services;
 
@@ -27,6 +26,58 @@ public class PdfProcessingService
         {
             Directory.CreateDirectory(_tempFilePath);
         }
+    }
+
+    /// <summary>
+    /// Run a Python script and return exit code, stdout, stderr. Script path is under ContentRoot/scripts/.
+    /// </summary>
+    private async Task<(int exitCode, string stdout, string stderr)> RunPythonScriptAsync(string scriptFileName, string arguments)
+    {
+        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
+        var scriptPath = Path.Combine(contentRoot, "scripts", scriptFileName);
+        if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", scriptFileName);
+        var pythonExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "python" : "python3";
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = pythonExe,
+            Arguments = $"\"{scriptPath}\" {arguments}",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var process = Process.Start(startInfo);
+        if (process == null)
+            return (-1, "", "Failed to start process.");
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return (process.ExitCode, stdout ?? "", stderr ?? "");
+    }
+
+    /// <summary>
+    /// Word to PDF using LibreOffice headless (hybrid, free). Requires LibreOffice installed.
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> ConvertWordToPdfAsync(string inputPath, string outputFileName)
+    {
+        var outputPath = Path.Combine(_tempFilePath, outputFileName);
+        if (!File.Exists(inputPath))
+            return (false, outputPath, "Input file not found.");
+        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
+        var scriptPath = Path.Combine(contentRoot, "scripts", "word_to_pdf.py");
+        if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "word_to_pdf.py");
+        if (!File.Exists(scriptPath))
+            return (false, outputPath, "Conversion script not found. Ensure scripts/word_to_pdf.py exists. Word to PDF requires LibreOffice installed (e.g. apt install libreoffice).");
+        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("word_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+        var output = (stdout + "\n" + stderr).Trim();
+        if (exitCode != 0 || !File.Exists(outputPath))
+        {
+            var err = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : stdout.Trim());
+            return (false, outputPath, string.IsNullOrWhiteSpace(err) ? "Word to PDF conversion failed." : err);
+        }
+        return (true, outputPath, "Processed");
     }
 
     /// <summary>
@@ -387,6 +438,80 @@ public class PdfProcessingService
     }
 
     /// <summary>
+    /// Organize PDF: reorder and/or remove pages. pageOrder is 1-based page numbers in desired order (e.g. [3,1,2] = page3, page1, page2).
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> OrganizePdfAsync(
+        string inputFile, IList<int> pageOrderOneBased, string outputFileName)
+    {
+        try
+        {
+            if (!File.Exists(inputFile))
+                return (false, "", "Input file not found.");
+            if (pageOrderOneBased == null || pageOrderOneBased.Count == 0)
+                return (false, "", "Specify at least one page in the new order.");
+
+            using var inputDocument = PdfReader.Open(inputFile);
+            int totalPages = inputDocument.Pages.Count;
+            var outputDocument = new PdfDocument();
+
+            foreach (var oneBased in pageOrderOneBased)
+            {
+                int index = oneBased - 1;
+                if (index < 0 || index >= totalPages) continue;
+                outputDocument.AddPage(inputDocument.Pages[index]);
+            }
+
+            if (outputDocument.Pages.Count == 0)
+                return (false, "", "No valid pages in the selected order.");
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            outputDocument.Save(outputPath);
+            return (true, outputPath, $"Organized PDF: {outputDocument.Pages.Count} pages.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error organizing PDF");
+            return (false, "", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Add text overlay to a PDF page (1-based page number).
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> AddTextToPdfAsync(
+        string inputFile, string text, int pageNumberOneBased, string outputFileName)
+    {
+        try
+        {
+            if (!File.Exists(inputFile))
+                return (false, "", "Input file not found.");
+            if (string.IsNullOrWhiteSpace(text))
+                return (false, "", "Text is required.");
+
+            using var inputDocument = PdfReader.Open(inputFile);
+            int pageIndex = pageNumberOneBased - 1;
+            if (pageIndex < 0 || pageIndex >= inputDocument.Pages.Count)
+                return (false, "", "Invalid page number.");
+
+            var page = inputDocument.Pages[pageIndex];
+            var font = new XFont("Arial", 12);
+            using (var gfx = XGraphics.FromPdfPage(page))
+            {
+                gfx.DrawString(text, font, XBrushes.Black, 50, 50);
+            }
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            inputDocument.Save(outputPath);
+            return (true, outputPath, "Text added to PDF.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding text to PDF");
+            return (false, "", ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Get PDF page count
     /// </summary>
     public int GetPageCount(string inputFile)
@@ -517,309 +642,158 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Convert PDF to images (PNG format)
+    /// Convert PDF to images (JPG or PNG) using Python PyMuPDF (hybrid, free).
     /// </summary>
     public async Task<(bool success, List<string> outputPaths, string message)> ConvertToImagesAsync(
         string inputFile, string outputPrefix, string imageFormat)
     {
         var outputPaths = new List<string>();
-        
-        try
+        if (!File.Exists(inputFile))
+            return (false, outputPaths, "Input file not found.");
+        var fmt = (imageFormat ?? "jpg").ToLowerInvariant();
+        if (fmt != "png") fmt = "jpg";
+        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
+        var scriptPath = Path.Combine(contentRoot, "scripts", "pdf_to_images.py");
+        if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "pdf_to_images.py");
+        if (!File.Exists(scriptPath))
+            return (false, outputPaths, "Conversion script not found. Ensure scripts/pdf_to_images.py exists. Install: pip install pymupdf");
+        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_images.py", $"\"{inputFile}\" \"{_tempFilePath}\" \"{outputPrefix}\" \"{fmt}\"");
+        if (exitCode != 0)
         {
-            if (!File.Exists(inputFile))
-            {
-                return (false, outputPaths, "Input file not found.");
-            }
-            
-            using var document = PdfReader.Open(inputFile);
-            
-            for (int i = 0; i < document.Pages.Count; i++)
-            {
-                var page = document.Pages[i];
-                
-                var extension = imageFormat.ToLower() == "jpg" ? "jpg" : "png";
-                var outputFileName = $"{outputPrefix}_page_{i + 1}.{extension}";
-                var outputPath = Path.Combine(_tempFilePath, outputFileName);
-                
-                // Create a simple text file with page info since PDF-to-image requires additional libraries
-                var infoContent = $"Page {i + 1} of {document.Pages.Count}\nPage dimensions: {(int)page.Width} x {(int)page.Height} points\nNote: Full PDF-to-image rendering requires PdfRasterizer or similar library.";
-                await File.WriteAllTextAsync(outputPath + ".txt", infoContent);
-                
-                // Create empty placeholder file with correct extension
-                await File.WriteAllBytesAsync(outputPath, Array.Empty<byte>());
-                
-                outputPaths.Add(outputPath);
-            }
-            
-            _logger.LogInformation("Created {Count} page placeholders for PDF-to-image conversion", outputPaths.Count);
-            
-            return (true, outputPaths, $"Created {outputPaths.Count} page images. (Note: Full PDF rendering requires PdfRasterizer or similar library)");
+            var err = (stdout + "\n" + stderr).Trim();
+            var msg = err.Contains("ERROR:") ? err.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : err);
+            return (false, outputPaths, string.IsNullOrWhiteSpace(msg) ? "PDF to images conversion failed." : msg);
         }
-        catch (Exception ex)
+        var ext = fmt == "png" ? "png" : "jpg";
+        for (int i = 1; i <= 1000; i++)
         {
-            _logger.LogError(ex, "Error converting PDF to images");
-            return (false, outputPaths, $"Error converting to images: {ex.Message}");
+            var name = $"{outputPrefix}_page_{i}.{ext}";
+            var path = Path.Combine(_tempFilePath, name);
+            if (File.Exists(path))
+                outputPaths.Add(path);
+            else if (i > 1)
+                break;
         }
+        _logger.LogInformation("PDF converted to {Count} images: {Input}", outputPaths.Count, inputFile);
+        return (true, outputPaths, outputPaths.Count > 0 ? "Processed" : "No images produced.");
     }
 
     /// <summary>
-    /// Convert PDF to Word document (.docx) using DocX library
+    /// Convert PDF to Word document (.docx) using Python pdf2docx script (hybrid AI reconstruction).
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToWordAsync(
-        string inputFile, string outputFileName)
+        string inputPath, string outputName)
     {
+        string outputPath = Path.Combine(_tempFilePath, outputName);
+        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
+        var scriptPath = Path.Combine(contentRoot, "scripts", "convert_pdf.py");
+
+        if (!File.Exists(inputPath))
+        {
+            return (false, outputPath, "Input file not found.");
+        }
+
+        if (!File.Exists(scriptPath))
+        {
+            _logger.LogWarning("Python script not found at {ScriptPath}", scriptPath);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                scriptPath = "/var/www/pdfpeaks/scripts/convert_pdf.py";
+            if (!File.Exists(scriptPath))
+                return (false, outputPath, "Conversion script not found. Ensure scripts/convert_pdf.py exists and Python with pdf2docx is installed.");
+        }
+
+        var pythonExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "python" : "python3";
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = pythonExe,
+            Arguments = $"\"{scriptPath}\" \"{inputPath}\" \"{outputPath}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
         try
         {
-            if (!File.Exists(inputFile))
+            using var process = Process.Start(startInfo);
+            if (process == null)
             {
-                return (false, "", "Input file not found.");
+                return (false, outputPath, "Failed to start conversion process.");
             }
 
-            _logger.LogInformation("Starting PDF to Word conversion: {Input}", inputFile);
+            var stdout = await process.StandardOutput.ReadToEndAsync();
+            var stderr = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
 
-            using var inputDocument = PdfReader.Open(inputFile);
-            
-            var pageTexts = new List<string>();
-            
-            // Extract text from each page
-            for (int i = 0; i < inputDocument.Pages.Count; i++)
+            var output = (stdout + "\n" + stderr).Trim();
+            if (process.ExitCode != 0 || !File.Exists(outputPath))
             {
-                var pageText = ExtractTextFromPage(inputDocument, i);
-                pageTexts.Add(pageText);
+                var errorMsg = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (string.IsNullOrEmpty(stderr) ? stdout : stderr);
+                if (string.IsNullOrWhiteSpace(errorMsg)) errorMsg = "Conversion failed.";
+                _logger.LogWarning("PDF to Word conversion failed: {Error}", errorMsg);
+                return (false, outputPath, errorMsg);
             }
 
-            // Create DOCX document using DocX
-            var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            
-            using (var doc = DocX.Create(outputPath))
-            {
-                // Add title
-                var title = doc.InsertParagraph("PDF to Word Conversion");
-                title.FontSize(24);
-                title.Font("Arial");
-                title.Color(Color.FromArgb(51, 51, 51));
-                title.Alignment = Alignment.center;
-                
-                // Add source info
-                var sourceInfo = doc.InsertParagraph($"Source: {Path.GetFileName(inputFile)}");
-                sourceInfo.FontSize(12);
-                sourceInfo.Font("Arial");
-                sourceInfo.Color(Color.FromArgb(102, 102, 102));
-                
-                var pageCountInfo = doc.InsertParagraph($"Total Pages: {inputDocument.Pages.Count}");
-                pageCountInfo.FontSize(12);
-                pageCountInfo.Font("Arial");
-                pageCountInfo.Color(Color.FromArgb(102, 102, 102));
-                
-                doc.InsertParagraph(""); // Empty line
-                doc.InsertParagraph("-").Color(Color.FromArgb(204, 204, 204)); // Divider
-                doc.InsertParagraph(""); // Empty line
-                
-                // Add content from each page
-                for (int i = 0; i < pageTexts.Count; i++)
-                {
-                    // Page header
-                    var pageHeader = doc.InsertParagraph($"Page {i + 1}");
-                    pageHeader.FontSize(14);
-                    pageHeader.Font("Arial");
-                    pageHeader.Color(Color.FromArgb(51, 51, 51));
-                    pageHeader.Bold();
-                    
-                    // Page content
-                    if (!string.IsNullOrWhiteSpace(pageTexts[i]))
-                    {
-                        var content = doc.InsertParagraph(pageTexts[i]);
-                        content.FontSize(11);
-                        content.Font("Arial");
-                        content.Color(Color.FromArgb(51, 51, 51));
-                    }
-                    else
-                    {
-                        var emptyNote = doc.InsertParagraph("[No text content on this page]");
-                        emptyNote.FontSize(11);
-                        emptyNote.Font("Arial");
-                        emptyNote.Color(Color.FromArgb(153, 153, 153));
-                        emptyNote.Italic();
-                    }
-                    
-                    // Add page break between pages (except for the last page)
-                    if (i < pageTexts.Count - 1)
-                    {
-                        doc.InsertParagraph("").InsertPageBreakAfterSelf();
-                    }
-                }
-
-                // Save the document
-                doc.Save();
-            }
-
-            _logger.LogInformation("PDF converted to Word: {Input} -> {Output}", inputFile, outputPath);
-            
-            return (true, outputPath, $"Successfully converted PDF with {inputDocument.Pages.Count} pages to Word format.");
+            _logger.LogInformation("PDF converted to Word: {Input} -> {Output}", inputPath, outputPath);
+            return (true, outputPath, "Processed");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error converting PDF to Word");
-            return (false, "", $"Error converting to Word: {ex.Message}");
+            return (false, outputPath, ex.Message);
         }
     }
 
     /// <summary>
-    /// Convert PDF to Excel format (.xlsx) using HTML table format
+    /// Convert PDF to Excel (.xlsx) using Python pdfplumber + openpyxl (hybrid, free).
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToExcelAsync(
         string inputFile, string outputFileName)
     {
-        try
+        var outputPath = Path.Combine(_tempFilePath, outputFileName);
+        if (!File.Exists(inputFile))
+            return (false, "", "Input file not found.");
+        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
+        var scriptPath = Path.Combine(contentRoot, "scripts", "pdf_to_excel.py");
+        if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "pdf_to_excel.py");
+        if (!File.Exists(scriptPath))
+            return (false, "", "Conversion script not found. Ensure scripts/pdf_to_excel.py exists. Install: pip install pdfplumber openpyxl");
+        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_excel.py", $"\"{inputFile}\" \"{outputPath}\"");
+        var output = (stdout + "\n" + stderr).Trim();
+        if (exitCode != 0 || !File.Exists(outputPath))
         {
-            if (!File.Exists(inputFile))
-            {
-                return (false, "", "Input file not found.");
-            }
-
-            using var document = PdfReader.Open(inputFile);
-            
-            var pageTexts = new List<List<string>>();
-            
-            for (int i = 0; i < document.Pages.Count; i++)
-            {
-                var pageText = ExtractTextFromPage(document, i);
-                var lines = pageText.Split('\n')
-                                   .Select(line => line.Trim())
-                                   .Where(line => !string.IsNullOrWhiteSpace(line))
-                                   .ToList();
-                pageTexts.Add(lines);
-            }
-
-            // Create HTML table content that Excel can open
-            var htmlContent = $@"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""UTF-8"">
-    <title>Converted from PDF</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        h1 {{ color: #333; }}
-        table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
-        th {{ background-color: #4CAF50; color: white; padding: 10px; text-align: left; }}
-        td {{ border: 1px solid #ddd; padding: 8px; vertical-align: top; }}
-        tr:nth-child(even) {{ background-color: #f2f2f2; }}
-        .section-header {{ background-color: #2196F3; color: white; font-weight: bold; }}
-        .info-row {{ background-color: #FFF3CD; }}
-    </style>
-</head>
-<body>
-    <h1>PDF to Excel Conversion</h1>
-    <p><strong>Source:</strong> {EscapeHtml(Path.GetFileName(inputFile))}</p>
-    <p><strong>Total Pages:</strong> {document.Pages.Count}</p>
-    
-    <table>
-        <tr class='info-row'>
-            <th>Section</th>
-            <th>Content</th>
-        </tr>
-";
-
-            htmlContent += $"<tr><td class='info-row'><strong>Document Info</strong></td><td>File: {EscapeHtml(Path.GetFileName(inputFile))}<br/>Pages: {document.Pages.Count}</td></tr>\n";
-
-            for (int i = 0; i < pageTexts.Count; i++)
-            {
-                htmlContent += $"<tr><td class='section-header'>Page {i + 1}</td><td>\n";
-                foreach (var line in pageTexts[i])
-                {
-                    htmlContent += $"{EscapeHtml(line)}<br/>\n";
-                }
-                htmlContent += "</td></tr>\n";
-            }
-
-            htmlContent += @"    </table>
-</body>
-</html>";
-
-            var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            await File.WriteAllBytesAsync(outputPath, Encoding.UTF8.GetBytes(htmlContent));
-            
-            _logger.LogInformation("PDF converted to Excel: {Input} -> {Output}", inputFile, outputPath);
-            
-            return (true, outputPath, $"Successfully converted PDF with {document.Pages.Count} pages to Excel format.");
+            var err = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : stdout.Trim());
+            return (false, "", string.IsNullOrWhiteSpace(err) ? "PDF to Excel conversion failed." : err);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error converting PDF to Excel");
-            return (false, "", $"Error converting to Excel: {ex.Message}");
-        }
+        _logger.LogInformation("PDF converted to Excel: {Input} -> {Output}", inputFile, outputPath);
+        return (true, outputPath, "Processed");
     }
 
     /// <summary>
-    /// Convert PDF to PowerPoint format (.pptx) using HTML
+    /// Convert PDF to PowerPoint (.pptx): each page becomes one slide (image). Uses Python pymupdf + python-pptx (hybrid, free).
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToPowerPointAsync(
         string inputFile, string outputFileName)
     {
-        try
+        var outputPath = Path.Combine(_tempFilePath, outputFileName);
+        if (!File.Exists(inputFile))
+            return (false, "", "Input file not found.");
+        var scriptPath = Path.Combine(Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath, "scripts", "pdf_to_pptx.py");
+        if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "pdf_to_pptx.py");
+        if (!File.Exists(scriptPath))
+            return (false, "", "Conversion script not found. Ensure scripts/pdf_to_pptx.py exists. Install: pip install pymupdf python-pptx");
+        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_pptx.py", $"\"{inputFile}\" \"{outputPath}\"");
+        var output = (stdout + "\n" + stderr).Trim();
+        if (exitCode != 0 || !File.Exists(outputPath))
         {
-            if (!File.Exists(inputFile))
-            {
-                return (false, "", "Input file not found.");
-            }
-
-            using var document = PdfReader.Open(inputFile);
-            
-            // Create HTML presentation content
-            var htmlContent = $@"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""UTF-8"">
-    <title>Converted from PDF - PowerPoint Format</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }}
-        .slide {{ background-color: white; padding: 40px; margin: 20px 0; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-height: 400px; }}
-        h1 {{ color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 15px; }}
-        h2 {{ color: #0f3460; margin-top: 30px; }}
-        .page-info {{ color: #666; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; }}
-        .slide-number {{ position: absolute; top: 20px; right: 20px; color: #999; font-size: 12px; }}
-        .content {{ font-size: 18px; line-height: 1.8; }}
-    </style>
-</head>
-<body>
-    <h1 style='text-align: center;'>PDF to PowerPoint Conversion</h1>
-    <p style='text-align: center; color: #666;'>Source: {EscapeHtml(Path.GetFileName(inputFile))} | Total Pages: {document.Pages.Count}</p>
-    
-";
-
-            for (int i = 0; i < document.Pages.Count; i++)
-            {
-                var pageText = ExtractTextFromPage(document, i);
-                htmlContent += $@"
-    <div class='slide'>
-        <span class='slide-number'>Page {i + 1} of {document.Pages.Count}</span>
-        <h2>Slide {i + 1}</h2>
-        <div class='content'>
-            <pre style='white-space: pre-wrap; word-wrap: break-word;'>{EscapeHtml(pageText)}</pre>
-        </div>
-    </div>
-";
-            }
-
-            htmlContent += @"
-    <div class='page-info'>
-        <p><strong>Note:</strong> This is an HTML representation of the PDF content. For full PowerPoint conversion, use Microsoft PowerPoint's built-in feature or a dedicated conversion service.</p>
-    </div>
-</body>
-</html>";
-
-            var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            await File.WriteAllBytesAsync(outputPath, Encoding.UTF8.GetBytes(htmlContent));
-            
-            _logger.LogInformation("PDF converted to PowerPoint: {Input} -> {Output}", inputFile, outputPath);
-            
-            return (true, outputPath, $"Successfully converted PDF with {document.Pages.Count} pages to PowerPoint format.");
+            var err = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : stdout.Trim());
+            return (false, "", string.IsNullOrWhiteSpace(err) ? "PDF to PowerPoint conversion failed." : err);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error converting PDF to PowerPoint");
-            return (false, "", $"Error converting to PowerPoint: {ex.Message}");
-        }
+        _logger.LogInformation("PDF converted to PowerPoint: {Input} -> {Output}", inputFile, outputPath);
+        return (true, outputPath, "Processed");
     }
 
     /// <summary>

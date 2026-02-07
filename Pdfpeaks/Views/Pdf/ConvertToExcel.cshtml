@@ -27,7 +27,7 @@
             <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
             <p class="upload-text">Drag & drop your PDF file here</p>
             <p class="upload-hint">or click to browse</p>
-            <input type="file" id="fileInput" accept=".pdf" multiple style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
+            <input type="file" id="fileInput" accept=".pdf" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
         </div>
         <div class="action-buttons">
             <button type="button" class="btn-tool btn-primary" id="convertBtn" disabled>
@@ -47,17 +47,33 @@
             const fileInput = document.getElementById('fileInput');
             const convertBtn = document.getElementById('convertBtn');
             const clearBtn = document.getElementById('clearBtn');
-            
+            let currentFile = null;
+
             uploadZone.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
+                    currentFile = e.target.files[0];
+                    if (!currentFile.name.toLowerCase().endsWith('.pdf')) { alert('Please select a PDF file.'); return; }
                     convertBtn.disabled = false;
-                    alert('File selected: ' + e.target.files[0].name);
                 }
             });
-            clearBtn.addEventListener('click', () => {
+            clearBtn.addEventListener('click', () => { convertBtn.disabled = true; fileInput.value = ''; currentFile = null; });
+
+            convertBtn.addEventListener('click', async () => {
+                if (!currentFile) return;
                 convertBtn.disabled = true;
-                fileInput.value = '';
+                try {
+                    const fd = new FormData();
+                    fd.append('file', currentFile);
+                    const res = await fetch('/Pdf/ConvertToExcel', { method: 'POST', body: fd });
+                    const result = await res.json();
+                    convertBtn.disabled = false;
+                    if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
+                    else { alert(result.message || 'Conversion failed'); }
+                } catch (e) {
+                    convertBtn.disabled = false;
+                    alert('Error: ' + e.message);
+                }
             });
         });
     </script>

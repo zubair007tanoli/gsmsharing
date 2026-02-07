@@ -1,15 +1,84 @@
 @{
     ViewData["Title"] = "JPG to PDF - Convert Images to PDF";
 }
-<div class="tool-page" style="padding: 2rem 0;">
+<div class="tool-page py-5">
     <div class="container">
-        <div class="tool-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">JPG to PDF</h1>
-            <p class="tool-description" style="color: var(--text-light);">Convert your images to PDF documents</p>
+        <div class="tool-header text-center mb-4">
+            <h1 class="tool-title fw-bold">JPG to PDF</h1>
+            <p class="tool-description text-muted">Convert your images to PDF documents</p>
         </div>
-        <div class="upload-zone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-            <p>Drag & drop your images here (.jpg, .jpeg, .png, .gif, .bmp)</p>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.bmp" style="display: none;" />
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
+                    <i class="fas fa-image fa-4x text-primary mb-3"></i>
+                    <p class="mb-0">Drag & drop your image here or click to browse (.jpg, .jpeg, .png, .gif, .bmp)</p>
+                </div>
+                <div id="fileSection" class="d-none mt-3">
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
+                        <span id="fileNameDisplay" class="fw-bold"></span>
+                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="convertBtn">
+                        <i class="fas fa-file-pdf me-2"></i> Convert to PDF
+                    </button>
+                </div>
+                <div id="loadingState" class="d-none mt-3 text-center">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2 mb-0">Converting...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+@section Scripts {
+<script>
+(function() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileSection = document.getElementById('fileSection');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const convertBtn = document.getElementById('convertBtn');
+    const loadingState = document.getElementById('loadingState');
+    const clearFile = document.getElementById('clearFile');
+    let currentFile = null;
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files.length) setFile(e.target.files[0]); });
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
+    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]); });
+    clearFile.addEventListener('click', () => { currentFile = null; fileSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
+
+    function setFile(file) {
+        var ext = (file.name || '').toLowerCase();
+        var ok = ['.jpg','.jpeg','.png','.gif','.bmp'].some(e => ext.endsWith(e));
+        if (!ok) { alert('Please select an image (.jpg, .jpeg, .png, .gif, .bmp).'); return; }
+        currentFile = file;
+        fileNameDisplay.textContent = file.name;
+        uploadZone.classList.add('d-none');
+        fileSection.classList.remove('d-none');
+    }
+
+    convertBtn.addEventListener('click', async () => {
+        if (!currentFile) return;
+        convertBtn.disabled = true;
+        loadingState.classList.remove('d-none');
+        var fd = new FormData();
+        fd.append('file', currentFile);
+        try {
+            var res = await fetch('/Pdf/ConvertFromJpg', { method: 'POST', body: fd });
+            var result = await res.json();
+            loadingState.classList.add('d-none');
+            convertBtn.disabled = false;
+            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
+            else { alert(result.message || 'Conversion failed'); }
+        } catch (e) {
+            loadingState.classList.add('d-none');
+            convertBtn.disabled = false;
+            alert('Error: ' + e.message);
+        }
+    });
+})();
+</script>
+}
