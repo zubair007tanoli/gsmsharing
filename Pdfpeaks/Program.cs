@@ -158,7 +158,7 @@ builder.Services.AddSingleton<HealthCheckAggregator>();
 builder.Services.AddSingleton<ProcessingBroadcastService>();
 
 // ============ Add Rate Limiting ============
-builder.Services.AddRateLimiting(builder.Configuration);
+builder.Services.AddPdfpeaksRateLimiting(builder.Configuration);
 
 // ============ Add Health Checks ============
 builder.Services.AddPdfpeaksHealthChecks(builder.Configuration);

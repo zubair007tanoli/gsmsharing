@@ -1,32 +1,56 @@
-using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pdfpeaks.Services.Caching;
+using System.Threading.RateLimiting;
 
 namespace Pdfpeaks.Services.Infrastructure;
 
 /// <summary>
-/// Rate limiting service for API protection
+/// Rate limiting service for API protection using built-in ASP.NET Core rate limiting
 /// </summary>
 public static class RateLimitService
 {
-    public static IServiceCollection AddRateLimiting(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPdfpeaksRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
-        // Load rate limiting configuration
-        services.Configure<RateLimitOptions>(configuration.GetSection("RateLimit"));
-        services.Configure<IpRateLimitOptions>(configuration.GetSection("IpRateLimit"));
+        // Add rate limiting with fixed window algorithm
+        services.AddRateLimiter(options =>
+        {
+            options.AddFixedWindowLimiter("fixed", opt =>
+            {
+                opt.PermitLimit = 100;
+                opt.Window = TimeSpan.FromSeconds(1);
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            });
 
-        // Add distributed cache
-        services.AddDistributedMemoryCache();
-        services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+            options.AddFixedWindowLimiter("api", opt =>
+            {
+                opt.PermitLimit = 200;
+                opt.Window = TimeSpan.FromSeconds(60);
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            });
+
+            // Global limiter
+            options.GlobalLimiter = Microsoft.AspNetCore.RateLimiting.RateLimiter.Create(destinations =>
+            {
+                destinations.Add("global", new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 1000,
+                    TokensPerPeriod = 500,
+                    Period = TimeSpan.FromSeconds(60),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 100
+                });
+            });
+        });
 
         return services;
     }
 
     public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder app)
     {
-        return app.UseIpRateLimiting();
+        return app.UseRateLimiter();
     }
 }
 
