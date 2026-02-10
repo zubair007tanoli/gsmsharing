@@ -219,7 +219,7 @@ public class HealthCheckAggregator
                 ResponseTimeMs = (int)(DateTime.UtcNow - startTime).TotalMilliseconds
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return new ComponentHealth
             {

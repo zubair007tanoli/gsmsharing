@@ -118,17 +118,17 @@ public class PublicApiController : ControllerBase
 
             if (!result.Success)
             {
-                return BadRequest(new ErrorResponse { Error = result.ErrorMessage });
+                return BadRequest(new ErrorResponse { Error = result.ErrorMessage ?? "Extraction failed" });
             }
 
             return Ok(new ExtractionResponse
             {
                 FileId = fileId,
-                FileName = file.FileName,
+                FileName = file.FileName ?? string.Empty,
                 TotalPages = result.TotalPages,
                 WordCount = result.WordCount,
                 CharCount = result.CharCount,
-                Text = result.FullText
+                Text = result.FullText ?? string.Empty
             });
         }
         catch (Exception ex)
@@ -444,7 +444,7 @@ public class PublicApiController : ControllerBase
 
             if (!extraction.Success)
             {
-                return BadRequest(new ErrorResponse { Error = extraction.ErrorMessage });
+                return BadRequest(new ErrorResponse { Error = extraction.ErrorMessage ?? "Extraction failed" });
             }
 
             var text = extraction.FullText;

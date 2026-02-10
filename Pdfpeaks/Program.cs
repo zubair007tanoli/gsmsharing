@@ -112,7 +112,7 @@ if (!string.IsNullOrEmpty(connectionString))
 
 // ============ Register Custom Services ============
 
-// Register IConnectionMultiplexer for Redis (with fallback)
+// Register IConnectionMultiplexer for Redis (non-blocking startup)
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
@@ -120,17 +120,11 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
         ?? configuration["Redis:ConnectionString"] 
         ?? "localhost:6379";
     
-    try
-    {
-        return ConnectionMultiplexer.Connect(connectionString);
-    }
-    catch (Exception ex)
-    {
-        var logger = sp.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(ex, "Failed to connect to Redis at {Connection}. Health checks will report Redis as unavailable.", connectionString);
-        // Return a dummy multiplexer that will report as disconnected
-        return ConnectionMultiplexer.Connect("localhost:6379"); // This will fail but the health check handles null checks
-    }
+    var config = ConfigurationOptions.Parse(connectionString);
+    config.AbortOnConnectFail = false;  // Don't block startup - connect in background
+    config.ConnectTimeout = 500;        // Fail fast (500ms) if Redis unreachable
+    config.AsyncTimeout = 2000;
+    return ConnectionMultiplexer.Connect(config);
 });
 
 // AI Services (Self-dependent - no external APIs)

@@ -32,17 +32,16 @@ public static class RateLimitService
             });
 
             // Global limiter
-            options.GlobalLimiter = Microsoft.AspNetCore.RateLimiting.RateLimiter.Create(destinations =>
-            {
-                destinations.Add("global", new TokenBucketRateLimiterOptions
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+                RateLimitPartition.GetTokenBucketLimiter("global", _ => new TokenBucketRateLimiterOptions
                 {
                     TokenLimit = 1000,
                     TokensPerPeriod = 500,
-                    Period = TimeSpan.FromSeconds(60),
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(60),
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    QueueLimit = 100
-                });
-            });
+                    QueueLimit = 100,
+                    AutoReplenishment = true
+                }));
         });
 
         return services;

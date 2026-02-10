@@ -27,10 +27,16 @@ public class RedisCacheService
 
         try
         {
-            _redis = ConnectionMultiplexer.Connect(connectionString);
+            var config = ConfigurationOptions.Parse(connectionString);
+            config.AbortOnConnectFail = false;
+            config.ConnectTimeout = 500;  // Fail fast when Redis unavailable
+            _redis = ConnectionMultiplexer.Connect(config);
             _cache = _redis.GetDatabase();
-            _isConnected = true;
-            _logger.LogInformation("Redis connected successfully to {Connection}", connectionString);
+            _isConnected = _redis.IsConnected;
+            if (_isConnected)
+                _logger.LogInformation("Redis connected successfully to {Connection}", connectionString);
+            else
+                _logger.LogWarning("Redis connection deferred - will retry in background");
         }
         catch (Exception ex)
         {
