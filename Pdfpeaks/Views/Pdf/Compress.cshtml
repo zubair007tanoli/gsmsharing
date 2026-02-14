@@ -4,7 +4,7 @@
 
 <div class="container-fluid py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-12">
             <!-- Header -->
             <div class="text-center mb-5">
                 <h1 class="display-4 fw-bold text-primary">
@@ -13,7 +13,7 @@
                 <p class="lead text-muted">Reduce PDF file size while maintaining quality</p>
             </div>
 
-            <!-- Drop Zone -->
+            <!-- Upload Section -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-5 text-center bg-light" style="position: relative;">
@@ -22,13 +22,14 @@
                         </div>
                         <h4 class="mb-2">Drop your PDF file here</h4>
                         <p class="text-muted mb-3">or</p>
-                        <label class="btn btn-primary btn-lg" style="position: relative; z-index: 1;">
+                        <button type="button" class="btn btn-primary btn-lg" id="selectFileBtn">
                             <i class="bi bi-folder-plus"></i> Select PDF File
-                            <input type="file" id="fileInput" accept=".pdf" multiple style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;">
-                        </label>
+                        </button>
                         <p class="text-muted mt-3 mb-0">
                             <small>Maximum file size: 100MB</small>
                         </p>
+                        <!-- Hidden file input -->
+                        <input type="file" id="fileInput" accept=".pdf" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
                     </div>
                 </div>
             </div>
@@ -36,63 +37,73 @@
             <!-- Compression Options -->
             <div id="compressOptions" class="card shadow-sm mb-4 d-none">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-sliders"></i> Compression Options
-                    </h5>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0">
+                            <i class="bi bi-sliders"></i> Compression Options
+                        </h5>
+                        <span class="badge bg-info" id="fileInfoBadge">Ready to compress</span>
+                    </div>
                 </div>
                 <div class="card-body">
+                    <!-- File Info -->
+                    <div id="fileInfo" class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <i class="bi bi-file-earmark-pdf text-danger fs-4 me-2"></i>
+                            <strong id="fileName">document.pdf</strong>
+                            <span class="ms-3 text-muted" id="fileSize">0 MB</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Compression Level Selection -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Compression Level:</label>
+                        <label class="form-label fw-bold">Select Compression Level:</label>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <div class="form-check card h-100 p-3" onclick="selectCompression('low')">
-                                    <input class="form-check-input" type="radio" name="compressionLevel" id="lowQuality" value="low">
-                                    <label class="form-check-label w-100" for="lowQuality">
-                                        <i class="bi bi-gem text-success fs-3 d-block mb-2"></i>
-                                        <strong>Low Compression</strong>
-                                        <small class="text-muted d-block">Best quality, larger file</small>
-                                        <span class="badge bg-success mt-2">Recommended</span>
-                                    </label>
+                                <div class="compression-option card h-100 p-3 @((ViewBag.SelectedCompression ?? "medium") == "low" ? "border-primary" : "")" data-level="low" style="cursor: pointer;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="compressionLevel" id="lowQuality" value="low">
+                                        <label class="form-check-label w-100" for="lowQuality">
+                                            <i class="bi bi-gem text-success fs-3 d-block mb-2"></i>
+                                            <strong>Low Compression</strong>
+                                            <small class="text-muted d-block mt-1">Best quality, larger file</small>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-check card h-100 p-3" onclick="selectCompression('medium')">
-                                    <input class="form-check-input" type="radio" name="compressionLevel" id="mediumQuality" value="medium" checked>
-                                    <label class="form-check-label w-100" for="mediumQuality">
-                                        <i class="bi bi-balance text-warning fs-3 d-block mb-2"></i>
-                                        <strong>Medium</strong>
-                                        <small class="text-muted d-block">Balanced quality/size</small>
-                                    </label>
+                                <div class="compression-option card h-100 p-3 border-primary" data-level="medium" style="cursor: pointer;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="compressionLevel" id="mediumQuality" value="medium" checked>
+                                        <label class="form-check-label w-100" for="mediumQuality">
+                                            <i class="bi bi-balance text-warning fs-3 d-block mb-2"></i>
+                                            <strong>Medium</strong>
+                                            <small class="text-muted d-block mt-1">Balanced quality/size</small>
+                                            <span class="badge bg-success mt-2">Recommended</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="form-check card h-100 p-3" onclick="selectCompression('high')">
-                                    <input class="form-check-input" type="radio" name="compressionLevel" id="highQuality" value="high">
-                                    <label class="form-check-label w-100" for="highQuality">
-                                        <i class="bi bi-lightning text-danger fs-3 d-block mb-2"></i>
-                                        <strong>High Compression</strong>
-                                        <small class="text-muted d-block">Smaller file, lower quality</small>
-                                    </label>
+                                <div class="compression-option card h-100 p-3 @((ViewBag.SelectedCompression ?? "") == "high" ? "border-primary" : "")" data-level="high" style="cursor: pointer;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="compressionLevel" id="highQuality" value="high">
+                                        <label class="form-check-label w-100" for="highQuality">
+                                            <i class="bi bi-lightning text-danger fs-3 d-block mb-2"></i>
+                                            <strong>High Compression</strong>
+                                            <small class="text-muted d-block mt-1">Smaller file, lower quality</small>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- File Info -->
-                    <div id="fileInfo" class="alert alert-info">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong id="fileName">document.pdf</strong>
-                                <span class="ms-3 text-muted" id="fileSize">0 MB</span>
-                            </div>
-                            <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
-                        </div>
+                    
+                    <!-- Action Button -->
+                    <div class="d-flex justify-content-center">
+                        <button type="button" id="compressBtn" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-file-earmark-zip"></i> Compress PDF
+                        </button>
                     </div>
-                </div>
-                <div class="card-footer bg-white">
-                    <button id="compressBtn" class="btn btn-success btn-lg w-100">
-                        <i class="bi bi-file-earmark-zip"></i> Compress PDF
-                    </button>
                 </div>
             </div>
 
@@ -103,40 +114,44 @@
                         <i class="bi bi-check-circle-fill text-success display-1"></i>
                     </div>
                     <h3 class="card-title" id="successMessage">PDF Compressed Successfully!</h3>
+                    <p class="text-muted" id="infoMessage">Your compressed PDF is ready.</p>
                     
                     <div class="row justify-content-center mt-4">
                         <div class="col-md-8">
                             <div class="card bg-light">
                                 <div class="card-body">
-                                    <div class="row text-center">
+                                    <div class="row text-center align-items-center">
                                         <div class="col-4">
-                                            <small class="text-muted">Original Size</small>
-                                            <div class="fw-bold" id="originalSize">-</div>
+                                            <small class="text-muted d-block">Original Size</small>
+                                            <div class="fw-bold fs-5" id="originalSize">-</div>
                                         </div>
                                         <div class="col-4">
                                             <i class="bi bi-arrow-right text-primary fs-4"></i>
-                                            <div class="text-success fw-bold" id="reduction">-</div>
+                                            <div class="text-success fw-bold fs-4" id="reduction">-</div>
                                             <small class="text-muted">Reduction</small>
                                         </div>
                                         <div class="col-4">
-                                            <small class="text-muted">Compressed</small>
-                                            <div class="fw-bold" id="compressedSize">-</div>
+                                            <small class="text-muted d-block">Compressed</small>
+                                            <div class="fw-bold fs-5" id="compressedSize">-</div>
                                         </div>
                                     </div>
                                     
                                     <!-- Progress bar showing compression -->
-                                    <div class="progress mt-3" style="height: 8px;">
-                                        <div class="progress-bar bg-success" id="reductionBar" role="progressbar" style="width: 0%"></div>
+                                    <div class="progress mt-3" style="height: 10px;">
+                                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="reductionBar" role="progressbar" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="d-flex justify-content-center gap-3 mt-4">
+                    <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
                         <a id="downloadBtn" href="#" class="btn btn-primary btn-lg">
                             <i class="bi bi-download"></i> Download Compressed PDF
                         </a>
+                        <button id="shareBtn" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-share"></i> Share
+                        </button>
                         <button id="compressAnotherBtn" class="btn btn-outline-secondary btn-lg">
                             <i class="bi bi-arrow-repeat"></i> Compress Another File
                         </button>
@@ -159,7 +174,7 @@
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay d-none">
     <div class="spinner-container">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Loading...</span>
         </div>
         <h4 class="mt-3 text-white">Compressing your PDF...</h4>
@@ -179,13 +194,25 @@
             border-color: #0d6efd !important;
         }
         
-        .form-check-input:checked + label {
-            background-color: #e7f1ff;
-            border-color: #0d6efd !important;
+        .drop-zone.drag-over {
+            background-color: #bbdefb !important;
+            border-color: #1976d2 !important;
         }
         
-        .form-check-label {
-            cursor: pointer;
+        .compression-option {
+            transition: all 0.2s ease;
+            border: 2px solid #dee2e6;
+        }
+        
+        .compression-option:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .compression-option.selected,
+        .compression-option.border-primary {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
         }
         
         .loading-overlay {
@@ -194,7 +221,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -212,26 +239,36 @@
         document.addEventListener('DOMContentLoaded', function() {
             const dropZone = document.getElementById('dropZone');
             const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
             const compressOptions = document.getElementById('compressOptions');
             const compressBtn = document.getElementById('compressBtn');
             const loadingOverlay = document.getElementById('loadingOverlay');
+            const compressionOptions = document.querySelectorAll('.compression-option');
             
             let selectedFile = null;
+            
+            // Select file button click
+            if (selectFileBtn) {
+                selectFileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+            }
             
             // Drop zone events
             dropZone.addEventListener('dragover', function(e) {
                 e.preventDefault();
-                dropZone.classList.add('bg-primary', 'text-white');
+                dropZone.classList.add('drag-over');
             });
             
             dropZone.addEventListener('dragleave', function(e) {
                 e.preventDefault();
-                dropZone.classList.remove('bg-primary', 'text-white');
+                dropZone.classList.remove('drag-over');
             });
             
             dropZone.addEventListener('drop', function(e) {
                 e.preventDefault();
-                dropZone.classList.remove('bg-primary', 'text-white');
+                dropZone.classList.remove('drag-over');
                 
                 const file = e.dataTransfer.files[0];
                 if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
@@ -246,21 +283,21 @@
                 if (file) handleFile(file);
             });
             
-            dropZone.addEventListener('click', function() {
-                fileInput.click();
-            });
-            
-            // Handle file
+            // Handle file selection
             function handleFile(file) {
                 selectedFile = file;
                 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileSize').textContent = formatSize(file.size);
+                document.getElementById('fileInfoBadge').textContent = 'Ready to compress';
                 
                 compressOptions.classList.remove('d-none');
+                
+                // Scroll to options
+                compressOptions.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             
-            // Format size
+            // Format file size
             function formatSize(bytes) {
                 if (bytes === 0) return '0 Bytes';
                 const k = 1024;
@@ -269,18 +306,39 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
             
-            // Select compression level
-            window.selectCompression = function(level) {
-                document.getElementById('lowQuality').checked = (level === 'low');
-                document.getElementById('mediumQuality').checked = (level === 'medium');
-                document.getElementById('highQuality').checked = (level === 'high');
-            };
+            // Compression option selection
+            compressionOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all
+                    compressionOptions.forEach(opt => {
+                        opt.classList.remove('selected', 'border-primary');
+                    });
+                    
+                    // Add selected class to clicked
+                    this.classList.add('selected', 'border-primary');
+                    
+                    // Update radio button
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                });
+            });
             
-            // Compress button
+            // Compress button click
             compressBtn.addEventListener('click', async function() {
-                if (!selectedFile) return;
+                if (!selectedFile) {
+                    alert('Please select a PDF file first.');
+                    return;
+                }
                 
                 const quality = document.querySelector('input[name="compressionLevel"]:checked').value;
+                
+                console.log('Starting compression:', {
+                    fileName: selectedFile.name,
+                    fileSize: selectedFile.size,
+                    quality: quality
+                });
                 
                 const formData = new FormData();
                 formData.append('file', selectedFile);
@@ -297,50 +355,58 @@
                     
                     const result = await response.json();
                     
+                    console.log('Compression result:', result);
+                    
                     loadingOverlay.classList.add('d-none');
                     
                     if (result.success) {
-                        console.log('Compression successful:', result);
-                        
-                        // Show result section
+                        // Hide upload and options, show result
                         document.getElementById('dropZone').closest('.card').style.display = 'none';
                         document.getElementById('compressOptions').style.display = 'none';
                         document.getElementById('resultContainer').style.display = 'block';
                         
                         // Update result info
                         document.getElementById('successMessage').textContent = result.message || 'PDF Compressed Successfully!';
-                        document.getElementById('originalSize').textContent = result.originalSize;
-                        document.getElementById('compressedSize').textContent = result.compressedSize;
-                        document.getElementById('reduction').textContent = result.reduction;
-                        document.getElementById('reductionBar').style.width = result.reduction;
+                        document.getElementById('infoMessage').textContent = result.info || 'Your compressed PDF is ready for download.';
+                        document.getElementById('originalSize').textContent = result.originalSize || '-';
+                        document.getElementById('compressedSize').textContent = result.compressedSize || '-';
+                        document.getElementById('reduction').textContent = result.reduction || '-';
+                        
+                        // Update progress bar
+                        const reductionValue = parseFloat(result.reduction) || 0;
+                        document.getElementById('reductionBar').style.width = reductionValue + '%';
                         
                         // Setup download button
                         const downloadBtn = document.getElementById('downloadBtn');
                         downloadBtn.href = result.downloadUrl;
                         
-                        // Manual download with visual feedback
+                        // Manual download handler
                         downloadBtn.onclick = function(e) {
                             e.preventDefault();
-                            console.log('Manual download clicked, URL:', result.downloadUrl);
+                            console.log('Download clicked, URL:', result.downloadUrl);
                             
-                            // Create a temporary anchor and click it
-                            const tempLink = document.createElement('a');
-                            tempLink.href = result.downloadUrl;
-                            tempLink.target = '_blank';
-                            document.body.appendChild(tempLink);
-                            tempLink.click();
-                            document.body.removeChild(tempLink);
+                            // Use fetch to download and trigger save
+                            fetch(result.downloadUrl)
+                                .then(response => response.blob())
+                                .then(blob => {
+                                    const url = window.URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.download = selectedFile.name.replace('.pdf', '_compressed.pdf');
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    window.URL.revokeObjectURL(url);
+                                })
+                                .catch(err => {
+                                    console.error('Download error:', err);
+                                    // Fallback: open in new tab
+                                    window.open(result.downloadUrl, '_blank');
+                                });
                         };
-                        
-                        // Try automatic download
-                        setTimeout(() => {
-                            console.log('Attempting auto-download...');
-                            downloadBtn.click();
-                        }, 500);
                         
                         compressBtn.disabled = false;
                     } else {
-                        console.error('Compression failed:', result);
                         alert(result.message || 'An error occurred while compressing the PDF.');
                         compressBtn.disabled = false;
                     }
@@ -355,6 +421,23 @@
             // Compress another button
             document.getElementById('compressAnotherBtn').addEventListener('click', function() {
                 location.reload();
+            });
+            
+            // Share button
+            document.getElementById('shareBtn').addEventListener('click', function() {
+                const downloadUrl = document.getElementById('downloadBtn').href;
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Compressed PDF',
+                        text: 'Check out this compressed PDF from PdfPeaks!',
+                        url: window.location.origin + downloadUrl
+                    }).catch(console.error);
+                } else {
+                    // Fallback: copy to clipboard
+                    navigator.clipboard.writeText(window.location.origin + downloadUrl)
+                        .then(() => alert('Link copied to clipboard!'))
+                        .catch(() => alert('Could not copy link'));
+                }
             });
         });
     </script>

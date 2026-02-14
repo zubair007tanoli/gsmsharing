@@ -261,40 +261,43 @@ public class PdfProcessingService
                 end = totalPages;
             }
 
-            _logger.LogInformation("Splitting pages {Start} to {End}", start, end);
+            int pagesToExtract = end - start + 1;
+            _logger.LogInformation("Splitting pages {Start} to {End} ({Count} pages total)", start, end, pagesToExtract);
 
+            // Create a single output PDF containing all selected pages
+            using var outputDocument = new PdfDocument();
+            
             for (int i = start; i <= end; i++)
             {
-                using var outputDocument = new PdfDocument();
                 outputDocument.AddPage(inputDocument.Pages[i - 1]);
-                
-                // Use operation ID and page number for unique filename
-                var outputFileName = !string.IsNullOrEmpty(operationId) 
-                    ? $"{operationId}_page_{i}.pdf"
-                    : $"{outputPrefix}_page_{i}.pdf";
-                var outputPath = Path.Combine(_tempFilePath, outputFileName);
-                
-                // Save the document synchronously and flush
-                outputDocument.Save(outputPath);
-                
-                // Force garbage collection to release file handles
-                outputDocument.Close();
-                
-                // Verify file was created
-                if (File.Exists(outputPath))
-                {
-                    var fileInfo = new FileInfo(outputPath);
-                    _logger.LogInformation("Created output file: {Path} ({Size} bytes)", outputPath, fileInfo.Length);
-                    outputPaths.Add(outputPath);
-                }
-                else
-                {
-                    _logger.LogError("Failed to create output file: {Path}", outputPath);
-                }
+                _logger.LogDebug("Added page {PageNum} to output document", i);
+            }
+            
+            // Use operation ID for unique filename
+            var outputFileName = !string.IsNullOrEmpty(operationId) 
+                ? $"{operationId}_split_{start}-{end}.pdf"
+                : $"{outputPrefix}_pages_{start}-{end}.pdf";
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            
+            // Save the document
+            outputDocument.Save(outputPath);
+            outputDocument.Close();
+            
+            // Verify file was created
+            if (File.Exists(outputPath))
+            {
+                var fileInfo = new FileInfo(outputPath);
+                _logger.LogInformation("Created output file: {Path} ({Size} bytes)", outputPath, fileInfo.Length);
+                outputPaths.Add(outputPath);
+            }
+            else
+            {
+                _logger.LogError("Failed to create output file: {Path}", outputPath);
+                return (false, outputPaths, "Failed to create output PDF file.");
             }
 
-            _logger.LogInformation("PDF split successfully into {Count} pages", outputPaths.Count);
-            return (true, outputPaths, $"Successfully split PDF into {outputPaths.Count} pages.");
+            _logger.LogInformation("PDF split successfully: {Count} pages extracted to single file", pagesToExtract);
+            return (true, outputPaths, $"Successfully extracted {pagesToExtract} pages into a single PDF.");
         }
         catch (Exception ex)
         {
@@ -341,7 +344,8 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Compress PDF
+    /// Compress PDF using Python pikepdf for better compression
+    /// Falls back to basic compression if Python is unavailable
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> CompressPdfAsync(
         string inputFile, int quality, string outputFileName)
@@ -353,20 +357,95 @@ public class PdfProcessingService
                 return (false, "", "Input file not found.");
             }
 
-            using var inputDocument = PdfReader.Open(inputFile);
-            
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            inputDocument.Save(outputPath);
-            
             var originalSize = new FileInfo(inputFile).Length;
-            var compressedSize = new FileInfo(outputPath).Length;
             
-            _logger.LogInformation("PDF compressed: {Original} -> {Compressed} bytes", originalSize, compressedSize);
-            return (true, outputPath, $"Successfully compressed PDF.");
+            // Map quality integer to string for Python script
+            var qualityLevel = quality switch
+            {
+                <= 30 => "high",      // Maximum compression
+                <= 60 => "medium",    // Balanced
+                _ => "low"           // Best quality
+            };
+            
+            _logger.LogInformation("Starting PDF compression: {InputFile}, quality={Quality}", inputFile, qualityLevel);
+            
+            // Try Python compression first (better results)
+            try
+            {
+                var (exitCode, stdout, stderr) = await RunPythonScriptAsync(
+                    "compress_pdf.py", 
+                    $"\"{inputFile}\" \"{outputPath}\" {qualityLevel}");
+                
+                if (exitCode == 0 && File.Exists(outputPath))
+                {
+                    var compressedSize = new FileInfo(outputPath).Length;
+                    var reduction = originalSize > 0 ? ((originalSize - compressedSize) * 100.0 / originalSize) : 0;
+                    
+                    _logger.LogInformation("PDF compressed via Python: {Original} -> {Compressed} bytes ({Reduction:F1}% reduction)", 
+                        originalSize, compressedSize, reduction);
+                    
+                    return (true, outputPath, $"Successfully compressed PDF ({reduction:F1}% size reduction).");
+                }
+                
+                _logger.LogWarning("Python compression failed (exit={ExitCode}), falling back to basic compression. Error: {Stderr}", 
+                    exitCode, stderr);
+            }
+            catch (Exception pyEx)
+            {
+                _logger.LogWarning(pyEx, "Python compression unavailable, falling back to basic compression");
+            }
+            
+            // Fallback: Basic compression using PdfSharpCore
+            // This provides limited compression but ensures functionality
+            return await CompressPdfBasicAsync(inputFile, outputPath, originalSize);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error compressing PDF");
+            return (false, "", $"Error compressing PDF: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Basic PDF compression fallback using PdfSharpCore
+    /// Re-encodes the PDF which can provide some size reduction
+    /// </summary>
+    private async Task<(bool success, string outputPath, string message)> CompressPdfBasicAsync(
+        string inputFile, string outputPath, long originalSize)
+    {
+        try
+        {
+            // Open and re-save with compression options
+            using var inputDocument = PdfReader.Open(inputFile, PdfDocumentOpenMode.Import);
+            using var outputDocument = new PdfDocument();
+            
+            // Copy all pages
+            foreach (var page in inputDocument.Pages)
+            {
+                outputDocument.AddPage(page);
+            }
+            
+            // Save with compression (PdfSharpCore uses compression by default)
+            outputDocument.Save(outputPath);
+            
+            var compressedSize = new FileInfo(outputPath).Length;
+            var reduction = originalSize > 0 ? ((originalSize - compressedSize) * 100.0 / originalSize) : 0;
+            
+            _logger.LogInformation("PDF compressed (basic): {Original} -> {Compressed} bytes ({Reduction:F1}% reduction)", 
+                originalSize, compressedSize, reduction);
+            
+            // If no reduction or file got larger, still return success but note it
+            if (reduction <= 0)
+            {
+                return (true, outputPath, "PDF processed. Note: This PDF appears to already be optimized. For better compression, ensure Python with pikepdf is installed.");
+            }
+            
+            return (true, outputPath, $"Successfully compressed PDF ({reduction:F1}% size reduction).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in basic PDF compression");
             return (false, "", $"Error compressing PDF: {ex.Message}");
         }
     }

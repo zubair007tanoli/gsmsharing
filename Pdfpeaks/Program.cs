@@ -112,19 +112,31 @@ if (!string.IsNullOrEmpty(connectionString))
 
 // ============ Register Custom Services ============
 
-// Register IConnectionMultiplexer for Redis (non-blocking startup)
+// Register IConnectionMultiplexer for Redis (lazy singleton - connects on first use)
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var connectionString = configuration.GetConnectionString("Redis") 
         ?? configuration["Redis:ConnectionString"] 
         ?? "localhost:6379";
-    
+
     var config = ConfigurationOptions.Parse(connectionString);
-    config.AbortOnConnectFail = false;  // Don't block startup - connect in background
-    config.ConnectTimeout = 500;        // Fail fast (500ms) if Redis unreachable
-    config.AsyncTimeout = 2000;
-    return ConnectionMultiplexer.Connect(config);
+    config.AbortOnConnectFail = false;  // Don't throw if Redis unavailable
+    config.ConnectTimeout = 100;        // Quick timeout (100ms) - fail fast
+    config.SyncTimeout = 100;
+    config.AsyncTimeout = 100;
+
+    try
+    {
+        // Try to connect with very short timeout - will retry on first use
+        return ConnectionMultiplexer.Connect(config);
+    }
+    catch
+    {
+        // If Redis unavailable, return null multiplexer - services handle gracefully
+        Log.Warning("Redis connection failed during startup. Services will retry on demand.");
+        return null!;  // Services must handle null gracefully
+    }
 });
 
 // AI Services (Self-dependent - no external APIs)
@@ -137,8 +149,8 @@ builder.Services.AddSingleton<RedisCacheService>();
 builder.Services.AddScoped<JwtTokenService>();
 
 // MCP Servers
-builder.Services.AddSingleton<SEOMcpServer>();
-builder.Services.AddSingleton<PerformanceMcpServer>();
+// Optional: builder.Services.AddSingleton<SEOMcpServer>();
+// Optional: builder.Services.AddSingleton<PerformanceMcpServer>();
 
 // Processing Services
 builder.Services.AddScoped<FileProcessingService>();
@@ -198,14 +210,7 @@ builder.Services.AddSwaggerGen(options =>
             Url = new Uri("https://opensource.org/licenses/MIT")
         }
     });
-    
-    options.SwaggerDoc("v2", new OpenApiInfo
-    {
-        Title = "Pdfpeaks API v2",
-        Version = "v2.0",
-        Description = "New AI-powered endpoints"
-    });
-    
+
     // Add JWT authentication to Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -215,7 +220,7 @@ builder.Services.AddSwaggerGen(options =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -281,25 +286,21 @@ app.UseAuthorization();
 
 app.UseRateLimiting();
 
-// Swagger
-app.UseSwagger(options =>
+// Swagger - only enable in Development to avoid exposing UI for MVC app in other environments
+if (app.Environment.IsDevelopment())
 {
-    options.RouteTemplate = "/swagger/{documentName}/swagger.json";
-    options.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+    app.UseSwagger(options =>
     {
-        swaggerDoc.Servers = new List<OpenApiServer>
+        options.RouteTemplate = "/swagger/{documentName}/swagger.json";
+        options.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
         {
-            new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host}" }
-        };
+            swaggerDoc.Servers = new List<OpenApiServer>
+            {
+                new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host}" }
+            };
+        });
     });
-});
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Pdfpeaks API v1");
-    options.SwaggerEndpoint("/swagger/v2/swagger.json", "Pdfpeaks API v2");
-    options.RoutePrefix = "swagger";
-    options.DocumentTitle = "Pdfpeaks API Documentation";
-});
+}
 
 // Map routes
 app.MapControllerRoute(
