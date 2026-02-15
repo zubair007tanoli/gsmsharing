@@ -6,6 +6,15 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 using System.Drawing;
+using Xceed.Words.NET;
+using UglyToad.PdfPig;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using PdfSharpPdfDocument = PdfSharpCore.Pdf.PdfDocument;
+using QuestPDFDocument = QuestPDF.Fluent.Document;
 
 namespace Pdfpeaks.Services;
 
@@ -57,27 +66,236 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Word to PDF using LibreOffice headless (hybrid, free). Requires LibreOffice installed.
+    /// Word to PDF using free open-source libraries (DocumentFormat.OpenXml + QuestPDF).
+    /// No LibreOffice or paid libraries required.
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertWordToPdfAsync(string inputPath, string outputFileName)
     {
         var outputPath = Path.Combine(_tempFilePath, outputFileName);
         if (!File.Exists(inputPath))
             return (false, outputPath, "Input file not found.");
-        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
-        var scriptPath = Path.Combine(contentRoot, "scripts", "word_to_pdf.py");
-        if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "word_to_pdf.py");
-        if (!File.Exists(scriptPath))
-            return (false, outputPath, "Conversion script not found. Ensure scripts/word_to_pdf.py exists. Word to PDF requires LibreOffice installed (e.g. apt install libreoffice).");
-        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("word_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-        var output = (stdout + "\n" + stderr).Trim();
-        if (exitCode != 0 || !File.Exists(outputPath))
+
+        try
         {
-            var err = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : stdout.Trim());
-            return (false, outputPath, string.IsNullOrWhiteSpace(err) ? "Word to PDF conversion failed." : err);
+            // Check file extension
+            var extension = Path.GetExtension(inputPath).ToLowerInvariant();
+            
+            if (extension == ".docx")
+            {
+                // Use DocumentFormat.OpenXml + QuestPDF for DOCX files
+                await ConvertDocxToPdfAsync(inputPath, outputPath);
+            }
+            else if (extension == ".doc")
+            {
+                // For legacy .doc files, use Xceed.Words.NET (free version)
+                await ConvertDocToPdfAsync(inputPath, outputPath);
+            }
+            else
+            {
+                return (false, outputPath, $"Unsupported file format: {extension}. Only .doc and .docx files are supported.");
+            }
+            
+            _logger.LogInformation("Word to PDF conversion successful: {OutputPath}", outputPath);
+            return (true, outputPath, "Word document converted to PDF successfully.");
         }
-        return (true, outputPath, "Processed");
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Word to PDF conversion failed for {InputPath}", inputPath);
+            return (false, outputPath, $"Conversion failed: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Convert DOCX to PDF using DocumentFormat.OpenXml + QuestPDF (free, open-source)
+    /// </summary>
+    private async Task ConvertDocxToPdfAsync(string inputPath, string outputPath)
+    {
+        // Configure QuestPDF license (free for open-source/commercial use under Community license)
+        QuestPDF.Settings.License = LicenseType.Community;
+        
+        // Extract content from DOCX
+        var documentContent = await ExtractDocxContentAsync(inputPath);
+        
+        // Generate PDF using QuestPDF
+        var pdfDocument = QuestPDFDocument.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(2, Unit.Centimetre);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                
+                page.Content().Column(column =>
+                {
+                    foreach (var paragraph in documentContent.Paragraphs)
+                    {
+                        if (paragraph.IsHeading)
+                        {
+                            column.Item().Text(paragraph.Text).FontSize(16).Bold();
+                        }
+                        else if (paragraph.IsBold)
+                        {
+                            column.Item().Text(paragraph.Text).Bold();
+                        }
+                        else
+                        {
+                            column.Item().Text(paragraph.Text);
+                        }
+                        
+                        // Add spacing after each paragraph
+                        column.Item().PaddingVertical(4, Unit.Millimetre);
+                    }
+                });
+            });
+        });
+        
+        // Save PDF to file
+        pdfDocument.GeneratePdf(outputPath);
+    }
+    
+    /// <summary>
+    /// Extract content from DOCX file using DocumentFormat.OpenXml
+    /// </summary>
+    private async Task<DocumentContent> ExtractDocxContentAsync(string inputPath)
+    {
+        var content = new DocumentContent();
+        
+        await Task.Run(() =>
+        {
+            using var wordDoc = WordprocessingDocument.Open(inputPath, false);
+            var body = wordDoc.MainDocumentPart?.Document.Body;
+            
+            if (body == null) return;
+            
+            foreach (var element in body.Elements())
+            {
+                if (element is Paragraph para)
+                {
+                    var text = para.InnerText;
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+                    
+                    var paragraphInfo = new ParagraphInfo
+                    {
+                        Text = text,
+                        IsHeading = IsHeadingParagraph(para),
+                        IsBold = HasBoldText(para)
+                    };
+                    
+                    content.Paragraphs.Add(paragraphInfo);
+                }
+                else if (element is Table table)
+                {
+                    // Extract table content as text
+                    var tableText = ExtractTableText(table);
+                    if (!string.IsNullOrWhiteSpace(tableText))
+                    {
+                        content.Paragraphs.Add(new ParagraphInfo { Text = tableText });
+                    }
+                }
+            }
+        });
+        
+        return content;
+    }
+    
+    /// <summary>
+    /// Check if paragraph is a heading
+    /// </summary>
+    private bool IsHeadingParagraph(Paragraph para)
+    {
+        var styleId = para.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
+        return styleId != null && (styleId.StartsWith("Heading") || styleId.Contains("Title"));
+    }
+    
+    /// <summary>
+    /// Check if paragraph contains bold text
+    /// </summary>
+    private bool HasBoldText(Paragraph para)
+    {
+        foreach (var run in para.Elements<Run>())
+        {
+            var bold = run.RunProperties?.Bold;
+            if (bold?.Val?.Value == true)
+                return true;
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// Extract text from a table
+    /// </summary>
+    private string ExtractTableText(Table table)
+    {
+        var sb = new StringBuilder();
+        
+        foreach (var row in table.Elements<TableRow>())
+        {
+            var cells = row.Elements<TableCell>().ToList();
+            var cellTexts = cells.Select(c => c.InnerText).ToList();
+            sb.AppendLine(string.Join(" | ", cellTexts));
+        }
+        
+        return sb.ToString();
+    }
+    
+    /// <summary>
+    /// Convert legacy .doc to PDF using Xceed.Words.NET (free)
+    /// </summary>
+    private async Task ConvertDocToPdfAsync(string inputPath, string outputPath)
+    {
+        // Xceed.Words.NET can read .doc files
+        using var doc = DocX.Load(inputPath);
+        
+        // Configure QuestPDF license
+        QuestPDF.Settings.License = LicenseType.Community;
+        
+        // Extract paragraphs
+        var paragraphs = doc.Paragraphs;
+        
+        // Generate PDF using QuestPDF
+        var pdfDocument = QuestPDFDocument.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(2, Unit.Centimetre);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                
+                page.Content().Column(column =>
+                {
+                    foreach (var para in paragraphs)
+                    {
+                        var text = para.Text;
+                        if (string.IsNullOrWhiteSpace(text)) continue;
+                        
+                        // Use a single column item for each paragraph with padding
+                        column.Item().PaddingVertical(4, Unit.Millimetre).Text(text);
+                    }
+                });
+            });
+        });
+        
+        await Task.Run(() => pdfDocument.GeneratePdf(outputPath));
+    }
+    
+    /// <summary>
+    /// Helper class to store document content
+    /// </summary>
+    private class DocumentContent
+    {
+        public List<ParagraphInfo> Paragraphs { get; set; } = new();
+    }
+    
+    /// <summary>
+    /// Helper class to store paragraph information
+    /// </summary>
+    private class ParagraphInfo
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsHeading { get; set; }
+        public bool IsBold { get; set; }
     }
 
     /// <summary>
@@ -103,7 +321,7 @@ public class PdfProcessingService
                 _logger.LogInformation("  File: {Path}", f);
             }
 
-            var outputDocument = new PdfDocument();
+            var outputDocument = new PdfSharpPdfDocument();
             outputDocument.Info.Title = "Merged Document";
             
             int totalPagesImported = 0;
@@ -130,7 +348,7 @@ public class PdfProcessingService
                         continue;
                     }
                     
-                    PdfDocument? inputDocument = null;
+                    PdfSharpPdfDocument? inputDocument = null;
                     Exception? lastException = null;
                     
                     try
@@ -265,7 +483,7 @@ public class PdfProcessingService
             _logger.LogInformation("Splitting pages {Start} to {End} ({Count} pages total)", start, end, pagesToExtract);
 
             // Create a single output PDF containing all selected pages
-            using var outputDocument = new PdfDocument();
+            using var outputDocument = new PdfSharpPdfDocument();
             
             for (int i = start; i <= end; i++)
             {
@@ -418,7 +636,7 @@ public class PdfProcessingService
         {
             // Open and re-save with compression options
             using var inputDocument = PdfReader.Open(inputFile, PdfDocumentOpenMode.Import);
-            using var outputDocument = new PdfDocument();
+            using var outputDocument = new PdfSharpPdfDocument();
             
             // Copy all pages
             foreach (var page in inputDocument.Pages)
@@ -531,7 +749,7 @@ public class PdfProcessingService
 
             using var inputDocument = PdfReader.Open(inputFile);
             int totalPages = inputDocument.Pages.Count;
-            var outputDocument = new PdfDocument();
+            var outputDocument = new PdfSharpPdfDocument();
 
             foreach (var oneBased in pageOrderOneBased)
             {
@@ -760,67 +978,81 @@ public class PdfProcessingService
 
     /// <summary>
     /// Convert PDF to Word document (.docx) using Python pdf2docx script (hybrid AI reconstruction).
+    /// Falls back to PdfPig + DocX for text extraction if Python is unavailable.
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToWordAsync(
         string inputPath, string outputName)
     {
         string outputPath = Path.Combine(_tempFilePath, outputName);
-        var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
-        var scriptPath = Path.Combine(contentRoot, "scripts", "convert_pdf.py");
 
         if (!File.Exists(inputPath))
         {
             return (false, outputPath, "Input file not found.");
         }
 
-        if (!File.Exists(scriptPath))
-        {
-            _logger.LogWarning("Python script not found at {ScriptPath}", scriptPath);
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                scriptPath = "/var/www/pdfpeaks/scripts/convert_pdf.py";
-            if (!File.Exists(scriptPath))
-                return (false, outputPath, "Conversion script not found. Ensure scripts/convert_pdf.py exists and Python with pdf2docx is installed.");
-        }
-
-        var pythonExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "python" : "python3";
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = pythonExe,
-            Arguments = $"\"{scriptPath}\" \"{inputPath}\" \"{outputPath}\"",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
+        // Try Python conversion first (better formatting preservation)
         try
         {
-            using var process = Process.Start(startInfo);
-            if (process == null)
+            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("convert_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+            
+            if (exitCode == 0 && File.Exists(outputPath))
             {
-                return (false, outputPath, "Failed to start conversion process.");
+                _logger.LogInformation("PDF converted to Word via Python: {Input} -> {Output}", inputPath, outputPath);
+                return (true, outputPath, "Successfully converted PDF to Word document.");
             }
+            
+            _logger.LogWarning("Python PDF to Word conversion failed (exit={ExitCode}): {Error}", exitCode, stderr);
+        }
+        catch (Exception pyEx)
+        {
+            _logger.LogWarning(pyEx, "Python conversion unavailable, falling back to text extraction");
+        }
 
-            var stdout = await process.StandardOutput.ReadToEndAsync();
-            var stderr = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            var output = (stdout + "\n" + stderr).Trim();
-            if (process.ExitCode != 0 || !File.Exists(outputPath))
+        // Fallback: Use PdfPig for text extraction + DocX to create Word document
+        return await ConvertToWordFallbackAsync(inputPath, outputPath);
+    }
+    
+    /// <summary>
+    /// Fallback PDF to Word conversion using PdfPig for text extraction and DocX for document creation.
+    /// This extracts text content but does not preserve complex formatting.
+    /// </summary>
+    private async Task<(bool success, string outputPath, string message)> ConvertToWordFallbackAsync(
+        string inputPath, string outputPath)
+    {
+        try
+        {
+            _logger.LogInformation("Using fallback PDF to Word conversion (text extraction)");
+            
+            using var document = DocX.Create(outputPath);
+            
+            using (var pdfDocument = UglyToad.PdfPig.PdfDocument.Open(inputPath))
             {
-                var errorMsg = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (string.IsNullOrEmpty(stderr) ? stdout : stderr);
-                if (string.IsNullOrWhiteSpace(errorMsg)) errorMsg = "Conversion failed.";
-                _logger.LogWarning("PDF to Word conversion failed: {Error}", errorMsg);
-                return (false, outputPath, errorMsg);
+                foreach (var page in pdfDocument.GetPages())
+                {
+                    var text = page.Text;
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        // Add page content as paragraph
+                        var paragraph = document.InsertParagraph(text);
+                        paragraph.InsertPageBreakAfterSelf();
+                    }
+                }
             }
-
-            _logger.LogInformation("PDF converted to Word: {Input} -> {Output}", inputPath, outputPath);
-            return (true, outputPath, "Processed");
+            
+            document.Save();
+            
+            if (File.Exists(outputPath))
+            {
+                _logger.LogInformation("PDF converted to Word (fallback): {Input} -> {Output}", inputPath, outputPath);
+                return (true, outputPath, "Successfully converted PDF to Word document (text extraction mode). For better formatting, install Python with pdf2docx.");
+            }
+            
+            return (false, outputPath, "Failed to create Word document.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error converting PDF to Word");
-            return (false, outputPath, ex.Message);
+            _logger.LogError(ex, "Error in fallback PDF to Word conversion");
+            return (false, outputPath, $"Error converting PDF to Word: {ex.Message}. For better results, install Python with pdf2docx library.");
         }
     }
 
@@ -878,7 +1110,7 @@ public class PdfProcessingService
     /// <summary>
     /// Extract text from a specific PDF page
     /// </summary>
-    private string ExtractTextFromPage(PdfDocument document, int pageIndex)
+    private string ExtractTextFromPage(PdfSharpPdfDocument document, int pageIndex)
     {
         try
         {

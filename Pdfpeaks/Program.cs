@@ -276,14 +276,10 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.UseRateLimiting();
 
 // Swagger - only enable in Development to avoid exposing UI for MVC app in other environments
