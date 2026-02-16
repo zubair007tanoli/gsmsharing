@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Pdfpeaks.Models;
 using Pdfpeaks.Services;
 using System.Text.Json;
+using System.IO.Compression;
 
 namespace Pdfpeaks.Controllers;
 
@@ -616,8 +617,129 @@ public class PdfController : Controller
         return View();
     }
 
+    /// <summary>
+    /// Get preview for PDF pages with thumbnails - returns page info and thumbnail images
+    /// </summary>
     [HttpPost]
-    public async Task<IActionResult> ConvertToJpg(IFormFile file)
+    public async Task<IActionResult> GetPdfPreview(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (extension != ".pdf")
+        {
+            return Json(new { success = false, message = "Only PDF files are supported." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pdf2jpg");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            
+            // Get PDF info (page count, sizes)
+            var (pageCount, fileSize, pageSizes) = _pdfProcessingService.GetPdfInfo(filePath);
+            
+            if (pageCount == 0)
+            {
+                return Json(new { success = false, message = "Unable to read PDF or PDF has no pages." });
+            }
+
+            // Generate preview thumbnails (limited to first 10 pages for performance)
+            var previewsToGenerate = Math.Min(pageCount, 10);
+            var previews = await GeneratePdfThumbnailsAsync(filePath, previewsToGenerate);
+            
+            var pages = new List<dynamic>();
+            for (int i = 1; i <= pageCount; i++)
+            {
+                var preview = previews.FirstOrDefault(p => p.pageNumber == i);
+                pages.Add(new 
+                { 
+                    pageNumber = i, 
+                    selected = true,
+                    thumbnail = preview?.thumbnail,
+                    hasThumbnail = preview?.thumbnail != null
+                });
+            }
+
+            return Json(new 
+            { 
+                success = true, 
+                fileName = file.FileName,
+                pageCount = pageCount,
+                fileSize = FormatSize(fileSize),
+                pages = pages
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting PDF preview");
+            return Json(new { success = false, message = "An error occurred while reading the PDF." });
+        }
+    }
+
+    /// <summary>
+    /// Generate thumbnail previews for PDF pages using Python script
+    /// </summary>
+    private async Task<List<dynamic>> GeneratePdfThumbnailsAsync(string pdfPath, int maxPages)
+    {
+        try
+        {
+            var (exitCode, stdout, stderr) = await _pdfProcessingService.RunPythonScriptAsync("pdf_preview.py", $"\"{pdfPath}\" {maxPages}");
+            
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(stdout))
+            {
+                try
+                {
+                    var result = JsonSerializer.Deserialize<dynamic>(stdout);
+                    
+                    // Extract previews from result
+                    if (result != null)
+                    {
+                        using var doc = JsonDocument.Parse(stdout);
+                        if (doc.RootElement.TryGetProperty("previews", out var previewsArray))
+                        {
+                            var previews = new List<dynamic>();
+                            foreach (var item in previewsArray.EnumerateArray())
+                            {
+                                if (item.TryGetProperty("pageNumber", out var pageNum) &&
+                                    item.TryGetProperty("preview", out var preview) &&
+                                    preview.ValueKind != JsonValueKind.Null)
+                                {
+                                    previews.Add(new
+                                    {
+                                        pageNumber = pageNum.GetInt32(),
+                                        thumbnail = preview.GetString()
+                                    });
+                                }
+                            }
+                            return previews;
+                        }
+                    }
+                }
+                catch
+                {
+                    _logger.LogWarning("Could not parse PDF preview response");
+                }
+            }
+            
+            _logger.LogWarning("PDF preview generation failed: {Error}", stderr);
+            return new List<dynamic>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating PDF thumbnails");
+            return new List<dynamic>();
+        }
+    }
+
+    /// <summary>
+    /// Convert selected pages to JPG and return ZIP download
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ConvertToJpg(IFormFile file, [FromForm] string selectedPages = "")
     {
         if (file == null || file.Length == 0)
         {
@@ -645,24 +767,69 @@ public class PdfController : Controller
             var filePath = _fileProcessingService.GetFilePath(fileName);
             var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
             
+            // Parse selected pages (comma-separated or empty for all)
+            var pagesToConvert = new List<int>();
+            if (!string.IsNullOrWhiteSpace(selectedPages))
+            {
+                try
+                {
+                    pagesToConvert = selectedPages.Split(',')
+                        .Where(p => int.TryParse(p.Trim(), out _))
+                        .Select(p => int.Parse(p.Trim()))
+                        .OrderBy(p => p)
+                        .ToList();
+                }
+                catch
+                {
+                    pagesToConvert = new List<int>(); // Convert all if parsing fails
+                }
+            }
+            
             // Perform conversion
             var (success, outputPaths, resultMessage) = await _pdfProcessingService.ConvertToImagesAsync(
-                filePath, outputPrefix, "jpg");
+                filePath, outputPrefix, "jpg", pagesToConvert);
             
-            if (success)
+            if (success && outputPaths.Count > 0)
             {
-                var downloadUrls = outputPaths.Select(path => 
+                // If single page, download directly
+                if (outputPaths.Count == 1)
                 {
-                    var imgFileName = Path.GetFileName(path);
-                    return new { fileName = imgFileName, url = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(imgFileName)}" };
-                }).ToList();
+                    var singlePath = outputPaths[0];
+                    var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(Path.GetFileName(singlePath))}";
+                    return Json(new 
+                    { 
+                        success = true, 
+                        message = resultMessage,
+                        downloadUrl = downloadUrl,
+                        fileName = Path.GetFileName(singlePath),
+                        fileCount = 1
+                    });
+                }
                 
+                // Multiple pages - create ZIP
+                var zipFileName = $"{outputPrefix}_pages.zip";
+                var zipPath = Path.Combine(Path.GetDirectoryName(outputPaths[0]) ?? _environment.ContentRootPath, zipFileName);
+                
+                using (var archive = System.IO.Compression.ZipFile.Open(zipPath, System.IO.Compression.ZipArchiveMode.Create))
+                {
+                    foreach (var imagePath in outputPaths)
+                    {
+                        var imageName = Path.GetFileName(imagePath);
+                        archive.CreateEntryFromFile(imagePath, imageName);
+                    }
+                }
+                
+                _logger.LogInformation("Created ZIP file with {Count} pages: {ZipPath}", outputPaths.Count, zipPath);
+                
+                var zipDownloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(zipFileName)}";
                 return Json(new 
                 { 
                     success = true, 
-                    message = resultMessage,
-                    files = downloadUrls,
-                    fileCount = downloadUrls.Count
+                    message = $"Successfully converted {outputPaths.Count} pages to JPG. Download as ZIP.",
+                    downloadUrl = zipDownloadUrl,
+                    fileName = zipFileName,
+                    fileCount = outputPaths.Count,
+                    imageCount = outputPaths.Count
                 });
             }
             else

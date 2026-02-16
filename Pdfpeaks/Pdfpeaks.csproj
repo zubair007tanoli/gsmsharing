@@ -82,4 +82,12 @@
     <PackageReference Include="Bogus" Version="35.6.1" />
   </ItemGroup>
 
+  <!-- Include scripts, services, and other content folders in publish -->
+  <ItemGroup>
+    <Content Include="scripts/**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="services-python-ai/**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="temp_files/**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="logs/**" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

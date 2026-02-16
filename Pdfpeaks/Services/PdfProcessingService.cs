@@ -40,7 +40,7 @@ public class PdfProcessingService
     /// <summary>
     /// Run a Python script and return exit code, stdout, stderr. Script path is under ContentRoot/scripts/.
     /// </summary>
-    private async Task<(int exitCode, string stdout, string stderr)> RunPythonScriptAsync(string scriptFileName, string arguments)
+    public async Task<(int exitCode, string stdout, string stderr)> RunPythonScriptAsync(string scriptFileName, string arguments)
     {
         var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
         var scriptPath = Path.Combine(contentRoot, "scripts", scriptFileName);
@@ -942,26 +942,41 @@ public class PdfProcessingService
     /// Convert PDF to images (JPG or PNG) using Python PyMuPDF (hybrid, free).
     /// </summary>
     public async Task<(bool success, List<string> outputPaths, string message)> ConvertToImagesAsync(
-        string inputFile, string outputPrefix, string imageFormat)
+        string inputFile, string outputPrefix, string imageFormat, List<int>? selectedPages = null)
     {
         var outputPaths = new List<string>();
         if (!File.Exists(inputFile))
             return (false, outputPaths, "Input file not found.");
+        
         var fmt = (imageFormat ?? "jpg").ToLowerInvariant();
         if (fmt != "png") fmt = "jpg";
+        
+        // Get Python script path
         var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
         var scriptPath = Path.Combine(contentRoot, "scripts", "pdf_to_images.py");
         if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "pdf_to_images.py");
+        
         if (!File.Exists(scriptPath))
             return (false, outputPaths, "Conversion script not found. Ensure scripts/pdf_to_images.py exists. Install: pip install pymupdf");
-        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_images.py", $"\"{inputFile}\" \"{_tempFilePath}\" \"{outputPrefix}\" \"{fmt}\"");
+        
+        // Prepare page argument (empty = all pages, or comma-separated list)
+        var pageArg = "";
+        if (selectedPages != null && selectedPages.Count > 0)
+        {
+            pageArg = string.Join(",", selectedPages);
+        }
+        
+        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_images.py", 
+            $"\"{inputFile}\" \"{_tempFilePath}\" \"{outputPrefix}\" \"{fmt}\" \"{pageArg}\"");
+        
         if (exitCode != 0)
         {
             var err = (stdout + "\n" + stderr).Trim();
             var msg = err.Contains("ERROR:") ? err.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : err);
             return (false, outputPaths, string.IsNullOrWhiteSpace(msg) ? "PDF to images conversion failed." : msg);
         }
+        
         var ext = fmt == "png" ? "png" : "jpg";
         for (int i = 1; i <= 1000; i++)
         {
@@ -972,6 +987,7 @@ public class PdfProcessingService
             else if (i > 1)
                 break;
         }
+        
         _logger.LogInformation("PDF converted to {Count} images: {Input}", outputPaths.Count, inputFile);
         return (true, outputPaths, outputPaths.Count > 0 ? "Processed" : "No images produced.");
     }
