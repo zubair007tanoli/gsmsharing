@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 using System.Drawing;
-using Xceed.Words.NET;
 using UglyToad.PdfPig;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -30,7 +29,7 @@ public class PdfProcessingService
     {
         _logger = logger;
         _tempFilePath = Path.Combine(environment.ContentRootPath, "temp_files");
-        
+
         if (!Directory.Exists(_tempFilePath))
         {
             Directory.CreateDirectory(_tempFilePath);
@@ -79,23 +78,23 @@ public class PdfProcessingService
         {
             // Check file extension
             var extension = Path.GetExtension(inputPath).ToLowerInvariant();
-            
+
             if (extension != ".docx" && extension != ".doc")
             {
                 return (false, outputPath, $"Unsupported file format: {extension}. Only .doc and .docx files are supported.");
             }
-            
+
             // First, try using LibreOffice via Python script (preserves formatting)
             var (exitCode, stdout, stderr) = await RunPythonScriptAsync("word_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-            
+
             if (exitCode == 0 && File.Exists(outputPath))
             {
                 _logger.LogInformation("Word to PDF conversion successful (LibreOffice): {OutputPath}", outputPath);
                 return (true, outputPath, "Word document converted to PDF successfully (formatting preserved).");
             }
-            
+
             _logger.LogWarning("LibreOffice conversion failed (exitCode={ExitCode}), falling back to basic conversion: {Error}", exitCode, stderr);
-            
+
             // Fallback: Use DocumentFormat.OpenXml + QuestPDF for DOCX files
             if (extension == ".docx")
             {
@@ -106,7 +105,7 @@ public class PdfProcessingService
                 // For legacy .doc files, use Xceed.Words.NET (free version)
                 await ConvertDocToPdfAsync(inputPath, outputPath);
             }
-            
+
             _logger.LogInformation("Word to PDF conversion successful (fallback): {OutputPath}", outputPath);
             return (true, outputPath, "Word document converted to PDF successfully (basic formatting).");
         }
@@ -116,7 +115,7 @@ public class PdfProcessingService
             return (false, outputPath, $"Conversion failed: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Convert DOCX to PDF using DocumentFormat.OpenXml + QuestPDF (free, open-source)
     /// </summary>
@@ -124,13 +123,13 @@ public class PdfProcessingService
     {
         // Configure QuestPDF license (free for open-source/commercial use under Community license)
         QuestPDF.Settings.License = LicenseType.Community;
-        
+
         // Extract content from DOCX
         var documentContent = await ExtractDocxContentAsync(inputPath);
-        
+
         // Define font families with fallback for missing glyphs
         var fontFamilies = new[] { "Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans", "sans-serif" };
-        
+
         // Generate PDF using QuestPDF
         var pdfDocument = QuestPDFDocument.Create(container =>
         {
@@ -140,7 +139,7 @@ public class PdfProcessingService
                 page.Margin(2, Unit.Centimetre);
                 page.PageColor(Colors.White);
                 page.DefaultTextStyle(x => x.FontSize(11).FontFamily(fontFamilies).Fallback(f => f.FontSize(11).FontFamily("DejaVu Sans")));
-                
+
                 page.Content().Column(column =>
                 {
                     foreach (var paragraph in documentContent.Paragraphs)
@@ -157,46 +156,46 @@ public class PdfProcessingService
                         {
                             column.Item().Text(paragraph.Text).FontFamily(fontFamilies);
                         }
-                        
+
                         // Add spacing after each paragraph
                         column.Item().PaddingVertical(4, Unit.Millimetre);
                     }
                 });
             });
         });
-        
+
         // Save PDF to file
         pdfDocument.GeneratePdf(outputPath);
     }
-    
+
     /// <summary>
     /// Extract content from DOCX file using DocumentFormat.OpenXml
     /// </summary>
     private async Task<DocumentContent> ExtractDocxContentAsync(string inputPath)
     {
         var content = new DocumentContent();
-        
+
         await Task.Run(() =>
         {
             using var wordDoc = WordprocessingDocument.Open(inputPath, false);
             var body = wordDoc.MainDocumentPart?.Document.Body;
-            
+
             if (body == null) return;
-            
+
             foreach (var element in body.Elements())
             {
                 if (element is Paragraph para)
                 {
                     var text = para.InnerText;
                     if (string.IsNullOrWhiteSpace(text)) continue;
-                    
+
                     var paragraphInfo = new ParagraphInfo
                     {
                         Text = text,
                         IsHeading = IsHeadingParagraph(para),
                         IsBold = HasBoldText(para)
                     };
-                    
+
                     content.Paragraphs.Add(paragraphInfo);
                 }
                 else if (element is Table table)
@@ -210,10 +209,10 @@ public class PdfProcessingService
                 }
             }
         });
-        
+
         return content;
     }
-    
+
     /// <summary>
     /// Check if paragraph is a heading
     /// </summary>
@@ -222,7 +221,7 @@ public class PdfProcessingService
         var styleId = para.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
         return styleId != null && (styleId.StartsWith("Heading") || styleId.Contains("Title"));
     }
-    
+
     /// <summary>
     /// Check if paragraph contains bold text
     /// </summary>
@@ -236,68 +235,42 @@ public class PdfProcessingService
         }
         return false;
     }
-    
+
     /// <summary>
     /// Extract text from a table
     /// </summary>
     private string ExtractTableText(Table table)
     {
         var sb = new StringBuilder();
-        
+
         foreach (var row in table.Elements<TableRow>())
         {
             var cells = row.Elements<TableCell>().ToList();
             var cellTexts = cells.Select(c => c.InnerText).ToList();
             sb.AppendLine(string.Join(" | ", cellTexts));
         }
-        
+
         return sb.ToString();
     }
-    
+
     /// <summary>
-    /// Convert legacy .doc to PDF using Xceed.Words.NET (free)
+    /// Convert legacy .doc to PDF. Since DocX (Xceed) requires a paid license,
+    /// we rely on LibreOffice (already attempted upstream). If we reach here the
+    /// LibreOffice path already failed, so we return a clear actionable message.
     /// </summary>
     private async Task ConvertDocToPdfAsync(string inputPath, string outputPath)
     {
-        // Xceed.Words.NET can read .doc files
-        using var doc = DocX.Load(inputPath);
-        
-        // Configure QuestPDF license
-        QuestPDF.Settings.License = LicenseType.Community;
-        
-        // Extract paragraphs
-        var paragraphs = doc.Paragraphs;
-        
-        // Define font families with fallback for missing glyphs
-        var fontFamilies = new[] { "Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans", "sans-serif" };
-        
-        // Generate PDF using QuestPDF
-        var pdfDocument = QuestPDFDocument.Create(container =>
-        {
-            container.Page(page =>
-            {
-                page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
-                page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(11).FontFamily(fontFamilies).Fallback(f => f.FontSize(11).FontFamily("DejaVu Sans")));
-                
-                page.Content().Column(column =>
-                {
-                    foreach (var para in paragraphs)
-                    {
-                        var text = para.Text;
-                        if (string.IsNullOrWhiteSpace(text)) continue;
-                        
-                        // Use a single column item for each paragraph with padding
-                        column.Item().PaddingVertical(4, Unit.Millimetre).Text(text).FontFamily(fontFamilies);
-                    }
-                });
-            });
-        });
-        
-        await Task.Run(() => pdfDocument.GeneratePdf(outputPath));
+        // Xceed.Words.NET requires a commercial license for DocX.Load().
+        // LibreOffice is the correct free path for legacy .doc files and is
+        // tried first in ConvertWordToPdfAsync before this method is called.
+        // If LibreOffice is unavailable, throw so the caller can surface the message.
+        await Task.CompletedTask; // keep method async
+        throw new InvalidOperationException(
+            "Legacy .doc conversion requires LibreOffice to be installed on the server. " +
+            "Please install LibreOffice (sudo apt-get install -y libreoffice) and ensure " +
+            "the word_to_pdf.py script is present in the scripts/ directory.");
     }
-    
+
     /// <summary>
     /// Helper class to store document content
     /// </summary>
@@ -305,7 +278,7 @@ public class PdfProcessingService
     {
         public List<ParagraphInfo> Paragraphs { get; set; } = new();
     }
-    
+
     /// <summary>
     /// Helper class to store paragraph information
     /// </summary>
@@ -341,14 +314,14 @@ public class PdfProcessingService
 
             var outputDocument = new PdfSharpPdfDocument();
             outputDocument.Info.Title = "Merged Document";
-            
+
             int totalPagesImported = 0;
             int filesSuccessfullyProcessed = 0;
-            
+
             foreach (var filePath in sortedFiles)
             {
                 _logger.LogInformation("Processing file: {FilePath}", filePath);
-                
+
                 if (!File.Exists(filePath))
                 {
                     _logger.LogWarning("File not found: {FilePath}", filePath);
@@ -359,16 +332,16 @@ public class PdfProcessingService
                 {
                     var fileInfo = new FileInfo(filePath);
                     _logger.LogInformation("File size: {Size} bytes", fileInfo.Length);
-                    
+
                     if (fileInfo.Length == 0)
                     {
                         _logger.LogWarning("File is empty: {FilePath}", filePath);
                         continue;
                     }
-                    
+
                     PdfSharpPdfDocument? inputDocument = null;
                     Exception? lastException = null;
-                    
+
                     try
                     {
                         inputDocument = PdfReader.Open(filePath, PdfDocumentOpenMode.Import);
@@ -378,7 +351,7 @@ public class PdfProcessingService
                     {
                         lastException = ex1;
                         _logger.LogWarning(ex1, "PdfReader.Open (Import mode) failed, trying ReadOnly mode");
-                        
+
                         try
                         {
                             inputDocument = PdfReader.Open(filePath, PdfDocumentOpenMode.ReadOnly);
@@ -390,29 +363,29 @@ public class PdfProcessingService
                             _logger.LogError(ex2, "All PDF opening approaches failed for {FilePath}", filePath);
                         }
                     }
-                    
+
                     if (inputDocument == null)
                     {
-                        _logger.LogError("Could not open PDF file: {FilePath}. Last error: {Error}", 
+                        _logger.LogError("Could not open PDF file: {FilePath}. Last error: {Error}",
                             filePath, lastException?.Message ?? "Unknown error");
                         continue;
                     }
-                    
+
                     var pageCount = inputDocument.PageCount;
                     _logger.LogInformation("Input document has {PageCount} pages", pageCount);
-                    
+
                     if (pageCount == 0)
                     {
                         pageCount = inputDocument.Pages.Count;
                         _logger.LogInformation("Using Pages collection count: {PageCount}", pageCount);
                     }
-                    
+
                     if (pageCount == 0)
                     {
                         _logger.LogWarning("Could not determine page count, skipping file: {FilePath}", filePath);
                         continue;
                     }
-                    
+
                     for (int i = 0; i < pageCount; i++)
                     {
                         try
@@ -426,7 +399,7 @@ public class PdfProcessingService
                             _logger.LogError(pageEx, "Error importing page {Page} from {File}", i, filePath);
                         }
                     }
-                    
+
                     filesSuccessfullyProcessed++;
                     _logger.LogInformation("Successfully imported {Count} pages from {File}", pageCount, filePath);
                 }
@@ -436,23 +409,23 @@ public class PdfProcessingService
                 }
             }
 
-            _logger.LogInformation("Merge complete. Files processed: {Processed}, Total pages: {Pages}", 
+            _logger.LogInformation("Merge complete. Files processed: {Processed}, Total pages: {Pages}",
                 filesSuccessfullyProcessed, totalPagesImported);
-            
+
             if (totalPagesImported == 0)
             {
                 return (false, "", "No pages could be imported from the PDF files.");
             }
-            
+
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            
+
             _logger.LogInformation("Saving merged PDF to: {Path}", outputPath);
             outputDocument.Save(outputPath);
-            
+
             var outputFileInfo = new FileInfo(outputPath);
-            _logger.LogInformation("Successfully saved merged PDF: {Path} ({Size} bytes, {Pages} pages)", 
+            _logger.LogInformation("Successfully saved merged PDF: {Path} ({Size} bytes, {Pages} pages)",
                 outputPath, outputFileInfo.Length, totalPagesImported);
-            
+
             return (true, outputPath, $"Successfully merged {filesSuccessfullyProcessed} PDF files ({totalPagesImported} pages total).");
         }
         catch (Exception ex)
@@ -483,10 +456,10 @@ public class PdfProcessingService
 
             _logger.LogInformation("Opening input PDF: {InputFile}", inputFile);
             using var inputDocument = PdfReader.Open(inputFile, PdfDocumentOpenMode.Import);
-            
+
             int totalPages = inputDocument.PageCount;
             _logger.LogInformation("PDF has {TotalPages} pages", totalPages);
-            
+
             int start = Math.Max(1, startPage);
             int end = Math.Min(totalPages, endPage);
 
@@ -502,23 +475,23 @@ public class PdfProcessingService
 
             // Create a single output PDF containing all selected pages
             using var outputDocument = new PdfSharpPdfDocument();
-            
+
             for (int i = start; i <= end; i++)
             {
                 outputDocument.AddPage(inputDocument.Pages[i - 1]);
                 _logger.LogDebug("Added page {PageNum} to output document", i);
             }
-            
+
             // Use operation ID for unique filename
-            var outputFileName = !string.IsNullOrEmpty(operationId) 
+            var outputFileName = !string.IsNullOrEmpty(operationId)
                 ? $"{operationId}_split_{start}-{end}.pdf"
                 : $"{outputPrefix}_pages_{start}-{end}.pdf";
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            
+
             // Save the document
             outputDocument.Save(outputPath);
             outputDocument.Close();
-            
+
             // Verify file was created
             if (File.Exists(outputPath))
             {
@@ -556,7 +529,7 @@ public class PdfProcessingService
             }
 
             using var inputDocument = PdfReader.Open(inputFile);
-            
+
             foreach (var pageIndex in pageIndices)
             {
                 if (pageIndex >= 0 && pageIndex < inputDocument.Pages.Count)
@@ -569,7 +542,7 @@ public class PdfProcessingService
 
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
             inputDocument.Save(outputPath);
-            
+
             return (true, outputPath, $"Successfully rotated {pageIndices.Count} pages.");
         }
         catch (Exception ex)
@@ -595,7 +568,7 @@ public class PdfProcessingService
 
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
             var originalSize = new FileInfo(inputFile).Length;
-            
+
             // Map quality integer to string for Python script
             var qualityLevel = quality switch
             {
@@ -603,35 +576,35 @@ public class PdfProcessingService
                 <= 60 => "medium",    // Balanced
                 _ => "low"           // Best quality
             };
-            
+
             _logger.LogInformation("Starting PDF compression: {InputFile}, quality={Quality}", inputFile, qualityLevel);
-            
+
             // Try Python compression first (better results)
             try
             {
                 var (exitCode, stdout, stderr) = await RunPythonScriptAsync(
-                    "compress_pdf.py", 
+                    "compress_pdf.py",
                     $"\"{inputFile}\" \"{outputPath}\" {qualityLevel}");
-                
+
                 if (exitCode == 0 && File.Exists(outputPath))
                 {
                     var compressedSize = new FileInfo(outputPath).Length;
                     var reduction = originalSize > 0 ? ((originalSize - compressedSize) * 100.0 / originalSize) : 0;
-                    
-                    _logger.LogInformation("PDF compressed via Python: {Original} -> {Compressed} bytes ({Reduction:F1}% reduction)", 
+
+                    _logger.LogInformation("PDF compressed via Python: {Original} -> {Compressed} bytes ({Reduction:F1}% reduction)",
                         originalSize, compressedSize, reduction);
-                    
+
                     return (true, outputPath, $"Successfully compressed PDF ({reduction:F1}% size reduction).");
                 }
-                
-                _logger.LogWarning("Python compression failed (exit={ExitCode}), falling back to basic compression. Error: {Stderr}", 
+
+                _logger.LogWarning("Python compression failed (exit={ExitCode}), falling back to basic compression. Error: {Stderr}",
                     exitCode, stderr);
             }
             catch (Exception pyEx)
             {
                 _logger.LogWarning(pyEx, "Python compression unavailable, falling back to basic compression");
             }
-            
+
             // Fallback: Basic compression using PdfSharpCore
             // This provides limited compression but ensures functionality
             return await CompressPdfBasicAsync(inputFile, outputPath, originalSize);
@@ -642,7 +615,7 @@ public class PdfProcessingService
             return (false, "", $"Error compressing PDF: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Basic PDF compression fallback using PdfSharpCore
     /// Re-encodes the PDF which can provide some size reduction
@@ -655,28 +628,28 @@ public class PdfProcessingService
             // Open and re-save with compression options
             using var inputDocument = PdfReader.Open(inputFile, PdfDocumentOpenMode.Import);
             using var outputDocument = new PdfSharpPdfDocument();
-            
+
             // Copy all pages
             foreach (var page in inputDocument.Pages)
             {
                 outputDocument.AddPage(page);
             }
-            
+
             // Save with compression (PdfSharpCore uses compression by default)
             outputDocument.Save(outputPath);
-            
+
             var compressedSize = new FileInfo(outputPath).Length;
             var reduction = originalSize > 0 ? ((originalSize - compressedSize) * 100.0 / originalSize) : 0;
-            
-            _logger.LogInformation("PDF compressed (basic): {Original} -> {Compressed} bytes ({Reduction:F1}% reduction)", 
+
+            _logger.LogInformation("PDF compressed (basic): {Original} -> {Compressed} bytes ({Reduction:F1}% reduction)",
                 originalSize, compressedSize, reduction);
-            
+
             // If no reduction or file got larger, still return success but note it
             if (reduction <= 0)
             {
                 return (true, outputPath, "PDF processed. Note: This PDF appears to already be optimized. For better compression, ensure Python with pikepdf is installed.");
             }
-            
+
             return (true, outputPath, $"Successfully compressed PDF ({reduction:F1}% size reduction).");
         }
         catch (Exception ex)
@@ -700,18 +673,18 @@ public class PdfProcessingService
             }
 
             using var inputDocument = PdfReader.Open(inputFile);
-            
+
             var font = new XFont("Arial", 10);
-            
+
             for (int i = 0; i < inputDocument.Pages.Count; i++)
             {
                 var page = inputDocument.Pages[i];
                 var pageNumber = startNumber + i;
-                
+
                 var gfx = XGraphics.FromPdfPage(page);
                 var text = pageNumber.ToString();
                 var textSize = gfx.MeasureString(text, font);
-                
+
                 double x, y;
                 switch (position.ToLower())
                 {
@@ -736,13 +709,13 @@ public class PdfProcessingService
                         y = page.Height - textSize.Height - 20;
                         break;
                 }
-                
+
                 gfx.DrawString(text, font, XBrushes.Black, x, y);
             }
 
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
             inputDocument.Save(outputPath);
-            
+
             return (true, outputPath, $"Successfully added page numbers.");
         }
         catch (Exception ex)
@@ -834,7 +807,7 @@ public class PdfProcessingService
         try
         {
             if (!File.Exists(inputFile)) return 0;
-            
+
             using var document = PdfReader.Open(inputFile);
             return document.PageCount;
         }
@@ -850,21 +823,21 @@ public class PdfProcessingService
     public (int pageCount, long fileSize, List<string> pageSizes) GetPdfInfo(string inputFile)
     {
         var pageSizes = new List<string>();
-        
+
         try
         {
             if (!File.Exists(inputFile))
             {
                 return (0, 0, pageSizes);
             }
-            
+
             using var document = PdfReader.Open(inputFile);
-            
+
             foreach (var page in document.Pages)
             {
                 pageSizes.Add($"{page.Width:F0}x{page.Height:F0}");
             }
-            
+
             return (document.PageCount, new FileInfo(inputFile).Length, pageSizes);
         }
         catch
@@ -887,7 +860,7 @@ public class PdfProcessingService
 
             using var document = PdfReader.Open(inputFile);
             var text = new System.Text.StringBuilder();
-            
+
             return (true, text.ToString(), "Text extracted successfully.");
         }
         catch (Exception ex)
@@ -911,7 +884,7 @@ public class PdfProcessingService
             }
 
             using var inputDocument = PdfReader.Open(inputFile);
-            
+
             var securitySettings = inputDocument.SecuritySettings;
             securitySettings.UserPassword = userPassword;
             securitySettings.OwnerPassword = ownerPassword;
@@ -919,7 +892,7 @@ public class PdfProcessingService
 
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
             inputDocument.Save(outputPath);
-            
+
             return (true, outputPath, "PDF protected successfully.");
         }
         catch (Exception ex)
@@ -943,10 +916,10 @@ public class PdfProcessingService
             }
 
             using var inputDocument = PdfReader.Open(inputFile, password: password);
-            
+
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
             inputDocument.Save(outputPath);
-            
+
             return (true, outputPath, "Protection removed successfully.");
         }
         catch (Exception ex)
@@ -965,36 +938,36 @@ public class PdfProcessingService
         var outputPaths = new List<string>();
         if (!File.Exists(inputFile))
             return (false, outputPaths, "Input file not found.");
-        
+
         var fmt = (imageFormat ?? "jpg").ToLowerInvariant();
         if (fmt != "png") fmt = "jpg";
-        
+
         // Get Python script path
         var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
         var scriptPath = Path.Combine(contentRoot, "scripts", "pdf_to_images.py");
         if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "pdf_to_images.py");
-        
+
         if (!File.Exists(scriptPath))
             return (false, outputPaths, "Conversion script not found. Ensure scripts/pdf_to_images.py exists. Install: pip install pymupdf");
-        
+
         // Prepare page argument (empty = all pages, or comma-separated list)
         var pageArg = "";
         if (selectedPages != null && selectedPages.Count > 0)
         {
             pageArg = string.Join(",", selectedPages);
         }
-        
-        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_images.py", 
+
+        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_images.py",
             $"\"{inputFile}\" \"{_tempFilePath}\" \"{outputPrefix}\" \"{fmt}\" \"{pageArg}\"");
-        
+
         if (exitCode != 0)
         {
             var err = (stdout + "\n" + stderr).Trim();
             var msg = err.Contains("ERROR:") ? err.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : err);
             return (false, outputPaths, string.IsNullOrWhiteSpace(msg) ? "PDF to images conversion failed." : msg);
         }
-        
+
         var ext = fmt == "png" ? "png" : "jpg";
         for (int i = 1; i <= 1000; i++)
         {
@@ -1005,14 +978,14 @@ public class PdfProcessingService
             else if (i > 1)
                 break;
         }
-        
+
         _logger.LogInformation("PDF converted to {Count} images: {Input}", outputPaths.Count, inputFile);
         return (true, outputPaths, outputPaths.Count > 0 ? "Processed" : "No images produced.");
     }
 
     /// <summary>
-    /// Convert PDF to Word document (.docx) using Python pdf2docx script (hybrid AI reconstruction).
-    /// Falls back to PdfPig + DocX for text extraction if Python is unavailable.
+    /// Convert PDF to Word document (.docx) using pdfplumber for accurate table extraction.
+    /// Falls back to convert_pdf.py (pdf2docx) if pdfplumber fails, then to PdfPig text extraction.
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToWordAsync(
         string inputPath, string outputName)
@@ -1024,30 +997,49 @@ public class PdfProcessingService
             return (false, outputPath, "Input file not found.");
         }
 
-        // Try Python conversion first (better formatting preservation)
+        // Try pdfplumber-based conversion first (best table extraction)
         try
         {
-            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("convert_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-            
+            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_word.py", $"\"{inputPath}\" \"{outputPath}\"");
+
             if (exitCode == 0 && File.Exists(outputPath))
             {
-                _logger.LogInformation("PDF converted to Word via Python: {Input} -> {Output}", inputPath, outputPath);
-                return (true, outputPath, "Successfully converted PDF to Word document.");
+                _logger.LogInformation("PDF converted to Word via pdfplumber: {Input} -> {Output}", inputPath, outputPath);
+                return (true, outputPath, "Successfully converted PDF to Word document (pdfplumber extraction).");
             }
-            
-            _logger.LogWarning("Python PDF to Word conversion failed (exit={ExitCode}): {Error}", exitCode, stderr);
+
+            _logger.LogWarning("pdfplumber PDF to Word conversion failed (exit={ExitCode}): {Error}", exitCode, stderr);
         }
         catch (Exception pyEx)
         {
-            _logger.LogWarning(pyEx, "Python conversion unavailable, falling back to text extraction");
+            _logger.LogWarning(pyEx, "pdfplumber conversion unavailable, trying pdf2docx");
         }
 
-        // Fallback: Use PdfPig for text extraction + DocX to create Word document
+        // Fallback: Try convert_pdf.py (uses pdf2docx library)
+        try
+        {
+            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("convert_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+
+            if (exitCode == 0 && File.Exists(outputPath))
+            {
+                _logger.LogInformation("PDF converted to Word via pdf2docx: {Input} -> {Output}", inputPath, outputPath);
+                return (true, outputPath, "Successfully converted PDF to Word document (pdf2docx).");
+            }
+
+            _logger.LogWarning("pdf2docx PDF to Word conversion failed (exit={ExitCode}): {Error}", exitCode, stderr);
+        }
+        catch (Exception pyEx)
+        {
+            _logger.LogWarning(pyEx, "pdf2docx conversion unavailable, falling back to text extraction");
+        }
+
+        // Final fallback: Use PdfPig for text extraction + DocX to create Word document
         return await ConvertToWordFallbackAsync(inputPath, outputPath);
     }
-    
+
     /// <summary>
-    /// Fallback PDF to Word conversion using PdfPig for text extraction and DocX for document creation.
+    /// Fallback PDF to Word conversion using PdfPig for text extraction and DocumentFormat.OpenXml
+    /// for document creation (100% free, no license required).
     /// This extracts text content but does not preserve complex formatting.
     /// </summary>
     private async Task<(bool success, string outputPath, string message)> ConvertToWordFallbackAsync(
@@ -1055,32 +1047,70 @@ public class PdfProcessingService
     {
         try
         {
-            _logger.LogInformation("Using fallback PDF to Word conversion (text extraction)");
-            
-            using var document = DocX.Create(outputPath);
-            
+            _logger.LogInformation("Using fallback PDF to Word conversion (text extraction via OpenXml)");
+
+            // Extract all page texts using PdfPig
+            var pageTexts = new List<string>();
             using (var pdfDocument = UglyToad.PdfPig.PdfDocument.Open(inputPath))
             {
                 foreach (var page in pdfDocument.GetPages())
                 {
                     var text = page.Text;
                     if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        // Add page content as paragraph
-                        var paragraph = document.InsertParagraph(text);
-                        paragraph.InsertPageBreakAfterSelf();
-                    }
+                        pageTexts.Add(text);
                 }
             }
-            
-            document.Save();
-            
+
+            // Build the .docx using DocumentFormat.OpenXml (no license needed)
+            await Task.Run(() =>
+            {
+                using var wordDoc = WordprocessingDocument.Create(outputPath, DocumentFormat.OpenXml.WordprocessingDocumentType.Document);
+
+                // Add main document part
+                var mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new DocumentFormat.OpenXml.Wordprocessing.Document(new Body());
+                var body = mainPart.Document.Body!;
+
+                for (int i = 0; i < pageTexts.Count; i++)
+                {
+                    var text = pageTexts[i];
+
+                    // Split page text into lines and add each as a paragraph
+                    var lines = text.Split('\n', StringSplitOptions.None);
+                    foreach (var line in lines)
+                    {
+                        var para = new Paragraph(
+                            new Run(
+                                new DocumentFormat.OpenXml.Wordprocessing.Text(line)
+                                {
+                                    Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve
+                                }
+                            )
+                        );
+                        body.AppendChild(para);
+                    }
+
+                    // Add a page break between PDF pages (except after the last page)
+                    if (i < pageTexts.Count - 1)
+                    {
+                        var pageBreakPara = new Paragraph(
+                            new Run(
+                                new Break { Type = BreakValues.Page }
+                            )
+                        );
+                        body.AppendChild(pageBreakPara);
+                    }
+                }
+
+                mainPart.Document.Save();
+            });
+
             if (File.Exists(outputPath))
             {
-                _logger.LogInformation("PDF converted to Word (fallback): {Input} -> {Output}", inputPath, outputPath);
+                _logger.LogInformation("PDF converted to Word (fallback/OpenXml): {Input} -> {Output}", inputPath, outputPath);
                 return (true, outputPath, "Successfully converted PDF to Word document (text extraction mode). For better formatting, install Python with pdf2docx.");
             }
-            
+
             return (false, outputPath, "Failed to create Word document.");
         }
         catch (Exception ex)
@@ -1130,21 +1160,21 @@ public class PdfProcessingService
         {
             // Check file extension
             var extension = Path.GetExtension(inputPath).ToLowerInvariant();
-            
+
             if (extension != ".xlsx" && extension != ".xls")
             {
                 return (false, outputPath, $"Unsupported file format: {extension}. Only .xls and .xlsx files are supported.");
             }
-            
+
             // Try using LibreOffice via Python script (preserves formatting)
             var (exitCode, stdout, stderr) = await RunPythonScriptAsync("excel_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-            
+
             if (exitCode == 0 && File.Exists(outputPath))
             {
                 _logger.LogInformation("Excel to PDF conversion successful: {OutputPath}", outputPath);
                 return (true, outputPath, "Excel document converted to PDF successfully (formatting preserved).");
             }
-            
+
             _logger.LogError("Excel to PDF conversion failed (exitCode={ExitCode}): {Error}", exitCode, stderr);
             return (false, outputPath, $"Conversion failed: {stderr}");
         }
@@ -1169,21 +1199,21 @@ public class PdfProcessingService
         {
             // Check file extension
             var extension = Path.GetExtension(inputPath).ToLowerInvariant();
-            
+
             if (extension != ".pptx" && extension != ".ppt")
             {
                 return (false, outputPath, $"Unsupported file format: {extension}. Only .ppt and .pptx files are supported.");
             }
-            
+
             // Try using LibreOffice via Python script (preserves formatting)
             var (exitCode, stdout, stderr) = await RunPythonScriptAsync("powerpoint_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-            
+
             if (exitCode == 0 && File.Exists(outputPath))
             {
                 _logger.LogInformation("PowerPoint to PDF conversion successful: {OutputPath}", outputPath);
                 return (true, outputPath, "PowerPoint document converted to PDF successfully (formatting preserved).");
             }
-            
+
             _logger.LogError("PowerPoint to PDF conversion failed (exitCode={ExitCode}): {Error}", exitCode, stderr);
             return (false, outputPath, $"Conversion failed: {stderr}");
         }
@@ -1227,7 +1257,7 @@ public class PdfProcessingService
         try
         {
             var page = document.Pages[pageIndex];
-            
+
             return $"[Page {pageIndex + 1} - PDF Content]\n" +
                    $"Page Size: {page.Width:F0} x {page.Height:F0} points\n" +
                    "Note: Full text extraction requires commercial libraries or OCR services.\n" +
