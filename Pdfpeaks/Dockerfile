@@ -22,24 +22,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdiplus \
     libc6-dev \
     fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdrm2 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxkbcommon0 \
-    libxrandr2 \
-    xdg-utils \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    fonts-noto \
+    fonts-noto-cjk \
+    fonts-opensymbol \
+    fonts-ubuntu \
+    fonts-dejavu \
+    fonts-freefont \
+    fonts-ghostscript \
+    fonts-linux-libertine \
+    fonts-sil-nanum \
+    fonts-wqy-microhei \
+    fonts-arphic-uming \
+    fonts-arphic-ukai \
+    libreoffice \
+    libreoffice-writer \
+    libreoffice-calc \
+    libreoffice-impress \
+    && rm -rf /var/lib/apt/lists/* \
+    && fc-cache -f -v
 
 # Copy published application
 COPY --from=build /app/publish .

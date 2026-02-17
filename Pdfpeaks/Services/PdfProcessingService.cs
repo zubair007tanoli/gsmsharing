@@ -66,8 +66,8 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Word to PDF using free open-source libraries (DocumentFormat.OpenXml + QuestPDF).
-    /// No LibreOffice or paid libraries required.
+    /// Word to PDF using LibreOffice (via Python script) for best formatting preservation.
+    /// Falls back to DocumentFormat.OpenXml + QuestPDF if LibreOffice is not available.
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertWordToPdfAsync(string inputPath, string outputFileName)
     {
@@ -80,9 +80,25 @@ public class PdfProcessingService
             // Check file extension
             var extension = Path.GetExtension(inputPath).ToLowerInvariant();
             
+            if (extension != ".docx" && extension != ".doc")
+            {
+                return (false, outputPath, $"Unsupported file format: {extension}. Only .doc and .docx files are supported.");
+            }
+            
+            // First, try using LibreOffice via Python script (preserves formatting)
+            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("word_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+            
+            if (exitCode == 0 && File.Exists(outputPath))
+            {
+                _logger.LogInformation("Word to PDF conversion successful (LibreOffice): {OutputPath}", outputPath);
+                return (true, outputPath, "Word document converted to PDF successfully (formatting preserved).");
+            }
+            
+            _logger.LogWarning("LibreOffice conversion failed (exitCode={ExitCode}), falling back to basic conversion: {Error}", exitCode, stderr);
+            
+            // Fallback: Use DocumentFormat.OpenXml + QuestPDF for DOCX files
             if (extension == ".docx")
             {
-                // Use DocumentFormat.OpenXml + QuestPDF for DOCX files
                 await ConvertDocxToPdfAsync(inputPath, outputPath);
             }
             else if (extension == ".doc")
@@ -90,13 +106,9 @@ public class PdfProcessingService
                 // For legacy .doc files, use Xceed.Words.NET (free version)
                 await ConvertDocToPdfAsync(inputPath, outputPath);
             }
-            else
-            {
-                return (false, outputPath, $"Unsupported file format: {extension}. Only .doc and .docx files are supported.");
-            }
             
-            _logger.LogInformation("Word to PDF conversion successful: {OutputPath}", outputPath);
-            return (true, outputPath, "Word document converted to PDF successfully.");
+            _logger.LogInformation("Word to PDF conversion successful (fallback): {OutputPath}", outputPath);
+            return (true, outputPath, "Word document converted to PDF successfully (basic formatting).");
         }
         catch (Exception ex)
         {
@@ -116,6 +128,9 @@ public class PdfProcessingService
         // Extract content from DOCX
         var documentContent = await ExtractDocxContentAsync(inputPath);
         
+        // Define font families with fallback for missing glyphs
+        var fontFamilies = new[] { "Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans", "sans-serif" };
+        
         // Generate PDF using QuestPDF
         var pdfDocument = QuestPDFDocument.Create(container =>
         {
@@ -124,7 +139,7 @@ public class PdfProcessingService
                 page.Size(PageSizes.A4);
                 page.Margin(2, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                page.DefaultTextStyle(x => x.FontSize(11).FontFamily(fontFamilies).Fallback(f => f.FontSize(11).FontFamily("DejaVu Sans")));
                 
                 page.Content().Column(column =>
                 {
@@ -132,15 +147,15 @@ public class PdfProcessingService
                     {
                         if (paragraph.IsHeading)
                         {
-                            column.Item().Text(paragraph.Text).FontSize(16).Bold();
+                            column.Item().Text(paragraph.Text).FontSize(16).Bold().FontFamily(fontFamilies);
                         }
                         else if (paragraph.IsBold)
                         {
-                            column.Item().Text(paragraph.Text).Bold();
+                            column.Item().Text(paragraph.Text).Bold().FontFamily(fontFamilies);
                         }
                         else
                         {
-                            column.Item().Text(paragraph.Text);
+                            column.Item().Text(paragraph.Text).FontFamily(fontFamilies);
                         }
                         
                         // Add spacing after each paragraph
@@ -253,6 +268,9 @@ public class PdfProcessingService
         // Extract paragraphs
         var paragraphs = doc.Paragraphs;
         
+        // Define font families with fallback for missing glyphs
+        var fontFamilies = new[] { "Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans", "sans-serif" };
+        
         // Generate PDF using QuestPDF
         var pdfDocument = QuestPDFDocument.Create(container =>
         {
@@ -261,7 +279,7 @@ public class PdfProcessingService
                 page.Size(PageSizes.A4);
                 page.Margin(2, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                page.DefaultTextStyle(x => x.FontSize(11).FontFamily(fontFamilies).Fallback(f => f.FontSize(11).FontFamily("DejaVu Sans")));
                 
                 page.Content().Column(column =>
                 {
@@ -271,7 +289,7 @@ public class PdfProcessingService
                         if (string.IsNullOrWhiteSpace(text)) continue;
                         
                         // Use a single column item for each paragraph with padding
-                        column.Item().PaddingVertical(4, Unit.Millimetre).Text(text);
+                        column.Item().PaddingVertical(4, Unit.Millimetre).Text(text).FontFamily(fontFamilies);
                     }
                 });
             });
@@ -1096,6 +1114,84 @@ public class PdfProcessingService
         }
         _logger.LogInformation("PDF converted to Excel: {Input} -> {Output}", inputFile, outputPath);
         return (true, outputPath, "Processed");
+    }
+
+    /// <summary>
+    /// Convert Excel to PDF using LibreOffice (via Python script) for best formatting preservation.
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> ConvertExcelToPdfAsync(
+        string inputPath, string outputFileName)
+    {
+        var outputPath = Path.Combine(_tempFilePath, outputFileName);
+        if (!File.Exists(inputPath))
+            return (false, outputPath, "Input file not found.");
+
+        try
+        {
+            // Check file extension
+            var extension = Path.GetExtension(inputPath).ToLowerInvariant();
+            
+            if (extension != ".xlsx" && extension != ".xls")
+            {
+                return (false, outputPath, $"Unsupported file format: {extension}. Only .xls and .xlsx files are supported.");
+            }
+            
+            // Try using LibreOffice via Python script (preserves formatting)
+            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("excel_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+            
+            if (exitCode == 0 && File.Exists(outputPath))
+            {
+                _logger.LogInformation("Excel to PDF conversion successful: {OutputPath}", outputPath);
+                return (true, outputPath, "Excel document converted to PDF successfully (formatting preserved).");
+            }
+            
+            _logger.LogError("Excel to PDF conversion failed (exitCode={ExitCode}): {Error}", exitCode, stderr);
+            return (false, outputPath, $"Conversion failed: {stderr}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Excel to PDF conversion failed for {InputPath}", inputPath);
+            return (false, outputPath, $"Conversion failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Convert PowerPoint to PDF using LibreOffice (via Python script) for best formatting preservation.
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> ConvertPowerPointToPdfAsync(
+        string inputPath, string outputFileName)
+    {
+        var outputPath = Path.Combine(_tempFilePath, outputFileName);
+        if (!File.Exists(inputPath))
+            return (false, outputPath, "Input file not found.");
+
+        try
+        {
+            // Check file extension
+            var extension = Path.GetExtension(inputPath).ToLowerInvariant();
+            
+            if (extension != ".pptx" && extension != ".ppt")
+            {
+                return (false, outputPath, $"Unsupported file format: {extension}. Only .ppt and .pptx files are supported.");
+            }
+            
+            // Try using LibreOffice via Python script (preserves formatting)
+            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("powerpoint_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+            
+            if (exitCode == 0 && File.Exists(outputPath))
+            {
+                _logger.LogInformation("PowerPoint to PDF conversion successful: {OutputPath}", outputPath);
+                return (true, outputPath, "PowerPoint document converted to PDF successfully (formatting preserved).");
+            }
+            
+            _logger.LogError("PowerPoint to PDF conversion failed (exitCode={ExitCode}): {Error}", exitCode, stderr);
+            return (false, outputPath, $"Conversion failed: {stderr}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "PowerPoint to PDF conversion failed for {InputPath}", inputPath);
+            return (false, outputPath, $"Conversion failed: {ex.Message}");
+        }
     }
 
     /// <summary>

@@ -15,6 +15,7 @@ using Pdfpeaks.Services.Realtime;
 using Serilog;
 using StackExchange.Redis;
 using System.Security.Claims;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -276,6 +277,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+
+// Serve temp_files for PDF thumbnails and downloads
+var tempFilesPath = Path.Combine(builder.Environment.ContentRootPath, "temp_files");
+if (Directory.Exists(tempFilesPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(tempFilesPath),
+        RequestPath = "/temp_files"
+    });
+}
+
 app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();

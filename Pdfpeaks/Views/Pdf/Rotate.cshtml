@@ -9,132 +9,417 @@
         </div>
         <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
         <div class="row justify-content-center">
-            <div class="col-lg-8">
+            <div class="col-lg-10">
+                <!-- Upload Zone -->
                 <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer" style="min-height: 200px;">
                     <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
                     <p class="mb-0">Drag & drop your PDF here or click to browse</p>
+                    <p class="text-muted small mt-2 mb-0">Maximum 50 pages for interactive preview</p>
                 </div>
-                <div id="fileSection" class="d-none mt-3">
+
+                <!-- Main Content Area -->
+                <div id="mainContent" class="d-none mt-3">
+                    <!-- File Info Bar -->
                     <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
-                        <span id="fileNameDisplay" class="fw-bold"></span>
-                        <span class="badge bg-primary" id="pageCountBadge"></span>
-                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Pages to rotate</label>
-                        <div class="d-flex flex-wrap gap-2 mb-2">
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="selectAll">All pages</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSelection">Clear</button>
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                            <div>
+                                <span id="fileNameDisplay" class="fw-bold"></span>
+                                <span class="badge bg-primary ms-2" id="pageCountBadge"></span>
+                            </div>
                         </div>
-                        <div id="pageCheckboxes" class="d-flex flex-wrap gap-2"></div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="clearFile">
+                                <i class="fas fa-times me-1"></i> Clear
+                            </button>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Rotation</label>
-                        <select id="degrees" class="form-select" style="max-width: 120px;">
-                            <option value="90">90° Clockwise</option>
-                            <option value="180">180°</option>
-                            <option value="-90">90° Counter-clockwise</option>
-                        </select>
+
+                    <!-- Thumbnail Grid -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+                            <h5 class="mb-0"><i class="fas fa-th-large me-2 text-primary"></i>Interactive Preview</h5>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllBtn">
+                                    <i class="fas fa-check-square me-1"></i> Select All
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="rotateLeftBtn">
+                                    <i class="fas fa-rotate-left me-1"></i> Rotate Left
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="rotateRightBtn">
+                                    <i class="fas fa-rotate-right me-1"></i> Rotate Right
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="thumbnailGrid" class="row g-3">
+                                <!-- Thumbnails will be loaded here -->
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-primary btn-lg w-100" id="rotateBtn">
-                        <i class="fas fa-sync-alt me-2"></i> Rotate PDF
-                    </button>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-4 d-flex gap-3 justify-content-end">
+                        <button type="button" class="btn btn-secondary btn-lg" id="resetBtn">
+                            <i class="fas fa-undo me-2"></i> Reset
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" id="saveBtn">
+                            <i class="fas fa-save me-2"></i> Save Rotated PDF
+                        </button>
+                    </div>
                 </div>
-                <div id="loadingState" class="d-none mt-3 text-center">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2 mb-0">Rotating...</p>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="d-none mt-3 text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <p class="mb-0" id="loadingMessage">Loading PDF pages...</p>
+                </div>
+
+                <!-- Success State -->
+                <div id="successState" class="d-none mt-3 text-center py-5">
+                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                    <h4>PDF Rotated Successfully!</h4>
+                    <p class="text-muted">Your rotated PDF is ready for download.</p>
+                    <div class="mt-4">
+                        <a id="downloadLink" href="#" class="btn btn-primary btn-lg">
+                            <i class="fas fa-download me-2"></i> Download PDF
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary btn-lg ms-2" id="rotateAnotherBtn">
+                            Rotate Another PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.thumbnail-card {
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+.thumbnail-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.thumbnail-card.selected {
+    border-color: #0d6efd;
+    background-color: #f0f7ff;
+}
+.thumbnail-card .rotate-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+.thumbnail-card .page-number {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+.thumbnail-card .rotate-controls {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: none;
+}
+.thumbnail-card:hover .rotate-controls {
+    display: flex;
+}
+.thumbnail-card:hover .page-number {
+    display: none;
+}
+.thumbnail-card .thumbnail-wrapper {
+    position: relative;
+    padding-top: 129%; /* A4 aspect ratio */
+    background: #f8f9fa;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.thumbnail-card .thumbnail-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+</style>
+
 @section Scripts {
 <script>
 (function() {
     const fileInput = document.getElementById('fileInput');
     const uploadZone = document.getElementById('uploadZone');
-    const fileSection = document.getElementById('fileSection');
+    const mainContent = document.getElementById('mainContent');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
     const pageCountBadge = document.getElementById('pageCountBadge');
-    const pageCheckboxes = document.getElementById('pageCheckboxes');
-    const degrees = document.getElementById('degrees');
-    const rotateBtn = document.getElementById('rotateBtn');
+    const thumbnailGrid = document.getElementById('thumbnailGrid');
     const loadingState = document.getElementById('loadingState');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const successState = document.getElementById('successState');
     const clearFile = document.getElementById('clearFile');
-    const selectAll = document.getElementById('selectAll');
-    const clearSelection = document.getElementById('clearSelection');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+    const rotateRightBtn = document.getElementById('rotateRightBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const downloadLink = document.getElementById('downloadLink');
+    const rotateAnotherBtn = document.getElementById('rotateAnotherBtn');
 
     let currentFile = null;
-    let pageCount = 0;
+    let pageData = []; // { pageNumber, thumbnailUrl, rotation, selected }
 
+    // Event Listeners
     uploadZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
     uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
-    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+    uploadZone.addEventListener('drop', e => { 
+        e.preventDefault(); 
+        uploadZone.classList.remove('border-primary'); 
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); 
+    });
+
+    clearFile.addEventListener('click', resetAll);
+    selectAllBtn.addEventListener('click', selectAll);
+    rotateLeftBtn.addEventListener('click', () => rotateSelected(-90));
+    rotateRightBtn.addEventListener('click', () => rotateSelected(90));
+    resetBtn.addEventListener('click', resetRotations);
+    saveBtn.addEventListener('click', saveRotatedPdf);
+    rotateAnotherBtn.addEventListener('click', resetAll);
 
     function handleFile(file) {
-        if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Please select a PDF file.'); return; }
+        if (!file.name.toLowerCase().endsWith('.pdf')) { 
+            alert('Please select a PDF file.'); 
+            return; 
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            alert('File size exceeds 50MB limit for interactive preview.');
+            return;
+        }
         currentFile = file;
         fileNameDisplay.textContent = file.name;
-        getPdfInfo();
+        loadThumbnails();
     }
 
-    function getPdfInfo() {
+    function loadThumbnails() {
+        uploadZone.classList.add('d-none');
+        mainContent.classList.add('d-none');
+        successState.classList.add('d-none');
+        loadingState.classList.remove('d-none');
+        loadingMessage.textContent = 'Generating page thumbnails...';
+
         const fd = new FormData();
         fd.append('file', currentFile);
-        fetch('/Pdf/GetPdfInfo', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    pageCount = data.pageCount || 0;
-                    pageCountBadge.textContent = pageCount + ' page(s)';
-                    pageCheckboxes.innerHTML = '';
-                    for (let i = 1; i <= pageCount; i++) {
-                        const label = document.createElement('label');
-                        label.className = 'btn btn-outline-secondary';
-                        label.innerHTML = '<input type="checkbox" class="me-1 page-cb" value="' + i + '"> Page ' + i;
-                        pageCheckboxes.appendChild(label);
-                    }
-                    uploadZone.classList.add('d-none');
-                    fileSection.classList.remove('d-none');
-                } else { alert(data.message || 'Could not read PDF'); }
-            })
-            .catch(() => alert('Failed to read PDF info'));
+        
+        fetch('/Pdf/GetPdfThumbnails', { 
+            method: 'POST', 
+            body: fd 
+        })
+        .then(r => r.json())
+        .then(data => {
+            loadingState.classList.add('d-none');
+            
+            if (data.success) {
+                pageData = data.thumbnails.map(t => ({
+                    pageNumber: t.pageNumber,
+                    thumbnailUrl: t.thumbnailUrl,
+                    rotation: 0,
+                    selected: false
+                }));
+                
+                if (pageData.length > 50) {
+                    alert('This PDF has more than 50 pages. Using simplified rotation interface.');
+                }
+                
+                pageCountBadge.textContent = pageData.length + ' page(s)';
+                renderThumbnails();
+                mainContent.classList.remove('d-none');
+            } else {
+                alert(data.message || 'Could not load PDF thumbnails');
+                resetAll();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            loadingState.classList.add('d-none');
+            alert('Failed to load PDF. Please try again.');
+            resetAll();
+        });
     }
 
-    function getSelectedPages() {
-        const cbs = document.querySelectorAll('.page-cb:checked');
-        return Array.from(cbs).map(cb => parseInt(cb.value, 10)).sort((a,b) => a - b);
+    function renderThumbnails() {
+        thumbnailGrid.innerHTML = '';
+        
+        pageData.forEach((page, index) => {
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-4 col-lg-3 col-xl-2';
+            
+            const card = document.createElement('div');
+            card.className = `thumbnail-card card h-100 position-relative${page.selected ? ' selected' : ''}`;
+            card.dataset.index = index;
+            
+            // Calculate rotation transform
+            const rotation = page.rotation;
+            
+            card.innerHTML = `
+                <div class="thumbnail-wrapper">
+                    <img src="${page.thumbnailUrl}" alt="Page ${page.pageNumber}" style="transform: rotate(${rotation}deg);">
+                    ${rotation !== 0 ? `<span class="rotate-badge">${rotation}°</span>` : ''}
+                    <span class="page-number">Page ${page.pageNumber}</span>
+                    <div class="rotate-controls btn-group">
+                        <button class="btn btn-sm btn-light rotate-left" title="Rotate Left">
+                            <i class="fas fa-rotate-left"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light rotate-right" title="Rotate Right">
+                            <i class="fas fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Click to select/deselect
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.rotate-controls')) {
+                    toggleSelection(index);
+                }
+            });
+            
+            // Rotate buttons
+            card.querySelector('.rotate-left').addEventListener('click', (e) => {
+                e.stopPropagation();
+                rotatePage(index, -90);
+            });
+            
+            card.querySelector('.rotate-right').addEventListener('click', (e) => {
+                e.stopPropagation();
+                rotatePage(index, 90);
+            });
+            
+            col.appendChild(card);
+            thumbnailGrid.appendChild(col);
+        });
     }
 
-    selectAll.addEventListener('click', () => document.querySelectorAll('.page-cb').forEach(cb => cb.checked = true));
-    clearSelection.addEventListener('click', () => document.querySelectorAll('.page-cb').forEach(cb => cb.checked = false));
-    clearFile.addEventListener('click', () => { currentFile = null; fileSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
+    function toggleSelection(index) {
+        pageData[index].selected = !pageData[index].selected;
+        renderThumbnails();
+    }
 
-    rotateBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
-        const pages = getSelectedPages();
-        if (pages.length === 0) { alert('Select at least one page.'); return; }
-        rotateBtn.disabled = true;
+    function selectAll() {
+        const allSelected = pageData.every(p => p.selected);
+        pageData.forEach(p => p.selected = !allSelected);
+        renderThumbnails();
+    }
+
+    function rotatePage(index, degrees) {
+        pageData[index].rotation = (pageData[index].rotation + degrees) % 360;
+        pageData[index].selected = true; // Auto-select when rotating
+        renderThumbnails();
+    }
+
+    function rotateSelected(degrees) {
+        let rotated = false;
+        pageData.forEach((page, index) => {
+            if (page.selected) {
+                page.rotation = (page.rotation + degrees) % 360;
+                rotated = true;
+            }
+        });
+        if (rotated) {
+            renderThumbnails();
+        } else {
+            alert('Please select at least one page to rotate.');
+        }
+    }
+
+    function resetRotations() {
+        pageData.forEach(page => {
+            page.rotation = 0;
+            page.selected = false;
+        });
+        renderThumbnails();
+    }
+
+    function saveRotatedPdf() {
+        // Check if any pages need rotation
+        const pagesToRotate = pageData.filter(p => p.rotation !== 0);
+        
+        if (pagesToRotate.length === 0) {
+            alert('No pages have been rotated. Please rotate at least one page.');
+            return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
         loadingState.classList.remove('d-none');
+        loadingMessage.textContent = 'Applying rotations...';
+
         const formData = new FormData();
         formData.append('file', currentFile);
-        formData.append('degrees', parseInt(degrees.value, 10));
-        pages.forEach(p => formData.append('pageNumbers', p));
-        try {
-            const res = await fetch('/Pdf/Rotate', { method: 'POST', body: formData });
-            const result = await res.json();
+        
+        // Group pages by rotation
+        const rotationGroups = {};
+        pagesToRotate.forEach(page => {
+            const rot = page.rotation;
+            if (!rotationGroups[rot]) rotationGroups[rot] = [];
+            rotationGroups[rot].push(page.pageNumber);
+        });
+
+        // Send rotation data
+        formData.append('rotationData', JSON.stringify(rotationGroups));
+
+        fetch('/Pdf/RotateInteractive', { 
+            method: 'POST', 
+            body: formData 
+        })
+        .then(r => r.json())
+        .then(data => {
             loadingState.classList.add('d-none');
-            rotateBtn.disabled = false;
-            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-            else { alert(result.message || 'Rotate failed'); }
-        } catch (e) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save Rotated PDF';
+            
+            if (data.success && data.downloadUrl) {
+                mainContent.classList.add('d-none');
+                downloadLink.href = data.downloadUrl;
+                successState.classList.remove('d-none');
+            } else {
+                alert(data.message || 'Failed to rotate PDF');
+            }
+        })
+        .catch(err => {
+            console.error(err);
             loadingState.classList.add('d-none');
-            rotateBtn.disabled = false;
-            alert('Error: ' + e.message);
-        }
-    });
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save Rotated PDF';
+            alert('Error processing PDF');
+        });
+    }
+
+    function resetAll() {
+        currentFile = null;
+        pageData = [];
+        fileInput.value = '';
+        uploadZone.classList.remove('d-none');
+        mainContent.classList.add('d-none');
+        successState.classList.add('d-none');
+        loadingState.classList.add('d-none');
+        thumbnailGrid.innerHTML = '';
+    }
 })();
 </script>
 }

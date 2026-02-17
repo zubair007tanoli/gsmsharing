@@ -996,26 +996,21 @@ public class PdfController : Controller
             var filePath = _fileProcessingService.GetFilePath(fileName);
             var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "xls2pdf");
             
-            // For Excel to PDF conversion, we copy the file and inform about the limitation
-            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            // Use the Excel to PDF conversion service
+            var (success, outputPath, error) = await _pdfProcessingService.ConvertExcelToPdfAsync(filePath, outputFileName);
             
-            // Copy the file as a placeholder
-            System.IO.File.Copy(filePath, outputPath, true);
+            if (success)
+            {
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                return Json(new { success = true, message = "Excel file converted to PDF successfully.", downloadUrl = downloadUrl, fileName = outputFileName });
+            }
             
-            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
-            
-            return Json(new 
-            { 
-                success = true, 
-                message = "Excel file received. Note: Full Excel to PDF conversion requires Microsoft Excel or LibreOffice installed on the server.",
-                downloadUrl = downloadUrl,
-                fileName = outputFileName
-            });
+            return Json(new { success = false, message = error ?? "Excel to PDF conversion failed. Install LibreOffice (e.g. apt install libreoffice) for server-side conversion." });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error converting Excel to PDF");
-            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+            return Json(new { success = false, message = ex.Message ?? "An error occurred during conversion. Please try again." });
         }
     }
 
@@ -1054,26 +1049,21 @@ public class PdfController : Controller
             var filePath = _fileProcessingService.GetFilePath(fileName);
             var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "ppt2pdf");
             
-            // For PowerPoint to PDF conversion, we copy the file and inform about the limitation
-            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            // Use the PowerPoint to PDF conversion service
+            var (success, outputPath, error) = await _pdfProcessingService.ConvertPowerPointToPdfAsync(filePath, outputFileName);
             
-            // Copy the file as a placeholder
-            System.IO.File.Copy(filePath, outputPath, true);
+            if (success)
+            {
+                var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+                return Json(new { success = true, message = "PowerPoint file converted to PDF successfully.", downloadUrl = downloadUrl, fileName = outputFileName });
+            }
             
-            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
-            
-            return Json(new 
-            { 
-                success = true, 
-                message = "PowerPoint file received. Note: Full PowerPoint to PDF conversion requires Microsoft PowerPoint or LibreOffice installed on the server.",
-                downloadUrl = downloadUrl,
-                fileName = outputFileName
-            });
+            return Json(new { success = false, message = error ?? "PowerPoint to PDF conversion failed. Install LibreOffice (e.g. apt install libreoffice) for server-side conversion." });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error converting PowerPoint to PDF");
-            return Json(new { success = false, message = "An error occurred during conversion. Please try again." });
+            return Json(new { success = false, message = ex.Message ?? "An error occurred during conversion. Please try again." });
         }
     }
 
@@ -1431,6 +1421,120 @@ public class PdfController : Controller
         {
             _logger.LogError(ex, "Error getting PDF info");
             return Json(new { success = false, message = "An error occurred while reading the PDF." });
+        }
+    }
+
+    /// <summary>
+    /// Generate thumbnails for PDF pages (for interactive rotate)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> GetPdfThumbnails(IFormFile file, int maxWidth = 200)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "thumb");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            
+            // Get page count first
+            var (pageCount, _, _) = _pdfProcessingService.GetPdfInfo(filePath);
+            
+            // Generate thumbnails for each page
+            var thumbnails = new List<object>();
+            for (int i = 1; i <= pageCount; i++)
+            {
+                var outputPrefix = Path.Combine(_environment.ContentRootPath, "temp_files", $"thumb_{fileName}");
+                
+                var (success, outputPaths, _) = await _pdfProcessingService.ConvertToImagesAsync(
+                    filePath, outputPrefix, "png", new List<int> { i });
+                
+                if (success && outputPaths.Count > 0)
+                {
+                    var thumbPath = outputPaths[0];
+                    var thumbFileNameOnly = Path.GetFileName(thumbPath);
+                    thumbnails.Add(new {
+                        pageNumber = i,
+                        thumbnailUrl = $"/temp_files/{thumbFileNameOnly}"
+                    });
+                }
+            }
+            
+            return Json(new {
+                success = true,
+                pageCount,
+                thumbnails
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating PDF thumbnails");
+            return Json(new { success = false, message = "An error occurred while generating thumbnails." });
+        }
+    }
+
+    /// <summary>
+    /// Interactive rotate with individual page rotations
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> RotateInteractive(IFormFile file, string rotationData)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "rotate");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName("rotated.pdf", "rotate");
+            
+            // Parse rotation data
+            var rotationDict = new Dictionary<int, List<int>>();
+            if (!string.IsNullOrEmpty(rotationData))
+            {
+                rotationDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<int, List<int>>>(rotationData);
+            }
+            
+            // Apply rotations - for each rotation degree, rotate those pages
+            foreach (var kvp in rotationDict)
+            {
+                var degrees = kvp.Key;
+                var pageNumbers = kvp.Value;
+                
+                // Convert to 0-based indices
+                var pageIndices = pageNumbers.Select(p => p - 1).ToList();
+                
+                var (success, _, error) = await _pdfProcessingService.RotatePdfAsync(
+                    filePath, pageIndices, degrees, outputFileName);
+                
+                if (!success)
+                {
+                    return Json(new { success = false, message = error ?? "Rotation failed" });
+                }
+                
+                // Update filePath for next iteration
+                filePath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            }
+            
+            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";
+            
+            return Json(new { 
+                success = true, 
+                message = "PDF rotated successfully", 
+                downloadUrl = downloadUrl,
+                fileName = outputFileName 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in interactive rotate");
+            return Json(new { success = false, message = "An error occurred during rotation." });
         }
     }
 
