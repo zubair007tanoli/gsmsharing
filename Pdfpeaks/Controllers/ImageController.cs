@@ -147,6 +147,41 @@ public class ImageController : Controller
                 TempData["CropHeight"] = height;
                 TempData["DownloadUrl"] = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}";
                 TempData["FileName"] = outputFileName;
+
+                string? jpgOutputPath = null;
+
+                // Always provide a JPG download option (mobile-friendly)
+                try
+                {
+                    var jpgOutputFileName = _fileProcessingService.GenerateFileName("cropped.jpg", "crop-jpg");
+                    var (jpgSuccess, convertedJpgPath, _) = await _imageProcessingService.ConvertImageFormatAsync(
+                        outputPath, jpgOutputFileName, "jpg");
+                    if (jpgSuccess)
+                    {
+                        jpgOutputPath = convertedJpgPath;
+                        TempData["JpgDownloadUrl"] = $"/Image/Download?fileName={Uri.EscapeDataString(jpgOutputFileName)}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to generate JPG version of cropped image");
+                }
+
+                // Also generate a PDF version of the cropped image for convenience
+                try
+                {
+                    var pdfOutputFileName = _fileProcessingService.GenerateFileName("cropped.pdf", "crop-pdf");
+                    var (pdfSuccess, pdfOutputPath, _) = await _imageProcessingService.ConvertToPdfAsync(
+                        jpgOutputPath ?? outputPath, pdfOutputFileName);
+                    if (pdfSuccess)
+                    {
+                        TempData["PdfDownloadUrl"] = $"/Image/Download?fileName={Uri.EscapeDataString(pdfOutputFileName)}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to generate PDF version of cropped image");
+                }
             }
             else
             {

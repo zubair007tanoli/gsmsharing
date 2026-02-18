@@ -5,19 +5,23 @@
     <div class="container">
         <div class="tool-header text-center mb-4">
             <h1 class="tool-title fw-bold">JPG to PDF</h1>
-            <p class="tool-description text-muted">Convert your images to PDF documents</p>
+            <p class="tool-description text-muted">Convert your images to a single PDF — one image per page</p>
         </div>
-        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.bmp" style="display: none;" />
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.bmp" multiple style="display: none;" />
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
-                    <i class="fas fa-image fa-4x text-primary mb-3"></i>
-                    <p class="mb-0">Drag & drop your image here or click to browse (.jpg, .jpeg, .png, .gif, .bmp)</p>
+                    <i class="fas fa-images fa-4x text-primary mb-3"></i>
+                    <p class="mb-0">Drag & drop your images here or click to browse (.jpg, .jpeg, .png, .gif, .bmp)</p>
+                    <p class="mb-0 small text-muted mt-2">You can select multiple images — each will become one page in the PDF</p>
                 </div>
                 <div id="fileSection" class="d-none mt-3">
-                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
-                        <span id="fileNameDisplay" class="fw-bold"></span>
-                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                    <div class="p-3 bg-light rounded-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold" id="fileCountDisplay"></span>
+                            <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                        </div>
+                        <ul id="fileListDisplay" class="list-unstyled mb-0 small"></ul>
                     </div>
                     <button type="button" class="btn btn-primary btn-lg w-100" id="convertBtn">
                         <i class="fas fa-file-pdf me-2"></i> Convert to PDF
@@ -37,42 +41,79 @@
     const fileInput = document.getElementById('fileInput');
     const uploadZone = document.getElementById('uploadZone');
     const fileSection = document.getElementById('fileSection');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const fileCountDisplay = document.getElementById('fileCountDisplay');
+    const fileListDisplay = document.getElementById('fileListDisplay');
     const convertBtn = document.getElementById('convertBtn');
     const loadingState = document.getElementById('loadingState');
     const clearFile = document.getElementById('clearFile');
-    let currentFile = null;
+    const allowed = ['.jpg','.jpeg','.png','.gif','.bmp'];
+    let currentFiles = [];
+
+    function isValidImage(file) {
+        var ext = (file.name || '').toLowerCase();
+        return allowed.some(e => ext.endsWith(e));
+    }
 
     uploadZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) setFile(e.target.files[0]); });
+    fileInput.addEventListener('change', e => { if (e.target.files.length) setFiles(Array.from(e.target.files)); });
     uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
-    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]); });
-    clearFile.addEventListener('click', () => { currentFile = null; fileSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
+    uploadZone.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadZone.classList.remove('border-primary');
+        if (e.dataTransfer.files.length) setFiles(Array.from(e.dataTransfer.files));
+    });
+    clearFile.addEventListener('click', () => {
+        currentFiles = [];
+        fileSection.classList.add('d-none');
+        uploadZone.classList.remove('d-none');
+        fileInput.value = '';
+    });
 
-    function setFile(file) {
-        var ext = (file.name || '').toLowerCase();
-        var ok = ['.jpg','.jpeg','.png','.gif','.bmp'].some(e => ext.endsWith(e));
-        if (!ok) { alert('Please select an image (.jpg, .jpeg, .png, .gif, .bmp).'); return; }
-        currentFile = file;
-        fileNameDisplay.textContent = file.name;
+    function setFiles(files) {
+        var valid = files.filter(function(f) { return isValidImage(f); });
+        var invalid = files.length - valid.length;
+        if (invalid > 0) alert('Skipped ' + invalid + ' non-image file(s). Only .jpg, .jpeg, .png, .gif, .bmp are allowed.');
+        if (valid.length === 0) return;
+        currentFiles = valid;
+        fileCountDisplay.textContent = valid.length === 1 ? '1 image selected' : valid.length + ' images selected (order = page order)';
+        fileListDisplay.innerHTML = valid.map(function(f, i) { return '<li>' + (i + 1) + '. ' + (f.name || 'image') + '</li>'; }).join('');
         uploadZone.classList.add('d-none');
         fileSection.classList.remove('d-none');
     }
 
     convertBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
+        if (!currentFiles.length) return;
         convertBtn.disabled = true;
         loadingState.classList.remove('d-none');
         var fd = new FormData();
-        fd.append('file', currentFile);
+        for (var i = 0; i < currentFiles.length; i++) fd.append('files', currentFiles[i]);
         try {
             var res = await fetch('/Pdf/ConvertFromJpg', { method: 'POST', body: fd });
-            var result = await res.json();
+
+            // Read raw text first to avoid JSON parse errors on empty/HTML responses
+            var text = await res.text();
+            var result = {};
+            if (text && text.trim().length > 0) {
+                try {
+                    result = JSON.parse(text);
+                } catch (parseErr) {
+                    loadingState.classList.add('d-none');
+                    convertBtn.disabled = false;
+                    alert('Unexpected server response while converting images to PDF. Please try again.');
+                    // For debugging in dev: raw response in console
+                    console.error('ConvertFromJpg raw response:', text);
+                    return;
+                }
+            }
+
             loadingState.classList.add('d-none');
             convertBtn.disabled = false;
-            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-            else { alert(result.message || 'Conversion failed'); }
+            if (result.success && result.downloadUrl) {
+                window.location.href = result.downloadUrl;
+            } else {
+                alert(result.message || 'Conversion failed');
+            }
         } catch (e) {
             loadingState.classList.add('d-none');
             convertBtn.disabled = false;

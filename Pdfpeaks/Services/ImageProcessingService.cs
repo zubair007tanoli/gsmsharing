@@ -82,14 +82,22 @@ public class ImageProcessingService
             }
 
             using var image = await Image.LoadAsync(inputPath);
-            var rectangle = new Rectangle(x, y, width, height);
+
+            // Clamp crop rectangle to image bounds (prevents out-of-bounds exceptions)
+            var clampedX = Math.Max(0, Math.Min(x, image.Width - 1));
+            var clampedY = Math.Max(0, Math.Min(y, image.Height - 1));
+            var clampedW = Math.Max(1, Math.Min(width, image.Width - clampedX));
+            var clampedH = Math.Max(1, Math.Min(height, image.Height - clampedY));
+            var rectangle = new Rectangle(clampedX, clampedY, clampedW, clampedH);
             
             image.Mutate(ctx => ctx.Crop(rectangle));
             
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
             await image.SaveAsync(outputPath);
             
-            _logger.LogInformation("Image cropped at ({X}, {Y}) with size {Width}x{Height}", x, y, width, height);
+            _logger.LogInformation(
+                "Image cropped at ({X}, {Y}) with size {Width}x{Height}",
+                clampedX, clampedY, clampedW, clampedH);
             return (true, outputPath, "Successfully cropped image.");
         }
         catch (Exception ex)
@@ -249,9 +257,9 @@ public class ImageProcessingService
                 // Create XGraphics object for drawing
                 using var gfx = XGraphics.FromPdfPage(page);
                 
-                // Save image to a temporary file in a format PDF can use
-                var tempImagePath = Path.Combine(_tempFilePath, $"temp_{Guid.NewGuid():N}.png");
-                await image.SaveAsync(tempImagePath, new PngEncoder());
+                // Save image to a temporary file in a format PDF can reliably use (JPEG works best with PdfSharpCore)
+                var tempImagePath = Path.Combine(_tempFilePath, $"temp_{Guid.NewGuid():N}.jpg");
+                await image.SaveAsync(tempImagePath, new JpegEncoder { Quality = 90 });
                 
                 // Load the image into XImage
                 using var xImage = XImage.FromFile(tempImagePath);
@@ -272,6 +280,75 @@ public class ImageProcessingService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error converting image to PDF");
+            return (false, "", $"Error converting to PDF: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Convert multiple images to a single PDF (one image per page, in order).
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> ConvertMultipleImagesToPdfAsync(
+        IReadOnlyList<string> inputPaths, string outputFileName)
+    {
+        if (inputPaths == null || inputPaths.Count == 0)
+            return (false, "", "No images provided.");
+
+        try
+        {
+            var document = new PdfDocument();
+            document.Info.Title = "Images to PDF";
+
+            foreach (var inputPath in inputPaths)
+            {
+                if (string.IsNullOrWhiteSpace(inputPath) || !File.Exists(inputPath))
+                    continue;
+
+                Image<Rgba32> image;
+                try
+                {
+                    image = await Image.LoadAsync<Rgba32>(inputPath);
+                }
+                catch
+                {
+                    image = Image.Load<Rgba32>(inputPath);
+                }
+
+                using (image)
+                {
+                    var page = document.AddPage();
+                    double dpiX = image.Metadata.HorizontalResolution > 0 ? image.Metadata.HorizontalResolution : 72;
+                    double dpiY = image.Metadata.VerticalResolution > 0 ? image.Metadata.VerticalResolution : 72;
+                    double imageWidth = image.Width * 72.0 / dpiX;
+                    double imageHeight = image.Height * 72.0 / dpiY;
+                    page.Width = imageWidth;
+                    page.Height = imageHeight;
+
+                    using var gfx = XGraphics.FromPdfPage(page);
+                    var tempImagePath = Path.Combine(_tempFilePath, $"temp_{Guid.NewGuid():N}.jpg");
+                    await image.SaveAsync(tempImagePath, new JpegEncoder { Quality = 90 });
+                    using var xImage = XImage.FromFile(tempImagePath);
+                    gfx.DrawImage(xImage, 0, 0, imageWidth, imageHeight);
+                    try { File.Delete(tempImagePath); } catch { }
+                }
+            }
+
+            if (document.PageCount == 0)
+            {
+                document.Dispose();
+                return (false, "", "No valid images could be converted.");
+            }
+
+            var pageCount = document.PageCount;
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            document.Save(outputPath);
+            document.Dispose();
+
+            _logger.LogInformation("Converted {Count} images to PDF: {Output}", pageCount, outputPath);
+            return (true, outputPath, $"Successfully converted {pageCount} image(s) to PDF (one per page).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting images to PDF");
             return (false, "", $"Error converting to PDF: {ex.Message}");
         }
     }

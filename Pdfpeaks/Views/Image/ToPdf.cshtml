@@ -1,15 +1,239 @@
 @{
-    ViewData["Title"] = "Image to PDF - Convert Images to PDF";
+    ViewData["Title"] = "Image to PDF - PdfPeaks";
 }
-<div class="tool-page" style="padding: 2rem 0;">
-    <div class="container">
-        <div class="tool-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">Image to PDF</h1>
-            <p class="tool-description" style="color: var(--text-light);">Convert your images to PDF documents</p>
-        </div>
-        <div class="upload-zone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: #e94057; margin-bottom: 1rem;"></i>
-            <p>Drag & drop your images here</p>
+
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-filetype-pdf"></i> Image to PDF
+                </h1>
+                <p class="lead text-muted">Convert your image into a high-quality PDF document</p>
+            </div>
+
+            <div class="row">
+                <!-- Upload -->
+                <div class="col-lg-5">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div id="img2pdfDropZone" class="drop-zone border-2 border-dashed rounded-4 p-4 text-center bg-light">
+                                <div class="mb-3">
+                                    <i class="bi bi-cloud-upload display-4 text-danger"></i>
+                                </div>
+                                <h5 class="mb-2">Drop your image here</h5>
+                                <p class="text-muted mb-3">or</p>
+                                <button type="button" class="btn btn-danger" id="img2pdfSelectImageBtn">
+                                    <i class="bi bi-folder-plus"></i> Select Image
+                                </button>
+                                <input type="file" id="img2pdfFileInput" accept="image/*" style="display:none" />
+                                <small class="d-block text-muted mt-2">Supported: JPG, PNG, GIF, BMP, WebP</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="img2pdfOptions" class="card shadow-sm mb-4 d-none">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-sliders"></i> PDF Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Page Size</label>
+                                <select id="img2pdfPageSize" class="form-select" disabled>
+                                    <option value="auto" selected>Auto (match image)</option>
+                                </select>
+                                <small class="text-muted d-block mt-1">
+                                    For now, page size automatically matches your image dimensions.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <button id="img2pdfConvertBtn" class="btn btn-danger w-100" disabled>
+                                <i class="bi bi-file-earmark-pdf"></i> Convert to PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="col-lg-7">
+                    <div id="img2pdfPreviewContainer" class="card shadow-sm d-none">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-eye"></i> Preview</h5>
+                        </div>
+                        <div class="card-body bg-dark">
+                            <div id="img2pdfImagePreview" class="position-relative d-flex justify-content-center align-items-center" style="min-height: 400px;">
+                                <div id="img2pdfLoadingSpinner" class="text-white">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Image</small>
+                                    <strong id="img2pdfImageInfo">-</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">PDF File</small>
+                                    <strong id="img2pdfPdfInfo">-</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="img2pdfEmptyPreview" class="card shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-image display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">No image selected</h4>
+                            <p class="text-muted">Upload an image to convert it into a PDF</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="img2pdfLoadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-container">
+        <div class="spinner-border text-danger" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-3 text-white">Creating PDF...</h4>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .drop-zone {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover {
+            background-color: #fdecea !important;
+            border-color: #dc3545 !important;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay .spinner-container {
+            text-align: center;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dropZone = document.getElementById('img2pdfDropZone');
+            const fileInput = document.getElementById('img2pdfFileInput');
+            const selectImageBtn = document.getElementById('img2pdfSelectImageBtn');
+            const optionsCard = document.getElementById('img2pdfOptions');
+            const previewCard = document.getElementById('img2pdfPreviewContainer');
+            const emptyPreview = document.getElementById('img2pdfEmptyPreview');
+            const imagePreview = document.getElementById('img2pdfImagePreview');
+            const convertBtn = document.getElementById('img2pdfConvertBtn');
+            const loadingOverlay = document.getElementById('img2pdfLoadingOverlay');
+
+            let currentFile = null;
+
+            if (selectImageBtn) {
+                selectImageBtn.addEventListener('click', () => fileInput.click());
+            }
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('bg-danger', 'text-white');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-danger', 'text-white');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-danger', 'text-white');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            function handleFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file.');
+                    return;
+                }
+
+                currentFile = file;
+                optionsCard.classList.remove('d-none');
+                previewCard.classList.remove('d-none');
+                emptyPreview.classList.add('d-none');
+                convertBtn.disabled = false;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview" class="img-fluid preview-image" style="max-height: 400px; object-fit: contain;">
+                    `;
+                    document.getElementById('img2pdfImageInfo').textContent = file.name;
+                    document.getElementById('img2pdfPdfInfo').textContent = '-';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            convertBtn.addEventListener('click', async () => {
+                if (!currentFile) return;
+
+                loadingOverlay.classList.remove('d-none');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', currentFile);
+
+                    const response = await fetch('/Image/ToPdf', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    loadingOverlay.classList.add('d-none');
+
+                    if (result.success && result.downloadUrl) {
+                        document.getElementById('img2pdfPdfInfo').textContent = result.fileName || 'image.pdf';
+                        window.location.href = result.downloadUrl;
+                    } else {
+                        alert(result.message || 'Conversion failed.');
+                    }
+                } catch (err) {
+                    loadingOverlay.classList.add('d-none');
+                    console.error(err);
+                    alert('An error occurred while converting the image to PDF.');
+                }
+            });
+        });
+    </script>
+}

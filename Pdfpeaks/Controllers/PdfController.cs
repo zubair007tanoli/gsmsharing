@@ -1074,23 +1074,31 @@ public class PdfController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ConvertFromJpg(IFormFile file)
+    public async Task<IActionResult> ConvertFromJpg(List<IFormFile> files)
     {
-        if (file == null || file.Length == 0)
+        files ??= Request.Form.Files?.ToList() ?? new List<IFormFile>();
+        if (files.Count == 0)
         {
-            return Json(new { success = false, message = "Please upload a JPG image." });
+            return Json(new { success = false, message = "Please upload one or more images." });
         }
 
-        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
         var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
-        if (string.IsNullOrEmpty(extension) || !allowed.Contains(extension))
+        var user = await GetCurrentUserAsync();
+        long totalSize = 0;
+        var savedPaths = new List<string>();
+
+        foreach (var file in files)
         {
-            return Json(new { success = false, message = "Only image files (.jpg, .jpeg, .png, .gif, .bmp) can be converted to PDF." });
+            if (file == null || file.Length == 0) continue;
+            var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+            if (string.IsNullOrEmpty(extension) || !allowed.Contains(extension))
+            {
+                return Json(new { success = false, message = "Only image files (.jpg, .jpeg, .png, .gif, .bmp) can be converted to PDF." });
+            }
+            totalSize += file.Length;
         }
 
-        var user = await GetCurrentUserAsync();
-        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
-        
+        var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, totalSize);
         if (!canProcess)
         {
             return Json(new { success = false, message, requiresUpgrade = true });
@@ -1098,11 +1106,22 @@ public class PdfController : Controller
 
         try
         {
-            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "jpg2pdf");
-            var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "jpg2pdf");
+            foreach (var file in files)
+            {
+                if (file == null || file.Length == 0) continue;
+                var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "jpg2pdf");
+                var filePath = _fileProcessingService.GetFilePath(fileName);
+                savedPaths.Add(filePath);
+            }
 
-            var (success, outputPath, resultMessage) = await _imageProcessingService.ConvertToPdfAsync(filePath, outputFileName);
+            if (savedPaths.Count == 0)
+            {
+                return Json(new { success = false, message = "No valid images to convert." });
+            }
+
+            var outputFileName = _fileProcessingService.GenerateFileName("converted.pdf", "jpg2pdf");
+            var (success, outputPath, resultMessage) = await _imageProcessingService.ConvertMultipleImagesToPdfAsync(savedPaths, outputFileName);
+
             if (success)
             {
                 var downloadUrl = $"/Pdf/DownloadFile?fileName={Uri.EscapeDataString(outputFileName)}";

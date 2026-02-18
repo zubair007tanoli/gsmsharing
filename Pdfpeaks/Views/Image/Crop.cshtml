@@ -26,7 +26,7 @@
                                 <p class="text-muted mb-3">or</p>
                                 <label class="btn btn-primary" style="position: relative; z-index: 1;">
                                     <i class="bi bi-folder-plus"></i> Select Image
-                                    <input type="file" id="fileInput" accept="image/*" multiple style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;">
+                                    <input type="file" id="fileInput" accept="image/*" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;">
                                 </label>
                             </div>
                         </div>
@@ -179,11 +179,19 @@
                             <i class="bi bi-check-circle-fill text-success display-1"></i>
                         </div>
                         <h3 class="card-title">@TempData["Success"]</h3>
-                        <p class="text-muted">@TempData["Info"]</p>
                         <div class="d-flex justify-content-center gap-3 mt-4">
-                            <a href="@TempData["DownloadUrl"]" class="btn btn-primary btn-lg">
-                                <i class="bi bi-download"></i> Download Cropped Image
-                            </a>
+                            @if (TempData["JpgDownloadUrl"] != null)
+                            {
+                                <a href="@TempData["JpgDownloadUrl"]" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-filetype-jpg"></i> Download as JPG
+                                </a>
+                            }
+                            @if (TempData["PdfDownloadUrl"] != null)
+                            {
+                                <a href="@TempData["PdfDownloadUrl"]" class="btn btn-outline-primary btn-lg">
+                                    <i class="bi bi-filetype-pdf"></i> Download as PDF
+                                </a>
+                            }
                             <a asp-action="Crop" class="btn btn-outline-secondary btn-lg">
                                 <i class="bi bi-arrow-repeat"></i> Crop Another
                             </a>
@@ -285,6 +293,7 @@
             const fileInput = document.getElementById('fileInput');
             const previewContainer = document.getElementById('previewContainer');
             const emptyPreview = document.getElementById('emptyPreview');
+            const cropOptions = document.getElementById('cropOptions');
             const sourceImage = document.getElementById('sourceImage');
             const cropOverlay = document.getElementById('cropOverlay');
             const cropRectangle = document.getElementById('cropRectangle');
@@ -296,6 +305,7 @@
             const cropCanvas = document.getElementById('cropCanvas');
             
             let originalImage = null;
+            let selectedFile = null;
             let originalWidth = 0;
             let originalHeight = 0;
             let cropX = 0;
@@ -347,12 +357,18 @@
                 if (file) handleFile(file);
             });
             
-            dropZone.addEventListener('click', function() {
+            // Prevent multiple dialogs due to bubbling from the label/input click
+            fileInput.addEventListener('click', function(e) { e.stopPropagation(); });
+            dropZone.querySelector('label')?.addEventListener('click', function(e) { e.stopPropagation(); });
+
+            dropZone.addEventListener('click', function(e) {
+                if (e.target && (e.target.closest('label') || e.target.id === 'fileInput')) return;
                 fileInput.click();
             });
             
             // Handle file
             function handleFile(file) {
+                selectedFile = file;
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     originalImage = new Image();
@@ -369,6 +385,9 @@
                         
                         previewContainer.classList.remove('d-none');
                         emptyPreview.classList.add('d-none');
+                        if (cropOptions) {
+                            cropOptions.classList.remove('d-none');
+                        }
                         
                         // Initialize crop rectangle
                         initCropRectangle();
@@ -586,44 +605,37 @@
             
             // Crop button
             cropBtn.addEventListener('click', async function() {
-                if (!originalImage) return;
-                
-                const ctx = cropCanvas.getContext('2d');
-                cropCanvas.width = Math.round(cropW);
-                cropCanvas.height = Math.round(cropH);
-                
-                ctx.drawImage(
-                    originalImage,
-                    cropX, cropY, cropW, cropH,  // Source crop
-                    0, 0, cropW, cropH           // Destination
-                );
-                
-                // Convert to blob
-                cropCanvas.toBlob(async function(blob) {
-                    const formData = new FormData();
-                    formData.append('file', new File([blob], 'image.png', { type: 'image/png' }));
-                    formData.append('x', Math.round(cropX));
-                    formData.append('y', Math.round(cropY));
-                    formData.append('width', Math.round(cropW));
-                    formData.append('height', Math.round(cropH));
-                    
-                    loadingOverlay.classList.remove('d-none');
-                    
-                    try {
-                        const response = await fetch('@Url.Action("Crop")', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        const result = await response.text();
-                        document.body.innerHTML = result;
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('An error occurred while cropping the image.');
-                    } finally {
-                        loadingOverlay.classList.add('d-none');
-                    }
-                }, 'image/png');
+                if (!originalImage || !selectedFile) return;
+
+                // Clamp + integer crop rectangle (prevents x+w or y+h exceeding bounds after rounding)
+                const x = Math.max(0, Math.min(originalWidth - 1, Math.round(cropX)));
+                const y = Math.max(0, Math.min(originalHeight - 1, Math.round(cropY)));
+                const w = Math.max(1, Math.min(originalWidth - x, Math.round(cropW)));
+                const h = Math.max(1, Math.min(originalHeight - y, Math.round(cropH)));
+
+                const formData = new FormData();
+                formData.append('file', selectedFile, selectedFile.name || 'image');
+                formData.append('x', x);
+                formData.append('y', y);
+                formData.append('width', w);
+                formData.append('height', h);
+
+                loadingOverlay.classList.remove('d-none');
+
+                try {
+                    const response = await fetch('@Url.Action("Crop")', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.text();
+                    document.body.innerHTML = result;
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while cropping the image.');
+                } finally {
+                    loadingOverlay.classList.add('d-none');
+                }
             });
             
             // Handle window resize
