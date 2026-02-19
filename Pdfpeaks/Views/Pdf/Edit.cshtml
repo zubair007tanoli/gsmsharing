@@ -1,85 +1,1055 @@
 @{
-    ViewData["Title"] = "Edit PDF - Add Text to PDF";
+    ViewData["Title"] = "Edit PDF - Text Editor";
 }
-<div class="tool-page py-5">
-    <div class="container">
-        <div class="tool-header text-center mb-4">
+<style>
+    .editor-container {
+        display: flex;
+        height: calc(100vh - 200px);
+        min-height: 600px;
+    }
+    
+    /* Left Toolbar Panel */
+    .toolbar-panel {
+        width: 280px;
+        background: #fff;
+        border-right: 1px solid #dee2e6;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .toolbar-section {
+        padding: 15px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .toolbar-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
+    }
+    
+    .toolbar-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .toolbar-row:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Font Controls */
+    .font-family-select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+    }
+    
+    .font-size-input {
+        width: 70px;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        text-align: center;
+    }
+    
+    /* Color Pickers */
+    .color-picker-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .color-picker {
+        width: 40px;
+        height: 35px;
+        padding: 2px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    
+    .color-preview {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+    
+    /* Format Buttons */
+    .format-btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .format-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ced4da;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 14px;
+    }
+    
+    .format-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .format-btn.active {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    .format-btn i {
+        pointer-events: none;
+    }
+    
+    /* Alignment Buttons */
+    .align-btn {
+        padding: 8px 14px;
+        border: 1px solid #ced4da;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    
+    .align-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .align-btn.active {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    /* Preview Panel */
+    .preview-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #f8f9fa;
+        overflow: hidden;
+    }
+    
+    .preview-header {
+        padding: 10px 15px;
+        background: #fff;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .page-nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .page-nav button {
+        padding: 6px 12px;
+        border: 1px solid #ced4da;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .page-nav button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .page-nav span {
+        font-weight: 500;
+    }
+    
+    .zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .zoom-controls button {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ced4da;
+        background: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .zoom-controls span {
+        min-width: 50px;
+        text-align: center;
+    }
+    
+    .preview-canvas-container {
+        flex: 1;
+        overflow: auto;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .preview-canvas-wrapper {
+        position: relative;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        display: inline-block;
+    }
+    
+    #previewCanvas {
+        display: block;
+        max-width: 100%;
+    }
+    
+    #previewImage {
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+    
+    /* Text Overlay */
+    .text-overlay-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    .editable-text {
+        position: absolute;
+        cursor: text;
+        border: 2px solid transparent;
+        padding: 2px 4px;
+        min-width: 20px;
+        min-height: 20px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .editable-text:hover {
+        border-color: rgba(13, 110, 253, 0.5);
+        background: rgba(13, 110, 253, 0.05);
+    }
+    
+    .editable-text.selected {
+        border-color: #0d6efd;
+        background: rgba(13, 110, 253, 0.1);
+        outline: none;
+    }
+    
+    .editable-text.editing {
+        border-color: #198754;
+        background: white;
+    }
+    
+    /* Upload State */
+    .upload-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 40px;
+    }
+    
+    .drop-zone {
+        width: 100%;
+        max-width: 500px;
+        border: 3px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 60px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .drop-zone:hover {
+        border-color: #0d6efd;
+        background: #f8f9fa;
+    }
+    
+    /* Loading */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255,255,255,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    /* Quick Colors */
+    .quick-colors {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 8px;
+    }
+    
+    .quick-color {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        cursor: pointer;
+        transition: transform 0.15s;
+    }
+    
+    .quick-color:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Opacity Slider */
+    .opacity-slider {
+        width: 100%;
+        margin-top: 8px;
+    }
+    
+    /* Line Height */
+    .line-height-input {
+        width: 60px;
+        padding: 6px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    
+    /* Letter Spacing */
+    .letter-spacing-input {
+        width: 60px;
+        padding: 6px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+</style>
+
+<div class="tool-page py-3">
+    <div class="container-fluid">
+        <div class="tool-header text-center mb-3">
             <h1 class="tool-title fw-bold">Edit PDF</h1>
-            <p class="tool-description text-muted">Add text to your PDF</p>
+            <p class="tool-description text-muted">Edit text with comprehensive formatting tools</p>
         </div>
+        
         <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
-                    <i class="fas fa-edit fa-4x text-primary mb-3"></i>
-                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
-                </div>
-                <div id="formSection" class="d-none mt-3">
-                    <div class="mb-3 d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
-                        <span id="fileNameDisplay" class="fw-bold text-truncate"></span>
-                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+        
+        <!-- Upload State -->
+        <div id="uploadState" class="upload-state">
+            <div id="dropZone" class="drop-zone">
+                <i class="fas fa-edit fa-4x text-primary mb-3"></i>
+                <h4>Drop your PDF here</h4>
+                <p class="text-muted mb-0">or click to browse</p>
+            </div>
+        </div>
+        
+        <!-- Editor State -->
+        <div id="editorState" class="editor-container d-none">
+            <!-- Left Toolbar Panel -->
+            <div class="toolbar-panel">
+                <!-- File Info -->
+                <div class="toolbar-section">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="fw-bold text-truncate" id="fileName">Document.pdf</span>
+                        <button class="btn btn-sm btn-outline-danger" id="clearFile">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Text to add</label>
-                        <textarea id="text" class="form-control" rows="3" placeholder="Enter text to overlay on the PDF"></textarea>
+                    <div class="small text-muted mt-1">
+                        <span id="pageCount">0</span> pages
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Page number</label>
-                        <input type="number" id="pageNumber" class="form-control" value="1" min="1" style="max-width: 100px;" />
+                </div>
+                
+                <!-- Font Family -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Font Family</div>
+                    <select class="font-family-select" id="fontFamily">
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Comic Sans MS">Comic Sans MS</option>
+                        <option value="Impact">Impact</option>
+                        <option value="Trebuchet MS">Trebuchet MS</option>
+                        <option value="Palatino Linotype">Palatino Linotype</option>
+                    </select>
+                </div>
+                
+                <!-- Font Size -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Font Size</div>
+                    <div class="toolbar-row">
+                        <button class="format-btn" id="decreaseFontSize" title="Decrease">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" class="font-size-input" id="fontSize" value="16" min="6" max="200" />
+                        <button class="format-btn" id="increaseFontSize" title="Increase">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-primary btn-lg w-100" id="editBtn">
-                        <i class="fas fa-plus me-2"></i> Add Text to PDF
-                    </button>
                 </div>
-                <div id="loadingState" class="d-none mt-3 text-center">
-                    <div class="spinner-border text-primary"></div>
-                    <p class="mt-2 mb-0">Adding text...</p>
+                
+                <!-- Text Color -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Text Color</div>
+                    <div class="color-picker-wrapper">
+                        <input type="color" class="color-picker" id="textColor" value="#000000" />
+                        <span class="small text-muted" id="textColorHex">#000000</span>
+                    </div>
+                    <div class="quick-colors">
+                        <div class="quick-color" style="background: #000000" data-color="#000000"></div>
+                        <div class="quick-color" style="background: #333333" data-color="#333333"></div>
+                        <div class="quick-color" style="background: #666666" data-color="#666666"></div>
+                        <div class="quick-color" style="background: #cc0000" data-color="#cc0000"></div>
+                        <div class="quick-color" style="background: #0066cc" data-color="#0066cc"></div>
+                        <div class="quick-color" style="background: #008800" data-color="#008800"></div>
+                        <div class="quick-color" style="background: #ffcc00" data-color="#ffcc00"></div>
+                        <div class="quick-color" style="background: #ffffff" data-color="#ffffff"></div>
+                    </div>
                 </div>
+                
+                <!-- Background Color -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Background Color</div>
+                    <div class="color-picker-wrapper">
+                        <input type="color" class="color-picker" id="bgColor" value="#ffffff" />
+                        <span class="small text-muted" id="bgColorHex">#ffffff</span>
+                    </div>
+                    <div class="quick-colors">
+                        <div class="quick-color" style="background: #ffffff" data-color="#ffffff" data-bg="true"></div>
+                        <div class="quick-color" style="background: #ffff00" data-color="#ffff00" data-bg="true"></div>
+                        <div class="quick-color" style="background: #ffcccc" data-color="#ffcccc" data-bg="true"></div>
+                        <div class="quick-color" style="background: #ccffcc" data-color="#ccffcc" data-bg="true"></div>
+                        <div class="quick-color" style="background: #ccccff" data-color="#ccccff" data-bg="true"></div>
+                        <div class="quick-color" style="background: #000000" data-color="#000000" data-bg="true"></div>
+                    </div>
+                </div>
+                
+                <!-- Text Formatting -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Formatting</div>
+                    <div class="format-btn-group">
+                        <button class="format-btn" id="boldBtn" title="Bold (Ctrl+B)">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button class="format-btn" id="italicBtn" title="Italic (Ctrl+I)">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button class="format-btn" id="underlineBtn" title="Underline (Ctrl+U)">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                        <button class="format-btn" id="strikethroughBtn" title="Strikethrough">
+                            <i class="fas fa-strikethrough"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Text Alignment -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Alignment</div>
+                    <div class="format-btn-group">
+                        <button class="format-btn align-btn active" id="alignLeft" title="Align Left">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button class="format-btn align-btn" id="alignCenter" title="Align Center">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button class="format-btn align-btn" id="alignRight" title="Align Right">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                        <button class="format-btn align-btn" id="alignJustify" title="Justify">
+                            <i class="fas fa-align-justify"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Text Spacing -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Spacing</div>
+                    <div class="toolbar-row">
+                        <div>
+                            <label class="small text-muted d-block">Line Height</label>
+                            <input type="number" class="line-height-input" id="lineHeight" value="1.5" min="0.5" max="3" step="0.1" />
+                        </div>
+                        <div>
+                            <label class="small text-muted d-block">Letter Spacing</label>
+                            <input type="number" class="letter-spacing-input" id="letterSpacing" value="0" min="-5" max="20" step="0.5" />
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="toolbar-section mt-auto">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" id="addTextBtn">
+                            <i class="fas fa-plus me-2"></i> Add Text Box
+                        </button>
+                        <button class="btn btn-primary" id="saveBtn">
+                            <i class="fas fa-save me-2"></i> Save PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div class="preview-panel">
+                <div class="preview-header">
+                    <div class="page-nav">
+                        <button id="prevPage" disabled><i class="fas fa-chevron-left"></i></button>
+                        <span>Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
+                        <button id="nextPage" disabled><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="zoom-controls">
+                        <button id="zoomOut"><i class="fas fa-minus"></i></button>
+                        <span id="zoomLevel">100%</span>
+                        <button id="zoomIn"><i class="fas fa-plus"></i></button>
+                        <button id="fitToWidth" title="Fit to Width"><i class="fas fa-arrows-alt-h"></i></button>
+                    </div>
+                </div>
+                <div class="preview-canvas-container">
+                    <div class="preview-canvas-wrapper" id="canvasWrapper">
+                        <img id="previewImage" src="" alt="PDF Page" style="display:block;max-width:100%;" />
+                        <div class="text-overlay-container" id="textOverlay"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay d-none">
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <h5 id="loadingMessage">Loading...</h5>
             </div>
         </div>
     </div>
 </div>
+
 @section Scripts {
 <script>
 (function() {
     const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
-    const formSection = document.getElementById('formSection');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const text = document.getElementById('text');
-    const pageNumber = document.getElementById('pageNumber');
-    const editBtn = document.getElementById('editBtn');
-    const loadingState = document.getElementById('loadingState');
+    const dropZone = document.getElementById('dropZone');
+    const uploadState = document.getElementById('uploadState');
+    const editorState = document.getElementById('editorState');
+    const fileName = document.getElementById('fileName');
+    const pageCount = document.getElementById('pageCount');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingMessage = document.getElementById('loadingMessage');
     const clearFile = document.getElementById('clearFile');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const previewImage = document.getElementById('previewImage');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const textOverlay = document.getElementById('textOverlay');
+    const currentPageEl = document.getElementById('currentPage');
+    const totalPagesEl = document.getElementById('totalPages');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const zoomLevelEl = document.getElementById('zoomLevel');
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    const fitToWidthBtn = document.getElementById('fitToWidth');
+    
     let currentFile = null;
-
-    uploadZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) { currentFile = e.target.files[0]; fileNameDisplay.textContent = currentFile.name; uploadZone.classList.add('d-none'); formSection.classList.remove('d-none'); } });
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
-    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) { currentFile = e.dataTransfer.files[0]; fileNameDisplay.textContent = currentFile.name; uploadZone.classList.add('d-none'); formSection.classList.remove('d-none'); } });
-    clearFile.addEventListener('click', () => { currentFile = null; formSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
-
-    editBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
-        if (!text.value.trim()) { alert('Please enter text to add.'); return; }
-        editBtn.disabled = true;
-        loadingState.classList.remove('d-none');
-        const fd = new FormData();
-        fd.append('file', currentFile);
-        fd.append('text', text.value.trim());
-        fd.append('pageNumber', parseInt(pageNumber.value, 10) || 1);
+    let pages = [];
+    let currentPage = 1;
+    let zoom = 1;
+    let textBoxes = [];
+    let selectedTextBox = null;
+    let pdfDoc = null;
+    
+    // Current formatting
+    let currentFormat = {
+        fontFamily: 'Arial',
+        fontSize: 16,
+        textColor: '#000000',
+        bgColor: '#ffffff',
+        bold: false,
+        italic: false,
+        underline: false,
+        strikethrough: false,
+        align: 'left',
+        lineHeight: 1.5,
+        letterSpacing: 0
+    };
+    
+    // Initialize
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+    
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#0d6efd';
+        dropZone.style.background = '#f8f9fa';
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#dee2e6';
+        dropZone.style.background = '';
+    });
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#dee2e6';
+        dropZone.style.background = '';
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    
+    clearFile.addEventListener('click', resetState);
+    
+    // Page navigation
+    prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1));
+    nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
+    
+    // Zoom controls
+    zoomInBtn.addEventListener('click', () => setZoom(zoom + 0.1));
+    zoomOutBtn.addEventListener('click', () => setZoom(zoom - 0.1));
+    fitToWidthBtn.addEventListener('click', fitToWidth);
+    
+    // Font controls
+    document.getElementById('fontFamily').addEventListener('change', e => {
+        currentFormat.fontFamily = e.target.value;
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('fontSize').addEventListener('change', e => {
+        currentFormat.fontSize = parseInt(e.target.value) || 16;
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('increaseFontSize').addEventListener('click', () => {
+        currentFormat.fontSize = Math.min(200, currentFormat.fontSize + 2);
+        document.getElementById('fontSize').value = currentFormat.fontSize;
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('decreaseFontSize').addEventListener('click', () => {
+        currentFormat.fontSize = Math.max(6, currentFormat.fontSize - 2);
+        document.getElementById('fontSize').value = currentFormat.fontSize;
+        updateSelectedTextBox();
+    });
+    
+    // Color pickers
+    document.getElementById('textColor').addEventListener('input', e => {
+        currentFormat.textColor = e.target.value;
+        document.getElementById('textColorHex').textContent = e.target.value;
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('bgColor').addEventListener('input', e => {
+        currentFormat.bgColor = e.target.value;
+        document.getElementById('bgColorHex').textContent = e.target.value;
+        updateSelectedTextBox();
+    });
+    
+    // Quick colors
+    document.querySelectorAll('.quick-color').forEach(el => {
+        el.addEventListener('click', () => {
+            const color = el.dataset.color;
+            if (el.dataset.bg === 'true') {
+                currentFormat.bgColor = color;
+                document.getElementById('bgColor').value = color;
+                document.getElementById('bgColorHex').textContent = color;
+            } else {
+                currentFormat.textColor = color;
+                document.getElementById('textColor').value = color;
+                document.getElementById('textColorHex').textContent = color;
+            }
+            updateSelectedTextBox();
+        });
+    });
+    
+    // Format buttons
+    document.getElementById('boldBtn').addEventListener('click', () => {
+        currentFormat.bold = !currentFormat.bold;
+        document.getElementById('boldBtn').classList.toggle('active', currentFormat.bold);
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('italicBtn').addEventListener('click', () => {
+        currentFormat.italic = !currentFormat.italic;
+        document.getElementById('italicBtn').classList.toggle('active', currentFormat.italic);
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('underlineBtn').addEventListener('click', () => {
+        currentFormat.underline = !currentFormat.underline;
+        document.getElementById('underlineBtn').classList.toggle('active', currentFormat.underline);
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('strikethroughBtn').addEventListener('click', () => {
+        currentFormat.strikethrough = !currentFormat.strikethrough;
+        document.getElementById('strikethroughBtn').classList.toggle('active', currentFormat.strikethrough);
+        updateSelectedTextBox();
+    });
+    
+    // Alignment buttons
+    document.querySelectorAll('.align-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFormat.align = btn.id.replace('align', '').toLowerCase();
+            updateSelectedTextBox();
+        });
+    });
+    
+    // Spacing
+    document.getElementById('lineHeight').addEventListener('change', e => {
+        currentFormat.lineHeight = parseFloat(e.target.value) || 1.5;
+        updateSelectedTextBox();
+    });
+    
+    document.getElementById('letterSpacing').addEventListener('change', e => {
+        currentFormat.letterSpacing = parseFloat(e.target.value) || 0;
+        updateSelectedTextBox();
+    });
+    
+    // Add text button
+    document.getElementById('addTextBtn').addEventListener('click', addNewTextBox);
+    
+    // Save button
+    document.getElementById('saveBtn').addEventListener('click', savePdf);
+    
+    async function handleFile(file) {
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            alert('Please select a PDF file.');
+            return;
+        }
+        
+        currentFile = file;
+        fileName.textContent = file.name;
+        showLoading('Loading PDF...');
+        
         try {
-            const res = await fetch('/Pdf/EditAddText', { method: 'POST', body: fd });
-            const result = await res.json();
-            loadingState.classList.add('d-none');
-            editBtn.disabled = false;
-            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-            else { alert(result.message || 'Add text failed'); }
-        } catch (e) {
-            loadingState.classList.add('d-none');
-            editBtn.disabled = false;
-            alert('Error: ' + e.message);
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch('/Pdf/GetPdfThumbnails', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.thumbnails) {
+                pages = result.thumbnails;
+                textBoxes = pages.map(() => []);
+                pageCount.textContent = pages.length;
+                totalPagesEl.textContent = pages.length;
+                
+                uploadState.classList.add('d-none');
+                editorState.classList.remove('d-none');
+                
+                loadPage(1);
+            } else {
+                alert(result.message || 'Failed to load PDF');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error loading PDF: ' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+    
+    function loadPage(pageNum) {
+        if (pageNum < 1 || pageNum > pages.length) return;
+        
+        currentPage = pageNum;
+        currentPageEl.textContent = currentPage;
+        
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === pages.length;
+        
+        const pageData = pages[pageNum - 1];
+        if (!pageData) return;
+        
+        // Load thumbnail directly into img
+        previewImage.src = pageData.url;
+        previewImage.onload = function() {
+            canvasWrapper.style.width = previewImage.naturalWidth + 'px';
+            canvasWrapper.style.height = previewImage.naturalHeight + 'px';
+            renderTextBoxes();
+            setZoom(zoom);
+        };
+        
+        // Load page for editing
+        loadPageForEditing(pageNum);
+    }
+    
+    async function loadPageForEditing(pageNum) {
+        try {
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('page', pageNum);
+            
+            const response = await fetch('/Pdf/GetPageForEdit', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (result.success && result.textElements) {
+                // Process text elements from server
+                // For now, we create empty text boxes that user can add
+            }
+        } catch (error) {
+            console.error('Error loading page for editing:', error);
+        }
+    }
+    
+    function goToPage(pageNum) {
+        if (pageNum >= 1 && pageNum <= pages.length) {
+            loadPage(pageNum);
+        }
+    }
+    
+    function setZoom(newZoom) {
+        zoom = Math.max(0.25, Math.min(3, newZoom));
+        zoomLevelEl.textContent = Math.round(zoom * 100) + '%';
+        canvasWrapper.style.transform = `scale(${zoom})`;
+        canvasWrapper.style.transformOrigin = 'top left';
+    }
+    
+    function fitToWidth() {
+        const container = document.querySelector('.preview-canvas-container');
+        const pageWidth = previewImage.naturalWidth || 800;
+        const availableWidth = container.clientWidth - 40;
+        zoom = availableWidth / pageWidth;
+        setZoom(zoom);
+    }
+    
+    function renderTextBoxes() {
+        textOverlay.innerHTML = '';
+        
+        const boxes = textBoxes[currentPage - 1] || [];
+        
+        boxes.forEach((box, index) => {
+            const el = document.createElement('div');
+            el.className = 'editable-text';
+            el.dataset.index = index;
+            el.contentEditable = true;
+            
+            el.style.left = box.x + 'px';
+            el.style.top = box.y + 'px';
+            el.style.width = (box.width || 200) + 'px';
+            el.style.minHeight = (box.height || 30) + 'px';
+            
+            applyFormatting(el, box.format || currentFormat);
+            
+            if (box.text) {
+                el.textContent = box.text;
+            } else {
+                el.textContent = 'Click to edit...';
+                el.style.color = '#999';
+            }
+            
+            // Events
+            el.addEventListener('focus', () => selectTextBox(index));
+            el.addEventListener('blur', () => saveTextBoxContent(index, el));
+            el.addEventListener('input', () => saveTextBoxContent(index, el));
+            
+            textOverlay.appendChild(el);
+        });
+    }
+    
+    function applyFormatting(el, format) {
+        el.style.fontFamily = format.fontFamily;
+        el.style.fontSize = format.fontSize + 'px';
+        el.style.color = format.textColor;
+        el.style.backgroundColor = format.bgColor;
+        el.style.fontWeight = format.bold ? 'bold' : 'normal';
+        el.style.fontStyle = format.italic ? 'italic' : 'normal';
+        el.style.textDecoration = [
+            format.underline ? 'underline' : '',
+            format.strikethrough ? 'line-through' : ''
+        ].filter(Boolean).join(' ') || 'none';
+        
+        el.style.textAlign = format.align;
+        el.style.lineHeight = format.lineHeight;
+        el.style.letterSpacing = format.letterSpacing + 'px';
+    }
+    
+    function selectTextBox(index) {
+        selectedTextBox = index;
+        
+        document.querySelectorAll('.editable-text').forEach(el => {
+            el.classList.remove('selected');
+            if (parseInt(el.dataset.index) === index) {
+                el.classList.add('selected');
+                
+                // Update toolbar with box format
+                const box = textBoxes[currentPage - 1][index];
+                if (box && box.format) {
+                    const format = box.format;
+                    document.getElementById('fontFamily').value = format.fontFamily;
+                    document.getElementById('fontSize').value = format.fontSize;
+                    document.getElementById('textColor').value = format.textColor;
+                    document.getElementById('bgColor').value = format.bgColor;
+                    document.getElementById('textColorHex').textContent = format.textColor;
+                    document.getElementById('bgColorHex').textContent = format.bgColor;
+                    document.getElementById('boldBtn').classList.toggle('active', format.bold);
+                    document.getElementById('italicBtn').classList.toggle('active', format.italic);
+                    document.getElementById('underlineBtn').classList.toggle('active', format.underline);
+                    document.getElementById('strikethroughBtn').classList.toggle('active', format.strikethrough);
+                    document.getElementById('lineHeight').value = format.lineHeight;
+                    document.getElementById('letterSpacing').value = format.letterSpacing;
+                    
+                    document.querySelectorAll('.align-btn').forEach(b => {
+                        b.classList.remove('active');
+                        if (b.id === 'align' + format.align.charAt(0).toUpperCase() + format.align.slice(1)) {
+                            b.classList.add('active');
+                        }
+                    });
+                    
+                    currentFormat = { ...format };
+                }
+            }
+        });
+    }
+    
+    function updateSelectedTextBox() {
+        if (selectedTextBox === null) return;
+        
+        const boxes = textBoxes[currentPage - 1];
+        if (!boxes || !boxes[selectedTextBox]) return;
+        
+        const el = document.querySelector(`.editable-text[data-index="${selectedTextBox}"]`);
+        if (el) {
+            applyFormatting(el, currentFormat);
+        }
+        
+        boxes[selectedTextBox].format = { ...currentFormat };
+    }
+    
+    function saveTextBoxContent(index, el) {
+        const boxes = textBoxes[currentPage - 1];
+        if (!boxes[index]) return;
+        
+        boxes[index].text = el.textContent;
+        
+        if (el.textContent === 'Click to edit...') {
+            el.style.color = '#999';
+        } else {
+            el.style.color = boxes[index].format?.textColor || currentFormat.textColor;
+        }
+    }
+    
+    function addNewTextBox() {
+        const boxes = textBoxes[currentPage - 1] || [];
+        const newBox = {
+            x: 50,
+            y: 50,
+            width: 200,
+            height: 30,
+            text: '',
+            format: { ...currentFormat }
+        };
+        
+        boxes.push(newBox);
+        textBoxes[currentPage - 1] = boxes;
+        
+        renderTextBoxes();
+        
+        // Focus the new text box
+        setTimeout(() => {
+            const lastEl = textOverlay.querySelector(`[data-index="${boxes.length - 1}"]`);
+            if (lastEl) {
+                lastEl.focus();
+                selectTextBox(boxes.length - 1);
+            }
+        }, 100);
+    }
+    
+    async function savePdf() {
+        showLoading('Saving PDF...');
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('textBoxes', JSON.stringify(textBoxes));
+            
+            const response = await fetch('/Pdf/SaveEditedPdf', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.downloadUrl) {
+                window.location.href = result.downloadUrl;
+            } else {
+                alert(result.message || 'Failed to save PDF');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error saving PDF: ' + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+    
+    function showLoading(message) {
+        loadingMessage.textContent = message;
+        loadingOverlay.classList.remove('d-none');
+    }
+    
+    function hideLoading() {
+        loadingOverlay.classList.add('d-none');
+    }
+    
+    function resetState() {
+        currentFile = null;
+        pages = [];
+        textBoxes = [];
+        selectedTextBox = null;
+        currentPage = 1;
+        fileInput.value = '';
+        
+        uploadState.classList.remove('d-none');
+        editorState.classList.add('d-none');
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key.toLowerCase()) {
+                case 'b':
+                    e.preventDefault();
+                    document.getElementById('boldBtn').click();
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    document.getElementById('italicBtn').click();
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    document.getElementById('underlineBtn').click();
+                    break;
+            }
         }
     });
 })();

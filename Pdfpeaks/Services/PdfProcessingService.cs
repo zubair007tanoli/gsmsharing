@@ -800,6 +800,173 @@ public class PdfProcessingService
     }
 
     /// <summary>
+    /// Get text elements from a PDF page using PdfPig
+    /// </summary>
+    public List<PdfTextElement> GetTextElements(string inputFile, int pageNumberOneBased)
+    {
+        var elements = new List<PdfTextElement>();
+        
+        try
+        {
+            if (!File.Exists(inputFile))
+                return elements;
+            
+            using var document = UglyToad.PdfPig.PdfDocument.Open(inputFile);
+            int pageIndex = pageNumberOneBased - 1;
+            
+            if (pageIndex < 0 || pageIndex >= document.NumberOfPages)
+                return elements;
+            
+            var page = document.GetPage(pageIndex + 1);
+            var text = page.Text;
+            
+            // Return basic text element with page text
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                elements.Add(new PdfTextElement
+                {
+                    Text = text,
+                    X = 0,
+                    Y = 0,
+                    Width = 0,
+                    Height = 0,
+                    FontFamily = "Arial",
+                    FontSize = 12,
+                    IsBold = false,
+                    IsItalic = false
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting text elements");
+        }
+        
+        return elements;
+    }
+
+    /// <summary>
+    /// Save edited PDF with text boxes at specified positions
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> SaveEditedPdfAsync(
+        string inputFile, List<TextBoxPosition>? textBoxes, string outputFileName)
+    {
+        try
+        {
+            if (!File.Exists(inputFile))
+                return (false, "", "Input file not found.");
+
+            using var inputDocument = PdfReader.Open(inputFile);
+            
+            if (textBoxes != null && textBoxes.Count > 0)
+            {
+                // Group text boxes by page
+                var boxesByPage = textBoxes
+                    .Where(b => b.Page >= 1 && b.Page <= inputDocument.Pages.Count)
+                    .GroupBy(b => b.Page - 1);
+                
+                foreach (var pageGroup in boxesByPage)
+                {
+                    var pageIndex = pageGroup.Key;
+                    var page = inputDocument.Pages[pageIndex];
+                    
+                    using var gfx = XGraphics.FromPdfPage(page, XGraphicsPdfPageOptions.Append);
+                    
+                    foreach (var box in pageGroup)
+                    {
+                        if (string.IsNullOrWhiteSpace(box.Text))
+                            continue;
+                        
+                        // Create font with specified attributes
+                        var fontStyle = XFontStyle.Regular;
+                        if (box.Bold && box.Italic)
+                            fontStyle = XFontStyle.BoldItalic;
+                        else if (box.Bold)
+                            fontStyle = XFontStyle.Bold;
+                        else if (box.Italic)
+                            fontStyle = XFontStyle.Italic;
+                        
+                        try
+                        {
+                            var font = new XFont(box.FontFamily, box.FontSize, fontStyle);
+                            
+                            // Parse colors
+                            var textColor = XColor.FromArgb(System.Drawing.ColorTranslator.FromHtml(box.TextColor).ToArgb());
+                            var bgColor = XColor.FromArgb(System.Drawing.ColorTranslator.FromHtml(box.BgColor).ToArgb());
+                            
+                            // Draw background
+                            if (box.BgColor != "#ffffff" && box.BgColor != "transparent")
+                            {
+                                gfx.DrawRectangle(new XSolidBrush(bgColor), box.X, box.Y, box.Width, box.Height);
+                            }
+                            
+                            // Draw text with underline or strikethrough if needed
+                            var brush = new XSolidBrush(textColor);
+                            
+                            // Calculate text alignment
+                            var textSize = gfx.MeasureString(box.Text, font);
+                            double xPos = box.X;
+                            
+                            switch (box.Align.ToLower())
+                            {
+                                case "center":
+                                    xPos = box.X + (box.Width - textSize.Width) / 2;
+                                    break;
+                                case "right":
+                                    xPos = box.X + box.Width - textSize.Width;
+                                    break;
+                            }
+                            
+                            // Draw the text
+                            gfx.DrawString(box.Text, font, brush, xPos, box.Y + box.FontSize);
+                            
+                            // Draw underline
+                            if (box.Underline)
+                            {
+                                var underlineY = box.Y + box.FontSize + 2;
+                                gfx.DrawLine(new XPen(textColor, 1), box.X, underlineY, box.X + box.Width, underlineY);
+                            }
+                            
+                            // Draw strikethrough
+                            if (box.Strikethrough)
+                            {
+                                var strikeY = box.Y + box.FontSize / 2;
+                                gfx.DrawLine(new XPen(textColor, 1), box.X, strikeY, box.X + box.Width, strikeY);
+                            }
+                        }
+                        catch (Exception fontEx)
+                        {
+                            _logger.LogWarning(fontEx, "Could not create font {Font}, using default", box.FontFamily);
+                            // Fallback to default font
+                            var font = new XFont("Arial", box.FontSize, XFontStyle.Regular);
+                            var textColor = XBrushes.Black;
+                            
+                            if (box.BgColor != "#ffffff" && box.BgColor != "transparent")
+                            {
+                                var bgColor = XColor.FromArgb(System.Drawing.ColorTranslator.FromHtml(box.BgColor).ToArgb());
+                                gfx.DrawRectangle(new XSolidBrush(bgColor), box.X, box.Y, box.Width, box.Height);
+                            }
+                            
+                            gfx.DrawString(box.Text, font, textColor, box.X, box.Y + box.FontSize);
+                        }
+                    }
+                }
+            }
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            inputDocument.Save(outputPath);
+            
+            var textBoxCount = textBoxes?.Count ?? 0;
+            return (true, outputPath, $"PDF saved successfully with {textBoxCount} text box(es).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving edited PDF");
+            return (false, "", ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Get PDF page count
     /// </summary>
     public int GetPageCount(string inputFile)

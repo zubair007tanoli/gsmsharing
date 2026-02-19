@@ -453,6 +453,40 @@ public class ImageController : Controller
         }
     }
 
+    /// <summary>
+    /// Convert uploaded image to PDF (for editor)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ConvertToPdf(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "img2pdf");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName("enhanced.pdf", "img2pdf");
+
+            var (success, outputPath, resultMessage) = await _imageProcessingService.ConvertToPdfAsync(
+                filePath, outputFileName);
+
+            return Json(new { 
+                success, 
+                message = resultMessage,
+                downloadUrl = success ? $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting image to PDF");
+            return Json(new { success = false, message = "An error occurred during conversion." });
+        }
+    }
+
     [HttpGet]
     public IActionResult FromPdf()
     {
