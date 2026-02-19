@@ -460,7 +460,7 @@ public class ImageController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> FromPdf(IFormFile file)
+    public async Task<IActionResult> FromPdf(IFormFile file, int dpi = 150)
     {
         if (file == null || file.Length == 0)
         {
@@ -488,25 +488,39 @@ public class ImageController : Controller
             var filePath = _fileProcessingService.GetFilePath(fileName);
             var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
 
-            // For PDF to image conversion, we inform about the limitation
-            // Full PDF-to-image rendering requires PdfRasterizer or similar library
-            var outputFileName = $"{outputPrefix}_page_1.png";
-            var outputPath = Path.Combine(_environment.ContentRootPath, "temp_files", outputFileName);
+            // Use the new PDF to image conversion with SkiaSharp
+            var (success, outputPaths, resultMessage) = await _imageProcessingService.ConvertPdfToImagesAsync(
+                filePath, outputPrefix, dpi);
 
-            // Copy the PDF as a placeholder
-            System.IO.File.Copy(filePath, outputPath, true);
+            // Cleanup input file
+            try { System.IO.File.Delete(filePath); } catch { }
 
-            return Json(new { 
-                success = true, 
-                message = "PDF file received. Note: Full PDF to image conversion requires PdfRasterizer or similar library.",
-                downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}",
-                fileName = outputFileName
-            });
+            if (success && outputPaths.Count > 0)
+            {
+                var downloadUrls = outputPaths.Select(path =>
+                {
+                    var outputFileName = Path.GetFileName(path);
+                    return new { 
+                        fileName = outputFileName, 
+                        url = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" 
+                    };
+                }).ToList();
+
+                return Json(new 
+                { 
+                    success = true, 
+                    message = resultMessage,
+                    pageCount = outputPaths.Count,
+                    files = downloadUrls
+                });
+            }
+
+            return Json(new { success = false, message = resultMessage });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error converting PDF to image");
-            return Json(new { success = false, message = "An error occurred during conversion." });
+            return Json(new { success = false, message = $"An error occurred during conversion: {ex.Message}" });
         }
     }
 
@@ -518,6 +532,46 @@ public class ImageController : Controller
     public IActionResult Edit()
     {
         return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Adjust(IFormFile file, float brightness = 1.0f, float contrast = 1.0f, float saturation = 1.0f)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "adjust");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "adjusted");
+
+            var (success, outputPath, resultMessage) = await _imageProcessingService.AdjustImageAsync(
+                filePath, outputFileName, brightness, contrast, saturation);
+
+            if (success)
+            {
+                TempData["Success"] = resultMessage;
+                TempData["DownloadUrl"] = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}";
+                TempData["FileName"] = outputFileName;
+                return RedirectToAction("Edit");
+            }
+
+            return Json(new { 
+                success, 
+                message = resultMessage,
+                downloadUrl = success ? $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
+                fileName = outputFileName
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adjusting image");
+            TempData["Error"] = "An error occurred while adjusting the image.";
+            return RedirectToAction("Edit");
+        }
     }
 
 

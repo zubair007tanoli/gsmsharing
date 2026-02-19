@@ -18,15 +18,16 @@
                 <div class="col-lg-4">
                     <div class="card shadow-sm mb-4">
                         <div class="card-body">
-                            <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-4 text-center bg-light">
+                            <div id="dropZone" class="drop-zone border-2 border-dashed rounded-4 p-4 text-center bg-light" style="position: relative;">
                                 <div class="mb-3">
                                     <i class="bi bi-cloud-upload display-4 text-primary"></i>
                                 </div>
                                 <h5 class="mb-2">Drop your image here</h5>
                                 <p class="text-muted mb-3">or</p>
-                                <button type="button" class="btn btn-primary" id="selectImageBtn">
+                                <label class="btn btn-primary" style="position: relative; z-index: 1; cursor: pointer;">
                                     <i class="bi bi-folder-plus"></i> Select Image
-                                </button>
+                                    <input type="file" id="fileInput" accept="image/*" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;">
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -356,17 +357,21 @@
                 }
             });
             
+            // File input change event
             fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
-                if (file) handleFile(file);
+                if (file && file.type.startsWith('image/')) {
+                    handleFile(file);
+                }
             });
             
-            const selectImageBtn = document.getElementById('selectImageBtn');
-            if (selectImageBtn) {
-                selectImageBtn.addEventListener('click', function() {
-                    fileInput.click();
-                });
-            }
+            // Prevent label click from triggering drop zone events
+            dropZone.querySelector('label')?.addEventListener('click', function(e) { e.stopPropagation(); });
+            
+            dropZone.addEventListener('click', function(e) {
+                if (e.target && (e.target.closest('label') || e.target.id === 'fileInput')) return;
+                fileInput.click();
+            });
             
             // Handle file
             function handleFile(file) {

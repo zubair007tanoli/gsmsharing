@@ -142,6 +142,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 // AI Services (Self-dependent - no external APIs)
 builder.Services.AddSingleton<DocumentAnalysisService>();
+builder.Services.AddScoped<AIService>();
 
 // Caching Services
 builder.Services.AddSingleton<RedisCacheService>();

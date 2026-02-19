@@ -1,15 +1,538 @@
 @{
     ViewData["Title"] = "Edit Image - Adjust Image Settings";
 }
-<div class="tool-page" style="padding: 2rem 0;">
-    <div class="container">
-        <div class="tool-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">Edit Image</h1>
-            <p class="tool-description" style="color: var(--text-light);">Adjust brightness, contrast, saturation, and more</p>
-        </div>
-        <div class="upload-zone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: #667eea; margin-bottom: 1rem;"></i>
-            <p>Drag & drop your image here</p>
+
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-success">
+                    <i class="bi bi-pencil-square"></i> Edit Image
+                </h1>
+                <p class="lead text-muted">Adjust brightness, contrast, saturation, and more with live preview</p>
+            </div>
+
+            <div class="row">
+                <!-- Upload + Controls -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div id="editDropZone" class="drop-zone border-2 border-dashed rounded-4 p-4 text-center bg-light" style="position: relative;">
+                                <div class="mb-3">
+                                    <i class="bi bi-cloud-upload display-4 text-success"></i>
+                                </div>
+                                <h5 class="mb-2">Drop your image here</h5>
+                                <p class="text-muted mb-3">or</p>
+                                <label class="btn btn-success" style="position: relative; z-index: 1; cursor: pointer;">
+                                    <i class="bi bi-folder-plus"></i> Select Image
+                                    <input type="file" id="editFileInput" accept="image/*" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;">
+                                </label>
+                                <small class="d-block text-muted mt-2">Supports: JPG, PNG, GIF, BMP, WebP</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Controls -->
+                    <div id="editControls" class="card shadow-sm mb-4 d-none">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-sliders"></i> Image Adjustments</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Brightness -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Brightness</label>
+                                    <span class="badge bg-success" id="brightnessValue">100%</span>
+                                </div>
+                                <input type="range" id="brightnessSlider" class="form-range" min="0" max="200" value="100">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Dark</small>
+                                    <small class="text-muted">Light</small>
+                                </div>
+                            </div>
+
+                            <!-- Contrast -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Contrast</label>
+                                    <span class="badge bg-success" id="contrastValue">100%</span>
+                                </div>
+                                <input type="range" id="contrastSlider" class="form-range" min="0" max="200" value="100">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Low</small>
+                                    <small class="text-muted">High</small>
+                                </div>
+                            </div>
+
+                            <!-- Saturation -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Saturation</label>
+                                    <span class="badge bg-success" id="saturationValue">100%</span>
+                                </div>
+                                <input type="range" id="saturationSlider" class="form-range" min="0" max="200" value="100">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Grayscale</small>
+                                    <small class="text-muted">Vibrant</small>
+                                </div>
+                            </div>
+
+                            <!-- Hue -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Hue Rotate</label>
+                                    <span class="badge bg-success" id="hueValue">0°</span>
+                                </div>
+                                <input type="range" id="hueSlider" class="form-range" min="0" max="360" value="0">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">0°</small>
+                                    <small class="text-muted">360°</small>
+                                </div>
+                            </div>
+
+                            <!-- Blur -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Blur</label>
+                                    <span class="badge bg-success" id="blurValue">0px</span>
+                                </div>
+                                <input type="range" id="blurSlider" class="form-range" min="0" max="20" value="0">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Sharp</small>
+                                    <small class="text-muted">Blurry</small>
+                                </div>
+                            </div>
+
+                            <!-- Opacity -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Opacity</label>
+                                    <span class="badge bg-success" id="opacityValue">100%</span>
+                                </div>
+                                <input type="range" id="opacitySlider" class="form-range" min="0" max="100" value="100">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Transparent</small>
+                                    <small class="text-muted">Opaque</small>
+                                </div>
+                            </div>
+
+                            <!-- Sepia -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sepiaCheck">
+                                    <label class="form-check-label fw-bold" for="sepiaCheck">
+                                        Sepia Effect
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Grayscale -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="grayscaleCheck">
+                                    <label class="form-check-label fw-bold" for="grayscaleCheck">
+                                        Grayscale
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Invert -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="invertCheck">
+                                    <label class="form-check-label fw-bold" for="invertCheck">
+                                        Invert Colors
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <button id="resetBtn" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </button>
+                            <button id="applyBtn" class="btn btn-success" disabled>
+                                <i class="bi bi-check-circle"></i> Apply Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="col-lg-8">
+                    <div id="editPreviewContainer" class="card shadow-sm d-none">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-eye"></i> Live Preview</h5>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary active" id="previewFit">
+                                    <i class="bi bi-fullscreen"></i> Fit
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="preview100">
+                                    <i class="bi bi-zoom-in"></i> 100%
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body bg-dark">
+                            <div id="editImagePreview" class="position-relative d-flex justify-content-center align-items-center" style="min-height: 400px;">
+                                <img id="previewImage" src="" alt="Preview" class="img-fluid" style="max-height: 400px; object-fit: contain;">
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Original</small>
+                                    <strong id="originalInfo">-</strong>
+                                </div>
+                                <div class="col-4">
+                                    <i class="bi bi-arrow-right text-success"></i>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted d-block">Modified</small>
+                                    <strong id="modifiedInfo">-</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="editEmptyPreview" class="card shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-image display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">No image selected</h4>
+                            <p class="text-muted">Upload an image to adjust brightness, contrast, and more</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Result -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-check-circle-fill text-success display-1"></i>
+                        </div>
+                        <h3 class="card-title">@TempData["Success"]</h3>
+                        <p class="text-muted">@TempData["Info"]</p>
+                        
+                        @if (TempData["DownloadUrl"] != null)
+                        {
+                            <div class="my-4">
+                                <img src="@TempData["DownloadUrl"]" alt="Edited Image Preview" class="img-fluid preview-image" style="max-height: 400px; border: 2px solid #dee2e6; border-radius: 4px;"/>
+                            </div>
+                        }
+                        
+                        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+                            <a href="@TempData["DownloadUrl"]" class="btn btn-success btn-lg">
+                                <i class="bi bi-download"></i> Download Edited Image
+                            </a>
+                            <button type="button" class="btn btn-outline-primary btn-lg" onclick="showShareModal('Edited Image', '@TempData["DownloadUrl"]', 'Check out my edited image from PdfPeaks!')">
+                                <i class="bi bi-share"></i> Share
+                            </button>
+                            <a asp-action="Edit" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-repeat"></i> Edit Another
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Error Alert -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
         </div>
     </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="editLoadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-container">
+        <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-3 text-white">Applying changes...</h4>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .drop-zone {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone:hover {
+            background-color: #e8f5e9 !important;
+            border-color: #198754 !important;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-overlay .spinner-container {
+            text-align: center;
+        }
+        
+        .form-range::-webkit-slider-thumb {
+            background: #198754;
+        }
+        
+        .form-range::-moz-range-thumb {
+            background: #198754;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('editDropZone');
+            const fileInput = document.getElementById('editFileInput');
+            const editControls = document.getElementById('editControls');
+            const previewContainer = document.getElementById('editPreviewContainer');
+            const emptyPreview = document.getElementById('editEmptyPreview');
+            const previewImage = document.getElementById('previewImage');
+            const applyBtn = document.getElementById('applyBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const loadingOverlay = document.getElementById('editLoadingOverlay');
+            
+            // Sliders
+            const brightnessSlider = document.getElementById('brightnessSlider');
+            const contrastSlider = document.getElementById('contrastSlider');
+            const saturationSlider = document.getElementById('saturationSlider');
+            const hueSlider = document.getElementById('hueSlider');
+            const blurSlider = document.getElementById('blurSlider');
+            const opacitySlider = document.getElementById('opacitySlider');
+            
+            // Value displays
+            const brightnessValue = document.getElementById('brightnessValue');
+            const contrastValue = document.getElementById('contrastValue');
+            const saturationValue = document.getElementById('saturationValue');
+            const hueValue = document.getElementById('hueValue');
+            const blurValue = document.getElementById('blurValue');
+            const opacityValue = document.getElementById('opacityValue');
+            
+            // Checkboxes
+            const sepiaCheck = document.getElementById('sepiaCheck');
+            const grayscaleCheck = document.getElementById('grayscaleCheck');
+            const invertCheck = document.getElementById('invertCheck');
+            
+            let currentFile = null;
+            let originalImageSrc = null;
+            
+            // Drop zone events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('bg-success', 'text-white');
+            });
+            
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-success', 'text-white');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-success', 'text-white');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+            
+            // Prevent label click from triggering drop zone events
+            dropZone.querySelector('label')?.addEventListener('click', function(e) { e.stopPropagation(); });
+            
+            dropZone.addEventListener('click', function(e) {
+                if (e.target && (e.target.closest('label') || e.target.id === 'editFileInput')) return;
+                fileInput.click();
+            });
+            
+            function handleFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file.');
+                    return;
+                }
+                
+                currentFile = file;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImageSrc = e.target.result;
+                    previewImage.src = originalImageSrc;
+                    
+                    // Show controls and preview
+                    editControls.classList.remove('d-none');
+                    previewContainer.classList.remove('d-none');
+                    emptyPreview.classList.add('d-none');
+                    applyBtn.disabled = false;
+                    
+                    // Update info
+                    document.getElementById('originalInfo').textContent = formatFileSize(file.size);
+                    document.getElementById('modifiedInfo').textContent = 'Not applied';
+                    
+                    // Reset sliders
+                    resetSliders();
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Update CSS filters for live preview
+            function updatePreview() {
+                const brightness = brightnessSlider.value;
+                const contrast = contrastSlider.value;
+                const saturation = saturationSlider.value;
+                const hue = hueSlider.value;
+                const blur = blurSlider.value;
+                const opacity = opacitySlider.value;
+                
+                // Update value displays
+                brightnessValue.textContent = brightness + '%';
+                contrastValue.textContent = contrast + '%';
+                saturationValue.textContent = saturation + '%';
+                hueValue.textContent = hue + '°';
+                blurValue.textContent = blur + 'px';
+                opacityValue.textContent = opacity + '%';
+                
+                // Build CSS filter string
+                let filters = [];
+                filters.push(`brightness(${brightness}%)`);
+                filters.push(`contrast(${contrast}%)`);
+                filters.push(`saturate(${saturation}%)`);
+                filters.push(`hue-rotate(${hue}deg)`);
+                filters.push(`blur(${blur}px)`);
+                filters.push(`opacity(${opacity}%)`);
+                
+                if (sepiaCheck.checked) filters.push('sepia(100%)');
+                if (grayscaleCheck.checked) filters.push('grayscale(100%)');
+                if (invertCheck.checked) filters.push('invert(100%)');
+                
+                previewImage.style.filter = filters.join(' ');
+                document.getElementById('modifiedInfo').textContent = 'Preview';
+            }
+            
+            // Add event listeners to all controls
+            [brightnessSlider, contrastSlider, saturationSlider, hueSlider, blurSlider, opacitySlider].forEach(slider => {
+                slider.addEventListener('input', updatePreview);
+            });
+            
+            [sepiaCheck, grayscaleCheck, invertCheck].forEach(check => {
+                check.addEventListener('change', updatePreview);
+            });
+            
+            // Reset button
+            resetBtn.addEventListener('click', () => {
+                resetSliders();
+                updatePreview();
+            });
+            
+            function resetSliders() {
+                brightnessSlider.value = 100;
+                contrastSlider.value = 100;
+                saturationSlider.value = 100;
+                hueSlider.value = 0;
+                blurSlider.value = 0;
+                opacitySlider.value = 100;
+                sepiaCheck.checked = false;
+                grayscaleCheck.checked = false;
+                invertCheck.checked = false;
+            }
+            
+            // Apply button - send to server
+            applyBtn.addEventListener('click', async () => {
+                if (!currentFile) return;
+                
+                loadingOverlay.classList.remove('d-none');
+                
+                try {
+                    // Calculate the actual values to send to server
+                    const brightness = parseFloat(brightnessSlider.value) / 100; // Convert to 0-2 range
+                    const contrast = parseFloat(contrastSlider.value) / 100;
+                    const saturation = parseFloat(saturationSlider.value) / 100;
+                    
+                    const formData = new FormData();
+                    formData.append('file', currentFile);
+                    formData.append('brightness', brightness);
+                    formData.append('contrast', contrast);
+                    formData.append('saturation', saturation);
+                    
+                    const response = await fetch('/Image/Adjust', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    loadingOverlay.classList.add('d-none');
+                    
+                    if (result.success && result.downloadUrl) {
+                        // Redirect to the edit page with result params
+                        const params = new URLSearchParams({
+                            success: 'Image adjusted successfully!',
+                            downloadUrl: result.downloadUrl,
+                            fileName: result.fileName
+                        });
+                        window.location.href = '/Image/Edit?' + params.toString();
+                    } else {
+                        alert(result.message || 'Failed to apply changes.');
+                    }
+                } catch (error) {
+                    loadingOverlay.classList.add('d-none');
+                    console.error(error);
+                    alert('An error occurred while applying changes.');
+                }
+            });
+            
+            // Preview zoom buttons
+            document.getElementById('previewFit').addEventListener('click', function() {
+                previewImage.style.maxHeight = '400px';
+                previewImage.style.width = 'auto';
+                this.classList.add('active');
+                document.getElementById('preview100').classList.remove('active');
+            });
+            
+            document.getElementById('preview100').addEventListener('click', function() {
+                previewImage.style.maxHeight = 'none';
+                previewImage.style.width = '100%';
+                this.classList.add('active');
+                document.getElementById('previewFit').classList.remove('active');
+            });
+        });
+    </script>
+}

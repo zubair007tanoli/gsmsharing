@@ -1,0 +1,274 @@
+@{
+    ViewData["Title"] = "AI Document Analysis";
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-robot text-primary"></i> AI Document Analysis
+            </h1>
+        </div>
+    </div>
+
+    <!-- AI Service Status -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-server"></i> Service Status</h5>
+                </div>
+                <div class="card-body">
+                    <div id="aiStatus">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Checking AI services...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Quick Info</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Local AI:</strong> Free, runs entirely on server</li>
+                        <li><strong>Remote AI:</strong> Advanced features via Python microservice</li>
+                        <li><strong>Supported:</strong> PDF documents</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-upload"></i> Upload Document for Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="documentFile" class="form-label">Select PDF Document</label>
+                            <input type="file" class="form-control" id="documentFile" name="file" accept=".pdf" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="analysisType" class="form-label">Analysis Type</label>
+                            <select class="form-select" id="analysisType" name="analysisType">
+                                <option value="full">Full Analysis (All Features)</option>
+                                <option value="summarize">Summarize</option>
+                                <option value="classify">Classify Document</option>
+                                <option value="keywords">Extract Keywords</option>
+                                <option value="sentiment">Sentiment Analysis</option>
+                                <option value="entities">Extract Entities</option>
+                                <option value="complexity">Complexity Analysis</option>
+                                <option value="language">Language Detection</option>
+                                <option value="qa">Question & Answer</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="questionGroup" style="display: none;">
+                            <label for="question" class="form-label">Your Question</label>
+                            <input type="text" class="form-control" id="question" name="question" placeholder="Ask a question about the document...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Processing Mode</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="aiMode" id="localMode" value="local" checked>
+                                <label class="form-check-label" for="localMode">
+                                    <strong>Local AI</strong> - Free, no external API needed
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="aiMode" id="remoteMode" value="remote">
+                                <label class="form-check-label" for="remoteMode">
+                                    <strong>Remote AI</strong> - Advanced features (requires Python microservice)
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-brain"></i> Analyze Document
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row" id="resultsSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> Analysis Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="resultsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="row mt-4" id="loadingIndicator" style="display: none;">
+        <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Analyzing...</span>
+            </div>
+            <p class="mt-2">Analyzing document with AI...</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Check AI service status on page load
+        $(document).ready(function() {
+            checkAIStatus();
+            
+            // Show/hide question input based on analysis type
+            $('#analysisType').change(function() {
+                if ($(this).val() === 'qa') {
+                    $('#questionGroup').slideDown();
+                } else {
+                    $('#questionGroup').slideUp();
+                }
+            });
+        });
+
+        async function checkAIStatus() {
+            try {
+                const response = await fetch('/api/ai/health');
+                const data = await response.json();
+                
+                let statusHtml = '<ul class="list-unstyled mb-0">';
+                statusHtml += `<li><span class="badge bg-success">Local AI:</span> ${data.localAi}</li>`;
+                statusHtml += `<li><span class="badge bg-${data.remoteAi === 'available' ? 'success' : 'warning'}">Remote AI:</span> ${data.remoteAi}</li>`;
+                statusHtml += '</ul>';
+                
+                $('#aiStatus').html(statusHtml);
+            } catch (error) {
+                $('#aiStatus').html('<span class="text-danger">Unable to check AI status</span>');
+            }
+        }
+
+        // Handle form submission
+        $('#uploadForm').submit(async function(e) {
+            e.preventDefault();
+            
+            const file = $('#documentFile')[0].files[0];
+            const analysisType = $('#analysisType').val();
+            const aiMode = $('input[name="aiMode"]:checked').val();
+            const question = $('#question').val();
+            
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+
+            // Show loading
+            $('#loadingIndicator').show();
+            $('#resultsSection').hide();
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('analysisType', analysisType);
+            if (question) {
+                formData.append('question', question);
+            }
+
+            try {
+                const endpoint = aiMode === 'local' 
+                    ? '/api/ai/local/' + (analysisType === 'qa' ? 'qa' : 'analyze')
+                    : '/api/ai/remote/' + (analysisType === 'qa' ? 'qa' : 'process');
+                    
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                $('#loadingIndicator').hide();
+                $('#resultsSection').show();
+                
+                if (result.success) {
+                    displayResults(result.data, analysisType);
+                } else {
+                    $('#resultsContent').html(`<div class="alert alert-danger">${result.message || 'Analysis failed'}</div>`);
+                }
+            } catch (error) {
+                $('#loadingIndicator').hide();
+                $('#resultsSection').show();
+                $('#resultsContent').html(`<div class="alert alert-danger">Error: ${error.message}</div>`);
+            }
+        });
+
+        function displayResults(data, type) {
+            let html = '';
+            
+            if (type === 'full' || type === 'summarize') {
+                html += createSection('Summary', data.summary?.summary || data.summary, '📝');
+            }
+            
+            if (type === 'full' || type === 'classify') {
+                html += createSection('Classification', 
+                    `${data.classification?.category} (${(data.classification?.confidence * 100).toFixed(1)}%)`, '🏷️');
+            }
+            
+            if (type === 'full' || type === 'keywords') {
+                const keywords = data.keywords?.map(k => `${k.word} (${k.frequency})`).join(', ') || '';
+                html += createSection('Keywords', keywords, '🔑');
+            }
+            
+            if (type === 'full' || type === 'sentiment') {
+                html += createSection('Sentiment', 
+                    `${data.sentiment?.label} (${data.sentiment?.score.toFixed(2)})`, '😊');
+            }
+            
+            if (type === 'full' || type === 'entities') {
+                html += createSection('Entities', 
+                    `Emails: ${data.entities?.emails?.length || 0}, Phones: ${data.entities?.phones?.length || 0}`, '🔍');
+            }
+            
+            if (type === 'full' || type === 'complexity') {
+                html += createSection('Complexity', 
+                    `${data.complexity?.difficulty} - Grade ${data.complexity?.gradeLevel?.toFixed(1)}`, '📊');
+            }
+            
+            if (type === 'full' || type === 'language') {
+                html += createSection('Language', data.language?.language, '🌍');
+            }
+
+            if (type === 'qa') {
+                html += createSection('Answer', data.answer, '❓');
+            }
+
+            if (data.extraction) {
+                html += createSection('Document Info', 
+                    `Pages: ${data.extraction.totalPages}, Words: ${data.extraction.wordCount}`, '📄');
+            }
+
+            $('#resultsContent').html(html || '<p>No results to display</p>');
+        }
+
+        function createSection(title, content, icon) {
+            if (!content) return '';
+            return `
+                <div class="mb-4">
+                    <h5>${icon} ${title}</h5>
+                    <p class="mb-0">${content}</p>
+                </div>
+                <hr>
+            `;
+        }
+    </script>
+}

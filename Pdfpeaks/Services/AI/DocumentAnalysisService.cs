@@ -541,3 +541,17 @@ public class EntityResult
     public List<string> URLs { get; set; } = new();
     public List<string> IPAddresses { get; set; } = new();
 }
+
+/// <summary>
+/// Result model for text extraction
+/// </summary>
+public class ExtractionResult
+{
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string FullText { get; set; } = string.Empty;
+    public Dictionary<int, string> PageTexts { get; set; } = new();
+    public int TotalPages { get; set; }
+    public int WordCount { get; set; }
+    public int CharCount { get; set; }
+}
