@@ -591,7 +591,7 @@ public class ImageController : Controller
                 TempData["Success"] = resultMessage;
                 TempData["DownloadUrl"] = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}";
                 TempData["FileName"] = outputFileName;
-                return RedirectToAction("Edit");
+                return RedirectToAction("Edit", new { filePath = outputFileName });
             }
 
             return Json(new { 
@@ -605,6 +605,12 @@ public class ImageController : Controller
         {
             _logger.LogError(ex, "Error adjusting image");
             TempData["Error"] = "An error occurred while adjusting the image.";
+            // Redirect to edit with the original uploaded file if available
+            if (file != null && file.Length > 0)
+            {
+                var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "adjust_error");
+                return RedirectToAction("Edit", new { filePath = fileName });
+            }
             return RedirectToAction("Edit");
         }
     }

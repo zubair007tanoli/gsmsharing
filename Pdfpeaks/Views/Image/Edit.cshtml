@@ -209,10 +209,13 @@
         position: relative;
         background: white;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        overflow: visible;
+        display: inline-block;
     }
     
     #ieCanvas {
         display: block;
+        background-color: #FFFFFF;
     }
     
     .ie-status {
@@ -470,8 +473,8 @@
             </div>
             
             <div class="ie-canvas-main" id="ieCanvasMain">
-                <div class="ie-canvas-wrap" id="ieCanvasWrap">
-                    <canvas id="ieCanvas"></canvas>
+                <div class="ie-canvas-wrap" id="ieCanvasWrap" style="">
+                    <canvas id="ieCanvas" width="800" height="600" style="display: block;"></canvas>
                     <div class="ie-crop-overlay" id="ieCropOverlay" style="display:none">
                         <div class="ie-crop-box" id="ieCropBox"></div>
                     </div>
@@ -523,7 +526,9 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     editor.classList.add('ie-hidden');
     
     // If initial file path provided, load it
-    if (initialFilePath && initialFilePath.length > 0 && initialFilePath !== 'null') {
+    console.log('Initial file path:', initialFilePath);
+    if (initialFilePath && initialFilePath.length > 0 && initialFilePath !== 'null' && initialFilePath !== '') {
+        console.log('Will try to load image from:', initialFilePath);
         // Check if it's a full URL or just a filename
         if (initialFilePath.startsWith('http') || initialFilePath.startsWith('/')) {
             loadImageFromPath(initialFilePath);
@@ -531,33 +536,76 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
             // It's a filename - use the GetFile endpoint
             loadImageFromPath('/Image/GetFile?fileName=' + encodeURIComponent(initialFilePath));
         }
+    } else {
+        console.log('No initial file path provided, showing upload zone');
     }
     
     // Load image from server path
     function loadImageFromPath(filePath) {
+        console.log('Loading image from path:', filePath);
         const img = new Image();
+        
         img.onload = () => {
+            console.log('Image loaded successfully:', img.width, 'x', img.height);
+            console.log('Image naturalWidth:', img.naturalWidth, 'naturalHeight:', img.naturalHeight);
+            
             originalImg = img;
+            
+            // Set canvas dimensions
             canvas.width = img.width;
             canvas.height = img.height;
             canvasWrap.style.width = img.width + 'px';
             canvasWrap.style.height = img.height + 'px';
             
+            console.log('Canvas dimensions set:', canvas.width, 'x', canvas.height);
+            
             const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('Failed to get canvas context');
+                return;
+            }
+            
+            // Clear and fill with white background
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the image
             ctx.drawImage(img, 0, 0);
+            
+            // Force canvas to have white background via inline style
+            canvas.style.backgroundColor = '#FFFFFF';
+            canvas.style.display = 'block';
+            
+            // Reset transform on canvas wrap
+            canvasWrap.style.transform = 'scale(1)';
+            canvasWrap.style.transformOrigin = 'top left';
+            
+            // Verify the image was drawn - check center pixel
+            const centerPixel = ctx.getImageData(Math.floor(canvas.width/2), Math.floor(canvas.height/2), 1, 1).data;
+            console.log('Center pixel (should have color):', centerPixel);
+            
+            // Show success message
+            alert('Image loaded from server! ' + img.width + 'x' + img.height + ' pixels');
             
             adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
             resetSliders();
             
             uploadZone.classList.add('ie-hidden');
             editor.classList.remove('ie-hidden');
-            
+
             imageInfo.textContent = img.width + ' x ' + img.height + ' px';
             saveState();
-            fitToScreen();
+
+            // Fit to container after layout recalculates (use requestAnimationFrame)
+            requestAnimationFrame(() => {
+                fitToScreen();
+            });
+
+            console.log('Image drawn on canvas successfully');
         };
-        img.onerror = () => {
-            console.error('Failed to load image from path:', filePath);
+        img.onerror = (err) => {
+            console.error('Failed to load image from path:', filePath, err);
             // Show upload zone as fallback
             uploadZone.classList.remove('ie-hidden');
             editor.classList.add('ie-hidden');
@@ -684,10 +732,13 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     });
     
     function loadFile(file) {
+        console.log('Loading file:', file.name, file.size);
         const reader = new FileReader();
         reader.onload = e => {
+            console.log('FileReader loaded, creating image...');
             const img = new Image();
             img.onload = () => {
+                console.log('Image loaded from file:', img.width, 'x', img.height);
                 originalImg = img;
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -695,19 +746,59 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
                 canvasWrap.style.height = img.height + 'px';
                 
                 const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    console.error('Failed to get canvas context');
+                    return;
+                }
+                
+                // Clear and fill with white background
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw the image
                 ctx.drawImage(img, 0, 0);
+                
+                // Force canvas to have white background via inline style
+                canvas.style.backgroundColor = '#FFFFFF';
+                canvas.style.display = 'block';
+                
+                // Reset transform on canvas wrap
+                canvasWrap.style.transform = 'scale(1)';
+                canvasWrap.style.transformOrigin = 'top left';
+                
+                // Verify image was drawn - check center pixel for white
+                const centerPixel = ctx.getImageData(Math.floor(canvas.width/2), Math.floor(canvas.height/2), 1, 1).data;
+                console.log('Center pixel after drawing:', centerPixel);
+                
+                // Show success message
+                alert('Image loaded successfully! ' + img.width + 'x' + img.height + ' pixels');
                 
                 adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
                 resetSliders();
                 
                 uploadZone.classList.add('ie-hidden');
                 editor.classList.remove('ie-hidden');
-                
+
                 imageInfo.textContent = img.width + ' x ' + img.height + ' px';
                 saveState();
-                fitToScreen();
+
+                // Fit to container after layout recalculates (use requestAnimationFrame)
+                requestAnimationFrame(() => {
+                    fitToScreen();
+                });
+
+                console.log('File loaded and drawn successfully');
+            };
+            img.onerror = (err) => {
+                console.error('Failed to load image from file:', err);
+                alert('Failed to load image file');
             };
             img.src = e.target.result;
+        };
+        reader.onerror = (err) => {
+            console.error('FileReader error:', err);
+            alert('Failed to read file');
         };
         reader.readAsDataURL(file);
     }
@@ -828,22 +919,51 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
         if (!originalImg) return;
         saveState();
         const ctx = canvas.getContext('2d');
+        // Clear and fill with white background
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(originalImg, 0, 0);
         adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
         resetSliders();
     }
     
     function setZoom(z) {
+        // Clamp zoom between 10% and 500%
         zoom = Math.max(0.1, Math.min(5, z));
         document.getElementById('ieZoomLevel').textContent = Math.round(zoom*100) + '%';
+        
+        // Apply zoom as scale transform on the canvas wrap
+        // Use translate to keep it centered when zooming
         canvasWrap.style.transform = 'scale(' + zoom + ')';
         canvasWrap.style.transformOrigin = 'top left';
+        
+        console.log('Zoom set to:', zoom);
     }
     
     function fitToScreen() {
+        // Calculate zoom to fit canvas in container
+        if (canvas.width === 0 || canvas.height === 0) {
+            console.log('Canvas has no dimensions yet');
+            return;
+        }
         const cw = canvasMain.clientWidth - 40;
         const ch = canvasMain.clientHeight - 40;
-        setZoom(Math.min(cw/canvas.width, ch/canvas.height, 1));
+
+        // Ensure container has valid dimensions before calculating zoom
+        if (cw <= 0 || ch <= 0) {
+            console.log('Canvas container has no valid dimensions yet, retrying...');
+            requestAnimationFrame(fitToScreen);
+            return;
+        }
+
+        const newZoom = Math.min(cw/canvas.width, ch/canvas.height, 1);
+        console.log('Fitting to screen:', cw, 'x', ch, 'canvas:', canvas.width, 'x', canvas.height, 'zoom:', newZoom);
+        setZoom(newZoom);
+    }
+    
+    function resetZoom() {
+        setZoom(1);
     }
     
     // Document enhancements
@@ -959,23 +1079,48 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     
     // Export
     async function exportPdf() {
-        const fd = new FormData();
-        fd.append('file', canvasToBlob());
-        const res = await fetch('/Image/ConvertToPdf', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.success && data.downloadUrl) window.location.href = data.downloadUrl;
-        else alert(data.message || 'Failed');
+        try {
+            const fd = new FormData();
+            const blob = await canvasToBlob();
+            fd.append('file', blob, 'image.png');
+            
+            const res = await fetch('/Image/ConvertToPdf', { method: 'POST', body: fd });
+            const data = await res.json();
+            
+            if (data.success && data.downloadUrl) {
+                window.location.href = data.downloadUrl;
+            } else {
+                // Fallback: create PDF client-side using canvas data
+                console.log('Server conversion failed, using fallback:', data.message);
+                // For now, alert the user
+                alert(data.message || 'Failed to export PDF. The server may be busy.');
+            }
+        } catch (err) {
+            console.error('Export PDF error:', err);
+            alert('Error exporting PDF: ' + err.message);
+        }
     }
     
-    function exportJpg() {
-        const link = document.createElement('a');
-        link.download = 'edited_image.jpg';
-        link.href = canvas.toDataURL('image/jpeg', 0.95);
-        link.click();
+    async function exportJpg() {
+        try {
+            // Direct client-side export (faster)
+            const link = document.createElement('a');
+            link.download = 'edited_image.jpg';
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        } catch (err) {
+            console.error('Export JPG error:', err);
+            alert('Error exporting JPG: ' + err.message);
+        }
     }
     
     function canvasToBlob() {
-        return new Promise(r => canvas.toBlob(b => r(new File([b], 'img.png')), 'image/png'));
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(blob => {
+                if (blob) resolve(blob);
+                else reject(new Error('Failed to create blob from canvas'));
+            }, 'image/png');
+        });
     }
 })();
 </script>
