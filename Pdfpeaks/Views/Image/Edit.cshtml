@@ -518,9 +518,19 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     let adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
     let drawColor = '#000000';
     
+    // Ensure upload zone is visible by default
+    uploadZone.classList.remove('ie-hidden');
+    editor.classList.add('ie-hidden');
+    
     // If initial file path provided, load it
-    if (initialFilePath && initialFilePath.length > 0) {
-        loadImageFromPath(initialFilePath);
+    if (initialFilePath && initialFilePath.length > 0 && initialFilePath !== 'null') {
+        // Check if it's a full URL or just a filename
+        if (initialFilePath.startsWith('http') || initialFilePath.startsWith('/')) {
+            loadImageFromPath(initialFilePath);
+        } else {
+            // It's a filename - use the GetFile endpoint
+            loadImageFromPath('/Image/GetFile?fileName=' + encodeURIComponent(initialFilePath));
+        }
     }
     
     // Load image from server path
@@ -551,6 +561,7 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
             // Show upload zone as fallback
             uploadZone.classList.remove('ie-hidden');
             editor.classList.add('ie-hidden');
+            imageInfo.textContent = 'Failed to load image. Please upload a new file.';
         };
         img.src = filePath;
     }

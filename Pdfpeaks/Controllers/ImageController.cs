@@ -699,6 +699,33 @@ public class ImageController : Controller
     }
 
     [HttpGet]
+    public IActionResult GetFile(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName))
+        {
+            return BadRequest(new { success = false, message = "No file specified." });
+        }
+
+        var filePath = _fileProcessingService.GetFilePath(fileName);
+        
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound(new { success = false, message = "File not found." });
+        }
+
+        try
+        {
+            var contentType = GetContentType(fileName);
+            return PhysicalFile(filePath, contentType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error serving file");
+            return StatusCode(500, new { success = false, message = "Error serving file." });
+        }
+    }
+
+    [HttpGet]
     public IActionResult ImageInfo(string fileName)
     {
         if (string.IsNullOrEmpty(fileName))
