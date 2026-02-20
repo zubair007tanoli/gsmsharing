@@ -487,6 +487,9 @@
 </div>
 
 <script>
+// Check if an initial file path was provided from server
+const initialFilePath = '@ViewData["InitialFilePath"]';
+
 (function() {
     // Elements
     const fileInput = document.getElementById('ieFileInput');
@@ -514,6 +517,43 @@
     // Adjustments
     let adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
     let drawColor = '#000000';
+    
+    // If initial file path provided, load it
+    if (initialFilePath && initialFilePath.length > 0) {
+        loadImageFromPath(initialFilePath);
+    }
+    
+    // Load image from server path
+    function loadImageFromPath(filePath) {
+        const img = new Image();
+        img.onload = () => {
+            originalImg = img;
+            canvas.width = img.width;
+            canvas.height = img.height;
+            canvasWrap.style.width = img.width + 'px';
+            canvasWrap.style.height = img.height + 'px';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
+            resetSliders();
+            
+            uploadZone.classList.add('ie-hidden');
+            editor.classList.remove('ie-hidden');
+            
+            imageInfo.textContent = img.width + ' x ' + img.height + ' px';
+            saveState();
+            fitToScreen();
+        };
+        img.onerror = () => {
+            console.error('Failed to load image from path:', filePath);
+            // Show upload zone as fallback
+            uploadZone.classList.remove('ie-hidden');
+            editor.classList.add('ie-hidden');
+        };
+        img.src = filePath;
+    }
     
     // Init
     dropArea.addEventListener('click', () => fileInput.click());

@@ -563,8 +563,9 @@ public class ImageController : Controller
     #region Filter and Effects
 
     [HttpGet]
-    public IActionResult Edit()
+    public IActionResult Edit(string? filePath)
     {
+        ViewData["InitialFilePath"] = filePath;
         return View();
     }
 
