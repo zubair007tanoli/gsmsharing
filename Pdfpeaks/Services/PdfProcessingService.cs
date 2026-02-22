@@ -93,21 +93,36 @@ public class PdfProcessingService
                 return (true, outputPath, "Word document converted to PDF successfully (formatting preserved).");
             }
 
-            _logger.LogWarning("LibreOffice conversion failed (exitCode={ExitCode}), falling back to basic conversion: {Error}", exitCode, stderr);
+            _logger.LogWarning("LibreOffice conversion failed (exitCode={ExitCode}, stderr={Stderr}), falling back to basic conversion", exitCode, stderr);
 
             // Fallback: Use DocumentFormat.OpenXml + QuestPDF for DOCX files
-            if (extension == ".docx")
+            try
             {
-                await ConvertDocxToPdfAsync(inputPath, outputPath);
-            }
-            else if (extension == ".doc")
-            {
-                // For legacy .doc files, use Xceed.Words.NET (free version)
-                await ConvertDocToPdfAsync(inputPath, outputPath);
-            }
+                if (extension == ".docx")
+                {
+                    await ConvertDocxToPdfAsync(inputPath, outputPath);
+                }
+                else if (extension == ".doc")
+                {
+                    // For legacy .doc files, use Xceed.Words.NET (free version)
+                    await ConvertDocToPdfAsync(inputPath, outputPath);
+                }
 
-            _logger.LogInformation("Word to PDF conversion successful (fallback): {OutputPath}", outputPath);
-            return (true, outputPath, "Word document converted to PDF successfully (basic formatting).");
+                if (File.Exists(outputPath))
+                {
+                    _logger.LogInformation("Word to PDF conversion successful (fallback): {OutputPath}", outputPath);
+                    return (true, outputPath, "Word document converted to PDF successfully (basic formatting).");
+                }
+                else
+                {
+                    return (false, outputPath, "Fallback conversion failed. Please try a different file or install LibreOffice for better results.");
+                }
+            }
+            catch (Exception fallbackEx)
+            {
+                _logger.LogError(fallbackEx, "Fallback Word to PDF conversion failed for {InputPath}", inputPath);
+                return (false, outputPath, $"Conversion failed: {fallbackEx.Message}. Please try a different file or install LibreOffice.");
+            }
         }
         catch (Exception ex)
         {
@@ -121,11 +136,19 @@ public class PdfProcessingService
     /// </summary>
     private async Task ConvertDocxToPdfAsync(string inputPath, string outputPath)
     {
-        // Configure QuestPDF license (free for open-source/commercial use under Community license)
-        QuestPDF.Settings.License = LicenseType.Community;
+        try
+        {
+            // Configure QuestPDF license (free for open-source/commercial use under Community license)
+            QuestPDF.Settings.License = LicenseType.Community;
 
-        // Extract content from DOCX
-        var documentContent = await ExtractDocxContentAsync(inputPath);
+            // Extract content from DOCX
+            var documentContent = await ExtractDocxContentAsync(inputPath);
+
+            // Check if we got any content
+            if (documentContent.Paragraphs.Count == 0)
+            {
+                throw new InvalidOperationException("No content found in the document.");
+            }
 
         // Define font families with fallback for missing glyphs
         var fontFamilies = new[] { "Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans", "sans-serif" };
@@ -166,6 +189,11 @@ public class PdfProcessingService
 
         // Save PDF to file
         pdfDocument.GeneratePdf(outputPath);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
     }
 
     /// <summary>

@@ -12,6 +12,7 @@ using PdfSharpCore.Drawing;
 using Pdfpeaks.Models;
 using SkiaSharp;
 using UglyToad.PdfPig;
+using System.Diagnostics;
 
 namespace Pdfpeaks.Services;
 
@@ -22,11 +23,24 @@ public class ImageProcessingService
 {
     private readonly ILogger<ImageProcessingService> _logger;
     private readonly string _tempFilePath;
+    private readonly string _scriptsPath;
+
+    // Standard paper sizes in points (72 pt = 1 inch) for PdfSharpCore
+    private static readonly Dictionary<string, (double W, double H)> PaperSizesPts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["a4"]     = (595.28, 841.89),
+        ["a3"]     = (841.89, 1190.55),
+        ["a5"]     = (419.53, 595.28),
+        ["letter"] = (612.0,  792.0),
+        ["legal"]  = (612.0,  1008.0),
+        ["auto"]   = (0, 0),   // determined from image
+    };
 
     public ImageProcessingService(ILogger<ImageProcessingService> logger, IWebHostEnvironment environment)
     {
         _logger = logger;
         _tempFilePath = Path.Combine(environment.ContentRootPath, "temp_files");
+        _scriptsPath = Path.Combine(environment.ContentRootPath, "scripts");
         
         if (!Directory.Exists(_tempFilePath))
         {
@@ -84,6 +98,35 @@ public class ImageProcessingService
             }
 
             using var image = await Image.LoadAsync(inputPath);
+            
+            // Validate and clamp crop coordinates to image bounds
+            var imageWidth = image.Width;
+            var imageHeight = image.Height;
+            
+            // Ensure x and y are within bounds
+            if (x < 0) x = 0;
+            if (y < 0) y = 0;
+            
+            // Ensure width and height are positive
+            if (width <= 0) width = 1;
+            if (height <= 0) height = 1;
+            
+            // Clamp crop area to not exceed image boundaries
+            if (x + width > imageWidth)
+            {
+                width = imageWidth - x;
+            }
+            if (y + height > imageHeight)
+            {
+                height = imageHeight - y;
+            }
+            
+            // Ensure we still have valid dimensions after clamping
+            if (width <= 0 || height <= 0)
+            {
+                return (false, "", "Invalid crop dimensions. Crop area exceeds image boundaries.");
+            }
+            
             var rectangle = new Rectangle(x, y, width, height);
             
             image.Mutate(ctx => ctx.Crop(rectangle));
@@ -206,10 +249,10 @@ public class ImageProcessingService
     }
 
     /// <summary>
-    /// Convert image to PDF
+    /// Convert image to PDF with optional paper size
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertToPdfAsync(
-        string inputPath, string outputFileName)
+        string inputPath, string outputFileName, string paperSize = "auto")
     {
         try
         {
@@ -218,58 +261,57 @@ public class ImageProcessingService
                 return (false, "", "Input file not found.");
             }
 
-            // Load the image using the current SixLabors.ImageSharp API
-            Image<Rgba32> image;
-            try
+            using var image = await Image.LoadAsync(inputPath);
+
+            var document = new PdfSharpCore.Pdf.PdfDocument();
+            document.Info.Title = Path.GetFileNameWithoutExtension(inputPath);
+
+            var page = document.AddPage();
+
+            if (paperSize.Equals("auto", StringComparison.OrdinalIgnoreCase) ||
+                !PaperSizesPts.TryGetValue(paperSize, out var ps) || ps.W == 0)
             {
-                image = await Image.LoadAsync<Rgba32>(inputPath);
+                // Size page to match image at 96 DPI
+                double dpiX = image.Metadata.HorizontalResolution > 0 ? image.Metadata.HorizontalResolution : 96;
+                double dpiY = image.Metadata.VerticalResolution  > 0 ? image.Metadata.VerticalResolution  : 96;
+                page.Width  = image.Width  * 72.0 / dpiX;
+                page.Height = image.Height * 72.0 / dpiY;
             }
-            catch
+            else
             {
-                // Fallback: try synchronous load
-                image = Image.Load<Rgba32>(inputPath);
+                // Use standard paper — rotate if image is landscape
+                if (image.Width > image.Height)
+                { page.Width = ps.H; page.Height = ps.W; }
+                else
+                { page.Width = ps.W; page.Height = ps.H; }
             }
 
-            using (image)
-            {
-                // Create a new PDF document using PdfSharpCore
-                var document = new PdfSharpCore.Pdf.PdfDocument();
-                document.Info.Title = Path.GetFileNameWithoutExtension(inputPath);
-                
-                // Create a page with the same aspect ratio as the image
-                var page = document.AddPage();
-                
-                // Set page size to match image dimensions (in points). 1 inch = 72 points.
-                double dpiX = image.Metadata.HorizontalResolution > 0 ? image.Metadata.HorizontalResolution : 72;
-                double dpiY = image.Metadata.VerticalResolution > 0 ? image.Metadata.VerticalResolution : 72;
-                double imageWidth = image.Width * 72.0 / dpiX;
-                double imageHeight = image.Height * 72.0 / dpiY;
-                
-                page.Width = imageWidth;
-                page.Height = imageHeight;
-                
-                // Create XGraphics object for drawing
-                using var gfx = XGraphics.FromPdfPage(page);
-                
-                // Save image to a temporary file in a format PDF can use
-                var tempImagePath = Path.Combine(_tempFilePath, $"temp_{Guid.NewGuid():N}.png");
-                await image.SaveAsync(tempImagePath, new PngEncoder());
-                
-                // Load the image into XImage
-                using var xImage = XImage.FromFile(tempImagePath);
-                
-                // Draw the image on the PDF page
-                gfx.DrawImage(xImage, 0, 0, imageWidth, imageHeight);
-                
-                // Clean up temp image
-                try { File.Delete(tempImagePath); } catch { }
-                
-                var outputPath = Path.Combine(_tempFilePath, outputFileName);
-                document.Save(outputPath);
-                
-                _logger.LogInformation("Image converted to PDF: {Input} -> {Output}", inputPath, outputPath);
-                return (true, outputPath, "Successfully converted image to PDF.");
-            }
+            using var gfx = XGraphics.FromPdfPage(page);
+
+            var tempImg = Path.Combine(_tempFilePath, $"tmp_{Guid.NewGuid():N}.png");
+            await image.SaveAsync(tempImg, new PngEncoder());
+
+            using var xImg = XImage.FromFile(tempImg);
+
+            // Fit image inside page with margins (8 pt each side)
+            const double margin = 8;
+            double maxW = page.Width  - margin * 2;
+            double maxH = page.Height - margin * 2;
+            double scale = Math.Min(maxW / xImg.PixelWidth, maxH / xImg.PixelHeight);
+            double drawW = xImg.PixelWidth  * scale;
+            double drawH = xImg.PixelHeight * scale;
+            double drawX = margin + (maxW - drawW) / 2;
+            double drawY = margin + (maxH - drawH) / 2;
+
+            gfx.DrawImage(xImg, drawX, drawY, drawW, drawH);
+
+            try { File.Delete(tempImg); } catch { }
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            document.Save(outputPath);
+
+            _logger.LogInformation("Image converted to PDF: {Input} -> {Output}", inputPath, outputPath);
+            return (true, outputPath, "Successfully converted image to PDF.");
         }
         catch (Exception ex)
         {
@@ -668,10 +710,269 @@ public class ImageProcessingService
         return new ProcessResult(success, path, message);
     }
 
+    // -----------------------------------------------------------------------
+    // Convert MULTIPLE images to a single PDF (one page per image)
+    // -----------------------------------------------------------------------
     public async Task<ProcessResult> ImagesToPdfAsync(string[] inputPaths, string outputFileName, PdfPageSize pageSize)
-        => new ProcessResult(false, "", "Multiple image to PDF not implemented.");
+    {
+        try
+        {
+            if (inputPaths == null || inputPaths.Length == 0)
+                return new ProcessResult(false, "", "No input files provided.");
+
+            var paperKey = pageSize switch
+            {
+                PdfPageSize.A4     => "a4",
+                PdfPageSize.A3     => "a3",
+                PdfPageSize.Letter => "letter",
+                PdfPageSize.Legal  => "legal",
+                _                  => "auto"
+            };
+
+            var document = new PdfSharpCore.Pdf.PdfDocument();
+
+            foreach (var inputPath in inputPaths)
+            {
+                if (!File.Exists(inputPath)) continue;
+
+                using var image = await Image.LoadAsync(inputPath);
+                var page = document.AddPage();
+
+                if (paperKey == "auto" || !PaperSizesPts.TryGetValue(paperKey, out var ps) || ps.W == 0)
+                {
+                    double dpiX = image.Metadata.HorizontalResolution > 0 ? image.Metadata.HorizontalResolution : 96;
+                    double dpiY = image.Metadata.VerticalResolution  > 0 ? image.Metadata.VerticalResolution  : 96;
+                    page.Width  = image.Width  * 72.0 / dpiX;
+                    page.Height = image.Height * 72.0 / dpiY;
+                }
+                else
+                {
+                    if (image.Width > image.Height)
+                    { page.Width = ps.H; page.Height = ps.W; }
+                    else
+                    { page.Width = ps.W; page.Height = ps.H; }
+                }
+
+                using var gfx = XGraphics.FromPdfPage(page);
+                var tempImg = Path.Combine(_tempFilePath, $"tmp_{Guid.NewGuid():N}.png");
+                await image.SaveAsync(tempImg, new PngEncoder());
+                using var xImg = XImage.FromFile(tempImg);
+
+                const double margin = 8;
+                double maxW = page.Width  - margin * 2;
+                double maxH = page.Height - margin * 2;
+                double scale = Math.Min(maxW / xImg.PixelWidth, maxH / xImg.PixelHeight);
+                double drawW = xImg.PixelWidth  * scale;
+                double drawH = xImg.PixelHeight * scale;
+                gfx.DrawImage(xImg, margin + (maxW - drawW) / 2, margin + (maxH - drawH) / 2, drawW, drawH);
+
+                try { File.Delete(tempImg); } catch { }
+            }
+
+            if (document.PageCount == 0)
+                return new ProcessResult(false, "", "No valid images were processed.");
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            document.Save(outputPath);
+
+            return new ProcessResult(true, outputPath,
+                $"Successfully created PDF with {document.PageCount} page(s).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating multi-image PDF");
+            return new ProcessResult(false, "", $"Error: {ex.Message}");
+        }
+    }
 
     public async Task<ProcessResult> ConvertMultipleImagesToPdfAsync(string[] paths, string outputFileName)
-        => new ProcessResult(false, "", "Not implemented.");
+        => await ImagesToPdfAsync(paths, outputFileName, PdfPageSize.Auto);
+
+    /// <summary>
+    /// AI-powered document image enhancement using Python OpenCV
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> EnhanceImageWithAIAsync(string inputPath, string outputFileName, string mode = "document")
+    {
+        try
+        {
+            if (!File.Exists(inputPath))
+            {
+                return (false, "", "Input file not found.");
+            }
+
+            // Determine Python executable
+            var pythonExe = Environment.OSVersion.Platform == PlatformID.Win32NT ? "python" : "python3";
+            
+            // Get the script path
+            var scriptPath = Path.Combine(_scriptsPath, "image_enhancer.py");
+            
+            // For non-Windows, check alternative path
+            if (!File.Exists(scriptPath) && Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "image_enhancer.py");
+            }
+
+            if (!File.Exists(scriptPath))
+            {
+                _logger.LogWarning("Python script not found at {Path}, falling back to C# enhancement", scriptPath);
+                return await EnhanceImageLocalAsync(inputPath, outputFileName, mode);
+            }
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            
+            // Build the arguments
+            var arguments = $"\"{scriptPath}\" \"{inputPath}\" \"{outputPath}\" --mode {mode} --operation full";
+
+            _logger.LogInformation("Running AI enhancement: {Python} {Args}", pythonExe, arguments);
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = pythonExe,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process == null)
+            {
+                return (false, "", "Failed to start Python process.");
+            }
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            
+            await process.WaitForExitAsync();
+
+            _logger.LogInformation("AI Enhancement output: {Output}", output);
+            
+            if (!string.IsNullOrEmpty(error))
+            {
+                _logger.LogWarning("AI Enhancement errors: {Error}", error);
+            }
+
+            if (process.ExitCode != 0 || !File.Exists(outputPath))
+            {
+                _logger.LogWarning("AI enhancement failed, falling back to C#: {Error}", error);
+                return await EnhanceImageLocalAsync(inputPath, outputFileName, mode);
+            }
+
+            _logger.LogInformation("Image enhanced with AI: {Input} -> {Output}", inputPath, outputPath);
+            return (true, outputPath, "Image enhanced successfully with AI.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in AI enhancement, falling back to C#");
+            return await EnhanceImageLocalAsync(inputPath, outputFileName, mode);
+        }
+    }
+
+    /// <summary>
+    /// Local C# fallback enhancement when Python is not available
+    /// </summary>
+    private async Task<(bool success, string outputPath, string message)> EnhanceImageLocalAsync(string inputPath, string outputFileName, string mode)
+    {
+        try
+        {
+            if (!File.Exists(inputPath))
+            {
+                return (false, "", "Input file not found.");
+            }
+
+            using var image = await Image.LoadAsync(inputPath);
+
+            if (mode == "document")
+            {
+                // Document mode: enhance text clarity
+                image.Mutate(ctx => ctx
+                    .Grayscale()
+                    .Contrast(1.3f)
+                    .Brightness(1.1f));
+                
+                // Apply sharpening
+                image.Mutate(ctx => ctx.GaussianSharpen(1.5f));
+            }
+            else
+            {
+                // Picture mode: enhance colors
+                image.Mutate(ctx => ctx
+                    .Contrast(1.2f)
+                    .Saturate(1.1f)
+                    .Brightness(1.05f));
+                    
+                image.Mutate(ctx => ctx.GaussianSharpen(1.0f));
+            }
+
+            var outputPath = Path.Combine(_tempFilePath, outputFileName);
+            await image.SaveAsync(outputPath);
+
+            _logger.LogInformation("Image enhanced locally: {Input} -> {Output}", inputPath, outputPath);
+            return (true, outputPath, "Image enhanced successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enhancing image locally");
+            return (false, "", $"Error enhancing image: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Auto-straighten image using skew detection
+    /// </summary>
+    public async Task<(bool success, string outputPath, string message)> StraightenImageAsync(string inputPath, string outputFileName)
+    {
+        try
+        {
+            if (!File.Exists(inputPath))
+            {
+                return (false, "", "Input file not found.");
+            }
+
+            // Try Python first
+            var pythonExe = Environment.OSVersion.Platform == PlatformID.Win32NT ? "python" : "python3";
+            var scriptPath = Path.Combine(_scriptsPath, "image_enhancer.py");
+            
+            if (!File.Exists(scriptPath) && Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "image_enhancer.py");
+            }
+
+            if (File.Exists(scriptPath))
+            {
+                var outputPath = Path.Combine(_tempFilePath, outputFileName);
+                var arguments = $"\"{scriptPath}\" \"{inputPath}\" \"{outputPath}\" --operation deskew";
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = pythonExe,
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var process = Process.Start(startInfo);
+                if (process != null)
+                {
+                    await process.WaitForExitAsync();
+                    if (process.ExitCode == 0 && File.Exists(outputPath))
+                    {
+                        return (true, outputPath, "Image straightened successfully.");
+                    }
+                }
+            }
+
+            // Fallback to C# rotation
+            return await RotateImageAsync(inputPath, outputFileName, 0);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error straightening image");
+            return (false, "", $"Error straightening image: {ex.Message}");
+        }
+    }
 }
 

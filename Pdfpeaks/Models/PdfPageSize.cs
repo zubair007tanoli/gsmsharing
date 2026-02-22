@@ -5,8 +5,12 @@ namespace Pdfpeaks.Models
     /// </summary>
     public enum PdfPageSize
     {
-        MatchImage,
-        A4,
-        Letter
+        Auto = 0,
+        MatchImage = 1,
+        A4 = 2,
+        A3 = 3,
+        A5 = 4,
+        Letter = 5,
+        Legal = 6
     }
 }

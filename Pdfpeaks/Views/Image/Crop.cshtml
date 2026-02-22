@@ -126,9 +126,9 @@
                         </div>
                         <div class="card-body bg-dark" style="min-height: 500px;">
                             <div id="cropPreviewContainer" class="position-relative d-flex justify-content-center align-items-center" style="overflow: hidden;">
-                                <img id="sourceImage" class="img-fluid" src="" alt="Preview">
-                                <div id="cropOverlay" class="crop-overlay">
-                                    <div id="cropRectangle" class="crop-rectangle">
+                                <img id="sourceImage" class="img-fluid" src="" alt="Preview" style="pointer-events: none; z-index: 1;">
+                                <div id="cropOverlay" class="crop-overlay" style="pointer-events: none;">
+                                    <div id="cropRectangle" class="crop-rectangle" style="pointer-events: auto;">
                                         <div class="resize-handle nw"></div>
                                         <div class="resize-handle ne"></div>
                                         <div class="resize-handle sw"></div>
@@ -404,6 +404,12 @@
             function initCropRectangle() {
                 const ratio = aspectRatios[aspectRatio.value];
                 
+                // Ensure crop overlay matches image dimensions
+                const containerWidth = sourceImage.clientWidth;
+                const containerHeight = sourceImage.clientHeight;
+                cropOverlay.style.width = containerWidth + 'px';
+                cropOverlay.style.height = containerHeight + 'px';
+                
                 if (ratio !== null) {
                     // Calculate based on aspect ratio
                     if (originalWidth / originalHeight > ratio) {
@@ -477,6 +483,26 @@
                 e.preventDefault();
             });
             
+            // Touch events for mobile support
+            cropRectangle.addEventListener('touchstart', function(e) {
+                const touch = e.touches[0];
+                if (e.target.classList.contains('resize-handle')) {
+                    isResizing = true;
+                    resizeHandle = e.target.className.split(' ')[1];
+                } else {
+                    isDragging = true;
+                }
+                
+                startX = touch.clientX;
+                startY = touch.clientY;
+                startW = cropW;
+                startH = cropH;
+                startCX = cropX;
+                startCY = cropY;
+                
+                e.preventDefault();
+            }, { passive: false });
+            
             document.addEventListener('mousemove', function(e) {
                 if (!isDragging && !isResizing) return;
                 
@@ -485,6 +511,38 @@
                 const dx = (e.clientX - startX) * scaleX;
                 const dy = (e.clientY - startY) * scaleY;
                 
+                handleCropInteraction(dx, dy);
+            });
+            
+            // Touch move for mobile
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging && !isResizing) return;
+                
+                const touch = e.touches[0];
+                const scaleX = cropW / cropRectangle.offsetWidth;
+                const scaleY = cropH / cropRectangle.offsetHeight;
+                const dx = (touch.clientX - startX) * scaleX;
+                const dy = (touch.clientY - startY) * scaleY;
+                
+                handleCropInteraction(dx, dy);
+                
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                isResizing = false;
+                resizeHandle = null;
+            });
+            
+            document.addEventListener('touchend', function() {
+                isDragging = false;
+                isResizing = false;
+                resizeHandle = null;
+            });
+            
+            // Handle crop interaction logic
+            function handleCropInteraction(dx, dy) {
                 if (isDragging) {
                     cropX = Math.max(0, Math.min(originalWidth - cropW, startCX + dx));
                     cropY = Math.max(0, Math.min(originalHeight - cropH, startCY + dy));
@@ -530,13 +588,7 @@
                 }
                 
                 updateCropRectangleUI();
-            });
-            
-            document.addEventListener('mouseup', function() {
-                isDragging = false;
-                isResizing = false;
-                resizeHandle = null;
-            });
+            }
             
             // Aspect ratio change
             aspectRatio.addEventListener('change', function() {
@@ -641,6 +693,9 @@
             // Handle window resize
             window.addEventListener('resize', function() {
                 if (originalImage) {
+                    // Update overlay dimensions
+                    cropOverlay.style.width = sourceImage.clientWidth + 'px';
+                    cropOverlay.style.height = sourceImage.clientHeight + 'px';
                     updateCropRectangleUI();
                 }
             });

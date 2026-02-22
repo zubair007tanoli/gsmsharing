@@ -212,6 +212,14 @@
         pageSelectorGrid.innerHTML = '';
         selectedPages.clear();
         
+        // If pages is not provided, generate from pageCount
+        if (!pages || !Array.isArray(pages)) {
+            pages = [];
+            for (let i = 1; i <= pageCount; i++) {
+                pages.push({ pageNumber: i, hasThumbnail: false, thumbnail: null });
+            }
+        }
+        
         pages.forEach(page => {
             const pageItem = document.createElement('div');
             pageItem.className = 'page-item selected';
@@ -298,7 +306,28 @@
                 resultMessage.textContent = result.message;
                 downloadLinksContainer.innerHTML = '';
 
-                if (result.downloadUrl) {
+                if (result.files && result.files.length > 0) {
+                    if (result.files.length === 1) {
+                        // Single file download
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.href = result.files[0].url;
+                        downloadBtn.className = 'btn btn-success btn-lg w-100';
+                        downloadBtn.innerHTML = '<i class="fas fa-download me-2"></i> Download Image';
+                        downloadBtn.download = result.files[0].fileName;
+                        downloadLinksContainer.appendChild(downloadBtn);
+                    } else {
+                        // Multiple files - list each file with individual download link
+                        result.files.forEach((file, index) => {
+                            const downloadBtn = document.createElement('a');
+                            downloadBtn.href = file.url;
+                            downloadBtn.className = 'btn btn-outline-primary btn-sm w-100 mb-2';
+                            downloadBtn.innerHTML = `<i class="fas fa-download me-2"></i> Download Page ${index + 1}`;
+                            downloadBtn.download = file.fileName;
+                            downloadLinksContainer.appendChild(downloadBtn);
+                        });
+                    }
+                } else if (result.downloadUrl) {
+                    // Fallback for single download URL
                     const downloadBtn = document.createElement('a');
                     downloadBtn.href = result.downloadUrl;
                     downloadBtn.className = 'btn btn-success btn-lg w-100';

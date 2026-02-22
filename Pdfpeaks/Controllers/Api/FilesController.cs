@@ -727,14 +727,22 @@ public class FilesController : ControllerBase
         [FromForm] string fileName,
         [FromForm] string outputFileName = "converted.pdf")
     {
-        var filePath = _fileProcessingService.GetFilePath(fileName);
-        if (!System.IO.File.Exists(filePath))
-            return NotFound(new { success = false, message = "File not found." });
+        try
+        {
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            if (!System.IO.File.Exists(filePath))
+                return NotFound(new { success = false, message = "File not found." });
 
-        var (success, outputPath, message) =
-            await _pdfProcessingService.ConvertWordToPdfAsync(filePath, outputFileName);
+            var (success, outputPath, message) =
+                await _pdfProcessingService.ConvertWordToPdfAsync(filePath, outputFileName);
 
-        return ResultResponse(success, outputPath, message);
+            return ResultResponse(success, outputPath, message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting Word to PDF: {FileName}", fileName);
+            return StatusCode(500, new { success = false, message = $"Error converting Word to PDF: {ex.Message}" });
+        }
     }
 
     /// <summary>Convert a PDF to a Word document.</summary>

@@ -1,0 +1,1290 @@
+@{
+    ViewData["Title"] = "Image Editor – Document & Photo Enhancement";
+}
+
+<style>
+/* ── Layout ─────────────────────────────────────────────────── */
+.ie-container {
+    display: flex;
+    height: calc(100vh - 200px);
+    min-height: 540px;
+    background: #f0f0f0;
+}
+
+/* ── Left toolbar ────────────────────────────────────────────── */
+.ie-toolbar {
+    width: 270px;
+    background: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ie-toolbar-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.ie-toolbar-title {
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: .5px;
+    margin-bottom: 9px;
+}
+
+/* Mode toggle */
+.ie-mode-buttons { display: flex; gap: 8px; }
+
+.ie-mode-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: 2px solid #ddd;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+}
+.ie-mode-btn:hover { border-color: #0d6efd; }
+.ie-mode-btn.active { border-color: #0d6efd; background: #e7f1ff; color: #0d6efd; }
+.ie-mode-btn i   { font-size: 22px; display: block; margin-bottom: 4px; }
+.ie-mode-btn span { font-size: 11px; font-weight: 600; }
+
+/* Scan mode banner */
+.ie-scan-banner {
+    background: linear-gradient(135deg,#0d6efd,#6610f2);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+.ie-scan-banner strong { display: block; font-size: 13px; margin-bottom: 3px; }
+
+/* Paper size selector */
+.ie-paper-select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 10px;
+    background: #fafafa;
+}
+.ie-paper-select:focus { outline: none; border-color: #0d6efd; }
+
+/* Doc action buttons */
+.ie-doc-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    transition: all .15s;
+}
+.ie-doc-btn:hover { background: #f0f4ff; border-color: #0d6efd; }
+.ie-doc-btn i { color: #0d6efd; width: 18px; text-align: center; }
+.ie-doc-btn.primary-action {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+    font-weight: 600;
+}
+.ie-doc-btn.primary-action i { color: #fff; }
+.ie-doc-btn.primary-action:hover { background: #0b5ed7; }
+
+/* Sliders */
+.ie-slider-group { margin-bottom: 13px; }
+.ie-slider-label { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+.ie-slider-value { color: #0d6efd; font-weight: 700; }
+.ie-slider { width: 100%; }
+
+/* Tool buttons (icon row) */
+.ie-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 38px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 2px;
+    font-size: 15px;
+    transition: all .15s;
+    title: attr(title);
+}
+.ie-tool-btn:hover { background: #f0f0f0; }
+.ie-tool-btn.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+
+/* Export buttons */
+.ie-export-btns { padding: 14px; border-top: 1px solid #eee; margin-top: auto; }
+.ie-export-btn {
+    width: 100%;
+    padding: 11px;
+    margin-bottom: 7px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+.ie-export-btn.pdf  { background: #dc3545; color: #fff; }
+.ie-export-btn.jpg  { background: #0d6efd; color: #fff; }
+.ie-export-btn.scan-pdf { background: #198754; color: #fff; }
+.ie-export-btn:hover { opacity: .9; }
+
+/* ── Canvas area ─────────────────────────────────────────────── */
+.ie-canvas-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.ie-canvas-header {
+    padding: 8px 14px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.ie-canvas-tool {
+    padding: 6px 13px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all .15s;
+}
+.ie-canvas-tool:hover { background: #f5f5f5; }
+.ie-canvas-tool:disabled { opacity: .45; cursor: not-allowed; }
+.ie-canvas-tools { display: flex; gap: 6px; }
+
+.ie-zoom-btns { display: flex; align-items: center; gap: 8px; }
+.ie-zoom-btn {
+    width: 28px; height: 28px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.ie-zoom-level { min-width: 48px; text-align: center; font-size: 12px; font-weight: 600; }
+
+.ie-canvas-main {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background: #e9ecef;
+}
+
+.ie-canvas-wrap {
+    position: relative;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.25);
+    display: inline-block;
+    transform-origin: top left;
+}
+
+#ieCanvas { display: block; background: #fff; }
+
+.ie-status {
+    padding: 6px 14px;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    font-size: 11px;
+    color: #777;
+    display: flex;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+/* ── Upload zone ─────────────────────────────────────────────── */
+.ie-upload-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 200px);
+    min-height: 400px;
+}
+.ie-upload-area {
+    width: 420px;
+    padding: 55px 40px;
+    border: 3px dashed #ccc;
+    border-radius: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+}
+.ie-upload-area:hover { border-color: #0d6efd; background: #f8f9fa; }
+.ie-upload-area i { font-size: 56px; color: #0d6efd; margin-bottom: 16px; }
+.ie-upload-area h3 { margin-bottom: 8px; }
+
+/* Crop overlay */
+.ie-crop-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+}
+.ie-crop-box {
+    position: absolute;
+    border: 2px dashed #0d6efd;
+    background: rgba(13,110,253,.12);
+    pointer-events: auto;
+    cursor: crosshair;
+    box-sizing: border-box;
+}
+/* Crop handles */
+.ie-crop-handle {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: #0d6efd;
+    border: 2px solid #fff;
+    border-radius: 2px;
+}
+.ie-crop-handle.tl { top: -5px; left: -5px; cursor: nw-resize; }
+.ie-crop-handle.tr { top: -5px; right: -5px; cursor: ne-resize; }
+.ie-crop-handle.bl { bottom: -5px; left: -5px; cursor: sw-resize; }
+.ie-crop-handle.br { bottom: -5px; right: -5px; cursor: se-resize; }
+
+/* Crop apply bar */
+.ie-crop-bar {
+    position: absolute;
+    bottom: -36px;
+    left: 0;
+    display: flex;
+    gap: 6px;
+    pointer-events: auto;
+}
+.ie-crop-apply, .ie-crop-cancel {
+    padding: 5px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ie-crop-apply  { background: #0d6efd; color: #fff; }
+.ie-crop-cancel { background: #dc3545; color: #fff; }
+
+/* Toast notification */
+.ie-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #333;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .3s;
+    max-width: 340px;
+}
+.ie-toast.show { opacity: 1; transform: translateY(0); }
+.ie-toast.success { background: #198754; }
+.ie-toast.error   { background: #dc3545; }
+.ie-toast.warning { background: #fd7e14; }
+
+.ie-hidden { display: none !important; }
+
+/* Scan corners overlay */
+.ie-corner-dot {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #0d6efd;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    transform: translate(-50%,-50%);
+    cursor: move;
+    z-index: 10;
+}
+</style>
+
+<div class="container-fluid py-3">
+    <h2 class="text-center mb-3">📄 Image Editor &amp; Document Scanner</h2>
+
+    <input type="file" id="ieFileInput" accept="image/*" style="display:none">
+
+    <!-- Upload Zone -->
+    <div id="ieUploadZone" class="ie-upload-zone">
+        <div class="ie-upload-area" id="ieDropArea">
+            <i class="bi bi-cloud-upload"></i>
+            <h3>Drop your photo here</h3>
+            <p class="text-muted">or click to browse files</p>
+            <small class="text-muted">JPG, PNG, GIF, BMP, WebP — mobile photos welcome!</small>
+        </div>
+    </div>
+
+    <!-- Editor -->
+    <div id="ieEditor" class="ie-container ie-hidden">
+        <!-- ══ Left Toolbar ══════════════════════════════════ -->
+        <div class="ie-toolbar">
+
+            <!-- Mode -->
+            <div class="ie-toolbar-section">
+                <div class="ie-toolbar-title">Mode</div>
+                <div class="ie-mode-buttons">
+                    <div class="ie-mode-btn active" id="ieDocMode">
+                        <i class="bi bi-file-text"></i>
+                        <span>Document</span>
+                    </div>
+                    <div class="ie-mode-btn" id="iePicMode">
+                        <i class="bi bi-image"></i>
+                        <span>Photo</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Document Tools ─── -->
+            <div class="ie-toolbar-section" id="ieDocTools">
+
+                <div class="ie-scan-banner">
+                    <strong><i class="bi bi-camera2"></i> CamScanner Mode</strong>
+                    Auto-detects document edges &amp; corrects perspective
+                </div>
+
+                <!-- Paper size -->
+                <div class="ie-slider-label" style="margin-bottom:6px;">
+                    <span style="font-size:12px;font-weight:600;">Paper Size</span>
+                </div>
+                <select class="ie-paper-select" id="iePaperSize">
+                    <option value="a4">A4 (210 × 297 mm)</option>
+                    <option value="letter">Letter (8.5 × 11 in)</option>
+                    <option value="legal">Legal (8.5 × 14 in)</option>
+                    <option value="a3">A3 (297 × 420 mm)</option>
+                    <option value="a5">A5 (148 × 210 mm)</option>
+                    <option value="auto">Auto (keep size)</option>
+                </select>
+
+                <button class="ie-doc-btn primary-action" id="ieScanDoc">
+                    <i class="bi bi-magic"></i> Scan Document
+                </button>
+
+                <div class="ie-toolbar-title" style="margin-top:6px;">Individual Steps</div>
+
+                <button class="ie-doc-btn" id="ieAutoEnhance">
+                    <i class="bi bi-stars"></i> Auto Enhance
+                </button>
+                <button class="ie-doc-btn" id="ieWhiteBg">
+                    <i class="bi bi-square"></i> White Background
+                </button>
+                <button class="ie-doc-btn" id="ieSharpen">
+                    <i class="bi bi-type-bold"></i> Sharpen Text
+                </button>
+                <button class="ie-doc-btn" id="ieStraighten">
+                    <i class="bi bi-arrow-repeat"></i> Auto Straighten
+                </button>
+                <button class="ie-doc-btn" id="ieRemoveBorders">
+                    <i class="bi bi-crop"></i> Remove Borders
+                </button>
+                <button class="ie-doc-btn" id="ieEnhanceContrast">
+                    <i class="bi bi-lightbulb"></i> Boost Contrast
+                </button>
+            </div>
+
+            <!-- ── Photo Tools ─── -->
+            <div class="ie-toolbar-section ie-hidden" id="iePicTools">
+                <div class="ie-toolbar-title">Adjustments</div>
+
+                <div class="ie-slider-group">
+                    <div class="ie-slider-label">
+                        <span>Brightness</span>
+                        <span class="ie-slider-value" id="ieBrightVal">100%</span>
+                    </div>
+                    <input type="range" class="ie-slider" id="ieBrightness" min="0" max="200" value="100">
+                </div>
+                <div class="ie-slider-group">
+                    <div class="ie-slider-label">
+                        <span>Contrast</span>
+                        <span class="ie-slider-value" id="ieContrastVal">100%</span>
+                    </div>
+                    <input type="range" class="ie-slider" id="ieContrast" min="0" max="200" value="100">
+                </div>
+                <div class="ie-slider-group">
+                    <div class="ie-slider-label">
+                        <span>Saturation</span>
+                        <span class="ie-slider-value" id="ieSatVal">100%</span>
+                    </div>
+                    <input type="range" class="ie-slider" id="ieSaturation" min="0" max="200" value="100">
+                </div>
+                <div class="ie-slider-group">
+                    <div class="ie-slider-label">
+                        <span>Sharpness</span>
+                        <span class="ie-slider-value" id="ieSharpVal">0%</span>
+                    </div>
+                    <input type="range" class="ie-slider" id="ieSharpness" min="0" max="100" value="0">
+                </div>
+                <div class="ie-slider-group">
+                    <div class="ie-slider-label">
+                        <span>Warmth</span>
+                        <span class="ie-slider-value" id="ieWarmthVal">0</span>
+                    </div>
+                    <input type="range" class="ie-slider" id="ieWarmth" min="-50" max="50" value="0">
+                </div>
+            </div>
+
+            <!-- ── Drawing tools ─── -->
+            <div class="ie-toolbar-section">
+                <div class="ie-toolbar-title">Tools</div>
+                <div>
+                    <button class="ie-tool-btn active" data-tool="select" title="Select / Pan">
+                        <i class="bi bi-cursor"></i>
+                    </button>
+                    <button class="ie-tool-btn" data-tool="crop" title="Crop (drag → apply)">
+                        <i class="bi bi-crop"></i>
+                    </button>
+                    <button class="ie-tool-btn" data-tool="rotate" title="Rotate 90°">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button class="ie-tool-btn" data-tool="eraser" title="Eraser">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                    <button class="ie-tool-btn" data-tool="draw" title="Draw">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+                <div class="mt-2 ie-hidden" id="ieDrawColorGroup">
+                    <label style="font-size:12px;">Draw Color</label>
+                    <input type="color" id="ieDrawColor" value="#000000" style="width:100%;height:32px;margin-top:4px;">
+                </div>
+            </div>
+
+            <!-- ── Export ─── -->
+            <div class="ie-export-btns">
+                <button class="ie-export-btn scan-pdf" id="ieScanPdf">
+                    <i class="bi bi-file-pdf"></i> Scan &amp; Export PDF
+                </button>
+                <button class="ie-export-btn pdf" id="ieExportPdf">
+                    <i class="bi bi-file-pdf"></i> Export as PDF
+                </button>
+                <button class="ie-export-btn jpg" id="ieExportJpg">
+                    <i class="bi bi-file-image"></i> Export as JPG
+                </button>
+            </div>
+        </div>
+
+        <!-- ══ Canvas Area ══════════════════════════════════ -->
+        <div class="ie-canvas-area">
+            <div class="ie-canvas-header">
+                <div class="ie-canvas-tools">
+                    <button class="ie-canvas-tool" id="ieUndo" disabled>
+                        <i class="bi bi-arrow-counterclockwise"></i> Undo
+                    </button>
+                    <button class="ie-canvas-tool" id="ieRedo" disabled>
+                        <i class="bi bi-arrow-clockwise"></i> Redo
+                    </button>
+                    <button class="ie-canvas-tool" id="ieReset">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                    <button class="ie-canvas-tool" onclick="document.getElementById('ieFileInput').click()">
+                        <i class="bi bi-folder2-open"></i> Open
+                    </button>
+                </div>
+                <div class="ie-zoom-btns">
+                    <button class="ie-zoom-btn" id="ieZoomOut">−</button>
+                    <span class="ie-zoom-level" id="ieZoomLevel">100%</span>
+                    <button class="ie-zoom-btn" id="ieZoomIn">+</button>
+                    <button class="ie-zoom-btn" id="ieFit" title="Fit to window">⊡</button>
+                </div>
+            </div>
+
+            <div class="ie-canvas-main" id="ieCanvasMain">
+                <div class="ie-canvas-wrap" id="ieCanvasWrap">
+                    <canvas id="ieCanvas" width="800" height="600"></canvas>
+                    <div class="ie-crop-overlay" id="ieCropOverlay" style="display:none;">
+                        <div class="ie-crop-box" id="ieCropBox">
+                            <div class="ie-crop-handle tl" data-handle="tl"></div>
+                            <div class="ie-crop-handle tr" data-handle="tr"></div>
+                            <div class="ie-crop-handle bl" data-handle="bl"></div>
+                            <div class="ie-crop-handle br" data-handle="br"></div>
+                            <div class="ie-crop-bar">
+                                <button class="ie-crop-apply"  id="ieCropApply">✓ Apply</button>
+                                <button class="ie-crop-cancel" id="ieCropCancel">✕ Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ie-status">
+                <span id="ieImageInfo">No image loaded</span>
+                <span id="ieCursorPos"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="ie-toast" id="ieToast"></div>
+
+<!-- Processing overlay -->
+<div id="ieOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9998;
+     display:none;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:32px 40px;border-radius:12px;text-align:center;min-width:240px;">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <div id="ieOverlayMsg" style="font-weight:600;">Processing…</div>
+    </div>
+</div>
+
+<script>
+const initialFilePath = '@ViewData["InitialFilePath"]';
+
+(function () {
+    /* ── Elements ────────────────────────────────────────────── */
+    const fileInput  = document.getElementById('ieFileInput');
+    const dropArea   = document.getElementById('ieDropArea');
+    const uploadZone = document.getElementById('ieUploadZone');
+    const editor     = document.getElementById('ieEditor');
+    const canvas     = document.getElementById('ieCanvas');
+    const canvasWrap = document.getElementById('ieCanvasWrap');
+    const canvasMain = document.getElementById('ieCanvasMain');
+    const imageInfo  = document.getElementById('ieImageInfo');
+    const cursorPos  = document.getElementById('ieCursorPos');
+    const overlay    = document.getElementById('ieOverlay');
+    const cropOverlay = document.getElementById('ieCropOverlay');
+    const cropBox    = document.getElementById('ieCropBox');
+
+    /* ── State ───────────────────────────────────────────────── */
+    let originalImg  = null;
+    let zoom         = 1;
+    let currentTool  = 'select';
+    let currentMode  = 'document';
+    let undoStack    = [];
+    let redoStack    = [];
+    let drawColor    = '#000000';
+
+    // Crop state
+    let cropActive   = false;
+    let cropDragging = false;
+    let cropResizing = null;     // handle name while resizing
+    let cropRect     = { x: 0, y: 0, w: 0, h: 0 };  // in canvas pixels
+    let dragStart    = { x: 0, y: 0, rect: null };
+
+    // Draw / erase state
+    let isPainting   = false;
+
+    // Adjustments (photo mode)
+    let adjustments  = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
+
+    /* ── Init ────────────────────────────────────────────────── */
+    uploadZone.classList.remove('ie-hidden');
+    editor.classList.add('ie-hidden');
+
+    if (initialFilePath && initialFilePath.length > 0 &&
+        initialFilePath !== 'null' && initialFilePath !== '') {
+        const src = initialFilePath.startsWith('http') || initialFilePath.startsWith('/')
+            ? initialFilePath
+            : '/Image/GetFile?fileName=' + encodeURIComponent(initialFilePath);
+        loadImageFromSrc(src);
+    }
+
+    /* ── Notification ────────────────────────────────────────── */
+    let toastTimer;
+    function toast(msg, type = 'default') {
+        const el = document.getElementById('ieToast');
+        el.textContent = msg;
+        el.className   = 'ie-toast show ' + type;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { el.className = 'ie-toast'; }, 3500);
+    }
+
+    /* ── Processing overlay ──────────────────────────────────── */
+    function showOverlay(msg) {
+        document.getElementById('ieOverlayMsg').textContent = msg;
+        overlay.style.display = 'flex';
+    }
+    function hideOverlay() { overlay.style.display = 'none'; }
+
+    /* ── Undo / Redo ─────────────────────────────────────────── */
+    function saveState() {
+        const ctx = canvas.getContext('2d');
+        const snap = { data: ctx.getImageData(0, 0, canvas.width, canvas.height),
+                       w: canvas.width, h: canvas.height };
+        undoStack.push(snap);
+        if (undoStack.length > 25) undoStack.shift();
+        redoStack = [];
+        updateHistoryBtns();
+    }
+
+    function undo() {
+        if (!undoStack.length) return;
+        const ctx  = canvas.getContext('2d');
+        const snap = { data: ctx.getImageData(0, 0, canvas.width, canvas.height),
+                       w: canvas.width, h: canvas.height };
+        redoStack.push(snap);
+        const prev = undoStack.pop();
+        applySnap(prev);
+        updateHistoryBtns();
+    }
+
+    function redo() {
+        if (!redoStack.length) return;
+        const ctx  = canvas.getContext('2d');
+        const snap = { data: ctx.getImageData(0, 0, canvas.width, canvas.height),
+                       w: canvas.width, h: canvas.height };
+        undoStack.push(snap);
+        const next = redoStack.pop();
+        applySnap(next);
+        updateHistoryBtns();
+    }
+
+    function applySnap(s) {
+        canvas.width  = s.w;
+        canvas.height = s.h;
+        canvasWrap.style.width  = s.w + 'px';
+        canvasWrap.style.height = s.h + 'px';
+        canvas.getContext('2d').putImageData(s.data, 0, 0);
+    }
+
+    function updateHistoryBtns() {
+        document.getElementById('ieUndo').disabled = !undoStack.length;
+        document.getElementById('ieRedo').disabled = !redoStack.length;
+    }
+
+    function resetImage() {
+        if (!originalImg) return;
+        saveState();
+        canvas.width  = originalImg.width;
+        canvas.height = originalImg.height;
+        canvasWrap.style.width  = originalImg.width  + 'px';
+        canvasWrap.style.height = originalImg.height + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(originalImg, 0, 0);
+        resetSliders();
+        adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
+    }
+
+    /* ── Zoom ────────────────────────────────────────────────── */
+    function setZoom(z) {
+        zoom = Math.max(0.05, Math.min(5, z));
+        canvasWrap.style.transform = `scale(${zoom})`;
+        document.getElementById('ieZoomLevel').textContent = Math.round(zoom * 100) + '%';
+    }
+
+    function fitToScreen() {
+        if (canvas.width === 0 || canvas.height === 0) { setTimeout(fitToScreen, 100); return; }
+        const cw = canvasMain.clientWidth  - 40;
+        const ch = canvasMain.clientHeight - 40;
+        if (cw <= 0 || ch <= 0) { setTimeout(fitToScreen, 150); return; }
+        const z = Math.min(1, Math.min(cw / canvas.width, ch / canvas.height));
+        setZoom(z);
+    }
+
+    /* ── Load image ──────────────────────────────────────────── */
+    function loadImageFromSrc(src) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            originalImg = img;
+            drawImageOnCanvas(img);
+            uploadZone.classList.add('ie-hidden');
+            editor.classList.remove('ie-hidden');
+            imageInfo.textContent = img.width + ' × ' + img.height + ' px';
+            adjustments = { brightness: 100, contrast: 100, saturation: 100, sharpness: 0, warmth: 0 };
+            resetSliders();
+            saveState();
+            setTimeout(fitToScreen, 300);
+        };
+        img.onerror = () => toast('Failed to load image.', 'error');
+        img.src = src;
+    }
+
+    function loadFile(file) {
+        const reader = new FileReader();
+        reader.onload = e => loadImageFromSrc(e.target.result);
+        reader.readAsDataURL(file);
+    }
+
+    function drawImageOnCanvas(img) {
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        canvasWrap.style.width  = img.width  + 'px';
+        canvasWrap.style.height = img.height + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+    }
+
+    /* ── Load enhanced image from base64 ─────────────────────── */
+    function loadEnhancedImage(base64) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                originalImg = img;
+                drawImageOnCanvas(img);
+                imageInfo.textContent = img.width + ' × ' + img.height + ' px';
+                saveState();
+                setTimeout(fitToScreen, 100);
+                resolve();
+            };
+            img.onerror = reject;
+            img.src = base64;
+        });
+    }
+
+    /* ── Canvas blob ─────────────────────────────────────────── */
+    function canvasToBlob(type = 'image/png') {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Blob failed')), type);
+        });
+    }
+
+    /* ── Adjustments (photo mode) ────────────────────────────── */
+    function applyAdjustments() {
+        if (!originalImg) return;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(originalImg, 0, 0);
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const px = d.data;
+        const b = adjustments.brightness / 100;
+        const c = adjustments.contrast    / 100;
+        const s = adjustments.saturation  / 100;
+        const w = adjustments.warmth      / 100;
+
+        for (let i = 0; i < px.length; i += 4) {
+            let r = px[i], g = px[i+1], bl = px[i+2];
+            r *= b; g *= b; bl *= b;
+            r  = ((r /255 - .5)*c + .5)*255;
+            g  = ((g /255 - .5)*c + .5)*255;
+            bl = ((bl/255 - .5)*c + .5)*255;
+            const gr = .299*r + .587*g + .114*bl;
+            r  = gr + s*(r -gr) + w*25;
+            g  = gr + s*(g -gr);
+            bl = gr + s*(bl-gr) - w*25;
+            px[i]   = Math.max(0, Math.min(255, r));
+            px[i+1] = Math.max(0, Math.min(255, g));
+            px[i+2] = Math.max(0, Math.min(255, bl));
+        }
+        ctx.putImageData(d, 0, 0);
+        if (adjustments.sharpness > 0) applySharpen(adjustments.sharpness / 100);
+    }
+
+    function applySharpen(amt) {
+        const ctx = canvas.getContext('2d');
+        const d   = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const px  = d.data, w = canvas.width, h = canvas.height;
+        const tmp = new Uint8ClampedArray(px);
+        for (let y = 1; y < h-1; y++) {
+            for (let x = 1; x < w-1; x++) {
+                for (let c = 0; c < 3; c++) {
+                    const idx = (y*w+x)*4+c;
+                    const lap = tmp[idx]*4 - tmp[idx-4] - tmp[idx+4] - tmp[idx-w*4] - tmp[idx+w*4];
+                    px[idx] = Math.max(0, Math.min(255, tmp[idx] + amt * lap));
+                }
+            }
+        }
+        ctx.putImageData(d, 0, 0);
+    }
+
+    function resetSliders() {
+        ['ieBrightness','ieContrast','ieSaturation'].forEach(id => document.getElementById(id).value = 100);
+        ['ieSharpness','ieWarmth'].forEach(id => document.getElementById(id).value = 0);
+        document.getElementById('ieBrightVal').textContent  = '100%';
+        document.getElementById('ieContrastVal').textContent = '100%';
+        document.getElementById('ieSatVal').textContent      = '100%';
+        document.getElementById('ieSharpVal').textContent    = '0%';
+        document.getElementById('ieWarmthVal').textContent   = '0';
+    }
+
+    /* ── Crop Tool ───────────────────────────────────────────── */
+    function startCropMode() {
+        cropActive   = true;
+        cropDragging = false;
+        cropResizing = null;
+        cropRect     = { x: 20, y: 20, w: canvas.width - 40, h: canvas.height - 40 };
+        renderCropBox();
+        cropOverlay.style.display = 'block';
+        canvas.style.cursor = 'crosshair';
+    }
+
+    function cancelCrop() {
+        cropActive = false;
+        cropOverlay.style.display = 'none';
+        canvas.style.cursor = 'default';
+    }
+
+    function renderCropBox() {
+        // clamp to canvas
+        cropRect.x = Math.max(0, Math.min(cropRect.x, canvas.width  - 2));
+        cropRect.y = Math.max(0, Math.min(cropRect.y, canvas.height - 2));
+        cropRect.w = Math.max(2, Math.min(cropRect.w, canvas.width  - cropRect.x));
+        cropRect.h = Math.max(2, Math.min(cropRect.h, canvas.height - cropRect.y));
+
+        // The crop box sits INSIDE the canvasWrap, at the same scale as the canvas.
+        // canvasWrap is scaled via CSS transform, so we position in canvas-pixel coords.
+        cropBox.style.left   = cropRect.x + 'px';
+        cropBox.style.top    = cropRect.y + 'px';
+        cropBox.style.width  = cropRect.w + 'px';
+        cropBox.style.height = cropRect.h + 'px';
+    }
+
+    function applyCrop() {
+        if (!cropActive) return;
+        const { x, y, w, h } = cropRect;
+        if (w < 2 || h < 2) { toast('Selection too small', 'warning'); return; }
+
+        saveState();
+        const tmp = document.createElement('canvas');
+        tmp.width  = w;
+        tmp.height = h;
+        tmp.getContext('2d').drawImage(canvas, x, y, w, h, 0, 0, w, h);
+        canvas.width  = w;
+        canvas.height = h;
+        canvasWrap.style.width  = w + 'px';
+        canvasWrap.style.height = h + 'px';
+        canvas.getContext('2d').drawImage(tmp, 0, 0);
+        cancelCrop();
+        imageInfo.textContent = w + ' × ' + h + ' px';
+        toast('Crop applied ✓', 'success');
+    }
+
+    /* ── Canvas pointer coordinates (accounting for zoom) ────── */
+    function canvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        // rect is in screen pixels; divide by zoom to get canvas pixels
+        return {
+            x: (e.clientX - rect.left) / zoom,
+            y: (e.clientY - rect.top)  / zoom
+        };
+    }
+
+    /* ── Mouse / touch ───────────────────────────────────────── */
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseup',   onMouseUp);
+    canvas.addEventListener('mouseleave',onMouseUp);
+
+    // Handle crop resize via handles (they are inside cropBox, which is OUTSIDE canvas)
+    document.querySelectorAll('.ie-crop-handle').forEach(h => {
+        h.addEventListener('mousedown', e => {
+            e.stopPropagation();
+            if (!cropActive) return;
+            cropResizing = h.dataset.handle;
+            dragStart    = { x: e.clientX, y: e.clientY, rect: {...cropRect} };
+        });
+    });
+
+    document.addEventListener('mousemove', onDocMouseMove);
+    document.addEventListener('mouseup',   onDocMouseUp);
+
+    function onMouseDown(e) {
+        if (!originalImg) return;
+        const p = canvasCoords(e);
+
+        if (currentTool === 'crop') {
+            cropActive   = true;
+            cropDragging = true;
+            cropRect     = { x: p.x, y: p.y, w: 0, h: 0 };
+            renderCropBox();
+            cropOverlay.style.display = 'block';
+        } else if (currentTool === 'eraser') {
+            isPainting = true;
+            eraseAt(p.x, p.y);
+        } else if (currentTool === 'draw') {
+            isPainting = true;
+            drawAt(p.x, p.y);
+        } else if (currentTool === 'rotate') {
+            rotate90();
+        }
+    }
+
+    function onMouseMove(e) {
+        if (!originalImg) return;
+        const p = canvasCoords(e);
+        cursorPos.textContent = Math.round(p.x) + ', ' + Math.round(p.y);
+
+        if (cropDragging && currentTool === 'crop') {
+            cropRect.w = p.x - cropRect.x;
+            cropRect.h = p.y - cropRect.y;
+            // Normalise so x/y is always top-left
+            const nx = cropRect.w < 0 ? cropRect.x + cropRect.w : cropRect.x;
+            const ny = cropRect.h < 0 ? cropRect.y + cropRect.h : cropRect.y;
+            const nw = Math.abs(cropRect.w);
+            const nh = Math.abs(cropRect.h);
+            cropBox.style.left   = nx + 'px';
+            cropBox.style.top    = ny + 'px';
+            cropBox.style.width  = nw + 'px';
+            cropBox.style.height = nh + 'px';
+        } else if (isPainting && currentTool === 'eraser') {
+            eraseAt(p.x, p.y);
+        } else if (isPainting && currentTool === 'draw') {
+            drawAt(p.x, p.y);
+        }
+    }
+
+    function onMouseUp(e) {
+        if (cropDragging) {
+            cropDragging = false;
+            // Normalise cropRect
+            if (cropRect.w < 0) { cropRect.x += cropRect.w; cropRect.w = -cropRect.w; }
+            if (cropRect.h < 0) { cropRect.y += cropRect.h; cropRect.h = -cropRect.h; }
+            renderCropBox();
+        }
+        if (isPainting) { isPainting = false; saveState(); }
+    }
+
+    function onDocMouseMove(e) {
+        if (!cropResizing) return;
+        const dx = (e.clientX - dragStart.x) / zoom;
+        const dy = (e.clientY - dragStart.y) / zoom;
+        const r  = { ...dragStart.rect };
+
+        if (cropResizing === 'tl') { r.x += dx; r.y += dy; r.w -= dx; r.h -= dy; }
+        if (cropResizing === 'tr') { r.y += dy; r.w += dx; r.h -= dy; }
+        if (cropResizing === 'bl') { r.x += dx; r.w -= dx; r.h += dy; }
+        if (cropResizing === 'br') { r.w += dx; r.h += dy; }
+
+        cropRect = r;
+        renderCropBox();
+    }
+
+    function onDocMouseUp() {
+        if (cropResizing) { cropResizing = null; renderCropBox(); }
+    }
+
+    /* ── Drawing helpers ─────────────────────────────────────── */
+    function eraseAt(x, y) {
+        const ctx = canvas.getContext('2d');
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawAt(x, y) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = drawColor;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+    }
+
+    /* ── Rotate 90° ──────────────────────────────────────────── */
+    function rotate90() {
+        saveState();
+        const tmp = document.createElement('canvas');
+        tmp.width  = canvas.height;
+        tmp.height = canvas.width;
+        const tc = tmp.getContext('2d');
+        tc.translate(tmp.width/2, tmp.height/2);
+        tc.rotate(Math.PI/2);
+        tc.drawImage(canvas, -canvas.width/2, -canvas.height/2);
+        canvas.width  = tmp.width;
+        canvas.height = tmp.height;
+        canvasWrap.style.width  = tmp.width  + 'px';
+        canvasWrap.style.height = tmp.height + 'px';
+        canvas.getContext('2d').drawImage(tmp, 0, 0);
+        imageInfo.textContent = canvas.width + ' × ' + canvas.height + ' px';
+    }
+
+    /* ── Mode switch ─────────────────────────────────────────── */
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('ieDocMode').classList.toggle('active', mode === 'document');
+        document.getElementById('iePicMode').classList.toggle('active', mode === 'picture');
+        document.getElementById('ieDocTools').classList.toggle('ie-hidden', mode !== 'document');
+        document.getElementById('iePicTools').classList.toggle('ie-hidden', mode !== 'document');
+    }
+
+    /* ── Tool switch ─────────────────────────────────────────── */
+    document.querySelectorAll('.ie-tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.ie-tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTool = btn.dataset.tool;
+            document.getElementById('ieDrawColorGroup').classList.toggle('ie-hidden', currentTool !== 'draw');
+            if (currentTool !== 'crop') cancelCrop();
+            canvas.style.cursor = currentTool === 'crop'   ? 'crosshair' :
+                                  currentTool === 'eraser' ? 'crosshair' :
+                                  currentTool === 'draw'   ? 'crosshair' : 'default';
+        });
+    });
+
+    /* ── API helper ──────────────────────────────────────────── */
+    async function postCanvasToEndpoint(url, extraFields = {}) {
+        const blob = await canvasToBlob();
+        const fd   = new FormData();
+        fd.append('file', blob, 'image.png');
+        for (const [k, v] of Object.entries(extraFields)) fd.append(k, v);
+        const res  = await fetch(url, { method: 'POST', body: fd });
+        return res.json();
+    }
+
+    /* ── Document actions ────────────────────────────────────── */
+    function getPaper() { return document.getElementById('iePaperSize').value; }
+
+    async function scanDocument() {
+        saveState();
+        const paper = getPaper();
+        showOverlay(`Scanning document — detecting edges & fitting to ${paper.toUpperCase()}…`);
+        try {
+            const data = await postCanvasToEndpoint('/Image/ScanDocument',
+                { mode: 'document', paper });
+
+            if (data.success && data.imageData) {
+                await loadEnhancedImage(data.imageData);
+                toast(`Document scanned as ${paper.toUpperCase()} ✓`, 'success');
+            } else {
+                toast(data.message || 'Scan failed', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            toast('Scan request failed', 'error');
+        }
+        hideOverlay();
+    }
+
+    async function autoEnhance() {
+        saveState();
+        showOverlay('Enhancing document…');
+        try {
+            const data = await postCanvasToEndpoint('/Image/EnhanceWithAI', { mode: 'document' });
+            if (data.success && data.imageData) {
+                await loadEnhancedImage(data.imageData);
+                toast('Enhancement applied ✓', 'success');
+            } else {
+                localEnhance();
+                toast('Used local enhancement', 'warning');
+            }
+        } catch { localEnhance(); toast('Used local enhancement', 'warning'); }
+        hideOverlay();
+    }
+
+    function localEnhance() {
+        saveState();
+        adjustments = { brightness: 108, contrast: 132, saturation: 75, sharpness: 55, warmth: 0 };
+        resetSliders();
+        document.getElementById('ieBrightness').value = adjustments.brightness;
+        document.getElementById('ieContrast').value   = adjustments.contrast;
+        document.getElementById('ieSaturation').value = adjustments.saturation;
+        document.getElementById('ieSharpness').value  = adjustments.sharpness;
+        applyAdjustments();
+    }
+
+    async function whiteBg() {
+        saveState();
+        showOverlay('Applying white background…');
+        try {
+            const data = await postCanvasToEndpoint('/Image/EnhanceDocument', { operation: 'whitebg' });
+            if (data.success && data.imageData) { await loadEnhancedImage(data.imageData); toast('White background applied ✓','success'); }
+            else { localWhiteBg(); }
+        } catch { localWhiteBg(); }
+        hideOverlay();
+    }
+
+    function localWhiteBg() {
+        saveState();
+        const ctx = canvas.getContext('2d');
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < d.data.length; i += 4) {
+            const br = (d.data[i]+d.data[i+1]+d.data[i+2])/3;
+            if (br > 195) { d.data[i]=d.data[i+1]=d.data[i+2]=255; }
+        }
+        ctx.putImageData(d, 0, 0);
+    }
+
+    function sharpenText() {
+        saveState();
+        adjustments.sharpness = 80;
+        document.getElementById('ieSharpness').value = 80;
+        document.getElementById('ieSharpVal').textContent = '80%';
+        applyAdjustments();
+    }
+
+    async function autoStraighten() {
+        saveState();
+        showOverlay('Detecting skew and straightening…');
+        try {
+            const data = await postCanvasToEndpoint('/Image/StraightenImage');
+            if (data.success && data.imageData) { await loadEnhancedImage(data.imageData); toast('Document straightened ✓','success'); }
+            else { toast(data.message || 'Could not detect skew','warning'); }
+        } catch { toast('Straighten failed','error'); }
+        hideOverlay();
+    }
+
+    async function removeBorders() {
+        saveState();
+        showOverlay('Removing borders…');
+        try {
+            const data = await postCanvasToEndpoint('/Image/EnhanceDocument', { operation: 'borders' });
+            if (data.success && data.imageData) { await loadEnhancedImage(data.imageData); toast('Borders removed ✓','success'); }
+            else { localRemoveBorders(); }
+        } catch { localRemoveBorders(); }
+        hideOverlay();
+    }
+
+    function localRemoveBorders() {
+        saveState();
+        const ctx = canvas.getContext('2d');
+        const d   = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let mx = canvas.width, my = canvas.height, Mx = 0, My = 0;
+        for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+                const i  = (y*canvas.width+x)*4;
+                const br = (d.data[i]+d.data[i+1]+d.data[i+2])/3;
+                if (br < 200) { mx=Math.min(mx,x); my=Math.min(my,y); Mx=Math.max(Mx,x); My=Math.max(My,y); }
+            }
+        }
+        const w = Mx-mx, h = My-my;
+        if (w > 0 && h > 0) {
+            const tmp = document.createElement('canvas');
+            tmp.width=w; tmp.height=h;
+            tmp.getContext('2d').drawImage(canvas,mx,my,w,h,0,0,w,h);
+            canvas.width=w; canvas.height=h;
+            canvasWrap.style.width=w+'px'; canvasWrap.style.height=h+'px';
+            canvas.getContext('2d').drawImage(tmp,0,0);
+        }
+    }
+
+    function enhanceContrast() {
+        saveState();
+        adjustments.contrast   = 145;
+        adjustments.brightness = 103;
+        adjustments.sharpness  = 35;
+        document.getElementById('ieContrast').value   = 145;
+        document.getElementById('ieBrightness').value = 103;
+        document.getElementById('ieSharpness').value  = 35;
+        document.getElementById('ieContrastVal').textContent  = '145%';
+        document.getElementById('ieBrightVal').textContent   = '103%';
+        document.getElementById('ieSharpVal').textContent    = '35%';
+        applyAdjustments();
+    }
+
+    /* ── Export ──────────────────────────────────────────────── */
+    async function exportPdf() {
+        showOverlay('Generating PDF…');
+        try {
+            const data = await postCanvasToEndpoint('/Image/ConvertToPdf');
+            if (data.success && data.downloadUrl) {
+                window.location.href = data.downloadUrl;
+                toast('PDF ready — downloading ✓','success');
+            } else {
+                toast(data.message || 'PDF export failed','error');
+            }
+        } catch { toast('PDF export error','error'); }
+        hideOverlay();
+    }
+
+    async function scanAndExportPdf() {
+        const paper = getPaper();
+        showOverlay(`Scanning & exporting as ${paper.toUpperCase()} PDF…`);
+        try {
+            const data = await postCanvasToEndpoint('/Image/ScanDocument',
+                { mode: 'document', paper });
+            if (data.success && data.pdfUrl) {
+                window.location.href = data.pdfUrl;
+                toast(`${paper.toUpperCase()} PDF ready ✓`,'success');
+            } else if (data.success && data.downloadUrl) {
+                // fallback: download image
+                window.location.href = data.downloadUrl;
+                toast('Scanned image ready ✓','success');
+            } else {
+                toast(data.message || 'Scan & PDF failed','error');
+            }
+        } catch { toast('Scan & PDF error','error'); }
+        hideOverlay();
+    }
+
+    function exportJpg() {
+        const link  = document.createElement('a');
+        link.download = 'edited_image.jpg';
+        link.href  = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+        toast('JPG exported ✓','success');
+    }
+
+    /* ── Wire up events ──────────────────────────────────────── */
+    dropArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files.length) loadFile(e.target.files[0]); });
+
+    dropArea.addEventListener('dragover',  e => { e.preventDefault(); dropArea.style.borderColor = '#0d6efd'; });
+    dropArea.addEventListener('dragleave', ()  => { dropArea.style.borderColor = '#ccc'; });
+    dropArea.addEventListener('drop',      e  => {
+        e.preventDefault(); dropArea.style.borderColor = '#ccc';
+        if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    });
+
+    document.getElementById('ieDocMode').addEventListener('click', () => setMode('document'));
+    document.getElementById('iePicMode').addEventListener('click', () => setMode('picture'));
+
+    // Doc buttons
+    document.getElementById('ieScanDoc').addEventListener('click', scanDocument);
+    document.getElementById('ieAutoEnhance').addEventListener('click', autoEnhance);
+    document.getElementById('ieWhiteBg').addEventListener('click', whiteBg);
+    document.getElementById('ieSharpen').addEventListener('click', sharpenText);
+    document.getElementById('ieStraighten').addEventListener('click', autoStraighten);
+    document.getElementById('ieRemoveBorders').addEventListener('click', removeBorders);
+    document.getElementById('ieEnhanceContrast').addEventListener('click', enhanceContrast);
+
+    // Crop apply / cancel
+    document.getElementById('ieCropApply').addEventListener('click', e => { e.stopPropagation(); applyCrop(); });
+    document.getElementById('ieCropCancel').addEventListener('click', e => { e.stopPropagation(); cancelCrop(); });
+
+    // Sliders
+    const sliderMap = {
+        ieBrightness: ['brightness','ieBrightVal','%'],
+        ieContrast:   ['contrast',  'ieContrastVal','%'],
+        ieSaturation: ['saturation','ieSatVal','%'],
+        ieSharpness:  ['sharpness', 'ieSharpVal','%'],
+        ieWarmth:     ['warmth',    'ieWarmthVal',''],
+    };
+    for (const [id, [key, valId, suffix]] of Object.entries(sliderMap)) {
+        document.getElementById(id).addEventListener('input', e => {
+            adjustments[key] = parseInt(e.target.value);
+            document.getElementById(valId).textContent = adjustments[key] + suffix;
+            applyAdjustments();
+        });
+    }
+
+    document.getElementById('ieDrawColor').addEventListener('input', e => { drawColor = e.target.value; });
+
+    // History
+    document.getElementById('ieUndo').addEventListener('click', undo);
+    document.getElementById('ieRedo').addEventListener('click', redo);
+    document.getElementById('ieReset').addEventListener('click', resetImage);
+
+    // Zoom
+    document.getElementById('ieZoomIn').addEventListener('click',  () => setZoom(zoom + .15));
+    document.getElementById('ieZoomOut').addEventListener('click', () => setZoom(zoom - .15));
+    document.getElementById('ieFit').addEventListener('click', fitToScreen);
+
+    canvas.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom + (e.deltaY > 0 ? -.1 : .1)); }, { passive: false });
+
+    // Export
+    document.getElementById('ieScanPdf').addEventListener('click', scanAndExportPdf);
+    document.getElementById('ieExportPdf').addEventListener('click', exportPdf);
+    document.getElementById('ieExportJpg').addEventListener('click', exportJpg);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'z') undo();
+        if (e.ctrlKey && e.key === 'y') redo();
+        if (e.key === 'Escape') cancelCrop();
+        if (e.key === 'Enter' && cropActive) applyCrop();
+    });
+
+})();
+</script>

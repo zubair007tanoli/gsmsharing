@@ -763,7 +763,9 @@ public class PdfController : Controller
         {
             var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "word2pdf");
             var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "word2pdf");
+
+            // Ensure the converted file always has a .pdf extension, even if the source is .doc/.docx
+            var outputFileName = Path.ChangeExtension(fileName, ".pdf");
 
             var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertWordToPdfAsync(
                 filePath, outputFileName);
@@ -831,7 +833,9 @@ public class PdfController : Controller
         {
             var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "excel2pdf");
             var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "excel2pdf");
+
+            // Force .pdf extension for the converted file
+            var outputFileName = Path.ChangeExtension(fileName, ".pdf");
 
             var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertExcelToPdfAsync(
                 filePath, outputFileName);
@@ -899,7 +903,9 @@ public class PdfController : Controller
         {
             var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pptx2pdf");
             var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "pptx2pdf");
+
+            // Force .pdf extension for the converted file
+            var outputFileName = Path.ChangeExtension(fileName, ".pdf");
 
             var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertPowerPointToPdfAsync(
                 filePath, outputFileName);
@@ -1444,6 +1450,7 @@ public class PdfController : Controller
         
         if (!System.IO.File.Exists(filePath))
         {
+            _logger.LogWarning("Download requested but file not found: {FilePath}", filePath);
             return NotFound("File not found.");
         }
 
@@ -1456,12 +1463,22 @@ public class PdfController : Controller
             return RedirectToAction("Index");
         }
 
-        var fileInfo = new FileInfo(filePath);
-        var contentType = GetContentType(fileName);
+        try
+        {
+            var fileInfo = new FileInfo(filePath);
+            var contentType = GetContentType(fileName);
 
-        await _fileProcessingService.RecordDownloadAsync(user, fileName, fileInfo.Length, contentType);
+            await _fileProcessingService.RecordDownloadAsync(user, fileName, fileInfo.Length, contentType);
 
-        return File(filePath, contentType, fileName);
+            // Open stream so file is held for the duration of the response (avoids TOCTOU if file is cleaned up)
+            var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(stream, contentType, fileName);
+        }
+        catch (System.IO.IOException ex)
+        {
+            _logger.LogWarning(ex, "File could not be opened for download (may have been removed): {FilePath}", filePath);
+            return NotFound("File not found or no longer available.");
+        }
     }
 
     #endregion

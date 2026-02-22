@@ -122,6 +122,13 @@ public class ImageController : Controller
             return View();
         }
 
+        // Validate crop parameters
+        if (width <= 0 || height <= 0)
+        {
+            TempData["Error"] = "Invalid crop dimensions. Width and height must be positive values.";
+            return View();
+        }
+
         var user = await GetCurrentUserAsync();
         var (canProcess, message) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
         
@@ -191,7 +198,7 @@ public class ImageController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cropping image");
-            TempData["Error"] = "An error occurred while cropping the image.";
+            TempData["Error"] = "An error occurred while cropping the image: " + ex.Message;
         }
 
         return View();
@@ -423,7 +430,7 @@ public class ImageController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ToPdf(IFormFile file)
+    public async Task<IActionResult> ToPdf(IFormFile file, string paperSize = "auto")
     {
         if (file == null || file.Length == 0)
         {
@@ -437,7 +444,7 @@ public class ImageController : Controller
             var outputFileName = _fileProcessingService.GenerateFileName("image.pdf", "img2pdf");
 
             var (success, outputPath, resultMessage) = await _imageProcessingService.ConvertToPdfAsync(
-                filePath, outputFileName);
+                filePath, outputFileName, paperSize);
 
             return Json(new { 
                 success, 
@@ -806,4 +813,169 @@ public class ImageController : Controller
         }
         return $"{len:0.##} {sizes[order]}";
     }
+
+    #region AI Enhancement
+
+    /// <summary>
+    /// AI-powered image enhancement endpoint
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> EnhanceWithAI(IFormFile file, string mode = "document")
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "ai_enhance");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "enhanced");
+
+            var (success, outputPath, resultMessage) = await _imageProcessingService.EnhanceImageWithAIAsync(
+                filePath, outputFileName, mode);
+
+            if (success)
+            {
+                // Read the enhanced image and return as base64 for preview
+                var enhancedBytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+                var base64Str = System.Convert.ToBase64String(enhancedBytes);
+                var extension = Path.GetExtension(outputFileName).ToLowerInvariant();
+                var contentType = extension switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    _ => "image/png"
+                };
+
+                return Json(new
+                {
+                    success = true,
+                    message = resultMessage,
+                    imageData = $"data:{contentType};base64,{base64Str}",
+                    downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}",
+                    fileName = outputFileName
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in AI enhancement");
+            return Json(new { success = false, message = "An error occurred during enhancement." });
+        }
+    }
+
+    /// <summary>
+    /// Auto-straighten image endpoint
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> StraightenImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "straighten");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "straightened");
+
+            var (success, outputPath, resultMessage) = await _imageProcessingService.StraightenImageAsync(
+                filePath, outputFileName);
+
+            if (success)
+            {
+                var enhancedBytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+                var base64Str = System.Convert.ToBase64String(enhancedBytes);
+                var extension = Path.GetExtension(outputFileName).ToLowerInvariant();
+                var contentType = extension switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    _ => "image/png"
+                };
+
+                return Json(new
+                {
+                    success = true,
+                    message = resultMessage,
+                    imageData = $"data:{contentType};base64,{base64Str}",
+                    downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}",
+                    fileName = outputFileName
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error straightening image");
+            return Json(new { success = false, message = "An error occurred while straightening the image." });
+        }
+    }
+
+    /// <summary>
+    /// Apply document enhancement (white background, border removal)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> EnhanceDocument(IFormFile file, string operation)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "No file uploaded." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, $"doc_{operation}");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, $"doc_{operation}");
+
+            // Use AI enhancement which handles all document operations
+            var (success, outputPath, resultMessage) = await _imageProcessingService.EnhanceImageWithAIAsync(
+                filePath, outputFileName, "document");
+
+            if (success)
+            {
+                var enhancedBytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+                var base64Str = System.Convert.ToBase64String(enhancedBytes);
+                var extension = Path.GetExtension(outputFileName).ToLowerInvariant();
+                var contentType = extension switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    _ => "image/png"
+                };
+
+                return Json(new
+                {
+                    success = true,
+                    message = resultMessage,
+                    imageData = $"data:{contentType};base64,{base64Str}",
+                    downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}",
+                    fileName = outputFileName
+                });
+            }
+            else
+            {
+                return Json(new { success = false, message = resultMessage });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enhancing document");
+            return Json(new { success = false, message = "An error occurred during document enhancement." });
+        }
+    }
+
+    #endregion
 }

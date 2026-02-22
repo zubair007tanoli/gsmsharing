@@ -201,8 +201,10 @@
         overflow: auto;
         padding: 20px;
         display: flex;
-        align-items: center;
-        justify-content: center;
+        align-items: flex-start;
+        justify-content: flex-start;
+        min-height: 400px;
+        background: #e9ecef;
     }
     
     .ie-canvas-wrap {
@@ -211,6 +213,8 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         overflow: visible;
         display: inline-block;
+        transform-origin: top left;
+        margin: 0;
     }
     
     #ieCanvas {
@@ -296,14 +300,29 @@
         left: 0;
         right: 0;
         bottom: 0;
-        pointer-events: none;
+        pointer-events: auto;
+        z-index: 100;
     }
     
     .ie-crop-box {
         position: absolute;
-        border: 2px dashed #0d6efd;
-        background: rgba(13, 110, 253, 0.1);
+        border: 3px dashed #0d6efd;
+        background: rgba(13, 110, 253, 0.2);
         pointer-events: auto;
+        min-width: 10px;
+        min-height: 10px;
+    }
+    
+    /* Crop dimensions display */
+    .ie-crop-dimensions {
+        position: absolute;
+        bottom: -25px;
+        left: 0;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 2px 6px;
+        font-size: 12px;
+        border-radius: 3px;
     }
 </style>
 
@@ -597,10 +616,12 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
             imageInfo.textContent = img.width + ' x ' + img.height + ' px';
             saveState();
 
-            // Fit to container after layout recalculates (use requestAnimationFrame)
-            requestAnimationFrame(() => {
+            // Fit to container after layout recalculates (longer delay to ensure proper rendering)
+            console.log('Scheduling fitToScreen in 500ms...');
+            setTimeout(() => {
+                console.log('fitToScreen timeout fired');
                 fitToScreen();
-            });
+            }, 500);
 
             console.log('Image drawn on canvas successfully');
         };
@@ -656,7 +677,8 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
             
             // Cursor
             canvas.style.cursor = currentTool === 'eraser' ? 'crosshair' : 
-                                 currentTool === 'draw' ? 'crosshair' : 'default';
+                                 currentTool === 'draw' ? 'crosshair' :
+                                 currentTool === 'crop' ? 'crosshair' : 'default';
         });
     });
     
@@ -729,6 +751,18 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     document.addEventListener('keydown', e => {
         if (e.ctrlKey && e.key === 'z') undo();
         if (e.ctrlKey && e.key === 'y') redo();
+        
+        // Crop keyboard shortcuts
+        if (e.key === 'Enter' && isCropping && currentTool === 'crop') {
+            e.preventDefault();
+            applyCrop();
+        }
+        if (e.key === 'Escape' && isCropping) {
+            e.preventDefault();
+            isCropping = false;
+            document.getElementById('ieCropOverlay').style.display = 'none';
+            cropBox = { x: 0, y: 0, w: 0, h: 0 };
+        }
     });
     
     function loadFile(file) {
@@ -783,10 +817,12 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
                 imageInfo.textContent = img.width + ' x ' + img.height + ' px';
                 saveState();
 
-                // Fit to container after layout recalculates (use requestAnimationFrame)
-                requestAnimationFrame(() => {
+                // Fit to container after layout recalculates (longer delay to ensure proper rendering)
+                console.log('Scheduling fitToScreen in 500ms...');
+                setTimeout(() => {
+                    console.log('fitToScreen timeout fired');
                     fitToScreen();
-                });
+                }, 500);
 
                 console.log('File loaded and drawn successfully');
             };
@@ -816,9 +852,46 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
         document.getElementById('ieWarmthVal').textContent = '0';
     }
     
-    function applyAdjustments() {
+    // Apply adjustments - enhanced version with AI fallback
+    async function applyAdjustments() {
         if (!originalImg) return;
         
+        // Check if significant adjustments are needed for AI processing
+        const needsAI = adjustments.brightness !== 100 || 
+                       adjustments.contrast !== 100 || 
+                       adjustments.saturation !== 100 ||
+                       adjustments.sharpness > 30 ||
+                       adjustments.warmth !== 0;
+        
+        // Only use AI for significant changes in picture mode
+        if (needsAI && currentMode === 'picture' && (Math.abs(adjustments.brightness - 100) > 20 || 
+            Math.abs(adjustments.contrast - 100) > 20 || adjustments.sharpness > 50)) {
+            try {
+                showProcessingOverlay('Applying AI Enhancements...');
+                const blob = await canvasToBlob();
+                const formData = new FormData();
+                formData.append('file', blob, 'image.png');
+                formData.append('mode', 'picture');
+                
+                const response = await fetch('/Image/EnhanceWithAI', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.imageData) {
+                    await loadEnhancedImage(result.imageData);
+                    hideProcessingOverlay();
+                    return;
+                }
+            } catch (err) {
+                console.log('AI enhancement not available, using local');
+            }
+            hideProcessingOverlay();
+        }
+        
+        // Local adjustments
         const ctx = canvas.getContext('2d');
         ctx.drawImage(originalImg, 0, 0);
         
@@ -930,35 +1003,69 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     
     function setZoom(z) {
         // Clamp zoom between 10% and 500%
+        const prevZoom = zoom;
         zoom = Math.max(0.1, Math.min(5, z));
+
+        // If zoom changed, log it
+        if (prevZoom !== zoom) {
+            console.log('Zoom changed from', prevZoom, 'to', zoom);
+        }
+
         document.getElementById('ieZoomLevel').textContent = Math.round(zoom*100) + '%';
-        
+
         // Apply zoom as scale transform on the canvas wrap
-        // Use translate to keep it centered when zooming
         canvasWrap.style.transform = 'scale(' + zoom + ')';
         canvasWrap.style.transformOrigin = 'top left';
         
-        console.log('Zoom set to:', zoom);
+        // Always keep canvas at top-left for consistent viewing
+        canvasMain.style.alignItems = 'flex-start';
+        canvasMain.style.justifyContent = 'flex-start';
+
+        // Force visibility
+        canvasWrap.style.display = 'inline-block';
+        canvasWrap.style.visibility = 'visible';
+        canvas.style.display = 'block';
+        canvas.style.visibility = 'visible';
+
+        console.log('Zoom set to:', zoom, 'Canvas visible:', canvas.offsetWidth > 0, 'CanvasWrap dimensions:', canvasWrap.offsetWidth, 'x', canvasWrap.offsetHeight);
     }
     
     function fitToScreen() {
         // Calculate zoom to fit canvas in container
         if (canvas.width === 0 || canvas.height === 0) {
-            console.log('Canvas has no dimensions yet');
+            console.log('Canvas has no dimensions yet, waiting...');
+            setTimeout(() => fitToScreen(), 100);
             return;
         }
+
         const cw = canvasMain.clientWidth - 40;
         const ch = canvasMain.clientHeight - 40;
+        const editorRect = editor.getBoundingClientRect();
 
-        // Ensure container has valid dimensions before calculating zoom
+        console.log('=== fitToScreen DEBUG ===');
+        console.log('Editor visibility:', window.getComputedStyle(editor).display, 'class:', editor.className);
+        console.log('Editor position on screen:', editorRect.width, 'x', editorRect.height);
+        console.log('Container size (cw, ch):', cw, 'x', ch);
+        console.log('Canvas size:', canvas.width, 'x', canvas.height);
+
+        // If container dimensions are still invalid, retry with longer delay
         if (cw <= 0 || ch <= 0) {
-            console.log('Canvas container has no valid dimensions yet, retrying...');
-            requestAnimationFrame(fitToScreen);
+            console.log('Container has INVALID dimensions (', cw, 'x', ch, '), retrying in 200ms...');
+            setTimeout(() => fitToScreen(), 200);
             return;
         }
 
-        const newZoom = Math.min(cw/canvas.width, ch/canvas.height, 1);
-        console.log('Fitting to screen:', cw, 'x', ch, 'canvas:', canvas.width, 'x', canvas.height, 'zoom:', newZoom);
+        // Calculate zoom to fit - always use at least 100% so image doesn't shrink
+        const zoomWidth = cw / canvas.width;
+        const zoomHeight = ch / canvas.height;
+        
+        // Use 100% as minimum - image should never shrink below original size
+        const newZoom = Math.max(1, Math.min(zoomWidth, zoomHeight));
+
+        console.log('Zoom calculations: width ratio =', zoomWidth.toFixed(2), ', height ratio =', zoomHeight.toFixed(2));
+        console.log('Final zoom:', newZoom.toFixed(2));
+        console.log('=========================');
+
         setZoom(newZoom);
     }
     
@@ -966,13 +1073,260 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
         setZoom(1);
     }
     
-    // Document enhancements
-    function autoEnhance() { saveState(); adjustments.brightness=110; adjustments.contrast=130; adjustments.saturation=80; adjustments.sharpness=50; resetSliders(); applyAdjustments(); }
-    function whiteBg() { saveState(); const ctx=canvas.getContext('2d'); const d=ctx.getImageData(0,0,canvas.width,canvas.height); for(let i=0;i<d.data.length;i+=4){ const b=(d.data[i]+d.data[i+1]+d.data[i+2])/3; if(b>200){d.data[i]=d.data[i+1]=d.data[i+2]=255;}} ctx.putImageData(d,0,0); }
-    function sharpenText() { saveState(); adjustments.sharpness=80; document.getElementById('ieSharpness').value=80; document.getElementById('ieSharpVal').textContent='80%'; applyAdjustments(); }
-    function autoStraighten() { saveState(); const ctx=canvas.getContext('2d'); const tmp=document.createElement('canvas'); tmp.width=canvas.height; tmp.height=canvas.width; const tctx=tmp.getContext('2d'); tctx.translate(tmp.width/2,tmp.height/2); tctx.rotate(Math.PI/2); tctx.drawImage(canvas,-canvas.width/2,-canvas.height/2); canvas.width=tmp.width; canvas.height=tmp.height; canvasWrap.style.width=tmp.width+'px'; canvasWrap.style.height=tmp.height+'px'; ctx.drawImage(tmp,0,0); }
-    function removeBorders() { saveState(); const ctx=canvas.getContext('2d'); const d=ctx.getImageData(0,0,canvas.width,canvas.height); let minx=canvas.width,miny=canvas.height,maxx=0,maxy=0; for(let y=0;y<canvas.height;y++){for(let x=0;x<canvas.width;x++){const i=(y*canvas.width+x)*4; const b=(d.data[i]+d.data[i+1]+d.data[i+2])/3; if(b<200){minx=Math.min(minx,x);miny=Math.min(miny,y);maxx=Math.max(maxx,x);maxy=Math.max(maxy,y);}}} const w=maxx-minx, h=maxy-miny; if(w>0&&h>0){const t=document.createElement('canvas'); t.width=w; t.height=h; t.getContext('2d').drawImage(canvas,minx,miny,w,h,0,0,w,h); canvas.width=w; canvas.height=h; canvasWrap.style.width=w+'px'; canvasWrap.style.height=h+'px'; ctx.drawImage(t,0,0);} }
-    function enhanceContrast() { saveState(); adjustments.contrast=140; adjustments.brightness=105; adjustments.sharpness=30; resetSliders(); applyAdjustments(); }
+    // Document enhancements - using AI-powered backend
+    async function autoEnhance() {
+        saveState();
+        showProcessingOverlay('Applying AI Enhancement...');
+        
+        try {
+            const blob = await canvasToBlob();
+            const formData = new FormData();
+            formData.append('file', blob, 'image.png');
+            formData.append('mode', 'document');
+            
+            const response = await fetch('/Image/EnhanceWithAI', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.imageData) {
+                await loadEnhancedImage(result.imageData);
+                showNotification('AI Enhancement applied successfully!', 'success');
+            } else {
+                // Fallback to local enhancement
+                console.log('AI enhancement failed, using local fallback');
+                localEnhance();
+            }
+        } catch (err) {
+            console.error('AI Enhancement error:', err);
+            localEnhance();
+        }
+        
+        hideProcessingOverlay();
+    }
+    
+    function localEnhance() {
+        saveState();
+        adjustments.brightness = 110;
+        adjustments.contrast = 130;
+        adjustments.saturation = 80;
+        adjustments.sharpness = 50;
+        resetSliders();
+        applyAdjustments();
+    }
+    
+    async function whiteBg() {
+        saveState();
+        showProcessingOverlay('Removing background...');
+        
+        try {
+            const blob = await canvasToBlob();
+            const formData = new FormData();
+            formData.append('file', blob, 'image.png');
+            formData.append('operation', 'whitebg');
+            
+            const response = await fetch('/Image/EnhanceDocument', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.imageData) {
+                await loadEnhancedImage(result.imageData);
+                showNotification('White background applied!', 'success');
+            } else {
+                localWhiteBg();
+            }
+        } catch (err) {
+            console.error('White background error:', err);
+            localWhiteBg();
+        }
+        
+        hideProcessingOverlay();
+    }
+    
+    function localWhiteBg() {
+        saveState();
+        const ctx = canvas.getContext('2d');
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < d.data.length; i += 4) {
+            const b = (d.data[i] + d.data[i + 1] + d.data[i + 2]) / 3;
+            if (b > 200) {
+                d.data[i] = d.data[i + 1] = d.data[i + 2] = 255;
+            }
+        }
+        ctx.putImageData(d, 0, 0);
+    }
+    
+    function sharpenText() {
+        saveState();
+        adjustments.sharpness = 80;
+        document.getElementById('ieSharpness').value = 80;
+        document.getElementById('ieSharpVal').textContent = '80%';
+        applyAdjustments();
+    }
+    
+    async function autoStraighten() {
+        saveState();
+        showProcessingOverlay('AI Straightening document...');
+        
+        try {
+            const blob = await canvasToBlob();
+            const formData = new FormData();
+            formData.append('file', blob, 'image.png');
+            
+            const response = await fetch('/Image/StraightenImage', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.imageData) {
+                await loadEnhancedImage(result.imageData);
+                showNotification('Document straightened!', 'success');
+            } else {
+                showNotification('Could not detect skew angle', 'warning');
+            }
+        } catch (err) {
+            console.error('Straighten error:', err);
+            showNotification('Straightening failed', 'error');
+        }
+        
+        hideProcessingOverlay();
+    }
+    
+    async function removeBorders() {
+        saveState();
+        showProcessingOverlay('Removing borders...');
+        
+        try {
+            const blob = await canvasToBlob();
+            const formData = new FormData();
+            formData.append('file', blob, 'image.png');
+            formData.append('operation', 'borders');
+            
+            const response = await fetch('/Image/EnhanceDocument', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.imageData) {
+                await loadEnhancedImage(result.imageData);
+                showNotification('Borders removed!', 'success');
+            } else {
+                localRemoveBorders();
+            }
+        } catch (err) {
+            console.error('Remove borders error:', err);
+            localRemoveBorders();
+        }
+        
+        hideProcessingOverlay();
+    }
+    
+    function localRemoveBorders() {
+        saveState();
+        const ctx = canvas.getContext('2d');
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let minx = canvas.width, miny = canvas.height, maxx = 0, maxy = 0;
+        for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+                const i = (y * canvas.width + x) * 4;
+                const b = (d.data[i] + d.data[i + 1] + d.data[i + 2]) / 3;
+                if (b < 200) {
+                    minx = Math.min(minx, x);
+                    miny = Math.min(miny, y);
+                    maxx = Math.max(maxx, x);
+                    maxy = Math.max(maxy, y);
+                }
+            }
+        }
+        const w = maxx - minx, h = maxy - miny;
+        if (w > 0 && h > 0) {
+            const t = document.createElement('canvas');
+            t.width = w;
+            t.height = h;
+            t.getContext('2d').drawImage(canvas, minx, miny, w, h, 0, 0, w, h);
+            canvas.width = w;
+            canvas.height = h;
+            canvasWrap.style.width = w + 'px';
+            canvasWrap.style.height = h + 'px';
+            ctx.drawImage(t, 0, 0);
+        }
+    }
+    
+    function enhanceContrast() {
+        saveState();
+        adjustments.contrast = 140;
+        adjustments.brightness = 105;
+        adjustments.sharpness = 30;
+        resetSliders();
+        applyAdjustments();
+    }
+    
+    // Helper function to load enhanced image from base64
+    async function loadEnhancedImage(base64Data) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                // Resize canvas to match enhanced image
+                canvas.width = img.width;
+                canvas.height = img.height;
+                canvasWrap.style.width = img.width + 'px';
+                canvasWrap.style.height = img.height + 'px';
+                
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                
+                // Update originalImg for future adjustments
+                originalImg = img;
+                
+                // Re-fit to screen
+                setTimeout(() => fitToScreen(), 100);
+                
+                saveState();
+                resolve();
+            };
+            img.onerror = reject;
+            img.src = base64Data;
+        });
+    }
+    
+    // Helper function to convert canvas to blob
+    function canvasToBlob() {
+        return new Promise((resolve) => {
+            canvas.toBlob(resolve, 'image/png');
+        });
+    }
+    
+    // Processing overlay functions
+    function showProcessingOverlay(message) {
+        let overlay = document.getElementById('ieProcessingOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'ieProcessingOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            overlay.innerHTML = '<div style="background:white;padding:30px;border-radius:10px;text-align:center;"><div class="spinner-border text-primary mb-3" role="status"></div><div id="ieProcessingMessage">Processing...</div></div>';
+            document.body.appendChild(overlay);
+        }
+        document.getElementById('ieProcessingMessage').textContent = message;
+        overlay.style.display = 'flex';
+    }
+    
+    function hideProcessingOverlay() {
+        const overlay = document.getElementById('ieProcessingOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
     
     // Mouse handling
     let startX, startY;
@@ -991,6 +1345,8 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
             isCropping = true;
             cropBox = { x: startX, y: startY, w: 0, h: 0 };
             document.getElementById('ieCropOverlay').style.display = 'block';
+            document.getElementById('ieCropBox').style.border = '3px dashed #0d6efd';
+            document.getElementById('ieCropBox').style.background = 'rgba(13, 110, 253, 0.2)';
         } else if (currentTool === 'rotate') {
             rotate90();
         }
@@ -1019,6 +1375,13 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     function handleMouseUp() {
         if (isErasing) { isErasing = false; saveState(); }
         if (isDrawing) { isDrawing = false; saveState(); }
+        
+        // Apply crop when done dragging
+        if (isCropping && currentTool === 'crop') {
+            if (cropBox.w !== 0 && cropBox.h !== 0) {
+                applyCrop();
+            }
+        }
     }
     
     function eraseAt(x, y) {
@@ -1057,24 +1420,54 @@ const initialFilePath = '@ViewData["InitialFilePath"]';
     }
     
     function applyCrop() {
-        if (!isCropping || cropBox.w === 0 || cropBox.h === 0) return;
-        saveState();
-        const ctx = canvas.getContext('2d');
+        if (!isCropping || cropBox.w === 0 || cropBox.h === 0) {
+            console.warn('Crop not applied: invalid crop dimensions');
+            return;
+        }
+        
+        // Validate crop dimensions are positive
+        if (Math.abs(cropBox.w) < 1 || Math.abs(cropBox.h) < 1) {
+            console.warn('Crop not applied: crop dimensions too small');
+            alert('Please select a larger crop area');
+            return;
+        }
+        
+        // Validate crop is within canvas bounds
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
         const x = Math.min(cropBox.x, cropBox.x + cropBox.w);
         const y = Math.min(cropBox.y, cropBox.y + cropBox.h);
         const w = Math.abs(cropBox.w);
         const h = Math.abs(cropBox.h);
+        
+        // Ensure crop is within canvas boundaries
+        if (x < 0 || y < 0 || x + w > canvasWidth || y + h > canvasHeight) {
+            console.warn('Crop not applied: crop area exceeds canvas bounds');
+            alert('Crop area exceeds image boundaries. Please adjust your selection.');
+            return;
+        }
+        
+        saveState();
+        const ctx = canvas.getContext('2d');
+        
+        // Create temporary canvas for cropping
         const tmp = document.createElement('canvas');
         tmp.width = w;
         tmp.height = h;
         tmp.getContext('2d').drawImage(canvas, x, y, w, h, 0, 0, w, h);
+        
+        // Resize main canvas and draw cropped image
         canvas.width = w;
         canvas.height = h;
         canvasWrap.style.width = w + 'px';
         canvasWrap.style.height = h + 'px';
         ctx.drawImage(tmp, 0, 0);
+        
         document.getElementById('ieCropOverlay').style.display = 'none';
         isCropping = false;
+        
+        console.log('Image cropped successfully at', {x, y, w, h});
     }
     
     // Export

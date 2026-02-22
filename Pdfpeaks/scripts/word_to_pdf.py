@@ -55,7 +55,7 @@ def main(input_doc, output_pdf):
         
         # Set environment variables for better font handling
         env = os.environ.copy()
-        env['HOME'] = '/tmp'
+        env['HOME'] = out_dir if sys.platform == "win32" else '/tmp'
         env['SAL_USE_VCLPLUGIN'] = 'svp'  # Use SVPL plugin for better rendering
         
         # Convert Word to PDF using LibreOffice
