@@ -1303,6 +1303,57 @@ public class PdfController : Controller
         }
     }
 
+    #region PDF Font Detection
+
+    /// <summary>
+    /// Extracts the font names used in a PDF via Python / PyMuPDF.
+    /// POST /Pdf/GetPdfFonts
+    /// Returns: { success, fonts: string[] }
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> GetPdfFonts([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return Json(new { success = false, message = "No file provided." });
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "fonts");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+
+            var (exitCode, stdout, stderr) =
+                await _pdfProcessingService.RunPythonScriptAsync("pdf_fonts.py", $"\"{filePath}\"");
+
+            // Cleanup
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (exitCode != 0)
+            {
+                _logger.LogWarning("pdf_fonts.py failed: {Stderr}", stderr);
+                return Json(new { success = false, fonts = Array.Empty<string>() });
+            }
+
+            // stdout should be a JSON array of strings
+            var raw = stdout.Trim();
+            if (raw.StartsWith("["))
+            {
+                var fonts = System.Text.Json.JsonSerializer.Deserialize<List<string>>(raw)
+                            ?? new List<string>();
+                return Json(new { success = true, fonts });
+            }
+
+            // stdout might be {"error": "..."} — still return success=false gracefully
+            return Json(new { success = false, fonts = Array.Empty<string>() });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetPdfFonts");
+            return Json(new { success = false, fonts = Array.Empty<string>() });
+        }
+    }
+
+    #endregion
+
     #endregion
 
     #region Unlock Operations

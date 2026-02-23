@@ -28,12 +28,19 @@ public class TextBoxPosition
     /// <summary>
     /// Height of the text box
     /// </summary>
-    public double Height { get; set; } = 30;
+    public double Height { get; set; } = 40;
+    
+    /// <summary>
+    /// Width of the rendered page image in pixels (used for coordinate scaling).
+    /// Frontend should send this for pixel-perfect placement.
+    /// Defaults to 0, in which case 96dpi render from 72pt PDF is assumed.
+    /// </summary>
+    public double ImageWidth { get; set; } = 0;
     
     /// <summary>
     /// Text content
     /// </summary>
-    public string Text { get; set; } = "";
+    public string Text { get; set; } = string.Empty;
     
     /// <summary>
     /// Font family name
@@ -51,9 +58,9 @@ public class TextBoxPosition
     public string TextColor { get; set; } = "#000000";
     
     /// <summary>
-    /// Background color in hex format
+    /// Background color (supports rgba for opacity)
     /// </summary>
-    public string BgColor { get; set; } = "#ffffff";
+    public string BgColor { get; set; } = "rgba(255,255,255,0)";
     
     /// <summary>
     /// Is text bold

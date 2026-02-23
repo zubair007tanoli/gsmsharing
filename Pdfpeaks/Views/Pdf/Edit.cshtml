@@ -345,6 +345,70 @@
         border: 1px solid #ced4da;
         border-radius: 4px;
     }
+    
+    /* Detected fonts badge */
+    .detected-fonts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+    }
+
+    .font-badge {
+        padding: 3px 8px;
+        background: #e9ecef;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .font-badge:hover {
+        background: #cfe2ff;
+        border-color: #0d6efd;
+    }
+
+    /* Mode selector */
+    .mode-selector {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .mode-btn {
+        flex: 1;
+        padding: 8px 6px;
+        border: 1.5px solid #ced4da;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    /* Dragging state */
+    .editable-text.dragging {
+        opacity: 0.8;
+        border-color: #198754 !important;
+    }
+    
+    /* Move mode cursor */
+    .preview-canvas-wrapper.move-mode {
+        cursor: default;
+    }
+    
+    .preview-canvas-wrapper.move-mode .editable-text {
+        cursor: move;
+    }
 </style>
 
 <div class="tool-page py-3">
@@ -381,6 +445,20 @@
                         <span id="pageCount">0</span> pages
                     </div>
                 </div>
+
+                <!-- Mode -->
+                <div class="toolbar-section">
+                    <div class="toolbar-section-title">Canvas Mode</div>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" id="modeAdd" title="Click canvas to add text box">
+                            <i class="fas fa-plus-square me-1"></i> Add Text
+                        </button>
+                        <button class="mode-btn" id="modeSelect" title="Click/drag text boxes">
+                            <i class="fas fa-mouse-pointer me-1"></i> Select
+                        </button>
+                    </div>
+                    <div id="coordDisplay" class="coord-badge">Mode: Add Text Box (click canvas)</div>
+                </div>
                 
                 <!-- Font Family -->
                 <div class="toolbar-section">
@@ -397,6 +475,10 @@
                         <option value="Trebuchet MS">Trebuchet MS</option>
                         <option value="Palatino Linotype">Palatino Linotype</option>
                     </select>
+                    <!-- PDF detected fonts appear here -->
+                    <div id="detectedFonts" class="detected-fonts" style="display:none;">
+                        <div class="toolbar-section-title mt-2" style="margin-bottom:4px;">PDF Fonts</div>
+                    </div>
                 </div>
                 
                 <!-- Font Size -->
@@ -565,6 +647,7 @@
     const previewImage = document.getElementById('previewImage');
     const canvasWrapper = document.getElementById('canvasWrapper');
     const textOverlay = document.getElementById('textOverlay');
+    const previewCanvasWrapper = canvasWrapper; // The wrapper element for canvas
     const currentPageEl = document.getElementById('currentPage');
     const totalPagesEl = document.getElementById('totalPages');
     const prevPageBtn = document.getElementById('prevPage');
@@ -578,6 +661,19 @@
     let pages = [];
     let currentPage = 1;
     let zoom = 1;
+    let canvasMode = 'add'; // 'add' or 'select'
+    let isDragging = false;
+    let dragTarget = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragBoxStartX = 0;
+    let dragBoxStartY = 0;
+    let isResizing = false;
+    let resizeHandle = null;
+    let resizeStartX = 0;
+    let resizeStartY = 0;
+    let resizeBoxStartW = 0;
+    let resizeBoxStartH = 0;
     let textBoxes = [];
     let selectedTextBox = null;
     let pdfDoc = null;
@@ -627,6 +723,111 @@
     zoomInBtn.addEventListener('click', () => setZoom(zoom + 0.1));
     zoomOutBtn.addEventListener('click', () => setZoom(zoom - 0.1));
     fitToWidthBtn.addEventListener('click', fitToWidth);
+    
+    // Mode selector controls
+    const modeAddBtn = document.getElementById('modeAdd');
+    const modeSelectBtn = document.getElementById('modeSelect');
+    const coordDisplay = document.getElementById('coordDisplay');
+    
+    modeAddBtn.addEventListener('click', () => {
+        canvasMode = 'add';
+        modeAddBtn.classList.add('active');
+        modeSelectBtn.classList.remove('active');
+        coordDisplay.textContent = 'Mode: Add Text Box (click canvas)';
+        previewCanvasWrapper.classList.remove('move-mode');
+    });
+    
+    modeSelectBtn.addEventListener('click', () => {
+        canvasMode = 'select';
+        modeSelectBtn.classList.add('active');
+        modeAddBtn.classList.remove('active');
+        coordDisplay.textContent = 'Mode: Select/Move (drag text boxes)';
+        previewCanvasWrapper.classList.add('move-mode');
+    });
+    
+    // Canvas wrapper click to add text box
+    previewCanvasWrapper.addEventListener('click', (e) => {
+        if (canvasMode !== 'add') return;
+        if (e.target !== previewCanvasWrapper && e.target.id !== 'previewImage') return;
+        
+        const rect = previewCanvasWrapper.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / zoom;
+        const y = (e.clientY - rect.top) / zoom;
+        
+        const boxes = textBoxes[currentPage - 1] || [];
+        const newBox = {
+            x: x - 100, // Center on click
+            y: y - 15,
+            width: 200,
+            height: 40,
+            text: '',
+            format: { ...currentFormat }
+        };
+        
+        boxes.push(newBox);
+        textBoxes[currentPage - 1] = boxes;
+        
+        renderTextBoxes();
+        
+        // Focus the new text box
+        setTimeout(() => {
+            const lastEl = textOverlay.querySelector(`[data-index="${boxes.length - 1}"]`);
+            if (lastEl) {
+                lastEl.focus();
+                selectTextBox(boxes.length - 1);
+            }
+        }, 100);
+    });
+    
+    // Mouse down for dragging text boxes
+    textOverlay.addEventListener('mousedown', (e) => {
+        if (canvasMode !== 'select') return;
+        
+        const target = e.target.closest('.editable-text');
+        if (!target) return;
+        
+        e.preventDefault();
+        isDragging = true;
+        dragTarget = target;
+        
+        const index = parseInt(target.dataset.index);
+        const box = textBoxes[currentPage - 1][index];
+        
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        dragBoxStartX = box.x;
+        dragBoxStartY = box.y;
+        
+        target.classList.add('dragging');
+    });
+    
+    // Mouse move for dragging
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging || !dragTarget) return;
+        
+        const dx = (e.clientX - dragStartX) / zoom;
+        const dy = (e.clientY - dragStartY) / zoom;
+        
+        const index = parseInt(dragTarget.dataset.index);
+        const box = textBoxes[currentPage - 1][index];
+        
+        box.x = Math.max(0, dragBoxStartX + dx);
+        box.y = Math.max(0, dragBoxStartY + dy);
+        
+        dragTarget.style.left = box.x + 'px';
+        dragTarget.style.top = box.y + 'px';
+        
+        coordDisplay.textContent = `Position: X=${Math.round(box.x)}, Y=${Math.round(box.y)}`;
+    });
+    
+    // Mouse up to stop dragging
+    document.addEventListener('mouseup', () => {
+        if (isDragging && dragTarget) {
+            dragTarget.classList.remove('dragging');
+        }
+        isDragging = false;
+        dragTarget = null;
+    });
     
     // Font controls
     document.getElementById('fontFamily').addEventListener('change', e => {
@@ -764,6 +965,9 @@
                 editorState.classList.remove('d-none');
                 
                 loadPage(1);
+                
+                // Detect fonts from PDF
+                detectPdfFonts(file);
             } else {
                 alert(result.message || 'Failed to load PDF');
             }
@@ -798,6 +1002,43 @@
         
         // Load page for editing
         loadPageForEditing(pageNum);
+    }
+    
+    // Detect fonts from PDF using backend API
+    async function detectPdfFonts(file) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch('/Pdf/GetPdfFonts', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.fonts && result.fonts.length > 0) {
+                const detectedFontsEl = document.getElementById('detectedFonts');
+                detectedFontsEl.innerHTML = '<div class="toolbar-section-title mt-2" style="margin-bottom:4px;">PDF Fonts</div>';
+                
+                result.fonts.forEach(fontName => {
+                    const badge = document.createElement('span');
+                    badge.className = 'font-badge';
+                    badge.textContent = fontName;
+                    badge.title = 'Click to use this font';
+                    badge.addEventListener('click', () => {
+                        document.getElementById('fontFamily').value = fontName;
+                        currentFormat.fontFamily = fontName;
+                        updateSelectedTextBox();
+                    });
+                    detectedFontsEl.appendChild(badge);
+                });
+                
+                detectedFontsEl.style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('Error detecting PDF fonts:', error);
+        }
     }
     
     async function loadPageForEditing(pageNum) {

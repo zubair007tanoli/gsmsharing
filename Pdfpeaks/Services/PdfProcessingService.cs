@@ -877,121 +877,248 @@ public class PdfProcessingService
     /// Save edited PDF with text boxes at specified positions
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> SaveEditedPdfAsync(
-        string inputFile, List<TextBoxPosition>? textBoxes, string outputFileName)
+        string inputPath, List<TextBoxPosition>? textBoxes, string outputFileName)
     {
+        var outputPath = Path.Combine(_tempFilePath, outputFileName);
+
+        if (!File.Exists(inputPath))
+            return (false, outputPath, "Input file not found.");
+
         try
         {
-            if (!File.Exists(inputFile))
-                return (false, "", "Input file not found.");
+            // ── Open the source document ──────────────────────────────────────────
+            using var document = PdfSharpCore.Pdf.IO.PdfReader.Open(
+                inputPath, PdfSharpCore.Pdf.IO.PdfDocumentOpenMode.Modify);
 
-            using var inputDocument = PdfReader.Open(inputFile);
-            
-            if (textBoxes != null && textBoxes.Count > 0)
+            if (textBoxes == null || textBoxes.Count == 0)
             {
-                // Group text boxes by page
-                var boxesByPage = textBoxes
-                    .Where(b => b.Page >= 1 && b.Page <= inputDocument.Pages.Count)
-                    .GroupBy(b => b.Page - 1);
-                
-                foreach (var pageGroup in boxesByPage)
+                document.Save(outputPath);
+                return (true, outputPath, "PDF saved (no text boxes added).");
+            }
+
+            // Group boxes by page number (1-based)
+            var byPage = textBoxes.GroupBy(b => b.Page).ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var pageEntry in byPage)
+            {
+                int pageNum = pageEntry.Key;
+                if (pageNum < 1 || pageNum > document.PageCount) continue;
+
+                var page   = document.Pages[pageNum - 1];
+                double pageWidthPt  = page.Width.Point;   // e.g. 595
+                double pageHeightPt = page.Height.Point;  // e.g. 842
+
+                using var gfx = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page);
+
+                foreach (var box in pageEntry.Value)
                 {
-                    var pageIndex = pageGroup.Key;
-                    var page = inputDocument.Pages[pageIndex];
-                    
-                    using var gfx = XGraphics.FromPdfPage(page, XGraphicsPdfPageOptions.Append);
-                    
-                    foreach (var box in pageGroup)
+                    if (string.IsNullOrWhiteSpace(box.Text)) continue;
+
+                    // ── Coordinate conversion ──────────────────────────────────
+                    // The front-end renders the page as an image. Box.X / Box.Y are
+                    // pixel coordinates in that image (origin = top-left).
+                    // We need the image width to compute the scale factor.
+                    // Default: assume image is rendered at 96 DPI from 72pt PDF.
+                    // If the client sends ImageWidth we use it (future enhancement).
+                    double renderWidthPx = box.ImageWidth > 0 ? box.ImageWidth : pageWidthPt * (96.0 / 72.0);
+                    double scale = pageWidthPt / renderWidthPx; // pt per px
+
+                    double x  = box.X  * scale;
+                    double y  = box.Y  * scale; // still from top
+
+                    // PdfSharp uses top-left origin for XGraphics.DrawString when
+                    // passed an XRect — no need to flip.
+                    double w  = (box.Width  > 0 ? box.Width  : 200) * scale;
+                    double h  = (box.Height > 0 ? box.Height : 40)  * scale;
+
+                    var rect = new PdfSharpCore.Drawing.XRect(x, y, w, h);
+
+                    // ── Background ────────────────────────────────────────────
+                    var bgColor = ParseColor(box.BgColor);
+                    if (bgColor.A > 10) // skip near-transparent
                     {
-                        if (string.IsNullOrWhiteSpace(box.Text))
-                            continue;
-                        
-                        // Create font with specified attributes
-                        var fontStyle = XFontStyle.Regular;
-                        if (box.Bold && box.Italic)
-                            fontStyle = XFontStyle.BoldItalic;
-                        else if (box.Bold)
-                            fontStyle = XFontStyle.Bold;
-                        else if (box.Italic)
-                            fontStyle = XFontStyle.Italic;
-                        
-                        try
-                        {
-                            var font = new XFont(box.FontFamily, box.FontSize, fontStyle);
-                            
-                            // Parse colors
-                            var textColor = XColor.FromArgb(System.Drawing.ColorTranslator.FromHtml(box.TextColor).ToArgb());
-                            var bgColor = XColor.FromArgb(System.Drawing.ColorTranslator.FromHtml(box.BgColor).ToArgb());
-                            
-                            // Draw background
-                            if (box.BgColor != "#ffffff" && box.BgColor != "transparent")
-                            {
-                                gfx.DrawRectangle(new XSolidBrush(bgColor), box.X, box.Y, box.Width, box.Height);
-                            }
-                            
-                            // Draw text with underline or strikethrough if needed
-                            var brush = new XSolidBrush(textColor);
-                            
-                            // Calculate text alignment
-                            var textSize = gfx.MeasureString(box.Text, font);
-                            double xPos = box.X;
-                            
-                            switch (box.Align.ToLower())
-                            {
-                                case "center":
-                                    xPos = box.X + (box.Width - textSize.Width) / 2;
-                                    break;
-                                case "right":
-                                    xPos = box.X + box.Width - textSize.Width;
-                                    break;
-                            }
-                            
-                            // Draw the text
-                            gfx.DrawString(box.Text, font, brush, xPos, box.Y + box.FontSize);
-                            
-                            // Draw underline
-                            if (box.Underline)
-                            {
-                                var underlineY = box.Y + box.FontSize + 2;
-                                gfx.DrawLine(new XPen(textColor, 1), box.X, underlineY, box.X + box.Width, underlineY);
-                            }
-                            
-                            // Draw strikethrough
-                            if (box.Strikethrough)
-                            {
-                                var strikeY = box.Y + box.FontSize / 2;
-                                gfx.DrawLine(new XPen(textColor, 1), box.X, strikeY, box.X + box.Width, strikeY);
-                            }
-                        }
-                        catch (Exception fontEx)
-                        {
-                            _logger.LogWarning(fontEx, "Could not create font {Font}, using default", box.FontFamily);
-                            // Fallback to default font
-                            var font = new XFont("Arial", box.FontSize, XFontStyle.Regular);
-                            var textColor = XBrushes.Black;
-                            
-                            if (box.BgColor != "#ffffff" && box.BgColor != "transparent")
-                            {
-                                var bgColor = XColor.FromArgb(System.Drawing.ColorTranslator.FromHtml(box.BgColor).ToArgb());
-                                gfx.DrawRectangle(new XSolidBrush(bgColor), box.X, box.Y, box.Width, box.Height);
-                            }
-                            
-                            gfx.DrawString(box.Text, font, textColor, box.X, box.Y + box.FontSize);
-                        }
+                        var bgBrush = new PdfSharpCore.Drawing.XSolidBrush(bgColor);
+                        gfx.DrawRectangle(bgBrush, rect);
                     }
+
+                    // ── Font ──────────────────────────────────────────────────
+                    var fontStyle = PdfSharpCore.Drawing.XFontStyle.Regular;
+                    if (box.Bold   && box.Italic) fontStyle = PdfSharpCore.Drawing.XFontStyle.BoldItalic;
+                    else if (box.Bold)            fontStyle = PdfSharpCore.Drawing.XFontStyle.Bold;
+                    else if (box.Italic)          fontStyle = PdfSharpCore.Drawing.XFontStyle.Italic;
+
+                    string fontName = !string.IsNullOrEmpty(box.FontFamily) ? box.FontFamily : "Arial";
+                    double fontSize = (box.FontSize > 0 ? box.FontSize : 16) * scale;
+
+                    PdfSharpCore.Drawing.XFont font;
+                    try
+                    {
+                        font = new PdfSharpCore.Drawing.XFont(fontName, fontSize, fontStyle);
+                    }
+                    catch
+                    {
+                        // Fallback to Arial if font not found
+                        font = new PdfSharpCore.Drawing.XFont("Arial", fontSize, fontStyle);
+                    }
+
+                    // ── Text color ───────────────────────────────────────────
+                    var textColor = ParseColor(box.TextColor ?? "#000000");
+                    var brush     = new PdfSharpCore.Drawing.XSolidBrush(textColor);
+
+                    // ── Alignment ────────────────────────────────────────────
+                    var fmt = new PdfSharpCore.Drawing.XStringFormat();
+                    fmt.LineAlignment = PdfSharpCore.Drawing.XLineAlignment.Near;
+                    fmt.Alignment = (box.Align?.ToLower()) switch
+                    {
+                        "center"  => PdfSharpCore.Drawing.XStringAlignment.Center,
+                        "right"   => PdfSharpCore.Drawing.XStringAlignment.Far,
+                        _         => PdfSharpCore.Drawing.XStringAlignment.Near
+                    };
+
+                    // ── Draw text (word-wrap via line splitting) ──────────────
+                    DrawWrappedText(gfx, box.Text, font, brush, rect, fmt, box.Underline, box.Strikethrough, box.LineHeight);
                 }
             }
 
-            var outputPath = Path.Combine(_tempFilePath, outputFileName);
-            inputDocument.Save(outputPath);
-            
-            var textBoxCount = textBoxes?.Count ?? 0;
-            return (true, outputPath, $"PDF saved successfully with {textBoxCount} text box(es).");
+            document.Save(outputPath);
+            _logger.LogInformation("Saved edited PDF: {Output}", outputPath);
+            return (true, outputPath, "PDF saved successfully with text overlays.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving edited PDF");
-            return (false, "", ex.Message);
+            return (false, outputPath, $"Error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Draw text with manual word-wrap inside a rect.
+    /// </summary>
+    private static void DrawWrappedText(
+        PdfSharpCore.Drawing.XGraphics gfx,
+        string text,
+        PdfSharpCore.Drawing.XFont font,
+        PdfSharpCore.Drawing.XSolidBrush brush,
+        PdfSharpCore.Drawing.XRect rect,
+        PdfSharpCore.Drawing.XStringFormat fmt,
+        bool underline,
+        bool strikethrough,
+        double lineHeight)
+    {
+        if (lineHeight <= 0) lineHeight = 1.4;
+        double lineH = font.GetHeight() * lineHeight;
+
+        // Split into lines, then word-wrap each
+        var rawLines = text.Replace("\r\n", "\n").Split('\n');
+        var lines    = new List<string>();
+
+        foreach (var raw in rawLines)
+        {
+            var words   = raw.Split(' ');
+            var current = new System.Text.StringBuilder();
+            foreach (var word in words)
+            {
+                var test = current.Length == 0 ? word : current + " " + word;
+                if (gfx.MeasureString(test, font).Width > rect.Width && current.Length > 0)
+                {
+                    lines.Add(current.ToString());
+                    current.Clear();
+                    current.Append(word);
+                }
+                else
+                {
+                    if (current.Length > 0) current.Append(' ');
+                    current.Append(word);
+                }
+            }
+            lines.Add(current.ToString());
+        }
+
+        double y = rect.Y;
+        foreach (var line in lines)
+        {
+            if (y + lineH > rect.Y + rect.Height + lineH) break; // clip
+
+            var lineRect = new PdfSharpCore.Drawing.XRect(rect.X, y, rect.Width, lineH);
+            gfx.DrawString(line, font, brush, lineRect, fmt);
+
+            // Underline / strikethrough via lines
+            if (underline || strikethrough)
+            {
+                double textW = gfx.MeasureString(line, font).Width;
+                double lineX = rect.X;
+                if (fmt.Alignment == PdfSharpCore.Drawing.XStringAlignment.Center)
+                    lineX = rect.X + (rect.Width - textW) / 2;
+                else if (fmt.Alignment == PdfSharpCore.Drawing.XStringAlignment.Far)
+                    lineX = rect.X + rect.Width - textW;
+
+                var pen = new PdfSharpCore.Drawing.XPen(brush.Color, 0.8);
+                if (underline)
+                    gfx.DrawLine(pen, lineX, y + lineH - 1, lineX + textW, y + lineH - 1);
+                if (strikethrough)
+                    gfx.DrawLine(pen, lineX, y + lineH / 2, lineX + textW, y + lineH / 2);
+            }
+
+            y += lineH;
+        }
+    }
+
+    /// <summary>
+    /// Parse hex (#RRGGBB) or rgba(r,g,b,a) into XColor.
+    /// </summary>
+    private static PdfSharpCore.Drawing.XColor ParseColor(string? colorStr)
+    {
+        if (string.IsNullOrWhiteSpace(colorStr))
+            return PdfSharpCore.Drawing.XColor.FromArgb(255, 0, 0, 0);
+
+        colorStr = colorStr.Trim();
+
+        // rgba(r, g, b, a)
+        if (colorStr.StartsWith("rgba", StringComparison.OrdinalIgnoreCase))
+        {
+            var inside = colorStr.Substring(colorStr.IndexOf('(') + 1).TrimEnd(')');
+            var parts  = inside.Split(',');
+            if (parts.Length >= 4 &&
+                int.TryParse(parts[0].Trim(), out int r2) &&
+                int.TryParse(parts[1].Trim(), out int g2) &&
+                int.TryParse(parts[2].Trim(), out int b2) &&
+                double.TryParse(parts[3].Trim(), System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out double a2))
+            {
+                return PdfSharpCore.Drawing.XColor.FromArgb((int)(a2 * 255), r2, g2, b2);
+            }
+        }
+
+        // rgb(r, g, b)
+        if (colorStr.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
+        {
+            var inside = colorStr.Substring(colorStr.IndexOf('(') + 1).TrimEnd(')');
+            var parts  = inside.Split(',');
+            if (parts.Length >= 3 &&
+                int.TryParse(parts[0].Trim(), out int r3) &&
+                int.TryParse(parts[1].Trim(), out int g3) &&
+                int.TryParse(parts[2].Trim(), out int b3))
+            {
+                return PdfSharpCore.Drawing.XColor.FromArgb(255, r3, g3, b3);
+            }
+        }
+
+        // #RRGGBB or #RGB
+        if (colorStr.StartsWith("#"))
+        {
+            try
+            {
+                var hex = colorStr.TrimStart('#');
+                if (hex.Length == 3) hex = string.Concat(hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]);
+                int r4 = Convert.ToInt32(hex.Substring(0, 2), 16);
+                int g4 = Convert.ToInt32(hex.Substring(2, 2), 16);
+                int b4 = Convert.ToInt32(hex.Substring(4, 2), 16);
+                return PdfSharpCore.Drawing.XColor.FromArgb(255, r4, g4, b4);
+            }
+            catch { }
+        }
+
+        return PdfSharpCore.Drawing.XColor.FromArgb(255, 0, 0, 0);
     }
 
     /// <summary>
