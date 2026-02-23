@@ -1208,15 +1208,15 @@ public class PdfController : Controller
             var (success, outputPaths, resultMessage) = await _pdfProcessingService.ConvertToImagesAsync(
                 filePath, outputPrefix, "png", new List<int> { page });
 
-            // Cleanup input file
-            try { System.IO.File.Delete(filePath); } catch { }
-
             if (success && outputPaths.Count > 0)
             {
                 var imageUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPaths[0]))}";
                 
-                // Get text elements from PDF
+                // Get text elements from PDF (filePath must still exist)
                 var textElements = _pdfProcessingService.GetTextElements(filePath, page);
+
+                // Cleanup input file after we're done
+                try { System.IO.File.Delete(filePath); } catch { }
 
                 return Json(new { 
                     success = true, 
@@ -1225,6 +1225,7 @@ public class PdfController : Controller
                 });
             }
 
+            try { System.IO.File.Delete(filePath); } catch { }
             return Json(new { success = false, message = resultMessage });
         }
         catch (Exception ex)

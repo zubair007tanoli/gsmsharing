@@ -988,9 +988,36 @@
         showLoading('Saving PDF...');
         
         try {
+            // Flatten textBoxes to backend format: List<TextBoxPosition> with Page, X, Y, Width, Height, Text, FontFamily, etc.
+            const flatBoxes = [];
+            textBoxes.forEach((pageBoxes, pageIdx) => {
+                (pageBoxes || []).forEach(box => {
+                    const fmt = box.format || currentFormat;
+                    flatBoxes.push({
+                        Page: pageIdx + 1,
+                        X: box.x ?? 50,
+                        Y: box.y ?? 50,
+                        Width: box.width ?? 200,
+                        Height: box.height ?? 30,
+                        Text: (box.text || '').replace(/^Click to edit\.\.\.$/, ''),
+                        FontFamily: fmt.fontFamily || 'Arial',
+                        FontSize: fmt.fontSize || 16,
+                        TextColor: fmt.textColor || '#000000',
+                        BgColor: fmt.bgColor || '#ffffff',
+                        Bold: fmt.bold || false,
+                        Italic: fmt.italic || false,
+                        Underline: fmt.underline || false,
+                        Strikethrough: fmt.strikethrough || false,
+                        Align: fmt.align || 'left',
+                        LineHeight: fmt.lineHeight ?? 1.5,
+                        LetterSpacing: fmt.letterSpacing ?? 0
+                    });
+                });
+            });
+
             const formData = new FormData();
             formData.append('file', currentFile);
-            formData.append('textBoxes', JSON.stringify(textBoxes));
+            formData.append('textBoxes', JSON.stringify(flatBoxes));
             
             const response = await fetch('/Pdf/SaveEditedPdf', {
                 method: 'POST',
