@@ -828,36 +828,56 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Get text elements from a PDF page using PdfPig
+    /// Get text elements from a PDF page using PdfPig with basic geometry.
+    /// Returns one element per word with bounding boxes in PDF point coordinates.
     /// </summary>
     public List<PdfTextElement> GetTextElements(string inputFile, int pageNumberOneBased)
     {
         var elements = new List<PdfTextElement>();
-        
+
         try
         {
             if (!File.Exists(inputFile))
                 return elements;
-            
+
             using var document = UglyToad.PdfPig.PdfDocument.Open(inputFile);
-            int pageIndex = pageNumberOneBased - 1;
-            
-            if (pageIndex < 0 || pageIndex >= document.NumberOfPages)
+
+            if (pageNumberOneBased < 1 || pageNumberOneBased > document.NumberOfPages)
                 return elements;
-            
-            var page = document.GetPage(pageIndex + 1);
-            var text = page.Text;
-            
-            // Return basic text element with page text
-            if (!string.IsNullOrWhiteSpace(text))
+
+            var page = document.GetPage(pageNumberOneBased);
+            var pageWidth = page.Width;
+            var pageHeight = page.Height;
+
+            // Use words as a good compromise between granularity and performance
+            var words = page.GetWords();
+
+            // Safety cap to avoid flooding the client on very dense pages
+            const int maxElements = 3000;
+            int count = 0;
+
+            foreach (var word in words)
             {
+                if (count++ >= maxElements)
+                    break;
+
+                var box = word.BoundingBox;
+                if (box == null)
+                    continue;
+
+                // PdfPig uses a bottom-left origin; convert Y so that 0,0 is top-left in PDF space.
+                var x = box.Left;
+                var yTop = pageHeight - box.Top;
+                var width = box.Width;
+                var height = box.Height;
+
                 elements.Add(new PdfTextElement
                 {
-                    Text = text,
-                    X = 0,
-                    Y = 0,
-                    Width = 0,
-                    Height = 0,
+                    Text = word.Text,
+                    X = x,
+                    Y = yTop,
+                    Width = width,
+                    Height = height,
                     FontFamily = "Arial",
                     FontSize = 12,
                     IsBold = false,
@@ -867,9 +887,9 @@ public class PdfProcessingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error extracting text elements");
+            _logger.LogError(ex, "Error extracting text elements for edit overlay");
         }
-        
+
         return elements;
     }
 
@@ -1169,7 +1189,8 @@ public class PdfProcessingService
     }
 
     /// <summary>
-    /// Extract text from PDF
+    /// Extract full text from a PDF using PdfPig.
+    /// Returns concatenated page text with simple page markers.
     /// </summary>
     public async Task<(bool success, string text, string message)> ExtractTextAsync(string inputFile)
     {
@@ -1177,18 +1198,42 @@ public class PdfProcessingService
         {
             if (!File.Exists(inputFile))
             {
-                return (false, "", "Input file not found.");
+                return (false, string.Empty, "Input file not found.");
             }
 
-            using var document = PdfReader.Open(inputFile);
-            var text = new System.Text.StringBuilder();
+            return await Task.Run<(bool success, string text, string message)>(() =>
+            {
+                try
+                {
+                    var sb = new StringBuilder();
 
-            return (true, text.ToString(), "Text extracted successfully.");
+                    using var document = UglyToad.PdfPig.PdfDocument.Open(inputFile);
+                    int pageIndex = 1;
+
+                    foreach (var page in document.GetPages())
+                    {
+                        var pageText = page.Text ?? string.Empty;
+
+                        sb.AppendLine($"[Page {pageIndex}]");
+                        sb.AppendLine(pageText);
+                        sb.AppendLine();
+
+                        pageIndex++;
+                    }
+
+                    return (true, sb.ToString(), "Text extracted successfully.");
+                }
+                catch (Exception exInner)
+                {
+                    _logger.LogError(exInner, "Error extracting text from PDF via PdfPig");
+                    return (false, string.Empty, $"Error extracting text: {exInner.Message}");
+                }
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting text from PDF");
-            return (false, "", $"Error extracting text: {ex.Message}");
+            return (false, string.Empty, $"Error extracting text: {ex.Message}");
         }
     }
 

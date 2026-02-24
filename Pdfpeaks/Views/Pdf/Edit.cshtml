@@ -1225,7 +1225,7 @@
         }, 100);
     }
     
-    async function savePdf() {
+        async function savePdf() {
         showLoading('Saving PDF...');
         
         try {
@@ -1240,6 +1240,8 @@
                         Y: box.y ?? 50,
                         Width: box.width ?? 200,
                         Height: box.height ?? 30,
+                        // Send the rendered image width so the backend can scale from pixel space to PDF points
+                        ImageWidth: (previewImage && (previewImage.naturalWidth || previewImage.width)) || canvasWrapper.offsetWidth || 0,
                         Text: (box.text || '').replace(/^Click to edit\.\.\.$/, ''),
                         FontFamily: fmt.fontFamily || 'Arial',
                         FontSize: fmt.fontSize || 16,
