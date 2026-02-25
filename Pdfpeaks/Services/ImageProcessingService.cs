@@ -556,16 +556,20 @@ public class ImageProcessingService
                 
                 // Note: For full PDF rendering, you'd need PDFium or similar
                 // This is a placeholder that creates a basic representation
+                using var font = new SKFont
+                {
+                    Size = 16,
+                    Typeface = SKTypeface.FromFamilyName("Arial")
+                };
                 using var paint = new SKPaint
                 {
                     Color = SKColors.Black,
-                    TextSize = 16,
                     IsAntialias = true
                 };
                 
                 // Draw page number
-                canvas.DrawText($"Page {pageNum} of {pageCount}", 20, 30, paint);
-                canvas.DrawText($"Size: {page.Width:F1} x {page.Height:F1} points", 20, 60, paint);
+                canvas.DrawText($"Page {pageNum} of {pageCount}", 20, 30, SKTextAlign.Left, font, paint);
+                canvas.DrawText($"Size: {page.Width:F1} x {page.Height:F1} points", 20, 60, SKTextAlign.Left, font, paint);
                 
                 // Save to file
                 var outputFileName = $"{outputPrefix}_page_{pageNum}.png";

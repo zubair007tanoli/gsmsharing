@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Http;
 
 namespace Pdfpeaks.Services;
 
@@ -15,10 +16,12 @@ public class AIService
     private readonly string _apiKey;
     private readonly bool _isEnabled;
 
-    public AIService(ILogger<AIService> logger, IConfiguration configuration)
+    public AIService(ILogger<AIService> logger, IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
-        _httpClient = new HttpClient();
+        
+        // Use IHttpClientFactory to create HttpClient (prevents socket exhaustion)
+        _httpClient = httpClientFactory.CreateClient("AIService");
         
         // Get configuration from appsettings
         _aiServiceUrl = configuration["AIService:Url"] ?? "http://localhost:8000";

@@ -54,7 +54,10 @@ builder.Services.AddControllersWithViews()
 builder.Services.AddHttpContextAccessor();
 
 // ============ Database Configuration ============
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? "Server=localhost;Database=Pdfpeaks;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;";
+
 if (!string.IsNullOrEmpty(connectionString))
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -144,6 +147,16 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddSingleton<DocumentAnalysisService>();
 builder.Services.AddScoped<AIService>();
 
+// Configure HttpClientFactory for AIService
+builder.Services.AddHttpClient("AIService")
+    .ConfigureHttpClient((serviceProvider, client) =>
+    {
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+        var aiServiceUrl = configuration["AIService:Url"] ?? "http://localhost:8000";
+        client.BaseAddress = new Uri(aiServiceUrl);
+        client.Timeout = TimeSpan.FromMinutes(5);
+    });
+
 // Caching Services
 builder.Services.AddSingleton<RedisCacheService>();
 
@@ -158,12 +171,16 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<FileProcessingService>();
 builder.Services.AddScoped<PdfProcessingService>();
 builder.Services.AddScoped<ImageProcessingService>();
+builder.Services.AddScoped<ImageEnhancementService>();
 builder.Services.AddScoped<SitemapService>();
 
 // Infrastructure Services
 builder.Services.AddSingleton<CustomRateLimitService>();
 builder.Services.AddSingleton<HealthCheckAggregator>();
 builder.Services.AddSingleton<ProcessingBroadcastService>();
+
+// Background Services
+builder.Services.AddHostedService<TempFileCleanupService>();
 
 // ============ Add Rate Limiting ============
 builder.Services.AddPdfpeaksRateLimiting(builder.Configuration);
@@ -326,10 +343,34 @@ app.MapControllerRoute(
 app.MapHub<ProcessingHub>("/hubs/processing");
 
 // Map health check endpoint
-app.MapGet("/health", async (HealthCheckAggregator aggregator) =>
+app.MapGet("/health", async (HealthCheckAggregator aggregator, [FromServices] TempFileCleanupService cleanupService) =>
 {
     var health = await aggregator.GetHealthStatusAsync();
-    return Results.Ok(health);
+    var tempStats = cleanupService.GetStats();
+    return Results.Ok(new
+    {
+        health,
+        tempFiles = new
+        {
+            totalFiles = tempStats.TotalFiles,
+            expiredFiles = tempStats.ExpiredFiles,
+            totalSizeMB = Math.Round(tempStats.TotalSizeMB, 2)
+        }
+    });
+});
+
+// Manual temp file cleanup endpoint (admin only)
+app.MapPost("/admin/cleanup-temp-files", async (TempFileCleanupService cleanupService) =>
+{
+    await cleanupService.CleanupOldFilesAsync();
+    var stats = cleanupService.GetStats();
+    return Results.Ok(new
+    {
+        success = true,
+        message = "Cleanup completed",
+        remainingFiles = stats.TotalFiles,
+        remainingSizeMB = Math.Round(stats.TotalSizeMB, 2)
+    });
 });
 
 app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

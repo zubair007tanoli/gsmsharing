@@ -14,6 +14,7 @@ public class PdfController : Controller
     private readonly UserManager<ApplicationUser>? _userManager;
     private readonly FileProcessingService _fileProcessingService;
     private readonly PdfProcessingService _pdfProcessingService;
+    private readonly ImageEnhancementService _imageEnhancementService;
     private readonly IWebHostEnvironment _environment;
 
     public PdfController(
@@ -21,12 +22,14 @@ public class PdfController : Controller
         UserManager<ApplicationUser>? userManager,
         FileProcessingService fileProcessingService,
         PdfProcessingService pdfProcessingService,
+        ImageEnhancementService imageEnhancementService,
         IWebHostEnvironment environment)
     {
         _logger = logger;
         _userManager = userManager;
         _fileProcessingService = fileProcessingService;
         _pdfProcessingService = pdfProcessingService;
+        _imageEnhancementService = imageEnhancementService;
         _environment = environment;
     }
 
@@ -1190,6 +1193,9 @@ public class PdfController : Controller
     /// <summary>
     /// Get a specific page as image for editing
     /// </summary>
+    /// <summary>
+    /// Get a specific page as image for editing
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> GetPageForEdit([FromForm] IFormFile file, int page = 1)
     {
@@ -1213,7 +1219,7 @@ public class PdfController : Controller
                 var imageUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPaths[0]))}";
                 
                 // Get text elements from PDF (filePath must still exist)
-                var textElements = _pdfProcessingService.GetTextElements(filePath, page);
+                var (textElements, pageWidth, pageHeight) = _pdfProcessingService.GetTextElementsWithDimensions(filePath, page);
 
                 // Cleanup input file after we're done
                 try { System.IO.File.Delete(filePath); } catch { }
@@ -1221,7 +1227,9 @@ public class PdfController : Controller
                 return Json(new { 
                     success = true, 
                     imageUrl,
-                    textElements
+                    textElements,
+                    pageWidth,
+                    pageHeight
                 });
             }
 
@@ -1231,6 +1239,117 @@ public class PdfController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting page for edit");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Enhance a PDF page image before editing (CamScanner-style)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> EnhancePageForEdit(
+        [FromForm] IFormFile file, 
+        int page = 1,
+        string mode = "document",
+        bool enhance = true,
+        bool deskew = false,
+        bool binarize = false)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        try
+        {
+            // First convert the page to image
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "pageenhance");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputPrefix = Path.GetFileNameWithoutExtension(fileName);
+
+            // Convert to PNG image
+            var (success, outputPaths, resultMessage) = await _pdfProcessingService.ConvertToImagesAsync(
+                filePath, outputPrefix, "png", new List<int> { page });
+
+            if (!success || outputPaths.Count == 0)
+            {
+                try { System.IO.File.Delete(filePath); } catch { }
+                return Json(new { success = false, message = resultMessage });
+            }
+
+            var pageImagePath = outputPaths[0];
+            
+            // Apply enhancement if requested
+            if (enhance)
+            {
+                var enhancedFileName = $"enhanced_{Path.GetFileName(pageImagePath)}";
+                
+                var options = new ImageEnhancementOptions
+                {
+                    Mode = mode,
+                    SharpenStrength = 1.0f,
+                    AutoDeskew = deskew
+                };
+
+                var (enhanceSuccess, enhancedPath, enhanceMessage) = await _imageEnhancementService.EnhanceDocumentAsync(
+                    pageImagePath, enhancedFileName, options);
+
+                if (enhanceSuccess)
+                {
+                    // Clean up original unenhanced image
+                    try { System.IO.File.Delete(pageImagePath); } catch { }
+                    pageImagePath = enhancedPath;
+                }
+            }
+
+            // Apply binarization if requested
+            if (binarize)
+            {
+                var bwFileName = $"bw_{Path.GetFileName(pageImagePath)}";
+                var (bwSuccess, bwPath, bwMessage) = await _imageEnhancementService.BinarizeAsync(
+                    pageImagePath, bwFileName, 128);
+
+                if (bwSuccess)
+                {
+                    try { System.IO.File.Delete(pageImagePath); } catch { }
+                    pageImagePath = bwPath;
+                }
+            }
+
+            // Apply deskew if requested
+            if (deskew && !enhance)
+            {
+                var deskewFileName = $"deskew_{Path.GetFileName(pageImagePath)}";
+                var (deskewSuccess, deskewPath, deskewMessage) = await _imageEnhancementService.DeskewAsync(
+                    pageImagePath, deskewFileName);
+
+                if (deskewSuccess)
+                {
+                    try { System.IO.File.Delete(pageImagePath); } catch { }
+                    pageImagePath = deskewPath;
+                }
+            }
+
+            // Get text elements from original PDF (before enhancement)
+            var (textElements, pageWidth, pageHeight) = _pdfProcessingService.GetTextElementsWithDimensions(filePath, page);
+
+            // Cleanup input file
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            var imageUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(Path.GetFileName(pageImagePath))}";
+
+            return Json(new {
+                success = true,
+                imageUrl,
+                textElements,
+                pageWidth,
+                pageHeight,
+                message = "Page enhanced successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enhancing page for edit");
             return Json(new { success = false, message = $"Error: {ex.Message}" });
         }
     }

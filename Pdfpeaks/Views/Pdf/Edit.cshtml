@@ -1053,9 +1053,67 @@
             });
             
             const result = await response.json();
-            if (result.success && result.textElements) {
-                // Process text elements from server
-                // For now, we create empty text boxes that user can add
+            if (result.success && result.textElements && result.textElements.length > 0) {
+                // Convert PDF text elements to editable text boxes
+                // PDF coordinates: origin is bottom-left, need to convert to top-left for HTML
+                const pageHeight = previewImage.naturalHeight || canvasWrapper.offsetHeight;
+                
+                // Get the image dimensions for proper scaling
+                const imageWidth = previewImage.naturalWidth || canvasWrapper.offsetWidth;
+                
+                // Calculate scale factor between PDF points and image pixels
+                // PDF is 72 DPI, image is rendered at higher DPI
+                const scaleX = imageWidth / (result.pageWidth || 612); // Default to letter width
+                const scaleY = pageHeight / (result.pageHeight || 792); // Default to letter height
+                
+                // Initialize or get current page's text boxes
+                if (!textBoxes[currentPage - 1]) {
+                    textBoxes[currentPage - 1] = [];
+                }
+                
+                // Add each text element as an editable overlay
+                result.textElements.forEach((element, idx) => {
+                    // Skip very small elements (likely noise)
+                    if (element.Width < 5 || element.Height < 5) return;
+                    
+                    // Convert PDF coordinates (bottom-left origin) to HTML coordinates (top-left origin)
+                    // Y in PDF: 0 is bottom, Y in HTML: 0 is top
+                    const htmlY = pageHeight - element.Y - element.Height;
+                    
+                    // Scale coordinates
+                    const x = element.X * scaleX;
+                    const y = htmlY * scaleY;
+                    const width = element.Width * scaleX;
+                    const height = Math.max(element.Height * scaleY, 20); // Minimum height for visibility
+                    
+                    // Check if this element already exists (by position proximity)
+                    const existingIdx = textBoxes[currentPage - 1].findIndex(box => 
+                        Math.abs(box.x - x) < 10 && Math.abs(box.y - y) < 10
+                    );
+                    
+                    if (existingIdx === -1) {
+                        // Add new text box with existing text
+                        textBoxes[currentPage - 1].push({
+                            x: x,
+                            y: y,
+                            width: width,
+                            height: height,
+                            text: element.Text || '',
+                            format: {
+                                fontFamily: element.FontFamily || 'Arial',
+                                fontSize: (element.FontSize || 12) * scaleX,
+                                bold: element.IsBold || false,
+                                italic: element.IsItalic || false,
+                                textColor: '#000000',
+                                bgColor: 'rgba(255,255,255,0.7)' // Semi-transparent background
+                            }
+                        });
+                    }
+                });
+                
+                // Re-render the text boxes
+                renderTextBoxes();
+                console.log(`Loaded ${result.textElements.length} text elements for page ${pageNum}`);
             }
         } catch (error) {
             console.error('Error loading page for editing:', error);

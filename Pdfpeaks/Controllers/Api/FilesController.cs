@@ -551,7 +551,7 @@ public class FilesController : ControllerBase
             return NotFound(new { success = false, message = "File not found." });
 
         var (success, outputPaths, message) = await _pdfProcessingService.SplitPdfAsync(
-            filePath, startPage, endPage, outputPrefix, operationId: null);
+            filePath, startPage, endPage, outputPrefix);
 
         return Ok(new
         {

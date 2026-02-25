@@ -16,6 +16,7 @@ public class ImageController : Controller
     private readonly UserManager<ApplicationUser>? _userManager;
     private readonly FileProcessingService _fileProcessingService;
     private readonly ImageProcessingService _imageProcessingService;
+    private readonly ImageEnhancementService _imageEnhancementService;
     private readonly IWebHostEnvironment _environment;
 
     public ImageController(
@@ -23,12 +24,14 @@ public class ImageController : Controller
         UserManager<ApplicationUser>? userManager,
         FileProcessingService fileProcessingService,
         ImageProcessingService imageProcessingService,
+        ImageEnhancementService imageEnhancementService,
         IWebHostEnvironment environment)
     {
         _logger = logger;
         _userManager = userManager;
         _fileProcessingService = fileProcessingService;
         _imageProcessingService = imageProcessingService;
+        _imageEnhancementService = imageEnhancementService;
         _environment = environment;
     }
 
@@ -974,6 +977,243 @@ public class ImageController : Controller
         {
             _logger.LogError(ex, "Error enhancing document");
             return Json(new { success = false, message = "An error occurred during document enhancement." });
+        }
+    }
+
+    #endregion
+
+    #region SkiaSharp Enhancement (CamScanner-Style)
+
+    /// <summary>
+    /// Enhance document with SkiaSharp (CamScanner-style)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> EnhanceWithSkiaSharp(
+        IFormFile file, 
+        string mode = "document",
+        float sharpenStrength = 1.0f)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an image file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "skia_enhance");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = Path.ChangeExtension(fileName, ".png");
+
+            var options = new ImageEnhancementOptions
+            {
+                Mode = mode,
+                SharpenStrength = sharpenStrength,
+                AutoContrast = true
+            };
+
+            var (success, outputPath, resultMessage) = await _imageEnhancementService.EnhanceDocumentAsync(
+                filePath, outputFileName, options);
+
+            // Cleanup input file
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success)
+            {
+                var downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPath))}";
+                return Json(new { success = true, downloadUrl, message = resultMessage });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in SkiaSharp enhancement");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Auto-contrast / levels adjustment
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> AutoContrastSkia(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an image file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "skia_contrast");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = Path.ChangeExtension(fileName, ".png");
+
+            var (success, outputPath, resultMessage) = await _imageEnhancementService.AutoContrastAsync(
+                filePath, outputFileName);
+
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success)
+            {
+                var downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPath))}";
+                return Json(new { success = true, downloadUrl, message = resultMessage });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in auto-contrast");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Sharpen image
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> SharpenSkia(IFormFile file, float strength = 1.0f)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an image file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "skia_sharpen");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = Path.ChangeExtension(fileName, ".png");
+
+            var (success, outputPath, resultMessage) = await _imageEnhancementService.SharpenAsync(
+                filePath, outputFileName, strength);
+
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success)
+            {
+                var downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPath))}";
+                return Json(new { success = true, downloadUrl, message = resultMessage });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sharpening image");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Deskew - auto-straighten scanned document
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> DeskewSkia(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an image file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "skia_deskew");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = Path.ChangeExtension(fileName, ".png");
+
+            var (success, outputPath, resultMessage) = await _imageEnhancementService.DeskewAsync(
+                filePath, outputFileName);
+
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success)
+            {
+                var downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPath))}";
+                return Json(new { success = true, downloadUrl, message = resultMessage });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deskewing image");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Binarize - convert to black and white for OCR
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> BinarizeSkia(IFormFile file, int threshold = 128)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an image file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "skia_bw");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = Path.ChangeExtension(fileName, ".png");
+
+            var (success, outputPath, resultMessage) = await _imageEnhancementService.BinarizeAsync(
+                filePath, outputFileName, threshold);
+
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success)
+            {
+                var downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPath))}";
+                return Json(new { success = true, downloadUrl, message = resultMessage });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error binarizing image");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Remove shadows from scanned document
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> RemoveShadowSkia(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload an image file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "skia_deshadow");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = Path.ChangeExtension(fileName, ".png");
+
+            var (success, outputPath, resultMessage) = await _imageEnhancementService.RemoveShadowAsync(
+                filePath, outputFileName);
+
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success)
+            {
+                var downloadUrl = $"/Image/Download?fileName={Uri.EscapeDataString(Path.GetFileName(outputPath))}";
+                return Json(new { success = true, downloadUrl, message = resultMessage });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing shadows");
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
         }
     }
 

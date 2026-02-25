@@ -161,7 +161,7 @@ public class PdfProcessingService
                 page.Size(PageSizes.A4);
                 page.Margin(2, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(11).FontFamily(fontFamilies).Fallback(f => f.FontSize(11).FontFamily("DejaVu Sans")));
+                page.DefaultTextStyle(x => x.FontSize(11).FontFamily(fontFamilies));
 
                 page.Content().Column(column =>
                 {
@@ -862,7 +862,7 @@ public class PdfProcessingService
                     break;
 
                 var box = word.BoundingBox;
-                if (box == null)
+                if (box.Width <= 0 || box.Height <= 0)
                     continue;
 
                 // PdfPig uses a bottom-left origin; convert Y so that 0,0 is top-left in PDF space.
@@ -891,6 +891,74 @@ public class PdfProcessingService
         }
 
         return elements;
+    }
+
+    /// <summary>
+    /// Get text elements with page dimensions for frontend coordinate mapping
+    /// </summary>
+    public (List<PdfTextElement> elements, double pageWidth, double pageHeight) GetTextElementsWithDimensions(
+        string inputFile, int pageNumberOneBased)
+    {
+        var elements = new List<PdfTextElement>();
+        double pageWidth = 612; // Default to Letter width
+        double pageHeight = 792; // Default to Letter height
+
+        try
+        {
+            if (!File.Exists(inputFile))
+                return (elements, pageWidth, pageHeight);
+
+            using var document = UglyToad.PdfPig.PdfDocument.Open(inputFile);
+
+            if (pageNumberOneBased < 1 || pageNumberOneBased > document.NumberOfPages)
+                return (elements, pageWidth, pageHeight);
+
+            var page = document.GetPage(pageNumberOneBased);
+            pageWidth = page.Width;
+            pageHeight = page.Height;
+
+            // Use words as a good compromise between granularity and performance
+            var words = page.GetWords();
+
+            // Safety cap to avoid flooding the client on very dense pages
+            const int maxElements = 3000;
+            int count = 0;
+
+            foreach (var word in words)
+            {
+                if (count++ >= maxElements)
+                    break;
+
+                var box = word.BoundingBox;
+                if (box.Width <= 0 || box.Height <= 0)
+                    continue;
+
+                // PdfPig uses a bottom-left origin; convert Y so that 0,0 is top-left in PDF space.
+                var x = box.Left;
+                var yTop = pageHeight - box.Top;
+                var width = box.Width;
+                var height = box.Height;
+
+                elements.Add(new PdfTextElement
+                {
+                    Text = word.Text,
+                    X = x,
+                    Y = yTop,
+                    Width = width,
+                    Height = height,
+                    FontFamily = "Arial",
+                    FontSize = 12,
+                    IsBold = false,
+                    IsItalic = false
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting text elements with dimensions");
+        }
+
+        return (elements, pageWidth, pageHeight);
     }
 
     /// <summary>
