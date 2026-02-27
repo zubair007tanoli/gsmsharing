@@ -11,6 +11,7 @@ namespace Pdfpeaks.Controllers.Api;
 /// </summary>
 [Route("api/[controller]")]
 [ApiController]
+[IgnoreAntiforgeryToken] // API uses JWT authentication, not CSRF
 public class FilesController : ControllerBase
 {
     private readonly FileProcessingService _fileProcessingService;
@@ -36,14 +37,15 @@ public class FilesController : ControllerBase
 
     /// <summary>Upload a file for any subsequent processing operation.</summary>
     [HttpPost("upload")]
-    public async Task<IActionResult> UploadFile(IFormFile file, string operation)
+    public async Task<IActionResult> UploadFile(IFormFile file, [FromForm] string? operation = null)
     {
         if (file is null || file.Length == 0)
             return BadRequest(new { success = false, message = "No file uploaded." });
 
         try
         {
-            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, operation);
+            var operationType = operation ?? "upload";
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, operationType);
             var filePath = _fileProcessingService.GetFilePath(fileName);
 
             return Ok(new

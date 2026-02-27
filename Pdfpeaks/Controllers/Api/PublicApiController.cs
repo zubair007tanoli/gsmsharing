@@ -18,6 +18,7 @@ namespace Pdfpeaks.Controllers.Api;
 [ApiVersion("2.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
+[IgnoreAntiforgeryToken] // API uses JWT authentication, not CSRF
 public class PublicApiController : ControllerBase
 {
     private readonly ILogger<PublicApiController> _logger;

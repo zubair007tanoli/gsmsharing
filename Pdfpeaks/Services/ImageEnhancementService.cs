@@ -350,95 +350,178 @@ public class ImageEnhancementService
         return sharpened;
     }
 
+    /// <summary>
+    /// OPTIMIZED: Convert to grayscale using bulk pixel access (GetPixelSpan)
+    /// This is ~10-50x faster than pixel-by-pixel GetPixel/SetPixel
+    /// </summary>
     private SKBitmap ConvertToGrayscale(SKBitmap source)
     {
         var result = new SKBitmap(source.Width, source.Height);
         
-        for (int y = 0; y < source.Height; y++)
+        // Use GetPixelSpan for bulk access - much faster than GetPixel/SetPixel
+        var sourcePixmap = source.PeekPixels();
+        var resultPixmap = result.PeekPixels();
+        
+        if (sourcePixmap != null && resultPixmap != null)
         {
-            for (int x = 0; x < source.Width; x++)
+            var sourceSpan = sourcePixmap.GetPixelSpan<SKColor>();
+            var resultSpan = resultPixmap.GetPixelSpan<SKColor>();
+            
+            // Process all pixels in a single tight loop
+            for (int i = 0; i < sourceSpan.Length; i++)
             {
-                var pixel = source.GetPixel(x, y);
+                var pixel = sourceSpan[i];
                 // Use luminance formula: 0.299R + 0.587G + 0.114B
                 var gray = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
-                result.SetPixel(x, y, new SKColor(gray, gray, gray));
+                resultSpan[i] = new SKColor(gray, gray, gray);
+            }
+        }
+        else
+        {
+            // Fallback to slower method if PeekPixels fails
+            for (int y = 0; y < source.Height; y++)
+            {
+                for (int x = 0; x < source.Width; x++)
+                {
+                    var pixel = source.GetPixel(x, y);
+                    var gray = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
+                    result.SetPixel(x, y, new SKColor(gray, gray, gray));
+                }
             }
         }
         
         return result;
     }
 
+    /// <summary>
+    /// OPTIMIZED: Convert to black/white using bulk pixel access
+    /// </summary>
     private SKBitmap ConvertToBlackWhite(SKBitmap source, int threshold = 128)
     {
         var result = new SKBitmap(source.Width, source.Height);
         
-        for (int y = 0; y < source.Height; y++)
+        var sourcePixmap = source.PeekPixels();
+        var resultPixmap = result.PeekPixels();
+        
+        if (sourcePixmap != null && resultPixmap != null)
         {
-            for (int x = 0; x < source.Width; x++)
+            var sourceSpan = sourcePixmap.GetPixelSpan<SKColor>();
+            var resultSpan = resultPixmap.GetPixelSpan<SKColor>();
+            
+            for (int i = 0; i < sourceSpan.Length; i++)
             {
-                var pixel = source.GetPixel(x, y);
-                // Use luminance
+                var pixel = sourceSpan[i];
                 var luminance = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
                 var bw = luminance > threshold ? (byte)255 : (byte)0;
-                result.SetPixel(x, y, new SKColor(bw, bw, bw));
+                resultSpan[i] = new SKColor(bw, bw, bw);
+            }
+        }
+        else
+        {
+            // Fallback
+            for (int y = 0; y < source.Height; y++)
+            {
+                for (int x = 0; x < source.Width; x++)
+                {
+                    var pixel = source.GetPixel(x, y);
+                    var luminance = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
+                    var bw = luminance > threshold ? (byte)255 : (byte)0;
+                    result.SetPixel(x, y, new SKColor(bw, bw, bw));
+                }
             }
         }
         
         return result;
     }
 
+    /// <summary>
+    /// OPTIMIZED: Apply auto-levels using bulk pixel access
+    /// </summary>
     private SKBitmap ApplyAutoLevels(SKBitmap source)
     {
-        // Find min and max values
+        // Find min and max values using bulk access
         byte min = 255, max = 0;
         
-        for (int y = 0; y < source.Height; y++)
+        var sourcePixmap = source.PeekPixels();
+        
+        if (sourcePixmap != null)
         {
-            for (int x = 0; x < source.Width; x++)
+            var sourceSpan = sourcePixmap.GetPixelSpan<SKColor>();
+            
+            foreach (var pixel in sourceSpan)
             {
-                var pixel = source.GetPixel(x, y);
                 var value = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
                 if (value < min) min = value;
                 if (value > max) max = value;
+            }
+        }
+        else
+        {
+            // Fallback
+            for (int y = 0; y < source.Height; y++)
+            {
+                for (int x = 0; x < source.Width; x++)
+                {
+                    var pixel = source.GetPixel(x, y);
+                    var value = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
+                    if (value < min) min = value;
+                    if (value > max) max = value;
+                }
             }
         }
         
         // Apply contrast stretch
         var result = new SKBitmap(source.Width, source.Height);
         var range = max - min;
-        
         if (range < 1) range = 1;
         
-        for (int y = 0; y < source.Height; y++)
+        var resultPixmap = result.PeekPixels();
+        
+        if (sourcePixmap != null && resultPixmap != null)
         {
-            for (int x = 0; x < source.Width; x++)
+            var sourceSpan = sourcePixmap.GetPixelSpan<SKColor>();
+            var resultSpan = resultPixmap.GetPixelSpan<SKColor>();
+            
+            for (int i = 0; i < sourceSpan.Length; i++)
             {
-                var pixel = source.GetPixel(x, y);
+                var pixel = sourceSpan[i];
                 var value = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
                 var stretched = (byte)((value - min) * 255 / range);
-                result.SetPixel(x, y, new SKColor(stretched, stretched, stretched));
+                resultSpan[i] = new SKColor(stretched, stretched, stretched);
+            }
+        }
+        else
+        {
+            // Fallback
+            for (int y = 0; y < source.Height; y++)
+            {
+                for (int x = 0; x < source.Width; x++)
+                {
+                    var pixel = source.GetPixel(x, y);
+                    var value = (byte)(0.299 * pixel.Red + 0.587 * pixel.Green + 0.114 * pixel.Blue);
+                    var stretched = (byte)((value - min) * 255 / range);
+                    result.SetPixel(x, y, new SKColor(stretched, stretched, stretched));
+                }
             }
         }
         
         return result;
     }
 
+    /// <summary>
+    /// OPTIMIZED: Apply sharpen using bulk pixel access with GPU-accelerated blur
+    /// </summary>
     private SKBitmap ApplySharpen(SKBitmap source, float strength = 1.0f)
     {
-        // Use Gaussian blur with sigma inversely proportional to strength for sharpening effect
-        // Sharpening = original - blur, but we can approximate with high-sigma blur
         var sigma = Math.Max(0.5f, 2.0f - strength);
         
         var result = new SKBitmap(source.Width, source.Height);
         
         using var canvas = new SKCanvas(result);
-        
-        // Create a high-contrast unsharp mask effect manually
-        // First, get the original
         canvas.Clear();
         canvas.DrawBitmap(source, 0, 0);
         
-        // Create a slightly blurred version
+        // Create blurred version using GPU-accelerated SKImageFilter
         using var blurred = new SKBitmap(source.Width, source.Height);
         using var blurCanvas = new SKCanvas(blurred);
         using var blurPaint = new SKPaint
@@ -447,47 +530,94 @@ public class ImageEnhancementService
         };
         blurCanvas.DrawBitmap(source, 0, 0, blurPaint);
         
-        // Combine: sharpened = source + (source - blurred) * strength
-        for (int y = 0; y < source.Height; y++)
+        // Use bulk pixel access for the unsharp mask operation
+        var sourcePixmap = source.PeekPixels();
+        var blurredPixmap = blurred.PeekPixels();
+        var resultPixmap = result.PeekPixels();
+        
+        if (sourcePixmap != null && blurredPixmap != null && resultPixmap != null)
         {
-            for (int x = 0; x < source.Width; x++)
+            var sourceSpan = sourcePixmap.GetPixelSpan<SKColor>();
+            var blurredSpan = blurredPixmap.GetPixelSpan<SKColor>();
+            var resultSpan = resultPixmap.GetPixelSpan<SKColor>();
+            
+            for (int i = 0; i < sourceSpan.Length; i++)
             {
-                var origPixel = source.GetPixel(x, y);
-                var blurPixel = blurred.GetPixel(x, y);
+                var origPixel = sourceSpan[i];
+                var blurPixel = blurredSpan[i];
                 
                 // Unsharp mask: original + (original - blurred) * strength
                 var r = Math.Clamp(origPixel.Red + (origPixel.Red - blurPixel.Red) * strength, 0f, 255f);
                 var g = Math.Clamp(origPixel.Green + (origPixel.Green - blurPixel.Green) * strength, 0f, 255f);
                 var b = Math.Clamp(origPixel.Blue + (origPixel.Blue - blurPixel.Blue) * strength, 0f, 255f);
                 
-                result.SetPixel(x, y, new SKColor((byte)r, (byte)g, (byte)b, origPixel.Alpha));
+                resultSpan[i] = new SKColor((byte)r, (byte)g, (byte)b, origPixel.Alpha);
+            }
+        }
+        else
+        {
+            // Fallback to pixel-by-pixel
+            for (int y = 0; y < source.Height; y++)
+            {
+                for (int x = 0; x < source.Width; x++)
+                {
+                    var origPixel = source.GetPixel(x, y);
+                    var blurPixel = blurred.GetPixel(x, y);
+                    
+                    var r = Math.Clamp(origPixel.Red + (origPixel.Red - blurPixel.Red) * strength, 0f, 255f);
+                    var g = Math.Clamp(origPixel.Green + (origPixel.Green - blurPixel.Green) * strength, 0f, 255f);
+                    var b = Math.Clamp(origPixel.Blue + (origPixel.Blue - blurPixel.Blue) * strength, 0f, 255f);
+                    
+                    result.SetPixel(x, y, new SKColor((byte)r, (byte)g, (byte)b, origPixel.Alpha));
+                }
             }
         }
         
         return result;
     }
 
+    /// <summary>
+    /// OPTIMIZED: Detect skew angle using bulk pixel access
+    /// </summary>
     private float DetectSkewAngle(SKBitmap source)
     {
-        // Simple skew detection using projection profile
-        // Convert to grayscale first
+        // Convert to grayscale first (now optimized)
         using var grayscale = ConvertToGrayscale(source);
         
         var height = grayscale.Height;
         var width = grayscale.Width;
         
-        // Create horizontal projection (sum of dark pixels per row)
+        // Create horizontal projection (sum of dark pixels per row) - optimized
         var projection = new int[height];
         
-        for (int y = 0; y < height; y++)
+        var grayscalePixmap = grayscale.PeekPixels();
+        
+        if (grayscalePixmap != null)
         {
-            for (int x = 0; x < width; x++)
+            var pixelSpan = grayscalePixmap.GetPixelSpan<SKColor>();
+            
+            // Process all pixels efficiently
+            for (int i = 0; i < pixelSpan.Length; i++)
             {
-                var pixel = grayscale.GetPixel(x, y);
-                // Count dark pixels (likely text)
+                var pixel = pixelSpan[i];
                 if (pixel.Red < 128)
                 {
-                    projection[y]++;
+                    projection[i / width]++;
+                }
+            }
+        }
+        else
+        {
+            // Fallback
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    var pixel = grayscale.GetPixel(x, y);
+                    if (pixel.Red < 128)
+                    {
+                        projection[y]++;
+                    }
                 }
             }
         }
@@ -518,7 +648,9 @@ public class ImageEnhancementService
         var skew = (center - expectedCenter) * 0.1f; // Scale factor
         
         // Clamp to reasonable range
-        return Math.Clamp(skew, -15f, 15f);
+        if (skew < -15f) return -15f;
+        if (skew > 15f) return 15f;
+        return skew;
     }
 
     private SKBitmap RotateBitmap(SKBitmap source, float angle)

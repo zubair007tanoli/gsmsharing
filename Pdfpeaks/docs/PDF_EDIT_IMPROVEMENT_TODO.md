@@ -293,8 +293,42 @@ Improve the [PdfPeaks Edit PDF](https://pdfpeaks.com/Pdf/Edit) tool to support:
 | Cache | Redis (StackExchange.Redis) |
 | DB | SQL Server + EF Core |
 | Queue | Hangfire (configured but not used) |
-
 ---
+
+## PDF↔Word Conversion Roadmap
+
+### ✅ Completed
+
+- ✅ **C-001: Basic free PDF↔Word / Word↔PDF pipeline**
+  - ASP.NET Core controllers (`PdfController`, `FilesController`) integrated with `PdfProcessingService`.
+  - Python scripts (`pdf_to_word.py`, `convert_pdf.py`, `word_to_pdf.py`) wired via `RunPythonScriptAsync`.
+  - LibreOffice-based Word→PDF path in place with C# fallbacks (OpenXml + QuestPDF).
+
+- ✅ **C-002: Remove extra filename heading from PDF→Word output**
+  - `scripts/pdf_to_word.py` no longer injects the source filename as a heading at the top of the converted `.docx` file.
+  - Keeps converted documents cleaner and closer to the original layout.
+
+- ✅ **C-010: Make pdf2docx the primary PDF→Word path**
+  - `PdfProcessingService.ConvertToWordAsync` now prefers `convert_pdf.py` (pdf2docx) by default and falls back to `pdf_to_word.py` (pdfplumber) when needed.
+  - The preferred engine can be configured via `Conversion:PdfToWordPrimaryEngine` in `appsettings.json`.
+
+- ✅ **C-011: Add timeouts and better error handling for conversion scripts**
+  - `RunPythonScriptAsync` now applies a configurable timeout (default 180 seconds via `Conversion:PythonScriptTimeoutSeconds`) and terminates hung Python processes.
+  - Returns structured error messages when a script exceeds the timeout, improving reliability under load.
+
+### 🟠 Planned / In Progress
+
+- 🟠 **C-012: Background jobs for heavy conversions**
+  - Move large PDF↔Word conversions to Hangfire background jobs instead of blocking HTTP requests.
+  - Expose job status endpoints / SignalR notifications to the frontend.
+
+### 🟡 Future Enhancements
+
+- 🟡 **C-020: Per-plan limits and metrics for conversions**
+  - Integrate with `RateLimitService` and planned Stripe billing to enforce per‑plan limits on conversion size, page count, and frequency.
+
+- 🟡 **C-021: Storage abstraction for converted files**
+  - Move from local `temp_files/` storage to pluggable `IFileStorageService` (Azure Blob/S3) for better scalability and durability.
 
 ## Implementation Order (Recommended)
 

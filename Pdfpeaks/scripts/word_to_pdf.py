@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-Word to PDF conversion using LibreOffice headless (free, no commercial libraries).
-Requires: LibreOffice installed (e.g. apt install libreoffice or download from libreoffice.org)
+Word to PDF conversion.
+Primary: docx2pdf (uses Microsoft Word on Windows, LibreOffice on Linux/Mac) - perfect formatting.
+Fallback: LibreOffice headless directly.
+Requires: pip install docx2pdf
 """
 import sys
 import os
 import subprocess
 import shutil
 
+
 def find_libreoffice():
     """Find soffice/libreoffice executable."""
-    # First try to find it in common locations
     paths_to_check = [
         "/usr/bin/soffice",
         "/usr/bin/libreoffice",
@@ -20,12 +22,11 @@ def find_libreoffice():
     for path in paths_to_check:
         if os.path.isfile(path):
             return path
-    
-    # Then try shutil.which
+
     path = shutil.which("soffice") or shutil.which("libreoffice")
     if path:
         return path
-        
+
     if sys.platform == "win32":
         for base in [os.environ.get("ProgramFiles", "C:\\Program Files"),
                      os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")]:
@@ -35,75 +36,92 @@ def find_libreoffice():
                     return exe
     return None
 
+
+def convert_with_docx2pdf(input_doc, output_pdf):
+    """Convert using docx2pdf (uses MS Word on Windows, LibreOffice on Linux)."""
+    try:
+        from docx2pdf import convert
+        convert(input_doc, output_pdf)
+        return os.path.isfile(output_pdf)
+    except ImportError:
+        return False
+    except Exception as e:
+        print(f"docx2pdf error: {e}", file=sys.stderr)
+        return False
+
+
+def convert_with_libreoffice(input_doc, output_pdf):
+    """Convert using LibreOffice headless."""
+    lo = find_libreoffice()
+    if not lo:
+        return False
+
+    out_dir = os.path.abspath(os.path.dirname(output_pdf))
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+
+    input_abs = os.path.abspath(input_doc)
+
+    env = os.environ.copy()
+    env['HOME'] = out_dir if sys.platform == "win32" else '/tmp'
+    env['SAL_USE_VCLPLUGIN'] = 'svp'
+
+    cmd = [lo, "--headless", "--convert-to", "pdf", "--outdir", out_dir, input_abs]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=180, env=env)
+
+    base = os.path.splitext(os.path.basename(input_doc))[0]
+    expected = os.path.join(out_dir, base + ".pdf")
+
+    if os.path.isfile(expected):
+        if os.path.abspath(expected) != os.path.abspath(output_pdf):
+            shutil.move(expected, output_pdf)
+        return True
+
+    # Check for any PDF in output dir
+    pdf_files = [f for f in os.listdir(out_dir) if f.endswith('.pdf')]
+    if pdf_files:
+        pdf_path = os.path.join(out_dir, pdf_files[0])
+        if os.path.abspath(pdf_path) != os.path.abspath(output_pdf):
+            shutil.move(pdf_path, output_pdf)
+        return True
+
+    return False
+
+
 def main(input_doc, output_pdf):
     try:
         if not os.path.exists(input_doc):
             print(f"ERROR: Input file not found: {input_doc}", file=sys.stderr)
             sys.exit(1)
-        
+
         out_dir = os.path.dirname(output_pdf)
-        out_dir = os.path.abspath(out_dir)
+        out_dir = os.path.abspath(out_dir) if out_dir else os.getcwd()
         if not os.path.isdir(out_dir):
             os.makedirs(out_dir, exist_ok=True)
-        
-        input_abs = os.path.abspath(input_doc)
-        
-        lo = find_libreoffice()
-        if not lo:
-            print("ERROR: LibreOffice not found. Install LibreOffice (e.g. apt install libreoffice or download from libreoffice.org).", file=sys.stderr)
-            sys.exit(1)
-        
-        # Set environment variables for better font handling
-        env = os.environ.copy()
-        env['HOME'] = out_dir if sys.platform == "win32" else '/tmp'
-        env['SAL_USE_VCLPLUGIN'] = 'svp'  # Use SVPL plugin for better rendering
-        
-        # Convert Word to PDF using LibreOffice
-        # Use --convert-to pdf with additional options
-        cmd = [
-            lo, 
-            "--headless",
-            "--convert-to", "pdf",
-            "--outdir", out_dir,
-            input_abs
-        ]
-        
-        result = subprocess.run(
-            cmd, 
-            capture_output=True, 
-            text=True, 
-            timeout=180,
-            env=env
-        )
-        
-        base = os.path.splitext(os.path.basename(input_doc))[0]
-        expected = os.path.join(out_dir, base + ".pdf")
-        
-        if os.path.isfile(expected):
-            if os.path.abspath(expected) != os.path.abspath(output_pdf):
-                shutil.move(expected, output_pdf)
+
+        # Try docx2pdf first (uses MS Word on Windows = perfect formatting)
+        print("Trying docx2pdf (MS Word/LibreOffice)...", file=sys.stderr)
+        if convert_with_docx2pdf(input_doc, output_pdf):
             print("SUCCESS")
             sys.exit(0)
-        
-        # If the expected file doesn't exist, check for any PDF in output dir
-        pdf_files = [f for f in os.listdir(out_dir) if f.endswith('.pdf')]
-        if pdf_files:
-            pdf_path = os.path.join(out_dir, pdf_files[0])
-            if os.path.abspath(pdf_path) != os.path.abspath(output_pdf):
-                shutil.move(pdf_path, output_pdf)
+
+        # Fallback: LibreOffice headless
+        print("Trying LibreOffice headless...", file=sys.stderr)
+        if convert_with_libreoffice(input_doc, output_pdf):
             print("SUCCESS")
             sys.exit(0)
-        
-        err = (result.stderr or "").strip() or (result.stdout or "").strip()
-        print(f"ERROR: LibreOffice conversion failed. {err}", file=sys.stderr)
+
+        print("ERROR: All conversion methods failed. Install docx2pdf (pip install docx2pdf) or LibreOffice.", file=sys.stderr)
         sys.exit(1)
-        
+
     except subprocess.TimeoutExpired:
         print("ERROR: Conversion timed out.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

@@ -213,9 +213,13 @@
                     const formData = new FormData();
                     formData.append('file', currentFile);
 
+                    // Get CSRF token from cookie
+                    const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
+
                     const response = await fetch('/Image/ToPdf', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}
                     });
 
                     const result = await response.json();

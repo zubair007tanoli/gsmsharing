@@ -31,10 +31,6 @@ def main(input_pdf, output_docx):
 
         doc = Document()
 
-        # Add title
-        title = doc.add_heading(os.path.splitext(os.path.basename(input_pdf))[0], 0)
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
         with pdfplumber.open(input_pdf) as pdf:
             total_pages = len(pdf.pages)
             print(f"Processing PDF with {total_pages} pages...", file=sys.stderr)

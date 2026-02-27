@@ -26,7 +26,25 @@ public class JwtTokenService
         _configuration = configuration;
         _userManager = userManager;
         
-        var secretKey = configuration["Jwt:SecretKey"] ?? "DefaultSecretKeyForDevelopment12345";
+        var secretKey = configuration["Jwt:SecretKey"];
+        
+        // Validate key is present and strong enough (minimum 32 chars for HMAC-SHA256)
+        if (string.IsNullOrWhiteSpace(secretKey))
+        {
+            if (configuration["ASPNETCORE_ENVIRONMENT"] == "Production")
+            {
+                throw new InvalidOperationException(
+                    "JWT SecretKey is not configured. Set the JWT__SecretKey environment variable in production.");
+            }
+            // Development fallback — never use in production
+            secretKey = "LocalDevSecretKey_ChangeInProduction_AtLeast32Chars!";
+            logger.LogWarning("JWT SecretKey not configured — using development fallback. Set Jwt:SecretKey in appsettings.");
+        }
+        else if (secretKey.Length < 32)
+        {
+            logger.LogWarning("JWT SecretKey is shorter than 32 characters. Use a longer key for better security.");
+        }
+        
         _key = Encoding.UTF8.GetBytes(secretKey);
     }
 

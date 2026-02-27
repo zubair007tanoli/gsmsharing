@@ -166,14 +166,149 @@ public class FileProcessingService
     }
 
     /// <summary>
-    /// Generate a unique filename for processing
+    /// Generate a unique filename for processing with sanitized input
     /// </summary>
     public string GenerateFileName(string originalFileName, string operationType)
     {
-        var extension = Path.GetExtension(originalFileName);
+        // SECURITY: Sanitize the filename to prevent path traversal attacks
+        // Get only the filename without any directory path
+        var sanitizedName = Path.GetFileName(originalFileName);
+        
+        // Get the extension and validate it
+        var extension = Path.GetExtension(sanitizedName).ToLowerInvariant();
+        
+        // Validate extension against allowed list
+        if (!IsAllowedExtension(extension))
+        {
+            _logger.LogWarning("Invalid file extension attempted: {Extension}", extension);
+            extension = ".bin"; // Default to generic binary if invalid
+        }
+        
         var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         return $"{operationType}_{timestamp}_{uniqueId}{extension}";
+    }
+    
+    /// <summary>
+    /// SECURITY: Check if file extension is allowed
+    /// </summary>
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt",
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".webp",
+        ".txt", ".csv", ".json", ".xml", ".html", ".htm"
+    };
+    
+    /// <summary>
+    /// SECURITY: Validate file extension against allowlist
+    /// </summary>
+    public bool IsAllowedExtension(string extension)
+    {
+        return AllowedExtensions.Contains(extension);
+    }
+    
+    /// <summary>
+    /// SECURITY: Validate file by checking both extension AND magic bytes
+    /// </summary>
+    public async Task<(bool isValid, string message)> ValidateFileAsync(IFormFile file)
+    {
+        // Check 1: File size
+        if (file.Length == 0)
+        {
+            return (false, "File is empty");
+        }
+        
+        // Max 500MB
+        if (file.Length > 500 * 1024 * 1024)
+        {
+            return (false, "File exceeds maximum size of 500MB");
+        }
+        
+        // Check 2: Validate extension
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!IsAllowedExtension(extension))
+        {
+            _logger.LogWarning("Blocked upload with disallowed extension: {Extension}", extension);
+            return (false, $"File type {extension} is not allowed. Allowed types: {string.Join(", ", AllowedExtensions)}");
+        }
+        
+        // Check 3: Validate magic bytes (content-type validation)
+        var buffer = new byte[8];
+        using var stream = file.OpenReadStream();
+        var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, 8));
+        
+        if (bytesRead < 4)
+        {
+            return (false, "File is too small to validate");
+        }
+        
+        // Check magic bytes for common file types
+        if (!IsValidMagicBytes(buffer, extension))
+        {
+            _logger.LogWarning("Magic bytes mismatch for extension {Extension}. Possible malicious file.", extension);
+            return (false, "File content does not match its extension. Upload blocked for security.");
+        }
+        
+        return (true, "File validated successfully");
+    }
+    
+    /// <summary>
+    /// SECURITY: Validate magic bytes match expected file type
+    /// </summary>
+    private bool IsValidMagicBytes(byte[] buffer, string extension)
+    {
+        // PDF: %PDF-
+        if (extension == ".pdf")
+        {
+            return buffer[0] == 0x25 && buffer[1] == 0x50 && buffer[2] == 0x44 && buffer[3] == 0x46; // %PDF
+        }
+        
+        // PNG: \x89PNG
+        if (extension == ".png")
+        {
+            return buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E && buffer[3] == 0x47;
+        }
+        
+        // JPEG: \xFF\xD8\xFF
+        if (extension == ".jpg" || extension == ".jpeg")
+        {
+            return buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF;
+        }
+        
+        // GIF: GIF87a or GIF89a
+        if (extension == ".gif")
+        {
+            return buffer[0] == 0x47 && buffer[1] == 0x49 && buffer[2] == 0x46; // GIF
+        }
+        
+        // BMP: BM
+        if (extension == ".bmp")
+        {
+            return buffer[0] == 0x42 && buffer[1] == 0x4D; // BM
+        }
+        
+        // TIFF: II* or MM*
+        if (extension == ".tiff" || extension == ".tif")
+        {
+            return (buffer[0] == 0x49 && buffer[1] == 0x49 && buffer[2] == 0x2A) ||
+                   (buffer[0] == 0x4D && buffer[1] == 0x4D && buffer[2] == 0x2A);
+        }
+        
+        // WebP: RIFF....WEBP
+        if (extension == ".webp")
+        {
+            return buffer[0] == 0x52 && buffer[1] == 0x49 && buffer[2] == 0x46 && buffer[3] == 0x46; // RIFF
+        }
+        
+        // Office files (ZIP-based): PK (.docx, .xlsx, .pptx)
+        if (extension == ".docx" || extension == ".xlsx" || extension == ".pptx" ||
+            extension == ".odt" || extension == ".ods" || extension == ".odp")
+        {
+            return buffer[0] == 0x50 && buffer[1] == 0x4B; // PK (ZIP signature)
+        }
+        
+        // For other types, just check they're not empty
+        return buffer[0] != 0;
     }
 
     /// <summary>
@@ -221,10 +356,17 @@ public class FileProcessingService
     }
 
     /// <summary>
-    /// Save uploaded file to temp directory
+    /// Save uploaded file to temp directory with validation
     /// </summary>
     public async Task<string> SaveUploadedFileAsync(IFormFile file, string operationType)
     {
+        // SECURITY: Validate file before saving
+        var (isValid, message) = await ValidateFileAsync(file);
+        if (!isValid)
+        {
+            throw new InvalidOperationException($"File validation failed: {message}");
+        }
+        
         var fileName = GenerateFileName(file.FileName, operationType);
         var filePath = Path.Combine(_tempFilePath, fileName);
 

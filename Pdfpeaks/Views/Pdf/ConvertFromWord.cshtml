@@ -60,23 +60,96 @@
         fileSection.classList.remove('d-none');
     }
 
+    async function uploadFileForJob(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('operation', 'word2pdf');
+
+        const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error('Upload failed: ' + text);
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.fileName) {
+            throw new Error(result.message || 'Upload failed.');
+        }
+        return result.fileName;
+    }
+
+    async function enqueueWordToPdfJob(tempFileName) {
+        const formData = new FormData();
+        formData.append('fileName', tempFileName);
+
+        const outputName = (currentFile?.name || 'converted.docx')
+            .replace(/\.docx$/i, '.pdf')
+            .replace(/\.doc$/i, '.pdf');
+
+        formData.append('outputFileName', outputName);
+
+        const response = await fetch('/api/jobs/pdf/from-word', { method: 'POST', body: formData });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error('Failed to queue conversion: ' + text);
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.jobId) {
+            throw new Error(result.message || 'Failed to queue conversion.');
+        }
+
+        return { jobId: result.jobId, outputFileName: result.outputFileName || outputName };
+    }
+
+    async function pollJobStatus(jobId, outputFileName) {
+        let attempts = 0;
+        const maxAttempts = 120; // ~4 minutes at 2s intervals
+
+        while (attempts < maxAttempts) {
+            attempts++;
+            const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+            if (!response.ok) {
+                throw new Error('Status check failed with HTTP ' + response.status);
+            }
+
+            const status = await response.json();
+            if (!status.success) {
+                throw new Error(status.message || 'Unknown job error.');
+            }
+
+            const state = (status.status || '').toLowerCase();
+            if (state === 'succeeded') {
+                const fileName = status.outputFileName || outputFileName;
+                const downloadUrl = `/api/files/download/${encodeURIComponent(fileName)}`;
+                window.location.href = downloadUrl;
+                return;
+            }
+
+            if (state === 'failed') {
+                throw new Error(status.message || 'Conversion failed.');
+            }
+
+            await new Promise(r => setTimeout(r, 2000));
+        }
+
+        throw new Error('Conversion is taking longer than expected. Please try again later.');
+    }
+
     convertBtn.addEventListener('click', async () => {
         if (!currentFile) return;
         convertBtn.disabled = true;
         loadingState.classList.remove('d-none');
-        var fd = new FormData();
-        fd.append('file', currentFile);
+
         try {
-            var res = await fetch('/Pdf/ConvertFromWord', { method: 'POST', body: fd });
-            var result = await res.json();
-            loadingState.classList.add('d-none');
-            convertBtn.disabled = false;
-            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-            else { alert(result.message || 'Conversion failed'); }
+            const tempFileName = await uploadFileForJob(currentFile);
+            const { jobId, outputFileName } = await enqueueWordToPdfJob(tempFileName);
+            await pollJobStatus(jobId, outputFileName);
         } catch (e) {
+            alert('Conversion failed: ' + (e.message || 'Unknown error'));
+        } finally {
             loadingState.classList.add('d-none');
             convertBtn.disabled = false;
-            alert('Error: ' + e.message);
         }
     });
 })();

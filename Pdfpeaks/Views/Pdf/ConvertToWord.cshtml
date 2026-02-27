@@ -76,6 +76,7 @@
             const convertBtn = document.getElementById('convertBtn');
             const actionArea = document.getElementById('actionArea');
             const loadingState = document.getElementById('loadingState');
+            const progressBar = document.getElementById('conversionProgress');
             
             let currentFile = null;
 
@@ -150,60 +151,128 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
-            // Convert button click
+            async function uploadFileForJob(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('operation', 'pdf2word');
+
+                const response = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error('Upload failed: ' + text);
+                }
+
+                const result = await response.json();
+                if (!result.success || !result.fileName) {
+                    throw new Error(result.message || 'Upload failed.');
+                }
+
+                return result.fileName;
+            }
+
+            async function enqueuePdfToWordJob(tempFileName) {
+                const formData = new FormData();
+                formData.append('fileName', tempFileName);
+                // Keep original name but force .docx for output
+                const outputName = (currentFile?.name || 'converted.pdf').replace(/\.pdf$/i, '.docx');
+                formData.append('outputFileName', outputName);
+
+                const response = await fetch('/api/jobs/pdf/to-word', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error('Failed to queue conversion: ' + text);
+                }
+
+                const result = await response.json();
+                if (!result.success || !result.jobId) {
+                    throw new Error(result.message || 'Failed to queue conversion.');
+                }
+
+                return { jobId: result.jobId, outputFileName: result.outputFileName };
+            }
+
+            async function pollJobStatus(jobId, outputFileName) {
+                let attempts = 0;
+                const maxAttempts = 120; // up to ~4 minutes at 2s intervals
+
+                while (attempts < maxAttempts) {
+                    attempts++;
+                    try {
+                        const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
+                        if (!response.ok) {
+                            throw new Error('Status check failed with HTTP ' + response.status);
+                        }
+
+                        const status = await response.json();
+                        if (!status.success) {
+                            throw new Error(status.message || 'Unknown job error.');
+                        }
+
+                        const state = (status.status || '').toLowerCase();
+
+                        if (state === 'succeeded') {
+                            // Use API download endpoint for the output file
+                            const fileName = status.outputFileName || outputFileName;
+                            const downloadUrl = `/api/files/download/${encodeURIComponent(fileName)}`;
+                            window.location.href = downloadUrl;
+                            clearFile();
+                            return;
+                        }
+
+                        if (state === 'failed') {
+                            throw new Error(status.message || 'Conversion failed.');
+                        }
+
+                        // queued / running: continue polling
+                        await new Promise(r => setTimeout(r, 2000));
+                    } catch (err) {
+                        throw err;
+                    }
+                }
+
+                throw new Error('Conversion is taking longer than expected. Please try again later.');
+            }
+
+            // Convert button click (async background job flow)
             convertBtn.addEventListener('click', async () => {
                 if (!currentFile) return;
 
                 convertBtn.classList.add('d-none');
                 loadingState.classList.remove('d-none');
-                console.log('[PDF2Word] Starting conversion for:', currentFile.name, '(' + currentFile.size + ' bytes)');
+                if (progressBar) {
+                    progressBar.classList.add('progress-bar-animated');
+                }
+
+                console.log('[PDF2Word] Starting async conversion for:', currentFile.name, '(' + currentFile.size + ' bytes)');
 
                 try {
-                    const formData = new FormData();
-                    formData.append('file', currentFile);
+                    // Step 1: upload to temp storage
+                    const tempFileName = await uploadFileForJob(currentFile);
+                    console.log('[PDF2Word] Uploaded temp file:', tempFileName);
 
-                    const response = await fetch('/Pdf/ConvertToWord', {
-                        method: 'POST',
-                        body: formData
-                    });
+                    // Step 2: enqueue background job
+                    const { jobId, outputFileName } = await enqueuePdfToWordJob(tempFileName);
+                    console.log('[PDF2Word] Job queued:', jobId, '->', outputFileName);
 
-                    console.log('[PDF2Word] Response status:', response.status, response.statusText);
-                    const contentType = response.headers.get('content-type') || '';
-                    const isJson = contentType.includes('application/json');
-
-                    if (!isJson) {
-                        const text = await response.text();
-                        console.error('[PDF2Word] Non-JSON response:', text.substring(0, 500));
-                        loadingState.classList.add('d-none');
-                        convertBtn.classList.remove('d-none');
-                        alert('Server error (status ' + response.status + '). Check console for details.');
-                        return;
-                    }
-
-                    const result = await response.json();
-                    console.log('[PDF2Word] Result:', result);
-
-                    loadingState.classList.add('d-none');
-
-                    if (result.success) {
-                        if (result.downloadUrl) {
-                            window.location.href = result.downloadUrl;
-                            clearFile();
-                        } else {
-                            console.error('[PDF2Word] Success but no downloadUrl:', result);
-                            convertBtn.classList.remove('d-none');
-                            alert('Conversion succeeded but no download link was returned.');
-                        }
-                    } else {
-                        console.warn('[PDF2Word] Conversion failed:', result.message);
-                        alert('Conversion failed: ' + (result.message || 'Unknown error'));
-                        convertBtn.classList.remove('d-none');
-                    }
+                    // Step 3: poll for completion
+                    await pollJobStatus(jobId, outputFileName);
                 } catch (error) {
-                    loadingState.classList.add('d-none');
-                    console.error('[PDF2Word] Exception:', error);
-                    alert('An error occurred: ' + error.message);
+                    console.error('[PDF2Word] Async conversion error:', error);
+                    alert('Conversion failed: ' + (error.message || 'Unknown error'));
                     convertBtn.classList.remove('d-none');
+                } finally {
+                    loadingState.classList.add('d-none');
+                    if (progressBar) {
+                        progressBar.classList.remove('progress-bar-animated');
+                    }
                 }
             });
         });

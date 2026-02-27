@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.IO;
 using PdfSharpCore.Drawing;
@@ -24,11 +25,20 @@ public class PdfProcessingService
 {
     private readonly ILogger<PdfProcessingService> _logger;
     private readonly string _tempFilePath;
+    private readonly int _pythonScriptTimeoutSeconds;
+    private readonly string _pdfToWordPrimaryEngine;
 
-    public PdfProcessingService(ILogger<PdfProcessingService> logger, IWebHostEnvironment environment)
+    public PdfProcessingService(
+        ILogger<PdfProcessingService> logger,
+        IWebHostEnvironment environment,
+        IConfiguration configuration)
     {
         _logger = logger;
         _tempFilePath = Path.Combine(environment.ContentRootPath, "temp_files");
+
+        // Configure Python script timeout (in seconds) and preferred PDF→Word engine from configuration
+        _pythonScriptTimeoutSeconds = configuration.GetValue<int?>("Conversion:PythonScriptTimeoutSeconds") ?? 180;
+        _pdfToWordPrimaryEngine = configuration["Conversion:PdfToWordPrimaryEngine"] ?? "pdf2docx";
 
         if (!Directory.Exists(_tempFilePath))
         {
@@ -58,10 +68,49 @@ public class PdfProcessingService
         using var process = Process.Start(startInfo);
         if (process == null)
             return (-1, "", "Failed to start process.");
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        var stderr = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        return (process.ExitCode, stdout ?? "", stderr ?? "");
+
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+
+        // Apply a timeout to prevent hung Python processes from blocking indefinitely.
+        var timeoutSeconds = _pythonScriptTimeoutSeconds;
+        if (timeoutSeconds <= 0)
+        {
+            await process.WaitForExitAsync();
+            var stdoutNoTimeout = await stdoutTask;
+            var stderrNoTimeout = await stderrTask;
+            return (process.ExitCode, stdoutNoTimeout ?? "", stderrNoTimeout ?? "");
+        }
+
+        var timeout = TimeSpan.FromSeconds(timeoutSeconds);
+        var waitTask = process.WaitForExitAsync();
+        var completed = await Task.WhenAny(waitTask, Task.Delay(timeout));
+
+        if (completed != waitTask)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch
+            {
+                // ignore kill failures
+            }
+
+            var stdout = stdoutTask.IsCompletedSuccessfully ? stdoutTask.Result : "";
+            var stderr = stderrTask.IsCompletedSuccessfully ? stderrTask.Result : "";
+            var timeoutMessage = $"ERROR: Python script '{scriptFileName}' timed out after {timeoutSeconds} seconds.";
+            stderr = string.IsNullOrWhiteSpace(stderr) ? timeoutMessage : $"{stderr}{Environment.NewLine}{timeoutMessage}";
+
+            return (-1, stdout ?? "", stderr);
+        }
+
+        var finalStdout = await stdoutTask;
+        var finalStderr = await stderrTask;
+        return (process.ExitCode, finalStdout ?? "", finalStderr ?? "");
     }
 
     /// <summary>
@@ -1432,40 +1481,45 @@ public class PdfProcessingService
             return (false, outputPath, "Input file not found.");
         }
 
-        // Try pdfplumber-based conversion first (best table extraction)
-        try
-        {
-            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_word.py", $"\"{inputPath}\" \"{outputPath}\"");
+        // Decide engine order based on configuration.
+        var primaryEngine = _pdfToWordPrimaryEngine?.ToLowerInvariant() ?? "pdf2docx";
+        var engines = primaryEngine == "pdfplumber"
+            ? new[] { "pdf_to_word.py", "convert_pdf.py" }
+            : new[] { "convert_pdf.py", "pdf_to_word.py" };
 
-            if (exitCode == 0 && File.Exists(outputPath))
+        foreach (var engine in engines)
+        {
+            try
             {
-                _logger.LogInformation("PDF converted to Word via pdfplumber: {Input} -> {Output}", inputPath, outputPath);
-                return (true, outputPath, "Successfully converted PDF to Word document (pdfplumber extraction).");
+                var (exitCode, stdout, stderr) = await RunPythonScriptAsync(
+                    engine,
+                    $"\"{inputPath}\" \"{outputPath}\"");
+
+                if (exitCode == 0 && File.Exists(outputPath))
+                {
+                    if (string.Equals(engine, "convert_pdf.py", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation("PDF converted to Word via pdf2docx: {Input} -> {Output}", inputPath, outputPath);
+                        return (true, outputPath, "Successfully converted PDF to Word document (pdf2docx).");
+                    }
+
+                    _logger.LogInformation("PDF converted to Word via pdfplumber: {Input} -> {Output}", inputPath, outputPath);
+                    return (true, outputPath, "Successfully converted PDF to Word document (pdfplumber extraction).");
+                }
+
+                _logger.LogWarning(
+                    "{Engine} PDF to Word conversion failed (exit={ExitCode}): {Error}",
+                    engine,
+                    exitCode,
+                    stderr);
             }
-
-            _logger.LogWarning("pdfplumber PDF to Word conversion failed (exit={ExitCode}): {Error}", exitCode, stderr);
-        }
-        catch (Exception pyEx)
-        {
-            _logger.LogWarning(pyEx, "pdfplumber conversion unavailable, trying pdf2docx");
-        }
-
-        // Fallback: Try convert_pdf.py (uses pdf2docx library)
-        try
-        {
-            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("convert_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-
-            if (exitCode == 0 && File.Exists(outputPath))
+            catch (Exception pyEx)
             {
-                _logger.LogInformation("PDF converted to Word via pdf2docx: {Input} -> {Output}", inputPath, outputPath);
-                return (true, outputPath, "Successfully converted PDF to Word document (pdf2docx).");
+                _logger.LogWarning(
+                    pyEx,
+                    "{Engine} conversion unavailable, trying next engine or falling back",
+                    engine);
             }
-
-            _logger.LogWarning("pdf2docx PDF to Word conversion failed (exit={ExitCode}): {Error}", exitCode, stderr);
-        }
-        catch (Exception pyEx)
-        {
-            _logger.LogWarning(pyEx, "pdf2docx conversion unavailable, falling back to text extraction");
         }
 
         // Final fallback: Use PdfPig for text extraction + DocX to create Word document

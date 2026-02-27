@@ -6,6 +6,7 @@ namespace Pdfpeaks.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [IgnoreAntiforgeryToken] // API uses key authentication, not CSRF
     public class McpController : ControllerBase
     {
         private readonly SEOMcpServer _seoMcpServer;

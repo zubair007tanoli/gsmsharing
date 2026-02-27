@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Hangfire;
+using Hangfire.SqlServer;
 using Pdfpeaks.Database;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using Pdfpeaks.Models;
@@ -42,21 +44,52 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // ============ Add Services ============
-builder.Services.AddControllersWithViews()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-    })
-    .AddNewtonsoftJson();
+builder.Services.AddAntiforgery(options =>
+{
+    options.FormFieldName = "__RequestVerificationToken";
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.Name = "XSRF-TOKEN";
+    options.Cookie.HttpOnly = false; // Allow JavaScript to read for AJAX requests
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+        ? CookieSecurePolicy.None 
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = builder.Environment.IsDevelopment() 
+        ? SameSiteMode.Lax 
+        : SameSiteMode.Strict;
+});
+
+// Add MVC with global CSRF validation
+builder.Services.AddControllersWithViews(options =>
+{
+    // Global CSRF validation for all POST/PUT/DELETE requests
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+})
+.AddNewtonsoftJson();
 
 // Add HttpContext accessor
 builder.Services.AddHttpContextAccessor();
 
 // ============ Database Configuration ============
+// Priority: appsettings.Development.json > env var DB_CONNECTION_STRING > appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
-    ?? "Server=localhost;Database=Pdfpeaks;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;";
+    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    if (builder.Environment.IsProduction())
+    {
+        Log.Fatal("DB_CONNECTION_STRING environment variable is not set. Application cannot start in Production without a database connection.");
+        throw new InvalidOperationException("DB_CONNECTION_STRING is required in Production. Set the environment variable.");
+    }
+    // Development fallback — uses local SQL Server with default dev credentials
+    connectionString = "Server=localhost;Database=Pdfpeaks;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;";
+    Log.Warning("No DB connection string configured. Using local development fallback. Set ConnectionStrings__DefaultConnection or DB_CONNECTION_STRING for production.");
+}
 
 if (!string.IsNullOrEmpty(connectionString))
 {
@@ -112,6 +145,24 @@ if (!string.IsNullOrEmpty(connectionString))
             ? SameSiteMode.Lax 
             : SameSiteMode.Strict;
     });
+
+    // ============ Hangfire Background Jobs ============
+    builder.Services.AddHangfire(config =>
+    {
+        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+              .UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+              {
+                  CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                  SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                  QueuePollInterval = TimeSpan.FromSeconds(15),
+                  UseRecommendedIsolationLevel = true,
+                  DisableGlobalLocks = true
+              });
+    });
+
+    builder.Services.AddHangfireServer();
 }
 
 // ============ Register Custom Services ============
@@ -172,6 +223,7 @@ builder.Services.AddScoped<FileProcessingService>();
 builder.Services.AddScoped<PdfProcessingService>();
 builder.Services.AddScoped<ImageProcessingService>();
 builder.Services.AddScoped<ImageEnhancementService>();
+// ConversionJobService removed - conversions now handled directly in ConversionJobsController
 builder.Services.AddScoped<SitemapService>();
 
 // Infrastructure Services
@@ -308,6 +360,31 @@ if (Directory.Exists(tempFilesPath))
 }
 
 app.UseRouting();
+
+// XSRF/CSRF token middleware for JavaScript AJAX requests
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "GET")
+    {
+        // Generate token for GET requests (needed for subsequent POST requests)
+        var antiforgery = context.RequestServices.GetService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
+        if (antiforgery != null)
+        {
+            var tokens = antiforgery.GetAndStoreTokens(context);
+            if (tokens.RequestToken != null)
+            {
+                context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken, new CookieOptions
+                {
+                    HttpOnly = false,
+                    Secure = !app.Environment.IsDevelopment(),
+                    SameSite = app.Environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.Strict
+                });
+            }
+        }
+    }
+    await next();
+});
+
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
