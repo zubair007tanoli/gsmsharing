@@ -1,88 +1,322 @@
 @{
     ViewData["Title"] = "Protect PDF - Add Password Security";
 }
-<div class="tool-page py-5">
+
+@Html.AntiForgeryToken()
+
+<div class="tool-wrap py-5">
     <div class="container">
-        <div class="tool-header text-center mb-4">
-            <h1 class="tool-title fw-bold">Protect PDF</h1>
-            <p class="tool-description text-muted">Add password protection to your PDF</p>
+        <div class="text-center mb-4">
+            <h1 class="fw-bold mb-2">Protect PDF</h1>
+            <p class="text-muted mb-0">Apply password security to control document access</p>
         </div>
-        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
-                    <i class="fas fa-lock fa-4x text-primary mb-3"></i>
-                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
+
+        <input type="file" id="fileInput" accept=".pdf,application/pdf" style="display:none;" />
+
+        <div class="row g-4 justify-content-center">
+            <div class="col-lg-8">
+                <div id="uploadZone" class="upload-zone card shadow-sm border-0">
+                    <div class="card-body p-5 text-center">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
+                        <h5 class="mb-2">Drop PDF here</h5>
+                        <p class="text-muted mb-3">or select a file from your device</p>
+                        <button type="button" class="btn btn-primary px-4" id="selectFileBtn">
+                            <i class="fas fa-folder-open me-2"></i>Select PDF
+                        </button>
+                        <p class="small text-muted mt-3 mb-0">Supported: .pdf</p>
+                    </div>
                 </div>
-                <div id="formSection" class="d-none mt-3">
-                    <div class="mb-3 d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
-                        <span id="fileNameDisplay" class="fw-bold text-truncate"></span>
-                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+
+                <div id="formCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-semibold" id="fileName">-</div>
+                                <div class="small text-muted" id="fileMeta">-</div>
+                            </div>
+                            <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                        </div>
+                        <hr />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">User Password</label>
+                            <input type="password" id="userPassword" class="form-control" placeholder="Required to open the PDF" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Owner Password (Optional)</label>
+                            <input type="password" id="ownerPassword" class="form-control" placeholder="Controls editing/permissions" />
+                        </div>
+                        <div class="small text-muted mb-3">
+                            User password is required by this tool. If owner password is blank, user password is reused.
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-success btn-lg" id="protectBtn">
+                                <i class="fas fa-lock me-2"></i>Protect PDF
+                            </button>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">User password (to open the PDF)</label>
-                        <input type="password" id="userPassword" class="form-control" placeholder="Optional" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Owner password (to change permissions)</label>
-                        <input type="password" id="ownerPassword" class="form-control" placeholder="Optional" />
-                    </div>
-                    <p class="small text-muted">Enter at least one password.</p>
-                    <button type="button" class="btn btn-primary btn-lg w-100" id="protectBtn">
-                        <i class="fas fa-shield-alt me-2"></i> Protect PDF
-                    </button>
                 </div>
-                <div id="loadingState" class="d-none mt-3 text-center">
-                    <div class="spinner-border text-primary"></div>
-                    <p class="mt-2 mb-0">Adding protection...</p>
+
+                <div id="resultCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-3 text-success result-icon"><i class="fas fa-circle-check"></i></div>
+                        <h4 class="mb-2">Protection Applied</h4>
+                        <p class="text-muted mb-4" id="resultMessage">Your protected PDF is ready.</p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a id="downloadBtn" href="#" class="btn btn-success btn-lg">
+                                <i class="fas fa-download me-2"></i>Download PDF
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="protectAnotherBtn">
+                                <i class="fas fa-rotate me-2"></i>Protect Another File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading" class="text-center mt-3 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Applying protection...</div>
+                </div>
+
+                <div id="errorAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 info-card">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3"><i class="fas fa-circle-info me-2"></i>Security Notes</h6>
+                        <div class="small text-muted">
+                            <div class="mb-2">Use strong passwords for sensitive documents.</div>
+                            <div class="mb-2">Share passwords via a secure channel only.</div>
+                            <div class="mb-2">Losing the password can make the file inaccessible.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-@section Scripts {
-<script>
-(function() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
-    const formSection = document.getElementById('formSection');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const userPassword = document.getElementById('userPassword');
-    const ownerPassword = document.getElementById('ownerPassword');
-    const protectBtn = document.getElementById('protectBtn');
-    const loadingState = document.getElementById('loadingState');
-    const clearFile = document.getElementById('clearFile');
-    let currentFile = null;
 
-    uploadZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) { currentFile = e.target.files[0]; fileNameDisplay.textContent = currentFile.name; uploadZone.classList.add('d-none'); formSection.classList.remove('d-none'); } });
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
-    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) { currentFile = e.dataTransfer.files[0]; fileNameDisplay.textContent = currentFile.name; uploadZone.classList.add('d-none'); formSection.classList.remove('d-none'); } });
-    clearFile.addEventListener('click', () => { currentFile = null; formSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
-
-    protectBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
-        if (!userPassword.value.trim() && !ownerPassword.value.trim()) { alert('Please enter at least one password (user and/or owner).'); return; }
-        protectBtn.disabled = true;
-        loadingState.classList.remove('d-none');
-        const fd = new FormData();
-        fd.append('file', currentFile);
-        fd.append('userPassword', userPassword.value);
-        fd.append('ownerPassword', ownerPassword.value);
-        try {
-            const res = await fetch('/Pdf/Protect', { method: 'POST', body: fd });
-            const result = await res.json();
-            loadingState.classList.add('d-none');
-            protectBtn.disabled = false;
-            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-            else { alert(result.message || 'Protect failed'); }
-        } catch (e) {
-            loadingState.classList.add('d-none');
-            protectBtn.disabled = false;
-            alert('Error: ' + e.message);
+@section Styles {
+    <style>
+        .tool-wrap {
+            background:
+                radial-gradient(circle at 10% 20%, rgba(13, 110, 253, 0.11), transparent 40%),
+                radial-gradient(circle at 90% 18%, rgba(25, 135, 84, 0.08), transparent 36%),
+                #f8f9fb;
         }
-    });
-})();
-</script>
+
+        .upload-zone {
+            border: 2px dashed #e2e6ea;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #0d6efd;
+            transform: translateY(-1px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #0d6efd;
+        }
+
+        .info-card {
+            position: sticky;
+            top: 88px;
+        }
+
+        .result-icon {
+            font-size: 3rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const formCard = document.getElementById('formCard');
+            const resultCard = document.getElementById('resultCard');
+            const clearFile = document.getElementById('clearFile');
+            const protectBtn = document.getElementById('protectBtn');
+            const protectAnotherBtn = document.getElementById('protectAnotherBtn');
+            const userPassword = document.getElementById('userPassword');
+            const ownerPassword = document.getElementById('ownerPassword');
+            const loading = document.getElementById('loading');
+            const errorAlert = document.getElementById('errorAlert');
+            const fileName = document.getElementById('fileName');
+            const fileMeta = document.getElementById('fileMeta');
+            const resultMessage = document.getElementById('resultMessage');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            let currentFile = null;
+
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
+            }
+
+            function formatBytes(bytes) {
+                if (!bytes) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let value = bytes;
+                let i = 0;
+                while (value >= 1024 && i < units.length - 1) {
+                    value /= 1024;
+                    i++;
+                }
+                return `${value.toFixed(value >= 100 ? 0 : 2)} ${units[i]}`;
+            }
+
+            function showError(message) {
+                errorAlert.textContent = message;
+                errorAlert.classList.remove('d-none');
+            }
+
+            function hideError() {
+                errorAlert.classList.add('d-none');
+                errorAlert.textContent = '';
+            }
+
+            function reset() {
+                currentFile = null;
+                fileInput.value = '';
+                userPassword.value = '';
+                ownerPassword.value = '';
+                uploadZone.classList.remove('d-none');
+                formCard.classList.add('d-none');
+                resultCard.classList.add('d-none');
+                loading.classList.add('d-none');
+                protectBtn.disabled = false;
+                protectBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Protect PDF';
+                hideError();
+            }
+
+            function setFile(file) {
+                hideError();
+                if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+                    showError('Please select a valid PDF file.');
+                    return;
+                }
+                currentFile = file;
+                fileName.textContent = file.name;
+                fileMeta.textContent = `Size: ${formatBytes(file.size)}`;
+                uploadZone.classList.add('d-none');
+                resultCard.classList.add('d-none');
+                formCard.classList.remove('d-none');
+            }
+
+            function postWithXhr(url, formData) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, true);
+                    xhr.withCredentials = true;
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) return;
+                        resolve({
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            text: xhr.responseText || ''
+                        });
+                    };
+                    xhr.onerror = function () {
+                        reject(new Error('Network transport failed (XHR).'));
+                    };
+                    xhr.send(formData);
+                });
+            }
+
+            selectFileBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function (e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    setFile(e.target.files[0]);
+                }
+            });
+
+            uploadZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', function () {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const file = e.dataTransfer?.files?.[0];
+                if (file) setFile(file);
+            });
+
+            clearFile.addEventListener('click', reset);
+            protectAnotherBtn.addEventListener('click', reset);
+
+            protectBtn.addEventListener('click', async function () {
+                if (!currentFile) return;
+                if (!userPassword.value.trim()) {
+                    showError('User password is required.');
+                    return;
+                }
+
+                hideError();
+                protectBtn.disabled = true;
+                protectBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Protecting...';
+                loading.classList.remove('d-none');
+
+                try {
+                    const fd = new FormData();
+                    fd.append('file', currentFile);
+                    fd.append('userPassword', userPassword.value);
+                    fd.append('ownerPassword', ownerPassword.value);
+
+                    let res;
+                    try {
+                        const fetchRes = await fetch('/Pdf/Protect', { method: 'POST', body: fd });
+                        res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                    } catch {
+                        res = await postWithXhr('/Pdf/Protect', fd);
+                    }
+
+                    const result = parseJsonSafe(res.text);
+                    if (result.success && result.downloadUrl) {
+                        resultMessage.textContent = result.message || 'Protection applied successfully.';
+                        downloadBtn.href = result.downloadUrl;
+                        downloadBtn.setAttribute('download', result.fileName || 'protected.pdf');
+                        formCard.classList.add('d-none');
+                        resultCard.classList.remove('d-none');
+                    } else {
+                        const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                        showError(result.message || `Protection failed${statusText}.`);
+                    }
+                } catch (err) {
+                    showError('Error while protecting PDF: ' + (err.message || 'Unknown error'));
+                } finally {
+                    loading.classList.add('d-none');
+                    protectBtn.disabled = false;
+                    protectBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Protect PDF';
+                }
+            });
+        });
+    </script>
 }

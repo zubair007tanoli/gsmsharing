@@ -522,20 +522,17 @@ public class FilesController : ControllerBase
 
     /// <summary>Merge multiple PDFs (in upload order) into one.</summary>
     [HttpPost("pdf/merge")]
-    public async Task<IActionResult> MergePdfs(
-        [FromForm] List<string> fileNames,
-        [FromForm] List<int> sortOrder,
-        [FromForm] string outputFileName = "merged.pdf")
+    public async Task<IActionResult> MergePdfs([FromForm] MergePdfRequest request)
     {
-        if (fileNames is null || fileNames.Count < 2)
+        if (request.FileNames is null || request.FileNames.Count < 2)
             return BadRequest(new { success = false, message = "At least 2 files required." });
 
-        var filePaths = fileNames
+        var filePaths = request.FileNames
             .Select(n => _fileProcessingService.GetFilePath(n))
             .ToList();
 
         var (success, outputPath, message) =
-            await _pdfProcessingService.MergePdfAsync(filePaths, sortOrder ?? new List<int>(), outputFileName);
+            await _pdfProcessingService.MergePdfAsync(filePaths, request.SortOrder ?? new List<int>(), request.OutputFileName);
 
         return ResultResponse(success, outputPath, message);
     }
@@ -767,14 +764,16 @@ public class FilesController : ControllerBase
     [HttpPost("pdf/to-excel")]
     public async Task<IActionResult> PdfToExcel(
         [FromForm] string fileName,
-        [FromForm] string outputFileName = "converted.xlsx")
+        [FromForm] string outputFileName = "converted.xlsx",
+        [FromForm] string extractionMode = "exact",
+        [FromForm] bool aiEnhance = true)
     {
         var filePath = _fileProcessingService.GetFilePath(fileName);
         if (!System.IO.File.Exists(filePath))
             return NotFound(new { success = false, message = "File not found." });
 
         var (success, outputPath, message) =
-            await _pdfProcessingService.ConvertToExcelAsync(filePath, outputFileName);
+            await _pdfProcessingService.ConvertToExcelAsync(filePath, outputFileName, extractionMode, aiEnhance);
 
         return ResultResponse(success, outputPath, message);
     }

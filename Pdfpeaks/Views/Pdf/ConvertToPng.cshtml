@@ -1,57 +1,367 @@
 @{
     ViewData["Title"] = "PDF to PNG - Convert PDF to PNG Images";
 }
-<div class="tool-page" style="padding: 2rem 0;">
+
+@Html.AntiForgeryToken()
+
+<style>
+    .page-selector-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .page-item {
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 0;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.3s ease;
+        background: white;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .page-item:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+    }
+
+    .page-item.selected {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+    }
+
+    .page-thumbnail {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        background: #f0f0f0;
+    }
+
+    .page-thumbnail.no-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f0f0;
+        color: #999;
+        font-size: 12px;
+    }
+
+    .page-info {
+        padding: 8px;
+        font-size: 12px;
+        border-top: 1px solid #eee;
+    }
+
+    .page-checkbox {
+        accent-color: #0d6efd;
+    }
+
+    .page-count-badge {
+        display: inline-block;
+        background: #0d6efd;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="tool-page py-5">
     <div class="container">
-        <div class="tool-header" style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">PDF to PNG</h1>
-            <p class="tool-description" style="color: var(--text-light);">Convert PDF pages to PNG images</p>
+        <div class="tool-header text-center mb-4">
+            <h1 class="tool-title fw-bold">PDF to PNG</h1>
+            <p class="tool-description text-muted">Convert PDF pages to PNG images with page preview and selection</p>
         </div>
-        <div class="upload-zone" id="uploadZone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff; position: relative; cursor: pointer; transition: all 0.2s ease;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-            <p>Drag & drop your PDF file here</p>
-            <p id="selectedFile" style="margin-top: 0.5rem; color: #6c757d; font-size: 0.95rem;">No file selected</p>
-            <input type="file" id="fileInput" accept=".pdf,application/pdf" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
+        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
+                </div>
+
+                <div id="fileSection" class="d-none mt-3">
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
+                        <div>
+                            <span id="fileNameDisplay" class="fw-bold"></span>
+                            <small id="pageLabelDisplay" class="text-muted d-block mt-1"></small>
+                        </div>
+                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                    </div>
+                </div>
+
+                <div id="pageSelectorSection" class="d-none mt-3">
+                    <div class="p-3 bg-white rounded-3">
+                        <h6 class="mb-3">Select Pages to Convert</h6>
+                        <div class="mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllBtn">Select All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="deselectAllBtn">Deselect All</button>
+                            <span id="selectedCount" class="page-count-badge ms-2">0 pages selected</span>
+                        </div>
+                        <div id="pageSelectorGrid" class="page-selector-grid"></div>
+                    </div>
+                </div>
+
+                <div id="loadingState" class="d-none mt-3 text-center">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2 mb-0">Loading PDF preview...</p>
+                </div>
+
+                <div id="actionSection" class="d-none mt-3">
+                    <button type="button" class="btn btn-primary btn-lg w-100" id="convertBtn">
+                        <i class="fas fa-image me-2"></i> Convert Selected Pages to PNG
+                    </button>
+                </div>
+
+                <div id="resultsSection" class="d-none mt-3">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span id="resultMessage"></span>
+                    </div>
+                    <div id="downloadLinksContainer"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('fileInput');
-    const selectedFile = document.getElementById('selectedFile');
+    <script>
+        (function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const fileSection = document.getElementById('fileSection');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const pageLabelDisplay = document.getElementById('pageLabelDisplay');
+            const pageSelectorSection = document.getElementById('pageSelectorSection');
+            const pageSelectorGrid = document.getElementById('pageSelectorGrid');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const deselectAllBtn = document.getElementById('deselectAllBtn');
+            const selectedCountSpan = document.getElementById('selectedCount');
+            const convertBtn = document.getElementById('convertBtn');
+            const actionSection = document.getElementById('actionSection');
+            const loadingState = document.getElementById('loadingState');
+            const resultsSection = document.getElementById('resultsSection');
+            const resultMessage = document.getElementById('resultMessage');
+            const downloadLinksContainer = document.getElementById('downloadLinksContainer');
+            const clearFile = document.getElementById('clearFile');
 
-    function setFile(file) {
-        if (!file) return;
-        selectedFile.textContent = file.name;
-    }
+            let currentFile = null;
+            let pageCount = 0;
+            let selectedPages = new Set();
 
-    fileInput.addEventListener('change', function (e) {
-        if (e.target.files && e.target.files.length > 0) setFile(e.target.files[0]);
-    });
+            uploadZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', e => { if (e.target.files.length) setFile(e.target.files[0]); });
+            uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
+            uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
+            uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]); });
+            clearFile.addEventListener('click', reset);
+            selectAllBtn.addEventListener('click', selectAll);
+            deselectAllBtn.addEventListener('click', deselectAll);
+            convertBtn.addEventListener('click', convertSelected);
 
-    uploadZone.addEventListener('dragover', function (e) {
-        e.preventDefault();
-        uploadZone.style.borderColor = '#0d6efd';
-        uploadZone.style.background = '#f4f8ff';
-    });
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
+            }
 
-    uploadZone.addEventListener('dragleave', function () {
-        uploadZone.style.borderColor = '#d0d0d0';
-        uploadZone.style.background = '#fff';
-    });
+            function setFile(file) {
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    alert('Please select a PDF file.');
+                    return;
+                }
+                currentFile = file;
+                fileNameDisplay.textContent = file.name;
+                uploadZone.classList.add('d-none');
+                fileSection.classList.remove('d-none');
+                pageSelectorSection.classList.add('d-none');
+                actionSection.classList.add('d-none');
+                resultsSection.classList.add('d-none');
+                getPdfPreview(file);
+            }
 
-    uploadZone.addEventListener('drop', function (e) {
-        e.preventDefault();
-        uploadZone.style.borderColor = '#d0d0d0';
-        uploadZone.style.background = '#fff';
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            setFile(e.dataTransfer.files[0]);
-        }
-    });
-});
-</script>
+            function getPdfPreview(file) {
+                const fd = new FormData();
+                fd.append('file', file);
+
+                loadingState.classList.remove('d-none');
+                pageSelectorSection.classList.add('d-none');
+                actionSection.classList.add('d-none');
+
+                fetch('/Pdf/GetPdfPreview', { method: 'POST', body: fd })
+                    .then(res => res.text())
+                    .then(text => parseJsonSafe(text))
+                    .then(data => {
+                        loadingState.classList.add('d-none');
+                        if (data.success) {
+                            pageCount = data.pageCount;
+                            pageLabelDisplay.textContent = `${pageCount} page${pageCount > 1 ? 's' : ''} found`;
+                            renderPageSelector(data.pages);
+                            pageSelectorSection.classList.remove('d-none');
+                            actionSection.classList.remove('d-none');
+                        } else {
+                            alert(data.message || 'Error reading PDF');
+                            reset();
+                        }
+                    })
+                    .catch(e => {
+                        loadingState.classList.add('d-none');
+                        alert('Error: ' + e.message);
+                        reset();
+                    });
+            }
+
+            function renderPageSelector(pages) {
+                pageSelectorGrid.innerHTML = '';
+                selectedPages.clear();
+
+                if (!pages || !Array.isArray(pages)) {
+                    pages = [];
+                    for (let i = 1; i <= pageCount; i++) {
+                        pages.push({ pageNumber: i, hasThumbnail: false, thumbnail: null });
+                    }
+                }
+
+                pages.forEach(page => {
+                    const pageItem = document.createElement('div');
+                    pageItem.className = 'page-item selected';
+
+                    const thumbnail = page.hasThumbnail && page.thumbnail
+                        ? `<img src="${page.thumbnail}" class="page-thumbnail" alt="Page ${page.pageNumber} preview">`
+                        : `<div class="page-thumbnail no-preview">No preview</div>`;
+
+                    pageItem.innerHTML = `
+                        ${thumbnail}
+                        <div class="page-info">
+                            <input type="checkbox" class="page-checkbox" value="${page.pageNumber}" checked>
+                            <small>Page ${page.pageNumber}</small>
+                        </div>
+                    `;
+
+                    const checkbox = pageItem.querySelector('.page-checkbox');
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            selectedPages.add(page.pageNumber);
+                            pageItem.classList.add('selected');
+                        } else {
+                            selectedPages.delete(page.pageNumber);
+                            pageItem.classList.remove('selected');
+                        }
+                        updateSelectedCount();
+                    });
+
+                    pageItem.addEventListener('click', (e) => {
+                        if (e.target !== checkbox && !e.target.classList.contains('page-checkbox')) {
+                            checkbox.checked = !checkbox.checked;
+                            checkbox.dispatchEvent(new Event('change'));
+                        }
+                    });
+
+                    selectedPages.add(page.pageNumber);
+                    pageSelectorGrid.appendChild(pageItem);
+                });
+                updateSelectedCount();
+            }
+
+            function updateSelectedCount() {
+                selectedCountSpan.textContent = `${selectedPages.size} page${selectedPages.size !== 1 ? 's' : ''} selected`;
+            }
+
+            function selectAll() {
+                document.querySelectorAll('.page-checkbox').forEach(cb => {
+                    cb.checked = true;
+                    cb.dispatchEvent(new Event('change'));
+                });
+            }
+
+            function deselectAll() {
+                document.querySelectorAll('.page-checkbox').forEach(cb => {
+                    cb.checked = false;
+                    cb.dispatchEvent(new Event('change'));
+                });
+            }
+
+            async function convertSelected() {
+                if (!currentFile || selectedPages.size === 0) {
+                    alert('Please select at least one page.');
+                    return;
+                }
+
+                convertBtn.disabled = true;
+                loadingState.classList.remove('d-none');
+                loadingState.querySelector('p').textContent = 'Converting...';
+                resultsSection.classList.add('d-none');
+                pageSelectorSection.classList.add('d-none');
+                actionSection.classList.add('d-none');
+
+                const fd = new FormData();
+                fd.append('file', currentFile);
+                fd.append('selectedPages', Array.from(selectedPages).join(','));
+
+                try {
+                    const res = await fetch('/Pdf/ConvertToPng', { method: 'POST', body: fd });
+                    const result = parseJsonSafe(await res.text());
+                    loadingState.classList.add('d-none');
+                    convertBtn.disabled = false;
+
+                    if (result.success) {
+                        resultMessage.textContent = result.message;
+                        downloadLinksContainer.innerHTML = '';
+
+                        if (result.files && result.files.length > 0) {
+                            if (result.files.length === 1) {
+                                const downloadBtn = document.createElement('a');
+                                downloadBtn.href = result.files[0].url;
+                                downloadBtn.className = 'btn btn-success btn-lg w-100';
+                                downloadBtn.innerHTML = '<i class="fas fa-download me-2"></i> Download Image';
+                                downloadBtn.download = result.files[0].fileName;
+                                downloadLinksContainer.appendChild(downloadBtn);
+                            } else {
+                                result.files.forEach((file, index) => {
+                                    const downloadBtn = document.createElement('a');
+                                    downloadBtn.href = file.url;
+                                    downloadBtn.className = 'btn btn-outline-primary btn-sm w-100 mb-2';
+                                    downloadBtn.innerHTML = `<i class="fas fa-download me-2"></i> Download Page ${index + 1}`;
+                                    downloadBtn.download = file.fileName;
+                                    downloadLinksContainer.appendChild(downloadBtn);
+                                });
+                            }
+                        }
+
+                        resultsSection.classList.remove('d-none');
+                    } else {
+                        alert(result.message || 'Conversion failed');
+                        pageSelectorSection.classList.remove('d-none');
+                        actionSection.classList.remove('d-none');
+                    }
+                } catch (e) {
+                    loadingState.classList.add('d-none');
+                    convertBtn.disabled = false;
+                    alert('Error: ' + e.message);
+                    pageSelectorSection.classList.remove('d-none');
+                    actionSection.classList.remove('d-none');
+                }
+            }
+
+            function reset() {
+                currentFile = null;
+                pageCount = 0;
+                selectedPages.clear();
+                fileSection.classList.add('d-none');
+                pageSelectorSection.classList.add('d-none');
+                actionSection.classList.add('d-none');
+                uploadZone.classList.remove('d-none');
+                fileInput.value = '';
+                resultsSection.classList.add('d-none');
+                loadingState.classList.add('d-none');
+            }
+        })();
+    </script>
 }

@@ -48,8 +48,10 @@ builder.Services.AddAntiforgery(options =>
 {
     options.FormFieldName = "__RequestVerificationToken";
     options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.Name = "XSRF-TOKEN";
-    options.Cookie.HttpOnly = false; // Allow JavaScript to read for AJAX requests
+    // Keep framework antiforgery cookie separate from the JS-readable request-token cookie.
+    // The middleware below writes the request token to "XSRF-TOKEN" for fetch/AJAX.
+    options.Cookie.Name = "CSRF-COOKIE";
+    options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
         ? CookieSecurePolicy.None 
         : CookieSecurePolicy.Always;

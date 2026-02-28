@@ -1,0 +1,7 @@
+pdf2docx
+pdfplumber
+openpyxl
+pymupdf
+python-pptx
+pikepdf
+Pillow

@@ -1,268 +1,476 @@
-@{
-    ViewData["Title"] = "Edit PDF - Text Editor";
+﻿@{
+    ViewData["Title"] = "Edit PDF - Advanced Editor";
 }
+
 <style>
-    .editor-container {
-        display: flex;
-        height: calc(100vh - 200px);
-        min-height: 600px;
-    }
+    /* ============================================
+       PDF Editor - Modern Top Toolbar Design
+       ============================================ */
     
-    /* Left Toolbar Panel */
-    .toolbar-panel {
-        width: 280px;
-        background: #fff;
-        border-right: 1px solid #dee2e6;
+    :root {
+        --primary-color: #0d6efd;
+        --secondary-color: #6c757d;
+        --success-color: #198754;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --light-bg: #f8f9fa;
+        --dark-bg: #212529;
+        --border-color: #dee2e6;
+        --toolbar-height: 56px;
+    }
+
+    .pdf-editor-container {
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
+        height: calc(100vh - 140px);
+        min-height: 500px;
+        background: var(--light-bg);
     }
-    
-    .toolbar-section {
-        padding: 15px;
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .toolbar-section-title {
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: #6c757d;
-        margin-bottom: 10px;
-        letter-spacing: 0.5px;
-    }
-    
-    .toolbar-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 10px;
-    }
-    
-    .toolbar-row:last-child {
-        margin-bottom: 0;
-    }
-    
-    /* Font Controls */
-    .font-family-select {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        font-size: 14px;
+
+    /* Top Toolbar */
+    .pdf-toolbar {
+        height: var(--toolbar-height);
         background: white;
-        cursor: pointer;
-    }
-    
-    .font-size-input {
-        width: 70px;
-        padding: 8px;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        text-align: center;
-    }
-    
-    /* Color Pickers */
-    .color-picker-wrapper {
+        border-bottom: 1px solid var(--border-color);
         display: flex;
         align-items: center;
+        padding: 0 15px;
         gap: 8px;
-    }
-    
-    .color-picker {
-        width: 40px;
-        height: 35px;
-        padding: 2px;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-    
-    .color-preview {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        border: 1px solid #dee2e6;
-    }
-    
-    /* Format Buttons */
-    .format-btn-group {
-        display: flex;
         flex-wrap: wrap;
-        gap: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    
-    .format-btn {
-        width: 38px;
-        height: 38px;
+
+    .toolbar-group {
         display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 8px;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+
+    .toolbar-group-title {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: var(--secondary-color);
+        margin-right: 8px;
+        white-space: nowrap;
+    }
+
+    .toolbar-btn {
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid #ced4da;
-        background: #fff;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--border-color);
+        background: white;
         border-radius: 6px;
         cursor: pointer;
-        transition: all 0.15s;
+        font-size: 14px;
+        color: var(--dark-bg);
+        transition: all 0.15s ease;
+        gap: 6px;
+    }
+
+    .toolbar-btn:hover {
+        background: var(--light-bg);
+        border-color: var(--primary-color);
+    }
+
+    .toolbar-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .toolbar-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .toolbar-btn i {
         font-size: 14px;
     }
-    
-    .format-btn:hover {
-        background: #e9ecef;
+
+    .toolbar-btn-text {
+        font-size: 12px;
+        font-weight: 500;
     }
-    
-    .format-btn.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+
+    /* Dropdown */
+    .toolbar-dropdown {
+        position: relative;
     }
-    
-    .format-btn i {
-        pointer-events: none;
-    }
-    
-    /* Alignment Buttons */
-    .align-btn {
-        padding: 8px 14px;
-        border: 1px solid #ced4da;
-        background: #fff;
+
+    .toolbar-dropdown-content {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid var(--border-color);
         border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.15s;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        min-width: 150px;
+        padding: 5px 0;
     }
-    
-    .align-btn:hover {
-        background: #e9ecef;
+
+    .toolbar-dropdown:hover .toolbar-dropdown-content {
+        display: block;
     }
-    
-    .align-btn.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
-    }
-    
-    /* Preview Panel */
-    .preview-panel {
-        flex: 1;
+
+    .toolbar-dropdown-item {
         display: flex;
-        flex-direction: column;
-        background: #f8f9fa;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 15px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 0.15s;
+    }
+
+    .toolbar-dropdown-item:hover {
+        background: var(--light-bg);
+    }
+
+    /* Main Content Area */
+    .pdf-editor-main {
+        display: flex;
+        flex: 1;
         overflow: hidden;
     }
-    
-    .preview-header {
-        padding: 10px 15px;
-        background: #fff;
-        border-bottom: 1px solid #dee2e6;
+
+    /* Left Sidebar - Page Thumbnails */
+    .pdf-sidebar {
+        width: 180px;
+        background: white;
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 12px;
+        border-bottom: 1px solid var        font-weight:(--border-color);
+ 600;
+        font-size: 13px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    
-    .page-nav {
+
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    .page-thumbnail {
+        width: 100%;
+        aspect-ratio: 0.707;
+        background: white;
+        border: 2px solid var(--border-color);
+        border-radius: 4px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.15s;
+    }
+
+    .page-thumbnail:hover {
+        border-color: var(--primary-color);
+    }
+
+    .page-thumbnail.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+    }
+
+    .page-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .page-number {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+    }
+
+    /* Canvas Area */
+    .pdf-canvas-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .canvas-header {
+        height: 40px;
+        background: white;
+        border-bottom: 1px solid var(--border-color);
         display: flex;
         align-items: center;
-        gap: 10px;
+        justify-content: space-between;
+        padding: 0 15px;
     }
-    
-    .page-nav button {
-        padding: 6px 12px;
-        border: 1px solid #ced4da;
-        background: #fff;
-        border-radius: 4px;
-        cursor: pointer;
+
+    .page-info {
+        font-size: 13px;
+        color: var(--secondary-color);
     }
-    
-    .page-nav button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    .page-nav span {
-        font-weight: 500;
-    }
-    
+
     .zoom-controls {
         display: flex;
         align-items: center;
         gap: 8px;
     }
-    
-    .zoom-controls button {
-        width: 32px;
-        height: 32px;
-        border: 1px solid #ced4da;
-        background: #fff;
+
+    .zoom-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border-color);
+        background: white;
         border-radius: 4px;
         cursor: pointer;
-    }
-    
-    .zoom-controls span {
-        min-width: 50px;
-        text-align: center;
-    }
-    
-    .preview-canvas-container {
-        flex: 1;
-        overflow: auto;
-        padding: 20px;
         display: flex;
+        align-items: center;
         justify-content: center;
     }
-    
-    .preview-canvas-wrapper {
+
+    .zoom-btn:hover {
+        background: var(--light-bg);
+    }
+
+    .zoom-level {
+        min-width: 50px;
+        text-align: center;
+        font-size: 13px;
+    }
+
+    .canvas-main {
+        flex: 1;
+        overflow: auto;
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .canvas-wrapper {
         position: relative;
         background: white;
         box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-        display: inline-block;
     }
-    
-    #previewCanvas {
+
+    #pdfCanvas {
         display: block;
         max-width: 100%;
     }
-    
-    #previewImage {
-        display: block;
-        max-width: 100%;
-        height: auto;
-    }
-    
-    /* Text Overlay */
-    .text-overlay-container {
+
+    /* Text Layer for Editable/Searchable Text */
+    .text-layer {
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        right: 0;
+        bottom: 0;
         overflow: hidden;
+        pointer-events: none;
     }
-    
-    .editable-text {
+
+    .text-line {
         position: absolute;
+        white-space: pre;
+        pointer-events: auto;
         cursor: text;
-        border: 2px solid transparent;
-        padding: 2px 4px;
-        min-width: 20px;
-        min-height: 20px;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+        transition: background 0.15s;
     }
-    
-    .editable-text:hover {
-        border-color: rgba(13, 110, 253, 0.5);
-        background: rgba(13, 110, 253, 0.05);
-    }
-    
-    .editable-text.selected {
-        border-color: #0d6efd;
+
+    .text-line:hover {
         background: rgba(13, 110, 253, 0.1);
-        outline: none;
     }
-    
-    .editable-text.editing {
-        border-color: #198754;
+
+    .text-line.selected {
+        background: rgba(13, 110, 253, 0.2);
+    }
+
+    .text-line.editing {
         background: white;
     }
-    
+
+    /* Editable Text Box */
+    .editable-box {
+        position: absolute;
+        border: 2px solid var(--primary-color);
+        background: rgba(255, 255, 255, 0.9);
+        cursor: move;
+        min-width: 50px;
+        min-height: 24px;
+        pointer-events: auto;
+    }
+
+    .editable-box .text-content {
+        padding: 4px 8px;
+        font-size: 14px;
+        outline: none;
+        min-height: 20px;
+        cursor: text;
+    }
+
+    .editable-box.selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+    }
+
+    /* Crop Overlay */
+    .crop-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+    }
+
+    .crop-box {
+        position: absolute;
+        border: 2px dashed var(--primary-color);
+        background: rgba(13, 110, 253, 0.1);
+        pointer-events: auto;
+        cursor: move;
+    }
+
+    .crop-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: var(--primary-color);
+        border-radius: 2px;
+    }
+
+    .crop-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+    .crop-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+    .crop-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+    .crop-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+
+    .crop-dimensions {
+        position: absolute;
+        bottom: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--primary-color);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    /* Search Panel */
+    .search-panel {
+        display: none;
+        position: absolute;
+        top: 50px;
+        right: 20px;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 15px;
+        z-index: 100;
+        min-width: 250px;
+    }
+
+    .search-panel.active {
+        display: block;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .search-results-count {
+        font-size: 12px;
+        color: var(--secondary-color);
+    }
+
+    /* Right Panel - Properties */
+    .properties-panel {
+        width: 260px;
+        background: white;
+        border-left: 1px solid var(--border-color);
+        display: none;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .properties-panel.active {
+        display: flex;
+    }
+
+    .properties-header {
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .properties-content {
+        padding: 15px;
+    }
+
+    .property-group {
+        margin-bottom: 15px;
+    }
+
+    .property-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--secondary-color);
+        margin-bottom: 6px;
+    }
+
+    .property-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .property-row {
+        display: flex;
+        gap: 8px;
+    }
+
+    .property-row .property-input {
+        flex: 1;
+    }
+
     /* Upload State */
     .upload-state {
         display: flex;
@@ -272,142 +480,122 @@
         height: 100%;
         padding: 40px;
     }
-    
+
     .drop-zone {
         width: 100%;
         max-width: 500px;
-        border: 3px dashed #dee2e6;
+        border: 3px dashed var(--border-color);
         border-radius: 12px;
         padding: 60px;
         text-align: center;
         cursor: pointer;
         transition: all 0.3s;
     }
-    
+
     .drop-zone:hover {
-        border-color: #0d6efd;
-        background: #f8f9fa;
+        border-color: var(--primary-color);
+        background: rgba(13, 110, 253, 0.05);
     }
-    
-    /* Loading */
+
+    /* Loading Overlay */
     .loading-overlay {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(255,255,255,0.9);
+        background: rgba(255,255,255,0.95);
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        z-index: 1000;
-    }
-    
-    /* Quick Colors */
-    .quick-colors {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        margin-top: 8px;
-    }
-    
-    .quick-color {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        border: 1px solid #dee2e6;
-        cursor: pointer;
-        transition: transform 0.15s;
-    }
-    
-    .quick-color:hover {
-        transform: scale(1.1);
-    }
-    
-    /* Opacity Slider */
-    .opacity-slider {
-        width: 100%;
-        margin-top: 8px;
-    }
-    
-    /* Line Height */
-    .line-height-input {
-        width: 60px;
-        padding: 6px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-    }
-    
-    /* Letter Spacing */
-    .letter-spacing-input {
-        width: 60px;
-        padding: 6px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-    }
-    
-    /* Detected fonts badge */
-    .detected-fonts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 6px;
+        z-index: 2000;
     }
 
-    .font-badge {
-        padding: 3px 8px;
-        background: #e9ecef;
-        border: 1px solid #dee2e6;
-        border-radius: 12px;
-        font-size: 11px;
-        cursor: pointer;
-        transition: background 0.15s;
+    .loading-overlay.hidden {
+        display: none;
     }
 
-    .font-badge:hover {
-        background: #cfe2ff;
-        border-color: #0d6efd;
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--border-color);
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
     }
 
-    /* Mode selector */
-    .mode-selector {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 10px;
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
     }
 
-    .mode-btn {
-        flex: 1;
-        padding: 8px 6px;
-        border: 1.5px solid #ced4da;
-        background: #fff;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 500;
-        text-align: center;
-        transition: all 0.15s;
+    .loading-text {
+        margin-top: 15px;
+        font-size: 16px;
+        color: var(--secondary-color);
     }
 
-    .mode-btn.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+    .loading-progress {
+        margin-top: 10px;
+        width: 200px;
+        height: 6px;
+        background: var(--border-color);
+        border-radius: 3px;
+        overflow: hidden;
     }
-    
-    /* Dragging state */
-    .editable-text.dragging {
-        opacity: 0.8;
-        border-color: #198754 !important;
+
+    .loading-progress-bar {
+        height: 100%;
+        background: var(--primary-color);
+        transition: width 0.3s;
     }
-    
-    /* Move mode cursor */
-    .preview-canvas-wrapper.move-mode {
-        cursor: default;
-    }
-    
-    .preview-canvas-wrapper.move-mode .editable-text {
+
+    /* OCR Text Highlight */
+    .ocr-text {
+        background: rgba(255, 235, 59, 0.3);
+        border: 1px dashed #ffc107;
+        padding: 2px;
         cursor: move;
+        user-select: none;
+    }
+    
+    .ocr-text.selected {
+        background: rgba(255, 193, 7, 0.5);
+        border: 2px solid #ff9800;
+        box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+    }
+
+    /* Mode indicator */
+    .mode-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: var(--light-bg);
+        border-radius: 15px;
+        font-size: 12px;
+    }
+
+    .mode-indicator .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success-color);
+    }
+
+    /* Responsive */
+    @@media (max-width: 992px) {
+        .pdf-sidebar {
+            width: 120px;
+        }
+        
+        .properties-panel {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 50;
+        }
     }
 </style>
 
@@ -415,971 +603,1460 @@
     <div class="container-fluid">
         <div class="tool-header text-center mb-3">
             <h1 class="tool-title fw-bold">Edit PDF</h1>
-            <p class="tool-description text-muted">Edit text with comprehensive formatting tools</p>
+            <p class="tool-description text-muted">Add, edit text with AI-powered OCR extraction</p>
         </div>
         
-        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
+        <input type="file" id="fileInput" accept=".pdf,image/*" style="display: none;" />
         
         <!-- Upload State -->
         <div id="uploadState" class="upload-state">
             <div id="dropZone" class="drop-zone">
-                <i class="fas fa-edit fa-4x text-primary mb-3"></i>
+                <i class="fas fa-file-pdf fa-4x text-primary mb-3"></i>
                 <h4>Drop your PDF here</h4>
-                <p class="text-muted mb-0">or click to browse</p>
+                <p class="text-muted mb-0">or click to browse - supports scanned documents</p>
+                <p class="text-muted small mt-2">AI will extract text from images for editable/searchable content</p>
             </div>
         </div>
         
         <!-- Editor State -->
-        <div id="editorState" class="editor-container d-none">
-            <!-- Left Toolbar Panel -->
-            <div class="toolbar-panel">
-                <!-- File Info -->
-                <div class="toolbar-section">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="fw-bold text-truncate" id="fileName">Document.pdf</span>
-                        <button class="btn btn-sm btn-outline-danger" id="clearFile">
-                            <i class="fas fa-times"></i>
-                        </button>
+        <div id="editorState" class="pdf-editor-container d-none">
+            <!-- Top Toolbar -->
+            <div class="pdf-toolbar">
+                <!-- File Group -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="btnNewFile" title="Open File">
+                        <i class="fas fa-folder-open"></i>
+                        <span class="toolbar-btn-text">Open</span>
+                    </button>
+                    <button class="toolbar-btn" id="btnSave" title="Save PDF">
+                        <i class="fas fa-save"></i>
+                        <span class="toolbar-btn-text">Save</span>
+                    </button>
+                </div>
+
+                <!-- Tools Group -->
+                <div class="toolbar-group">
+                    <div class="toolbar-group-title">Tools</div>
+                    <button class="toolbar-btn active" id="btnSelect" title="Select & Edit">
+                        <i class="fas fa-mouse-pointer"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnText" title="Add Text">
+                        <i class="fas fa-font"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnCrop" title="Crop Page">
+                        <i class="fas fa-crop-alt"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnDraw" title="Draw/Highlight">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                </div>
+
+                <!-- OCR Group -->
+                <div class="toolbar-group">
+                    <div class="toolbar-group-title">OCR</div>
+                    <button class="toolbar-btn" id="btnExtractText" title="Extract Text to Modal">
+                        <i class="fas fa-file-export"></i>
+                        <span class="toolbar-btn-text">Extract</span>
+                    </button>
+                    <button class="toolbar-btn" id="btnShowOcrOverlay" title="Show/Hide OCR Text on PDF">
+                        <i class="fas fa-eye"></i>
+                        <span class="toolbar-btn-text">Show</span>
+                    </button>
+                    <button class="toolbar-btn" id="btnMakeSearchable" title="Make Searchable PDF">
+                        <i class="fas fa-search"></i>
+                        <span class="toolbar-btn-text">Searchable</span>
+                    </button>
+                </div>
+
+                <!-- Format Group -->
+                <div class="toolbar-group" id="formatGroup" style="display: none;">
+                    <div class="toolbar-group-title">Format</div>
+                    <button class="toolbar-btn" id="btnBold" title="Bold">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnItalic" title="Italic">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnUnderline" title="Underline">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                    <select class="font-family-select" id="fontFamilySelect" style="height: 36px; border-radius: 6px; border: 1px solid var(--border-color); padding: 0 8px;">
+                        <option value="Arial">Arial</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Courier New">Courier</option>
+                    </select>
+                    <input type="number" id="fontSizeInput" value="14" min="8" max="72" style="width: 60px; height: 36px; border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; text-align: center;" />
+                    <input type="color" id="textColorInput" value="#000000" style="width: 36px; height: 36px; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px; cursor: pointer;" />
+                </div>
+
+                <!-- Page Group -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="btnPrevPage" title="Previous Page">
+                        <i-chevron-left class="fas fa"></i>
+                    </button>
+                    <span class="page-info" id="pageInfo">1 / 1</span>
+                    <button class="toolbar-btn" id="btnNextPage" title="Next Page">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- Search & Zoom -->
+                <div class="toolbar-group" style="margin-left: auto; border-right: none;">
+                    <button class="toolbar-btn" id="btnSearch" title="Search in Document">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnZoomOut" title="Zoom Out">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="toolbar-btn" id="btnZoomIn" title="Zoom In">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="toolbar-btn" id="btnFitWidth" title="Fit Width">
+                        <i class="fas fa-arrows-alt-h"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Editor Area -->
+            <div class="pdf-editor-main">
+                <!-- Left Sidebar - Page Thumbnails -->
+                <div class="pdf-sidebar">
+                    <div class="sidebar-header">
+                        <span>Pages</span>
+                        <span id="totalPagesCount" class="badge bg-primary">0</span>
                     </div>
-                    <div class="small text-muted mt-1">
-                        <span id="pageCount">0</span> pages
+                    <div class="sidebar-content" id="thumbnailContainer">
+                        <!-- Thumbnails will be generated here -->
                     </div>
                 </div>
 
-                <!-- Mode -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Canvas Mode</div>
-                    <div class="mode-selector">
-                        <button class="mode-btn active" id="modeAdd" title="Click canvas to add text box">
-                            <i class="fas fa-plus-square me-1"></i> Add Text
-                        </button>
-                        <button class="mode-btn" id="modeSelect" title="Click/drag text boxes">
-                            <i class="fas fa-mouse-pointer me-1"></i> Select
-                        </button>
-                    </div>
-                    <div id="coordDisplay" class="coord-badge">Mode: Add Text Box (click canvas)</div>
-                </div>
-                
-                <!-- Font Family -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Font Family</div>
-                    <select class="font-family-select" id="fontFamily">
-                        <option value="Arial">Arial</option>
-                        <option value="Helvetica">Helvetica</option>
-                        <option value="Times New Roman">Times New Roman</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Verdana">Verdana</option>
-                        <option value="Courier New">Courier New</option>
-                        <option value="Comic Sans MS">Comic Sans MS</option>
-                        <option value="Impact">Impact</option>
-                        <option value="Trebuchet MS">Trebuchet MS</option>
-                        <option value="Palatino Linotype">Palatino Linotype</option>
-                    </select>
-                    <!-- PDF detected fonts appear here -->
-                    <div id="detectedFonts" class="detected-fonts" style="display:none;">
-                        <div class="toolbar-section-title mt-2" style="margin-bottom:4px;">PDF Fonts</div>
-                    </div>
-                </div>
-                
-                <!-- Font Size -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Font Size</div>
-                    <div class="toolbar-row">
-                        <button class="format-btn" id="decreaseFontSize" title="Decrease">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <input type="number" class="font-size-input" id="fontSize" value="16" min="6" max="200" />
-                        <button class="format-btn" id="increaseFontSize" title="Increase">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Text Color -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Text Color</div>
-                    <div class="color-picker-wrapper">
-                        <input type="color" class="color-picker" id="textColor" value="#000000" />
-                        <span class="small text-muted" id="textColorHex">#000000</span>
-                    </div>
-                    <div class="quick-colors">
-                        <div class="quick-color" style="background: #000000" data-color="#000000"></div>
-                        <div class="quick-color" style="background: #333333" data-color="#333333"></div>
-                        <div class="quick-color" style="background: #666666" data-color="#666666"></div>
-                        <div class="quick-color" style="background: #cc0000" data-color="#cc0000"></div>
-                        <div class="quick-color" style="background: #0066cc" data-color="#0066cc"></div>
-                        <div class="quick-color" style="background: #008800" data-color="#008800"></div>
-                        <div class="quick-color" style="background: #ffcc00" data-color="#ffcc00"></div>
-                        <div class="quick-color" style="background: #ffffff" data-color="#ffffff"></div>
-                    </div>
-                </div>
-                
-                <!-- Background Color -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Background Color</div>
-                    <div class="color-picker-wrapper">
-                        <input type="color" class="color-picker" id="bgColor" value="#ffffff" />
-                        <span class="small text-muted" id="bgColorHex">#ffffff</span>
-                    </div>
-                    <div class="quick-colors">
-                        <div class="quick-color" style="background: #ffffff" data-color="#ffffff" data-bg="true"></div>
-                        <div class="quick-color" style="background: #ffff00" data-color="#ffff00" data-bg="true"></div>
-                        <div class="quick-color" style="background: #ffcccc" data-color="#ffcccc" data-bg="true"></div>
-                        <div class="quick-color" style="background: #ccffcc" data-color="#ccffcc" data-bg="true"></div>
-                        <div class="quick-color" style="background: #ccccff" data-color="#ccccff" data-bg="true"></div>
-                        <div class="quick-color" style="background: #000000" data-color="#000000" data-bg="true"></div>
-                    </div>
-                </div>
-                
-                <!-- Text Formatting -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Formatting</div>
-                    <div class="format-btn-group">
-                        <button class="format-btn" id="boldBtn" title="Bold (Ctrl+B)">
-                            <i class="fas fa-bold"></i>
-                        </button>
-                        <button class="format-btn" id="italicBtn" title="Italic (Ctrl+I)">
-                            <i class="fas fa-italic"></i>
-                        </button>
-                        <button class="format-btn" id="underlineBtn" title="Underline (Ctrl+U)">
-                            <i class="fas fa-underline"></i>
-                        </button>
-                        <button class="format-btn" id="strikethroughBtn" title="Strikethrough">
-                            <i class="fas fa-strikethrough"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Text Alignment -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Alignment</div>
-                    <div class="format-btn-group">
-                        <button class="format-btn align-btn active" id="alignLeft" title="Align Left">
-                            <i class="fas fa-align-left"></i>
-                        </button>
-                        <button class="format-btn align-btn" id="alignCenter" title="Align Center">
-                            <i class="fas fa-align-center"></i>
-                        </button>
-                        <button class="format-btn align-btn" id="alignRight" title="Align Right">
-                            <i class="fas fa-align-right"></i>
-                        </button>
-                        <button class="format-btn align-btn" id="alignJustify" title="Justify">
-                            <i class="fas fa-align-justify"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Text Spacing -->
-                <div class="toolbar-section">
-                    <div class="toolbar-section-title">Spacing</div>
-                    <div class="toolbar-row">
-                        <div>
-                            <label class="small text-muted d-block">Line Height</label>
-                            <input type="number" class="line-height-input" id="lineHeight" value="1.5" min="0.5" max="3" step="0.1" />
+                <!-- Canvas Area -->
+                <div class="pdf-canvas-area">
+                    <div class="canvas-header">
+                        <div class="mode-indicator">
+                            <span class="dot"></span>
+                            <span id="currentMode">Select Mode</span>
                         </div>
-                        <div>
-                            <label class="small text-muted d-block">Letter Spacing</label>
-                            <input type="number" class="letter-spacing-input" id="letterSpacing" value="0" min="-5" max="20" step="0.5" />
+                        <div class="zoom-controls">
+                            <button class="zoom-btn" id="zoomOut2"><i class="fas fa-minus"></i></button>
+                            <span class="zoom-level" id="zoomLevel2">100%</span>
+                            <button class="zoom-btn" id="zoomIn2"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="canvas-main" id="canvasContainer">
+                        <div class="canvas-wrapper" id="canvasWrapper">
+                            <canvas id="pdfCanvas"></canvas>
+                            <div class="text-layer" id="textLayer"></div>
+                            <div class="crop-overlay" id="cropOverlay">
+                                <div class="crop-box" id="cropBox" style="display: none;">
+                                    <div class="crop-handle nw"></div>
+                                    <div class="crop-handle ne"></div>
+                                    <div class="crop-handle sw"></div>
+                                    <div class="crop-handle se"></div>
+                                    <div class="crop-dimensions" id="cropDimensions">0 x 0</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Actions -->
-                <div class="toolbar-section mt-auto">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-success" id="addTextBtn">
-                            <i class="fas fa-plus me-2"></i> Add Text Box
-                        </button>
-                        <button class="btn btn-primary" id="saveBtn">
-                            <i class="fas fa-save me-2"></i> Save PDF
-                        </button>
+
+                <!-- Right Properties Panel -->
+                <div class="properties-panel" id="propertiesPanel">
+                    <div class="properties-header">
+                        <span>Properties</span>
+                        <button class="btn btn-sm btn-close" id="closeProperties"></button>
+                    </div>
+                    <div class="properties-content">
+                        <div class="property-group">
+                            <div class="property-label">Text Color</div>
+                            <input type="color" class="property-input" id="propTextColor" value="#000000" style="height: 40px; padding: 4px;">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">Background</div>
+                            <input type="color" class="property-input" id="propBgColor" value="#ffffff" style="height: 40px; padding: 4px;">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">Font Size</div>
+                            <input type="number" class="property-input" id="propFontSize" value="14" min="8" max="72">
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">Position</div>
+                            <div class="property-row">
+                                <input type="number" class="property-input" id="propX" placeholder="X">
+                                <input type="number" class="property-input" id="propY" placeholder="Y">
+                            </div>
+                        </div>
+                        <div class="property-group">
+                            <div class="property-label">Size</div>
+                            <div class="property-row">
+                                <input type="number" class="property-input" id="propWidth" placeholder="W">
+                                <input type="number" class="property-input" id="propHeight" placeholder="H">
+                            </div>
+                        </div>
+                        <div class="property-group mt-3">
+                            <button class="btn btn-primary w-100" id="btnApplyFormat">Apply</button>
+                            <button class="btn btn-outline-danger w-100 mt-2" id="btnDeleteElement">Delete</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Preview Panel -->
-            <div class="preview-panel">
-                <div class="preview-header">
-                    <div class="page-nav">
-                        <button id="prevPage" disabled><i class="fas fa-chevron-left"></i></button>
-                        <span>Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
-                        <button id="nextPage" disabled><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                    <div class="zoom-controls">
-                        <button id="zoomOut"><i class="fas fa-minus"></i></button>
-                        <span id="zoomLevel">100%</span>
-                        <button id="zoomIn"><i class="fas fa-plus"></i></button>
-                        <button id="fitToWidth" title="Fit to Width"><i class="fas fa-arrows-alt-h"></i></button>
-                    </div>
+
+            <!-- Search Panel -->
+            <div class="search-panel" id="searchPanel">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search text in document...">
+                <div class="search-results-count" id="searchResultsCount"></div>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="btnPrevResult">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnNextResult">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnCloseSearch">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="preview-canvas-container">
-                    <div class="preview-canvas-wrapper" id="canvasWrapper">
-                        <img id="previewImage" src="" alt="PDF Page" style="display:block;max-width:100%;" />
-                        <div class="text-overlay-container" id="textOverlay"></div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Processing...</div>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- OCR Text Modal -->
+        <div class="modal fade" id="ocrModal" tabindex="-1" aria-labelledby="ocrModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="ocrModalLabel">Extracted Text</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea id="extractedText" class="form-control" rows="15" placeholder="Extracted text will appear here..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="copyTextBtn">
+                            <i class="fas fa-copy"></i> Copy to Clipboard
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Loading Overlay -->
-        <div id="loadingOverlay" class="loading-overlay d-none">
-            <div class="text-center">
-                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
-                <h5 id="loadingMessage">Loading...</h5>
+
+        <!-- Edit Text Modal -->
+        <div class="modal fade" id="editTextModal" tabindex="-1" aria-labelledby="editTextModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editTextModalLabel">Edit Text</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Text Content</label>
+                            <textarea id="editTextContent" class="form-control" rows="5" placeholder="Enter text..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Find & Replace</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="text" id="findText" class="form-control" placeholder="Find">
+                                </div>
+                                <div class="col-6">
+                                    <input type="text" id="replaceText" class="form-control" placeholder="Replace with">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="findReplaceBtn">
+                                <i class="fas fa-exchange-alt"></i> Find & Replace
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" id="deleteTextBtn">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="saveTextBtn">Save Changes</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-(function() {
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('dropZone');
-    const uploadState = document.getElementById('uploadState');
-    const editorState = document.getElementById('editorState');
-    const fileName = document.getElementById('fileName');
-    const pageCount = document.getElementById('pageCount');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const loadingMessage = document.getElementById('loadingMessage');
-    const clearFile = document.getElementById('clearFile');
-    const previewCanvas = document.getElementById('previewCanvas');
-    const previewImage = document.getElementById('previewImage');
-    const canvasWrapper = document.getElementById('canvasWrapper');
-    const textOverlay = document.getElementById('textOverlay');
-    const previewCanvasWrapper = canvasWrapper; // The wrapper element for canvas
-    const currentPageEl = document.getElementById('currentPage');
-    const totalPagesEl = document.getElementById('totalPages');
-    const prevPageBtn = document.getElementById('prevPage');
-    const nextPageBtn = document.getElementById('nextPage');
-    const zoomLevelEl = document.getElementById('zoomLevel');
-    const zoomInBtn = document.getElementById('zoomIn');
-    const zoomOutBtn = document.getElementById('zoomOut');
-    const fitToWidthBtn = document.getElementById('fitToWidth');
-    
-    let currentFile = null;
-    let pages = [];
-    let currentPage = 1;
-    let zoom = 1;
-    let canvasMode = 'add'; // 'add' or 'select'
-    let isDragging = false;
-    let dragTarget = null;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let dragBoxStartX = 0;
-    let dragBoxStartY = 0;
-    let isResizing = false;
-    let resizeHandle = null;
-    let resizeStartX = 0;
-    let resizeStartY = 0;
-    let resizeBoxStartW = 0;
-    let resizeBoxStartH = 0;
-    let textBoxes = [];
-    let selectedTextBox = null;
-    let pdfDoc = null;
-    
-    // Current formatting
-    let currentFormat = {
-        fontFamily: 'Arial',
-        fontSize: 16,
-        textColor: '#000000',
-        bgColor: '#ffffff',
-        bold: false,
-        italic: false,
-        underline: false,
-        strikethrough: false,
-        align: 'left',
-        lineHeight: 1.5,
-        letterSpacing: 0
-    };
-    
-    // Initialize
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
-    
-    dropZone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropZone.style.borderColor = '#0d6efd';
-        dropZone.style.background = '#f8f9fa';
-    });
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.style.borderColor = '#dee2e6';
-        dropZone.style.background = '';
-    });
-    dropZone.addEventListener('drop', e => {
-        e.preventDefault();
-        dropZone.style.borderColor = '#dee2e6';
-        dropZone.style.background = '';
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-    
-    clearFile.addEventListener('click', resetState);
-    
-    // Page navigation
-    prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1));
-    nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
-    
-    // Zoom controls
-    zoomInBtn.addEventListener('click', () => setZoom(zoom + 0.1));
-    zoomOutBtn.addEventListener('click', () => setZoom(zoom - 0.1));
-    fitToWidthBtn.addEventListener('click', fitToWidth);
-    
-    // Mode selector controls
-    const modeAddBtn = document.getElementById('modeAdd');
-    const modeSelectBtn = document.getElementById('modeSelect');
-    const coordDisplay = document.getElementById('coordDisplay');
-    
-    modeAddBtn.addEventListener('click', () => {
-        canvasMode = 'add';
-        modeAddBtn.classList.add('active');
-        modeSelectBtn.classList.remove('active');
-        coordDisplay.textContent = 'Mode: Add Text Box (click canvas)';
-        previewCanvasWrapper.classList.remove('move-mode');
-    });
-    
-    modeSelectBtn.addEventListener('click', () => {
-        canvasMode = 'select';
-        modeSelectBtn.classList.add('active');
-        modeAddBtn.classList.remove('active');
-        coordDisplay.textContent = 'Mode: Select/Move (drag text boxes)';
-        previewCanvasWrapper.classList.add('move-mode');
-    });
-    
-    // Canvas wrapper click to add text box
-    previewCanvasWrapper.addEventListener('click', (e) => {
-        if (canvasMode !== 'add') return;
-        if (e.target !== previewCanvasWrapper && e.target.id !== 'previewImage') return;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    (function() {
+        // State
+        let currentFile = null;
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        let zoom = 1;
+        let currentMode = 'select'; // select, text, crop, draw
+        let textBoxes = [];
+        let ocrTextElements = [];
+        let selectedElement = null;
+        let searchResults = [];
+        let currentSearchIndex = -1;
+        let isCropping = false;
+        let cropBox = { x: 0, y: 0, w: 0, h: 0 };
+        let isDragging = false;
+        let isResizing = false;
+        let dragStart = { x: 0, y: 0 };
+        let resizeHandle = null;
         
-        const rect = previewCanvasWrapper.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / zoom;
-        const y = (e.clientY - rect.top) / zoom;
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const uploadState = document.getElementById('uploadState');
+        const editorState = document.getElementById('editorState');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const loadingProgressBar = document.getElementById('loadingProgressBar');
         
-        const boxes = textBoxes[currentPage - 1] || [];
-        const newBox = {
-            x: x - 100, // Center on click
-            y: y - 15,
-            width: 200,
-            height: 40,
-            text: '',
-            format: { ...currentFormat }
-        };
+        const canvas = document.getElementById('pdfCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const textLayer = document.getElementById('textLayer');
+        const cropOverlay = document.getElementById('cropOverlay');
+        const cropBoxEl = document.getElementById('cropBox');
+        const cropDimensions = document.getElementById('cropDimensions');
         
-        boxes.push(newBox);
-        textBoxes[currentPage - 1] = boxes;
-        
-        renderTextBoxes();
-        
-        // Focus the new text box
-        setTimeout(() => {
-            const lastEl = textOverlay.querySelector(`[data-index="${boxes.length - 1}"]`);
-            if (lastEl) {
-                lastEl.focus();
-                selectTextBox(boxes.length - 1);
-            }
-        }, 100);
-    });
-    
-    // Mouse down for dragging text boxes
-    textOverlay.addEventListener('mousedown', (e) => {
-        if (canvasMode !== 'select') return;
-        
-        const target = e.target.closest('.editable-text');
-        if (!target) return;
-        
-        e.preventDefault();
-        isDragging = true;
-        dragTarget = target;
-        
-        const index = parseInt(target.dataset.index);
-        const box = textBoxes[currentPage - 1][index];
-        
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        dragBoxStartX = box.x;
-        dragBoxStartY = box.y;
-        
-        target.classList.add('dragging');
-    });
-    
-    // Mouse move for dragging
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging || !dragTarget) return;
-        
-        const dx = (e.clientX - dragStartX) / zoom;
-        const dy = (e.clientY - dragStartY) / zoom;
-        
-        const index = parseInt(dragTarget.dataset.index);
-        const box = textBoxes[currentPage - 1][index];
-        
-        box.x = Math.max(0, dragBoxStartX + dx);
-        box.y = Math.max(0, dragBoxStartY + dy);
-        
-        dragTarget.style.left = box.x + 'px';
-        dragTarget.style.top = box.y + 'px';
-        
-        coordDisplay.textContent = `Position: X=${Math.round(box.x)}, Y=${Math.round(box.y)}`;
-    });
-    
-    // Mouse up to stop dragging
-    document.addEventListener('mouseup', () => {
-        if (isDragging && dragTarget) {
-            dragTarget.classList.remove('dragging');
+        const thumbnailContainer = document.getElementById('thumbnailContainer');
+        const propertiesPanel = document.getElementById('propertiesPanel');
+        const searchPanel = document.getElementById('searchPanel');
+
+        // Initialize
+        function init() {
+            setupEventListeners();
         }
-        isDragging = false;
-        dragTarget = null;
-    });
-    
-    // Font controls
-    document.getElementById('fontFamily').addEventListener('change', e => {
-        currentFormat.fontFamily = e.target.value;
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('fontSize').addEventListener('change', e => {
-        currentFormat.fontSize = parseInt(e.target.value) || 16;
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('increaseFontSize').addEventListener('click', () => {
-        currentFormat.fontSize = Math.min(200, currentFormat.fontSize + 2);
-        document.getElementById('fontSize').value = currentFormat.fontSize;
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('decreaseFontSize').addEventListener('click', () => {
-        currentFormat.fontSize = Math.max(6, currentFormat.fontSize - 2);
-        document.getElementById('fontSize').value = currentFormat.fontSize;
-        updateSelectedTextBox();
-    });
-    
-    // Color pickers
-    document.getElementById('textColor').addEventListener('input', e => {
-        currentFormat.textColor = e.target.value;
-        document.getElementById('textColorHex').textContent = e.target.value;
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('bgColor').addEventListener('input', e => {
-        currentFormat.bgColor = e.target.value;
-        document.getElementById('bgColorHex').textContent = e.target.value;
-        updateSelectedTextBox();
-    });
-    
-    // Quick colors
-    document.querySelectorAll('.quick-color').forEach(el => {
-        el.addEventListener('click', () => {
-            const color = el.dataset.color;
-            if (el.dataset.bg === 'true') {
-                currentFormat.bgColor = color;
-                document.getElementById('bgColor').value = color;
-                document.getElementById('bgColorHex').textContent = color;
-            } else {
-                currentFormat.textColor = color;
-                document.getElementById('textColor').value = color;
-                document.getElementById('textColorHex').textContent = color;
-            }
-            updateSelectedTextBox();
-        });
-    });
-    
-    // Format buttons
-    document.getElementById('boldBtn').addEventListener('click', () => {
-        currentFormat.bold = !currentFormat.bold;
-        document.getElementById('boldBtn').classList.toggle('active', currentFormat.bold);
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('italicBtn').addEventListener('click', () => {
-        currentFormat.italic = !currentFormat.italic;
-        document.getElementById('italicBtn').classList.toggle('active', currentFormat.italic);
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('underlineBtn').addEventListener('click', () => {
-        currentFormat.underline = !currentFormat.underline;
-        document.getElementById('underlineBtn').classList.toggle('active', currentFormat.underline);
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('strikethroughBtn').addEventListener('click', () => {
-        currentFormat.strikethrough = !currentFormat.strikethrough;
-        document.getElementById('strikethroughBtn').classList.toggle('active', currentFormat.strikethrough);
-        updateSelectedTextBox();
-    });
-    
-    // Alignment buttons
-    document.querySelectorAll('.align-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFormat.align = btn.id.replace('align', '').toLowerCase();
-            updateSelectedTextBox();
-        });
-    });
-    
-    // Spacing
-    document.getElementById('lineHeight').addEventListener('change', e => {
-        currentFormat.lineHeight = parseFloat(e.target.value) || 1.5;
-        updateSelectedTextBox();
-    });
-    
-    document.getElementById('letterSpacing').addEventListener('change', e => {
-        currentFormat.letterSpacing = parseFloat(e.target.value) || 0;
-        updateSelectedTextBox();
-    });
-    
-    // Add text button
-    document.getElementById('addTextBtn').addEventListener('click', addNewTextBox);
-    
-    // Save button
-    document.getElementById('saveBtn').addEventListener('click', savePdf);
-    
-    async function handleFile(file) {
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
-            alert('Please select a PDF file.');
-            return;
-        }
-        
-        currentFile = file;
-        fileName.textContent = file.name;
-        showLoading('Loading PDF...');
-        
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
+
+        function setupEventListeners() {
+            // File handling
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
             
-            const response = await fetch('/Pdf/GetPdfThumbnails', {
-                method: 'POST',
-                body: formData
+            dropZone.addEventListener('dragover', e => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#0d6efd';
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = '#dee2e6';
+            });
+            dropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#dee2e6';
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+
+            // Toolbar buttons
+            document.getElementById('btnNewFile').addEventListener('click', () => fileInput.click());
+            document.getElementById('btnSave').addEventListener('click', savePdf);
+            document.getElementById('btnSelect').addEventListener('click', () => setMode('select'));
+            document.getElementById('btnText').addEventListener('click', () => setMode('text'));
+            document.getElementById('btnCrop').addEventListener('click', () => setMode('crop'));
+            document.getElementById('btnDraw').addEventListener('click', () => setMode('draw'));
+            
+            // OCR buttons
+            document.getElementById('btnExtractText').addEventListener('click', extractTextWithOCR);
+            document.getElementById('btnShowOcrOverlay').addEventListener('click', toggleOcrOverlay);
+            document.getElementById('btnMakeSearchable').addEventListener('click', makeSearchable);
+            
+            // OCR modal copy button
+            document.getElementById('copyTextBtn').addEventListener('click', () => {
+                const textArea = document.getElementById('extractedText');
+                textArea.select();
+                document.execCommand('copy');
+                alert('Text copied to clipboard!');
             });
             
-            const result = await response.json();
+            // Edit text modal buttons
+            document.getElementById('saveTextBtn').addEventListener('click', saveEditedText);
+            document.getElementById('deleteTextBtn').addEventListener('click', deleteEditedText);
+            document.getElementById('findReplaceBtn').addEventListener('click', findAndReplaceText);
             
-            if (result.success && result.thumbnails) {
-                pages = result.thumbnails;
-                textBoxes = pages.map(() => []);
-                pageCount.textContent = pages.length;
-                totalPagesEl.textContent = pages.length;
+            // Format buttons
+            document.getElementById('btnBold').addEventListener('click', toggleBold);
+            document.getElementById('btnItalic').addEventListener('click', toggleItalic);
+            document.getElementById('btnUnderline').addEventListener('click', toggleUnderline);
+            document.getElementById('fontFamilySelect').addEventListener('change', updateFormat);
+            document.getElementById('fontSizeInput').addEventListener('change', updateFormat);
+            document.getElementById('textColorInput').addEventListener('change', updateFormat);
+            
+            // Page navigation
+            document.getElementById('btnPrevPage').addEventListener('click', () => goToPage(currentPage - 1));
+            document.getElementById('btnNextPage').addEventListener('click', () => goToPage(currentPage + 1));
+            
+            // Zoom
+            document.getElementById('btnZoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
+            document.getElementById('btnZoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
+            document.getElementById('btnFitWidth').addEventListener('click', fitToWidth);
+            document.getElementById('zoomIn2').addEventListener('click', () => setZoom(zoom + 0.1));
+            document.getElementById('zoomOut2').addEventListener('click', () => setZoom(zoom - 0.1));
+            
+            // Search
+            document.getElementById('btnSearch').addEventListener('click', toggleSearch);
+            document.getElementById('searchInput').addEventListener('input', performSearch);
+            document.getElementById('btnPrevResult').addEventListener('click', prevSearchResult);
+            document.getElementById('btnNextResult').addEventListener('click', nextSearchResult);
+            document.getElementById('btnCloseSearch').addEventListener('click', () => searchPanel.classList.remove('active'));
+            
+            // Properties panel
+            document.getElementById('closeProperties').addEventListener('click', () => propertiesPanel.classList.remove('active'));
+            document.getElementById('btnApplyFormat').addEventListener('click', applyFormat);
+            document.getElementById('btnDeleteElement').addEventListener('click', deleteSelectedElement);
+            
+            // Canvas events
+            canvasWrapper.addEventListener('click', handleCanvasClick);
+            canvasWrapper.addEventListener('mousedown', handleMouseDown);
+            canvasWrapper.addEventListener('mousemove', handleMouseMove);
+            canvasWrapper.addEventListener('mouseup', handleMouseUp);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        function showLoading(message, progress = 0) {
+            loadingText.textContent = message;
+            loadingProgressBar.style.width = progress + '%';
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        async function handleFileSelect(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        }
+
+        async function handleFile(file) {
+            currentFile = file;
+            
+            const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff', 'image/bmp'];
+            const isValid = validTypes.includes(file.type) || 
+                           file.name.toLowerCase().endsWith('.pdf') ||
+                           file.name.toLowerCase().match(/\.(png|jpg|jpeg|tiff|bmp)$/);
+            
+            if (!isValid && !file.name.toLowerCase().endsWith('.pdf')) {
+                alert('Please select a valid PDF or image file.');
+                return;
+            }
+
+            showLoading('Loading document...', 10);
+            
+            try {
+                if (file.type.startsWith('image/') || file.name.toLowerCase().match(/\.(png|jpg|jpeg|tiff|bmp)$/)) {
+                    // Convert image to PDF first
+                    await convertImageToPdf(file);
+                } else {
+                    // Load PDF
+                    await loadPdf(file);
+                }
                 
                 uploadState.classList.add('d-none');
                 editorState.classList.remove('d-none');
                 
-                loadPage(1);
-                
-                // Detect fonts from PDF
-                detectPdfFonts(file);
-            } else {
-                alert(result.message || 'Failed to load PDF');
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading file:', error);
+                hideLoading();
+                alert('Error loading file: ' + error.message);
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error loading PDF: ' + error.message);
-        } finally {
-            hideLoading();
         }
-    }
-    
-    function loadPage(pageNum) {
-        if (pageNum < 1 || pageNum > pages.length) return;
-        
-        currentPage = pageNum;
-        currentPageEl.textContent = currentPage;
-        
-        prevPageBtn.disabled = currentPage === 1;
-        nextPageBtn.disabled = currentPage === pages.length;
-        
-        const pageData = pages[pageNum - 1];
-        if (!pageData) return;
-        
-        // Load thumbnail directly into img
-        previewImage.src = pageData.url;
-        previewImage.onload = function() {
-            canvasWrapper.style.width = previewImage.naturalWidth + 'px';
-            canvasWrapper.style.height = previewImage.naturalHeight + 'px';
-            renderTextBoxes();
-            setZoom(zoom);
-        };
-        
-        // Load page for editing
-        loadPageForEditing(pageNum);
-    }
-    
-    // Detect fonts from PDF using backend API
-    async function detectPdfFonts(file) {
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const response = await fetch('/Pdf/GetPdfFonts', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            if (result.success && result.fonts && result.fonts.length > 0) {
-                const detectedFontsEl = document.getElementById('detectedFonts');
-                detectedFontsEl.innerHTML = '<div class="toolbar-section-title mt-2" style="margin-bottom:4px;">PDF Fonts</div>';
-                
-                result.fonts.forEach(fontName => {
-                    const badge = document.createElement('span');
-                    badge.className = 'font-badge';
-                    badge.textContent = fontName;
-                    badge.title = 'Click to use this font';
-                    badge.addEventListener('click', () => {
-                        document.getElementById('fontFamily').value = fontName;
-                        currentFormat.fontFamily = fontName;
-                        updateSelectedTextBox();
-                    });
-                    detectedFontsEl.appendChild(badge);
-                });
-                
-                detectedFontsEl.style.display = 'flex';
-            }
-        } catch (error) {
-            console.error('Error detecting PDF fonts:', error);
-        }
-    }
-    
-    async function loadPageForEditing(pageNum) {
-        try {
-            const formData = new FormData();
-            formData.append('file', currentFile);
-            formData.append('page', pageNum);
-            
-            const response = await fetch('/Pdf/GetPageForEdit', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            if (result.success && result.textElements && result.textElements.length > 0) {
-                // Convert PDF text elements to editable text boxes
-                // PDF coordinates: origin is bottom-left, need to convert to top-left for HTML
-                const pageHeight = previewImage.naturalHeight || canvasWrapper.offsetHeight;
-                
-                // Get the image dimensions for proper scaling
-                const imageWidth = previewImage.naturalWidth || canvasWrapper.offsetWidth;
-                
-                // Calculate scale factor between PDF points and image pixels
-                // PDF is 72 DPI, image is rendered at higher DPI
-                const scaleX = imageWidth / (result.pageWidth || 612); // Default to letter width
-                const scaleY = pageHeight / (result.pageHeight || 792); // Default to letter height
-                
-                // Initialize or get current page's text boxes
-                if (!textBoxes[currentPage - 1]) {
-                    textBoxes[currentPage - 1] = [];
-                }
-                
-                // Add each text element as an editable overlay
-                result.textElements.forEach((element, idx) => {
-                    // Skip very small elements (likely noise)
-                    if (element.Width < 5 || element.Height < 5) return;
-                    
-                    // Convert PDF coordinates (bottom-left origin) to HTML coordinates (top-left origin)
-                    // Y in PDF: 0 is bottom, Y in HTML: 0 is top
-                    const htmlY = pageHeight - element.Y - element.Height;
-                    
-                    // Scale coordinates
-                    const x = element.X * scaleX;
-                    const y = htmlY * scaleY;
-                    const width = element.Width * scaleX;
-                    const height = Math.max(element.Height * scaleY, 20); // Minimum height for visibility
-                    
-                    // Check if this element already exists (by position proximity)
-                    const existingIdx = textBoxes[currentPage - 1].findIndex(box => 
-                        Math.abs(box.x - x) < 10 && Math.abs(box.y - y) < 10
-                    );
-                    
-                    if (existingIdx === -1) {
-                        // Add new text box with existing text
-                        textBoxes[currentPage - 1].push({
-                            x: x,
-                            y: y,
-                            width: width,
-                            height: height,
-                            text: element.Text || '',
-                            format: {
-                                fontFamily: element.FontFamily || 'Arial',
-                                fontSize: (element.FontSize || 12) * scaleX,
-                                bold: element.IsBold || false,
-                                italic: element.IsItalic || false,
-                                textColor: '#000000',
-                                bgColor: 'rgba(255,255,255,0.7)' // Semi-transparent background
-                            }
-                        });
-                    }
-                });
-                
-                // Re-render the text boxes
-                renderTextBoxes();
-                console.log(`Loaded ${result.textElements.length} text elements for page ${pageNum}`);
-            }
-        } catch (error) {
-            console.error('Error loading page for editing:', error);
-        }
-    }
-    
-    function goToPage(pageNum) {
-        if (pageNum >= 1 && pageNum <= pages.length) {
-            loadPage(pageNum);
-        }
-    }
-    
-    function setZoom(newZoom) {
-        zoom = Math.max(0.25, Math.min(3, newZoom));
-        zoomLevelEl.textContent = Math.round(zoom * 100) + '%';
-        canvasWrapper.style.transform = `scale(${zoom})`;
-        canvasWrapper.style.transformOrigin = 'top left';
-    }
-    
-    function fitToWidth() {
-        const container = document.querySelector('.preview-canvas-container');
-        const pageWidth = previewImage.naturalWidth || 800;
-        const availableWidth = container.clientWidth - 40;
-        zoom = availableWidth / pageWidth;
-        setZoom(zoom);
-    }
-    
-    function renderTextBoxes() {
-        textOverlay.innerHTML = '';
-        
-        const boxes = textBoxes[currentPage - 1] || [];
-        
-        boxes.forEach((box, index) => {
-            const el = document.createElement('div');
-            el.className = 'editable-text';
-            el.dataset.index = index;
-            el.contentEditable = true;
-            
-            el.style.left = box.x + 'px';
-            el.style.top = box.y + 'px';
-            el.style.width = (box.width || 200) + 'px';
-            el.style.minHeight = (box.height || 30) + 'px';
-            
-            applyFormatting(el, box.format || currentFormat);
-            
-            if (box.text) {
-                el.textContent = box.text;
-            } else {
-                el.textContent = 'Click to edit...';
-                el.style.color = '#999';
-            }
-            
-            // Events
-            el.addEventListener('focus', () => selectTextBox(index));
-            el.addEventListener('blur', () => saveTextBoxContent(index, el));
-            el.addEventListener('input', () => saveTextBoxContent(index, el));
-            
-            textOverlay.appendChild(el);
-        });
-    }
-    
-    function applyFormatting(el, format) {
-        el.style.fontFamily = format.fontFamily;
-        el.style.fontSize = format.fontSize + 'px';
-        el.style.color = format.textColor;
-        el.style.backgroundColor = format.bgColor;
-        el.style.fontWeight = format.bold ? 'bold' : 'normal';
-        el.style.fontStyle = format.italic ? 'italic' : 'normal';
-        el.style.textDecoration = [
-            format.underline ? 'underline' : '',
-            format.strikethrough ? 'line-through' : ''
-        ].filter(Boolean).join(' ') || 'none';
-        
-        el.style.textAlign = format.align;
-        el.style.lineHeight = format.lineHeight;
-        el.style.letterSpacing = format.letterSpacing + 'px';
-    }
-    
-    function selectTextBox(index) {
-        selectedTextBox = index;
-        
-        document.querySelectorAll('.editable-text').forEach(el => {
-            el.classList.remove('selected');
-            if (parseInt(el.dataset.index) === index) {
-                el.classList.add('selected');
-                
-                // Update toolbar with box format
-                const box = textBoxes[currentPage - 1][index];
-                if (box && box.format) {
-                    const format = box.format;
-                    document.getElementById('fontFamily').value = format.fontFamily;
-                    document.getElementById('fontSize').value = format.fontSize;
-                    document.getElementById('textColor').value = format.textColor;
-                    document.getElementById('bgColor').value = format.bgColor;
-                    document.getElementById('textColorHex').textContent = format.textColor;
-                    document.getElementById('bgColorHex').textContent = format.bgColor;
-                    document.getElementById('boldBtn').classList.toggle('active', format.bold);
-                    document.getElementById('italicBtn').classList.toggle('active', format.italic);
-                    document.getElementById('underlineBtn').classList.toggle('active', format.underline);
-                    document.getElementById('strikethroughBtn').classList.toggle('active', format.strikethrough);
-                    document.getElementById('lineHeight').value = format.lineHeight;
-                    document.getElementById('letterSpacing').value = format.letterSpacing;
-                    
-                    document.querySelectorAll('.align-btn').forEach(b => {
-                        b.classList.remove('active');
-                        if (b.id === 'align' + format.align.charAt(0).toUpperCase() + format.align.slice(1)) {
-                            b.classList.add('active');
-                        }
-                    });
-                    
-                    currentFormat = { ...format };
-                }
-            }
-        });
-    }
-    
-    function updateSelectedTextBox() {
-        if (selectedTextBox === null) return;
-        
-        const boxes = textBoxes[currentPage - 1];
-        if (!boxes || !boxes[selectedTextBox]) return;
-        
-        const el = document.querySelector(`.editable-text[data-index="${selectedTextBox}"]`);
-        if (el) {
-            applyFormatting(el, currentFormat);
-        }
-        
-        boxes[selectedTextBox].format = { ...currentFormat };
-    }
-    
-    function saveTextBoxContent(index, el) {
-        const boxes = textBoxes[currentPage - 1];
-        if (!boxes[index]) return;
-        
-        boxes[index].text = el.textContent;
-        
-        if (el.textContent === 'Click to edit...') {
-            el.style.color = '#999';
-        } else {
-            el.style.color = boxes[index].format?.textColor || currentFormat.textColor;
-        }
-    }
-    
-    function addNewTextBox() {
-        const boxes = textBoxes[currentPage - 1] || [];
-        const newBox = {
-            x: 50,
-            y: 50,
-            width: 200,
-            height: 30,
-            text: '',
-            format: { ...currentFormat }
-        };
-        
-        boxes.push(newBox);
-        textBoxes[currentPage - 1] = boxes;
-        
-        renderTextBoxes();
-        
-        // Focus the new text box
-        setTimeout(() => {
-            const lastEl = textOverlay.querySelector(`[data-index="${boxes.length - 1}"]`);
-            if (lastEl) {
-                lastEl.focus();
-                selectTextBox(boxes.length - 1);
-            }
-        }, 100);
-    }
-    
-        async function savePdf() {
-        showLoading('Saving PDF...');
-        
-        try {
-            // Flatten textBoxes to backend format: List<TextBoxPosition> with Page, X, Y, Width, Height, Text, FontFamily, etc.
-            const flatBoxes = [];
-            textBoxes.forEach((pageBoxes, pageIdx) => {
-                (pageBoxes || []).forEach(box => {
-                    const fmt = box.format || currentFormat;
-                    flatBoxes.push({
-                        Page: pageIdx + 1,
-                        X: box.x ?? 50,
-                        Y: box.y ?? 50,
-                        Width: box.width ?? 200,
-                        Height: box.height ?? 30,
-                        // Send the rendered image width so the backend can scale from pixel space to PDF points
-                        ImageWidth: (previewImage && (previewImage.naturalWidth || previewImage.width)) || canvasWrapper.offsetWidth || 0,
-                        Text: (box.text || '').replace(/^Click to edit\.\.\.$/, ''),
-                        FontFamily: fmt.fontFamily || 'Arial',
-                        FontSize: fmt.fontSize || 16,
-                        TextColor: fmt.textColor || '#000000',
-                        BgColor: fmt.bgColor || '#ffffff',
-                        Bold: fmt.bold || false,
-                        Italic: fmt.italic || false,
-                        Underline: fmt.underline || false,
-                        Strikethrough: fmt.strikethrough || false,
-                        Align: fmt.align || 'left',
-                        LineHeight: fmt.lineHeight ?? 1.5,
-                        LetterSpacing: fmt.letterSpacing ?? 0
-                    });
-                });
-            });
 
-            const formData = new FormData();
-            formData.append('file', currentFile);
-            formData.append('textBoxes', JSON.stringify(flatBoxes));
+        async function convertImageToPdf(imageFile) {
+            showLoading('Converting image to PDF...', 20);
             
-            const response = await fetch('/Pdf/SaveEditedPdf', {
+            const formData = new FormData();
+            formData.append('file', imageFile);
+            
+            const response = await fetch('/Image/ToPdf', {
                 method: 'POST',
                 body: formData
             });
             
-            const result = await response.json();
+            if (!response.ok) throw new Error('Failed to convert image to PDF');
             
-            if (result.success && result.downloadUrl) {
-                window.location.href = result.downloadUrl;
-            } else {
-                alert(result.message || 'Failed to save PDF');
+            // Now load the converted PDF
+            const blob = await response.blob();
+            const pdfFile = new File([blob], 'converted.pdf', { type: 'application/pdf' });
+            
+            await loadPdf(pdfFile);
+        }
+
+        async function loadPdf(file) {
+            showLoading('Loading PDF...', 30);
+            
+            const arrayBuffer = await file.arrayBuffer();
+            pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            totalPages = pdfDoc.numPages;
+            
+            document.getElementById('totalPagesCount').textContent = totalPages;
+            
+            // Load first page immediately without waiting for thumbnails
+            showLoading('Loading page...', 50);
+            await loadPage(1);
+            
+            // Generate thumbnails in background
+            setTimeout(async () => {
+                showLoading('Generating thumbnails...', 70);
+                await generateThumbnails();
+            }, 100);
+            
+            showLoading('Ready!', 100);
+            setTimeout(hideLoading, 500);
+        }
+
+        async function generateThumbnails() {
+            thumbnailContainer.innerHTML = '';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 0.3 });
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                
+                const thumb = document.createElement('div');
+                thumb.className = 'page-thumbnail' + (i === 1 ? ' active' : '');
+                thumb.innerHTML = `
+                    <img src="${canvas.toDataURL()}" alt="Page ${i}">
+                    <span class="page-number">${i}</span>
+                `;
+                thumb.addEventListener('click', () => goToPage(i));
+                
+                thumbnailContainer.appendChild(thumb);
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error saving PDF: ' + error.message);
-        } finally {
+        }
+
+        async function loadPage(pageNum) {
+            if (pageNum < 1 || pageNum > totalPages) return;
+            
+            currentPage = pageNum;
+            
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: zoom * 1.5 });
+            
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            canvasWrapper.style.width = viewport.width + 'px';
+            canvasWrapper.style.height = viewport.height + 'px';
+            
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            
+            // Update UI
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+            
+            // Update thumbnails
+            document.querySelectorAll('.page-thumbnail').forEach((thumb, i) => {
+                thumb.classList.toggle('active', i + 1 === currentPage);
+            });
+            
+            // Render OCR text if available
+            renderOcrText();
+            
+            // Render text boxes for this page
+            renderTextBoxes();
+        }
+
+        function goToPage(pageNum) {
+            if (pageNum >= 1 && pageNum <= totalPages) {
+                loadPage(pageNum);
+            }
+        }
+
+        function setZoom(newZoom) {
+            zoom = Math.max(0.25, Math.min(3, newZoom));
+            const percent = Math.round(zoom * 100);
+            document.getElementById('zoomLevel').textContent = percent + '%';
+            document.getElementById('zoomLevel2').textContent = percent + '%';
+            loadPage(currentPage);
+        }
+
+        function fitToWidth() {
+            const container = document.getElementById('canvasContainer');
+            const page = pdfDoc ? pdfDoc.getPage(currentPage) : null;
+            if (!page) return;
+            
+            const viewport = page.getViewport({ scale: 1 });
+            const newZoom = (container.clientWidth - 40) / viewport.width;
+            setZoom(newZoom);
+        }
+
+        // ============================================
+        // OCR / Text Extraction
+        // ============================================
+        
+        async function extractTextWithOCR() {
+            if (!pdfDoc) return;
+            
+            showLoading('Extracting text...', 50);
+            ocrTextElements = [];
+            
+            try {
+                // First, try basic PDF.js text extraction (fast)
+                const page = await pdfDoc.getPage(currentPage);
+                const textContent = await page.getTextContent();
+                
+                // Get font info from the PDF
+                ocrTextElements = textContent.items.map(item => {
+                    // Try to detect font properties
+                    const fontName = item.fontName || 'helv';
+                    const height = item.height || 12;
+                    
+                    return {
+                        text: item.str,
+                        x: item.transform[4],
+                        y: canvas.height - item.transform[5],
+                        width: item.width || item.str.length * 6,
+                        height: height,
+                        fontSize: Math.round(height * 0.8),
+                        fontFamily: 'Arial',
+                        isBold: (fontName || '').toLowerCase().includes('bold'),
+                        isItalic: (fontName || '').toLowerCase().includes('italic') || (fontName || '').toLowerCase().includes('oblique'),
+                        textColor: 'dark'
+                    };
+                });
+                
+                // Don't render on PDF - just show modal for extracted text
+                hideLoading();
+                
+                // Show modal with extracted text
+                const allText = ocrTextElements.map(t => t.text).join(' ');
+                document.getElementById('extractedText').value = allText;
+                const modal = new bootstrap.Modal(document.getElementById('ocrModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Text extraction error:', error);
+                hideLoading();
+            }
+        }
+
+        // OCR state
+        let ocrOverlayVisible = false;
+        let selectedOcrIndex = -1;
+        let isDraggingOcr = false;
+        let ocrDragOffset = { x: 0, y: 0 };
+
+        function renderOcrText() {
+            // Clear existing OCR text
+            textLayer.querySelectorAll('.ocr-text').forEach(el => el.remove());
+            
+            // Only render if overlay is visible
+            if (!ocrOverlayVisible || !ocrTextElements || ocrTextElements.length === 0) return;
+            
+            ocrTextElements.forEach((el, index) => {
+                const span = document.createElement('span');
+                span.className = 'text-line ocr-text' + (index === selectedOcrIndex ? ' selected' : '');
+                span.textContent = el.text;
+                span.style.left = el.x + 'px';
+                span.style.top = el.y + 'px';
+                span.style.fontSize = (el.fontSize || 12) + 'px';
+                span.style.fontFamily = el.fontFamily || 'Arial';
+                span.style.position = 'absolute';
+                span.style.cursor = 'move';
+                span.style.zIndex = '100';
+                
+                // Apply font styling based on OCR detection
+                if (el.isBold) span.style.fontWeight = 'bold';
+                if (el.isItalic) span.style.fontStyle = 'italic';
+                if (el.textColor === 'light') {
+                    span.style.color = '#ffffff';
+                    span.style.textShadow = '0 0 1px #000';
+                } else {
+                    span.style.color = '#000000';
+                }
+                
+                span.dataset.index = index;
+                span.dataset.type = 'ocr';
+                
+                // Make OCR text draggable
+                span.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    startDragOcr(e, index);
+                });
+                
+                // Click to select
+                span.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectOcrElement(index);
+                });
+                
+                textLayer.appendChild(span);
+            });
+        }
+        
+        function startDragOcr(e, index) {
+            selectedOcrIndex = index;
+            isDraggingOcr = true;
+            const span = textLayer.querySelector(`.ocr-text[data-index="${index}"]`);
+            if (span) {
+                const rect = span.getBoundingClientRect();
+                ocrDragOffset = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+            renderOcrText();
+        }
+        
+        function moveOcrElement(deltaX, deltaY) {
+            if (selectedOcrIndex < 0 || !ocrTextElements[selectedOcrIndex]) return;
+            
+            const el = ocrTextElements[selectedOcrIndex];
+            el.x = Math.max(0, el.x + deltaX);
+            el.y = Math.max(0, el.y + deltaY);
+            
+            renderOcrText();
+        }
+        
+        function toggleOcrOverlay() {
+            ocrOverlayVisible = !ocrOverlayVisible;
+            const btn = document.getElementById('btnShowOcrOverlay');
+            if (btn) {
+                btn.classList.toggle('active', ocrOverlayVisible);
+                btn.querySelector('.toolbar-btn-text').textContent = ocrOverlayVisible ? 'Hide' : 'Show';
+            }
+            
+            if (ocrOverlayVisible && ocrTextElements.length === 0) {
+                // Extract text if not already done
+                extractTextWithOCR();
+            }
+            
+            renderOcrText();
+        }
+        
+        function dragOcrElement(e) {
+            if (!isDraggingOcr || selectedOcrIndex < 0) return;
+            
+            const rect = textLayer.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom - ocrDragOffset.x;
+            const y = (e.clientY - rect.top) / zoom - ocrDragOffset.y;
+            
+            if (ocrTextElements[selectedOcrIndex]) {
+                ocrTextElements[selectedOcrIndex].x = Math.max(0, x);
+                ocrTextElements[selectedOcrIndex].y = Math.max(0, y);
+                renderOcrText();
+            }
+        }
+        
+        function stopDragOcr() {
+            isDraggingOcr = false;
+        }
+
+        function openEditTextModal(index) {
+            const element = ocrTextElements[index];
+            if (!element) return;
+            
+            // Store the current index being edited
+            window.currentEditIndex = index;
+            
+            document.getElementById('editTextContent').value = element.text;
+            document.getElementById('findText').value = '';
+            document.getElementById('replaceText').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editTextModal'));
+            modal.show();
+        }
+
+        function saveEditedText() {
+            const index = window.currentEditIndex;
+            if (index === undefined || index === null) return;
+            
+            const newText = document.getElementById('editTextContent').value;
+            ocrTextElements[index].text = newText;
+            
+            renderOcrText();
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('editTextModal')).hide();
+        }
+
+        function deleteEditedText() {
+            const index = window.currentEditIndex;
+            if (index === undefined || index === null) return;
+            
+            // Remove the text element
+            ocrTextElements.splice(index, 1);
+            
+            renderOcrText();
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('editTextModal')).hide();
+        }
+
+        function findAndReplaceText() {
+            const findText = document.getElementById('findText').value;
+            const replaceText = document.getElementById('replaceText').value;
+            
+            if (!findText) return;
+            
+            // Replace in current text element
+            const index = window.currentEditIndex;
+            if (index !== undefined && index !== null) {
+                ocrTextElements[index].text = ocrTextElements[index].text.replace(new RegExp(escapeRegExp(findText), 'g'), replaceText);
+                document.getElementById('editTextContent').value = ocrTextElements[index].text;
+                renderOcrText();
+            }
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+
+        function selectOcrElement(index) {
+            // Deselect previous
+            textLayer.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            
+            const element = ocrTextElements[index];
+            if (element) {
+                const span = textLayer.querySelector(`.ocr-text[data-index="${index}"]`);
+                if (span) span.classList.add('selected');
+                
+                // Open edit modal instead of properties panel
+                openEditTextModal(index);
+            }
+        }
+
+        async function makeSearchable() {
+            if (!currentFile) return;
+            
+            showLoading('Converting to searchable PDF...', 50);
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+                
+                const response = await fetch('/Pdf/MakeSearchable', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('PDF converted to searchable format! You can now search and select text.');
+                    // Reload the searchable PDF
+                    const response = await fetch(result.downloadUrl);
+                    const blob = await response.blob();
+                    const newFile = new File([blob], currentFile.name, { type: 'application/pdf' });
+                    await loadPdf(newFile);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Make searchable error:', error);
+                alert('Error converting to searchable PDF');
+            }
+            
             hideLoading();
         }
-    }
-    
-    function showLoading(message) {
-        loadingMessage.textContent = message;
-        loadingOverlay.classList.remove('d-none');
-    }
-    
-    function hideLoading() {
-        loadingOverlay.classList.add('d-none');
-    }
-    
-    function resetState() {
-        currentFile = null;
-        pages = [];
-        textBoxes = [];
-        selectedTextBox = null;
-        currentPage = 1;
-        fileInput.value = '';
+
+        // ============================================
+        // Mode Management
+        // ============================================
         
-        uploadState.classList.remove('d-none');
-        editorState.classList.add('d-none');
-    }
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey || e.metaKey) {
-            switch(e.key.toLowerCase()) {
-                case 'b':
-                    e.preventDefault();
-                    document.getElementById('boldBtn').click();
-                    break;
-                case 'i':
-                    e.preventDefault();
-                    document.getElementById('italicBtn').click();
-                    break;
-                case 'u':
-                    e.preventDefault();
-                    document.getElementById('underlineBtn').click();
-                    break;
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update toolbar buttons
+            document.querySelectorAll('.pdf-toolbar .toolbar-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('btn' + mode.charAt(0).toUpperCase() + mode.slice(1))?.classList.add('active');
+            
+            // Update mode indicator
+            const modeNames = {
+                select: 'Select Mode',
+                text: 'Add Text Mode',
+                crop: 'Crop Mode',
+                draw: 'Draw Mode'
+            };
+            document.getElementById('currentMode').textContent = modeNames[mode] || 'Select Mode';
+            
+            // Show/hide format group
+            document.getElementById('formatGroup').style.display = (mode === 'text' || mode === 'select') ? 'flex' : 'none';
+            
+            // Update cursor
+            canvasWrapper.style.cursor = mode === 'select' ? 'default' : 'crosshair';
+            
+            // Reset cropping
+            if (mode !== 'crop') {
+                isCropping = false;
+                cropBoxEl.style.display = 'none';
             }
         }
-    });
-})();
+
+        // ============================================
+        // Canvas Interaction
+        // ============================================
+        
+        function handleCanvasClick(e) {
+            const rect = canvasWrapper.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            
+            if (currentMode === 'text') {
+                addTextBox(x, y);
+            } else if (currentMode === 'crop') {
+                startCrop(x, y);
+            }
+        }
+
+        function handleMouseDown(e) {
+            const rect = canvasWrapper.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            
+            if (currentMode === 'crop' && cropBoxEl.style.display !== 'none') {
+                // Check if clicking on crop handles
+                const handle = e.target.classList.contains('crop-handle');
+                if (handle) {
+                    isResizing = true;
+                    resizeHandle = e.target.classList[1]; // nw, ne, sw, se
+                    dragStart = { x, y };
+                } else if (isInCropBox(x, y)) {
+                    isDragging = true;
+                    dragStart = { x: x - cropBox.x, y: y - cropBox.y };
+                }
+            }
+        }
+
+        function handleMouseMove(e) {
+            const rect = canvasWrapper.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            
+            if (isDragging && currentMode === 'crop') {
+                cropBox.x = Math.max(0, x - dragStart.x);
+                cropBox.y = Math.max(0, y - dragStart.y);
+                updateCropBox();
+            } else if (isResizing && currentMode === 'crop') {
+                resizeCropBox(x, y);
+            }
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            isResizing = false;
+            resizeHandle = null;
+        }
+
+        function isInCropBox(x, y) {
+            return x >= cropBox.x && x <= cropBox.x + cropBox.w &&
+                   y >= cropBox.y && y <= cropBox.y + cropBox.h;
+        }
+
+        function startCrop(x, y) {
+            cropBox = { x, y, w: 100, h: 100 };
+            isCropping = true;
+            cropBoxEl.style.display = 'block';
+            updateCropBox();
+        }
+
+        function updateCropBox() {
+            cropBoxEl.style.left = cropBox.x + 'px';
+            cropBoxEl.style.top = cropBox.y + 'px';
+            cropBoxEl.style.width = cropBox.w + 'px';
+            cropBoxEl.style.height = cropBox.h + 'px';
+            cropDimensions.textContent = Math.round(cropBox.w) + ' x ' + Math.round(cropBox.h);
+        }
+
+        function resizeCropBox(x, y) {
+            if (resizeHandle === 'se') {
+                cropBox.w = Math.max(50, x - cropBox.x);
+                cropBox.h = Math.max(50, y - cropBox.y);
+            } else if (resizeHandle === 'sw') {
+                const newW = cropBox.x + cropBox.w - x;
+                cropBox.x = x;
+                cropBox.w = Math.max(50, newW);
+                cropBox.h = Math.max(50, y - cropBox.y);
+            } else if (resizeHandle === 'ne') {
+                cropBox.w = Math.max(50, x - cropBox.x);
+                const newH = cropBox.y + cropBox.h - y;
+                cropBox.y = y;
+                cropBox.h = Math.max(50, newH);
+            } else if (resizeHandle === 'nw') {
+                const newW = cropBox.x + cropBox.w - x;
+                cropBox.x = x;
+                cropBox.w = Math.max(50, newW);
+                const newH = cropBox.y + cropBox.h - y;
+                cropBox.y = y;
+                cropBox.h = Math.max(50, newH);
+            }
+            updateCropBox();
+        }
+
+        // ============================================
+        // Text Box Management
+        // ============================================
+        
+        function addTextBox(x, y) {
+            const textBox = {
+                x, y,
+                width: 200,
+                height: 30,
+                text: 'New text',
+                fontSize: 14,
+                fontFamily: 'Arial',
+                color: '#000000',
+                bgColor: 'transparent',
+                bold: false,
+                italic: false,
+                underline: false
+            };
+            
+            if (!textBoxes[currentPage]) textBoxes[currentPage] = [];
+            textBoxes[currentPage].push(textBox);
+            
+            renderTextBoxes();
+            
+            // Select the new text box
+            const index = textBoxes[currentPage].length - 1;
+            selectTextBox(index);
+        }
+
+        function renderTextBoxes() {
+            // Clear existing text boxes
+            textLayer.querySelectorAll('.editable-box').forEach(el => el.remove());
+            
+            const boxes = textBoxes[currentPage] || [];
+            boxes.forEach((box, index) => {
+                const div = document.createElement('div');
+                div.className = 'editable-box';
+                div.style.left = box.x + 'px';
+                div.style.top = box.y + 'px';
+                div.style.width = box.width + 'px';
+                div.style.minHeight = box.height + 'px';
+                div.style.fontFamily = box.fontFamily;
+                div.style.fontSize = box.fontSize + 'px';
+                div.style.color = box.color;
+                div.style.background = box.bgColor;
+                div.style.fontWeight = box.bold ? 'bold' : 'normal';
+                div.style.fontStyle = box.italic ? 'italic' : 'normal';
+                div.style.textDecoration = box.underline ? 'underline' : 'none';
+                
+                div.innerHTML = `<div class="text-content" contenteditable="true">${box.text}</div>`;
+                div.dataset.index = index;
+                div.dataset.type = 'textbox';
+                
+                // Events
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectTextBox(index);
+                });
+                
+                div.querySelector('.text-content').addEventListener('input', (e) => {
+                    box.text = e.target.textContent;
+                });
+                
+                // Make draggable
+                div.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('text-content')) return;
+                    e.preventDefault();
+                    startDragTextBox(e, index);
+                });
+                
+                textLayer.appendChild(div);
+            });
+        }
+
+        function selectTextBox(index) {
+            const boxes = textBoxes[currentPage] || [];
+            const box = boxes[index];
+            if (!box) return;
+            
+            // Deselect previous
+            textLayer.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            
+            const div = textLayer.querySelector(`.editable-box[data-index="${index}"]`);
+            if (div) div.classList.add('selected');
+            
+            propertiesPanel.classList.add('active');
+            selectedElement = { type: 'textbox', index };
+            
+            document.getElementById('propTextColor').value = box.color;
+            document.getElementById('propBgColor').value = box.bgColor === 'transparent' ? '#ffffff' : box.bgColor;
+            document.getElementById('propFontSize').value = box.fontSize;
+            document.getElementById('propX').value = Math.round(box.x);
+            document.getElementById('propY').value = Math.round(box.y);
+            document.getElementById('propWidth').value = Math.round(box.width);
+            document.getElementById('propHeight').value = Math.round(box.height);
+        }
+
+        let dragTextBoxIndex = null;
+        let dragTextBoxStart = { x: 0, y: 0 };
+
+        function startDragTextBox(e, index) {
+            dragTextBoxIndex = index;
+            const box = textBoxes[currentPage][index];
+            dragTextBoxStart = { x: e.clientX - box.x * zoom, y: e.clientY - box.y * zoom };
+            
+            document.addEventListener('mousemove', (e) => {
+                dragTextBox(e);
+                dragOcrElement(e);
+            });
+            document.addEventListener('mouseup', (e) => {
+                stopDragTextBox(e);
+                stopDragOcr();
+            });
+        }
+
+        function dragTextBox(e) {
+            if (dragTextBoxIndex === null) return;
+            
+            const box = textBoxes[currentPage][dragTextBoxIndex];
+            box.x = (e.clientX - dragTextBoxStart.x) / zoom;
+            box.y = (e.clientY - dragTextBoxStart.y) / zoom;
+            
+            const div = textLayer.querySelector(`.editable-box[data-index="${dragTextBoxIndex}"]`);
+            if (div) {
+                div.style.left = box.x + 'px';
+                div.style.top = box.y + 'px';
+            }
+        }
+
+        function stopDragTextBox() {
+            dragTextBoxIndex = null;
+            document.removeEventListener('mousemove', dragTextBox);
+            document.removeEventListener('mouseup', stopDragTextBox);
+        }
+
+        // ============================================
+        // Format & Properties
+        // ============================================
+        
+        function toggleBold() {
+            document.getElementById('btnBold').classList.toggle('active');
+            applyFormat();
+        }
+
+        function toggleItalic() {
+            document.getElementById('btnItalic').classList.toggle('active');
+            applyFormat();
+        }
+
+        function toggleUnderline() {
+            document.getElementById('btnUnderline').classList.toggle('active');
+            applyFormat();
+        }
+
+        function updateFormat() {
+            const fontFamily = document.getElementById('fontFamilySelect').value;
+            const fontSize = parseInt(document.getElementById('fontSizeInput').value);
+            const color = document.getElementById('textColorInput').value;
+            
+            // Update toolbar display
+            document.getElementById('btnBold').classList.toggle('active', 
+                selectedElement?.type === 'textbox' && textBoxes[currentPage]?.[selectedElement.index]?.bold);
+        }
+
+        function applyFormat() {
+            if (!selectedElement || selectedElement.type !== 'textbox') return;
+            
+            const box = textBoxes[currentPage][selectedElement.index];
+            if (!box) return;
+            
+            box.fontFamily = document.getElementById('fontFamilySelect').value;
+            box.fontSize = parseInt(document.getElementById('fontSizeInput').value);
+            box.color = document.getElementById('propTextColor').value;
+            box.bgColor = document.getElementById('propBgColor').value;
+            box.x = parseInt(document.getElementById('propX').value) || box.x;
+            box.y = parseInt(document.getElementById('propY').value) || box.y;
+            box.width = parseInt(document.getElementById('propWidth').value) || box.width;
+            box.height = parseInt(document.getElementById('propHeight').value) || box.height;
+            box.bold = document.getElementById('btnBold').classList.contains('active');
+            box.italic = document.getElementById('btnItalic').classList.contains('active');
+            box.underline = document.getElementById('btnUnderline').classList.contains('active');
+            
+            renderTextBoxes();
+        }
+
+        function deleteSelectedElement() {
+            if (!selectedElement) return;
+            
+            if (selectedElement.type === 'textbox') {
+                textBoxes[currentPage].splice(selectedElement.index, 1);
+                renderTextBoxes();
+            } else if (selectedElement.type === 'ocr') {
+                ocrTextElements.splice(selectedElement.index, 1);
+                renderOcrText();
+            }
+            
+            selectedElement = null;
+            propertiesPanel.classList.remove('active');
+        }
+
+        // ============================================
+        // Search
+        // ============================================
+        
+        function toggleSearch() {
+            searchPanel.classList.toggle('active');
+            if (searchPanel.classList.contains('active')) {
+                document.getElementById('searchInput').focus();
+            }
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!query) {
+                searchResults = [];
+                document.getElementById('searchResultsCount').textContent = '';
+                textLayer.querySelectorAll('.search-highlight').forEach(el => {
+                    el.classList.remove('search-highlight');
+                });
+                return;
+            }
+            
+            searchResults = [];
+            
+            // Search in OCR text
+            ocrTextElements.forEach((el, index) => {
+                if (el.text.toLowerCase().includes(query)) {
+                    searchResults.push({ type: 'ocr', index, text: el.text });
+                }
+            });
+            
+            // Search in text boxes
+            (textBoxes[currentPage] || []).forEach((box, index) => {
+                if (box.text.toLowerCase().includes(query)) {
+                    searchResults.push({ type: 'textbox', index, text: box.text });
+                }
+            });
+            
+            document.getElementById('searchResultsCount').textContent = 
+                searchResults.length > 0 ? `${searchResults.length} results found` : 'No results';
+            
+            // Highlight results
+            currentSearchIndex = searchResults.length > 0 ? 0 : -1;
+            highlightSearchResults();
+        }
+
+        function highlightSearchResults() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Remove old highlights
+            textLayer.querySelectorAll('.search-highlight').forEach(el => {
+                el.classList.remove('search-highlight');
+            });
+            
+            if (currentSearchIndex < 0 || !searchResults[currentSearchIndex]) return;
+            
+            // Highlight current result
+            const result = searchResults[currentSearchIndex];
+            
+            if (result.type === 'ocr') {
+                const span = textLayer.querySelector(`.ocr-text[data-index="${result.index}"]`);
+                if (span) {
+                    span.classList.add('search-highlight');
+                    span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else if (result.type === 'textbox') {
+                const div = textLayer.querySelector(`.editable-box[data-index="${result.index}"]`);
+                if (div) {
+                    div.classList.add('selected');
+                    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        function prevSearchResult() {
+            if (searchResults.length === 0) return;
+            currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+            highlightSearchResults();
+        }
+
+        function nextSearchResult() {
+            if (searchResults.length === 0) return;
+            currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
+            highlightSearchResults();
+        }
+
+        // ============================================
+        // Keyboard Shortcuts
+        // ============================================
+        
+        function handleKeyDown(e) {
+            // Arrow keys for moving OCR elements
+            if (ocrOverlayVisible && selectedOcrIndex >= 0) {
+                const step = e.shiftKey ? 10 : 1;
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    moveOcrElement(-step, 0);
+                    return;
+                }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    moveOcrElement(step, 0);
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    moveOcrElement(0, -step);
+                    return;
+                }
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    moveOcrElement(0, step);
+                    return;
+                }
+            }
+            
+            // Delete selected
+            if (e.key === 'Delete' && selectedElement) {
+                deleteSelectedElement();
+            }
+            
+            // Delete selected OCR element
+            if (e.key === 'Delete' && ocrOverlayVisible && selectedOcrIndex >= 0) {
+                e.preventDefault();
+                ocrTextElements.splice(selectedOcrIndex, 1);
+                selectedOcrIndex = -1;
+                renderOcrText();
+                return;
+            }
+            
+            // Escape
+            if (e.key === 'Escape') {
+                if (searchPanel.classList.contains('active')) {
+                    searchPanel.classList.remove('active');
+                } else if (isCropping) {
+                    isCropping = false;
+                    cropBoxEl.style.display = 'none';
+                } else if (ocrOverlayVisible) {
+                    selectedOcrIndex = -1;
+                    renderOcrText();
+                }
+            }
+            
+            // Apply crop
+            if (e.key === 'Enter' && isCropping && currentMode === 'crop') {
+                applyCrop();
+            }
+            
+            // Navigation
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                toggleSearch();
+            }
+        }
+
+        async function applyCrop() {
+            if (!isCropping || !pdfDoc) return;
+            
+            showLoading('Applying crop...', 50);
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+                formData.append('page', currentPage.toString());
+                formData.append('x', Math.round(cropBox.x / zoom));
+                formData.append('y', Math.round(cropBox.y / zoom));
+                formData.append('width', Math.round(cropBox.w / zoom));
+                formData.append('height', Math.round(cropBox.h / zoom));
+                
+                const response = await fetch('/Pdf/CropPage', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Reload the cropped PDF
+                    const fileResponse = await fetch(result.downloadUrl);
+                    const blob = await fileResponse.blob();
+                    currentFile = new File([blob], currentFile.name, { type: 'application/pdf' });
+                    await loadPdf(currentFile);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Crop error:', error);
+                alert('Error applying crop');
+            }
+            
+            hideLoading();
+            isCropping = false;
+            cropBoxEl.style.display = 'none';
+        }
+
+        // ============================================
+        // Save PDF
+        // ============================================
+        
+        async function savePdf() {
+            if (!currentFile) return;
+            
+            showLoading('Saving PDF...', 50);
+            
+            try {
+                // Prepare text boxes data
+                const allTextBoxes = {};
+                for (const [page, boxes] of Object.entries(textBoxes)) {
+                    if (boxes && boxes.length > 0) {
+                        allTextBoxes[page] = boxes;
+                    }
+                }
+                
+                const formData = new FormData();
+                formData.append('file', currentFile);
+                formData.append('textBoxes', JSON.stringify(allTextBoxes));
+                formData.append('ocrText', JSON.stringify(ocrTextElements));
+                
+                const response = await fetch('/Pdf/SaveEdited', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Download the file
+                    const a = document.createElement('a');
+                    a.href = result.downloadUrl;
+                    a.download = result.fileName || 'edited.pdf';
+                    a.click();
+                    
+                    alert('PDF saved successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                alert('Error saving PDF');
+            }
+            
+            hideLoading();
+        }
+
+        // Initialize
+        init();
+    })();
 </script>
 }
+
+

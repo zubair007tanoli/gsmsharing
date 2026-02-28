@@ -553,6 +553,96 @@ async def extract_named_entities(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/v1/ocr", tags=["OCR"])
+async def ocr_pdf(
+    file: UploadFile = File(...),
+    page: int = Form(1)
+):
+    """OCR text extraction from PDF page (for scanned documents)"""
+    try:
+        import pytesseract
+        from PIL import Image
+        import fitz  # PyMuPDF
+
+        # Save uploaded file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        text_elements = []
+        page_width = 0
+        page_height = 0
+
+        # Open PDF and render page to image
+        doc = fitz.open(tmp_path)
+        if page > 0 and page <= len(doc):
+            pdf_page = doc[page - 1]
+            page_width = int(pdf_page.rect.width)
+            page_height = int(pdf_page.rect.height)
+            
+            # Render page to image at 2x resolution for better OCR
+            mat = fitz.Matrix(2, 2)
+            pix = pdf_page.get_pixmap(matrix=mat)
+            
+            # Save as image
+            img_path = tmp_path.replace('.pdf', '.png')
+            pix.save(img_path)
+            
+            # Perform OCR
+            img = Image.open(img_path)
+            
+            # Get text with bounding boxes
+            data = pytesseract.image_to_data(
+                img,
+                output_type=pytesseract.Output.DICT,
+                config='--psm 6 --oem 3'
+            )
+            
+            n_boxes = len(data['text'])
+            for i in range(n_boxes):
+                text = data['text'][i].strip()
+                if text and int(data['conf'][i]) > 30:
+                    text_elements.append({
+                        'text': text,
+                        'x': data['left'][i] / 2,  # Scale back
+                        'y': data['top'][i] / 2,
+                        'width': data['width'][i] / 2,
+                        'height': data['height'][i] / 2,
+                        'fontSize': data['height'][i] / 2 * 0.8
+                    })
+            
+            # Cleanup image
+            try: os.unlink(img_path) except: pass
+        
+        doc.close()
+        
+        # Cleanup PDF
+        try: os.unlink(tmp_path) except: pass
+
+        return JSONResponse({
+            'success': True,
+            'textElements': text_elements,
+            'pageWidth': page_width,
+            'pageHeight': page_height
+        })
+
+    except ImportError:
+        # pytesseract not available
+        return JSONResponse({
+            'success': False,
+            'error': 'OCR libraries not installed. Install pytesseract and pillow.',
+            'textElements': []
+        })
+    except Exception as e:
+        logger.error(f"OCR error: {e}")
+        return JSONResponse({
+            'success': False,
+            'error': str(e),
+            'textElements': []
+        })
+
+
 # ============ Error Handlers ============
 
 @app.exception_handler(Exception)

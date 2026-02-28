@@ -14,6 +14,7 @@ public class PdfController : Controller
     private readonly UserManager<ApplicationUser>? _userManager;
     private readonly FileProcessingService _fileProcessingService;
     private readonly PdfProcessingService _pdfProcessingService;
+    private readonly ImageProcessingService _imageProcessingService;
     private readonly ImageEnhancementService _imageEnhancementService;
     private readonly IWebHostEnvironment _environment;
 
@@ -22,6 +23,7 @@ public class PdfController : Controller
         UserManager<ApplicationUser>? userManager,
         FileProcessingService fileProcessingService,
         PdfProcessingService pdfProcessingService,
+        ImageProcessingService imageProcessingService,
         ImageEnhancementService imageEnhancementService,
         IWebHostEnvironment environment)
     {
@@ -29,6 +31,7 @@ public class PdfController : Controller
         _userManager = userManager;
         _fileProcessingService = fileProcessingService;
         _pdfProcessingService = pdfProcessingService;
+        _imageProcessingService = imageProcessingService;
         _imageEnhancementService = imageEnhancementService;
         _environment = environment;
     }
@@ -47,7 +50,7 @@ public class PdfController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Merge(IFormFile[] files, string sortOrder)
+    public async Task<IActionResult> Merge([FromForm] IFormFile[] files, [FromForm] string sortOrder)
     {
         if (files == null || files.Length < 2)
         {
@@ -138,7 +141,11 @@ public class PdfController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SplitWithFile([FromForm] IFormFile file, int startPage, int endPage)
+    public async Task<IActionResult> SplitWithFile(
+        [FromForm] IFormFile file,
+        [FromForm] int? startPage,
+        [FromForm] int? endPage,
+        [FromForm] string? selectedPages)
     {
         if (file == null || file.Length == 0)
         {
@@ -158,16 +165,47 @@ public class PdfController : Controller
             var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "split");
             var filePath = _fileProcessingService.GetFilePath(fileName);
             var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "split");
+            bool success;
+            string resultMessage;
+            string outputFile;
 
-            var (success, outputPaths, resultMessage) = await _pdfProcessingService.SplitPdfAsync(
-                filePath, startPage, endPage, Path.GetFileNameWithoutExtension(outputFileName));
+            // If specific pages are provided, extract exactly those pages (supports non-contiguous selection).
+            if (!string.IsNullOrWhiteSpace(selectedPages))
+            {
+                var pageOrder = selectedPages
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => int.TryParse(s, out var p) ? p : -1)
+                    .Where(p => p > 0)
+                    .Distinct()
+                    .ToList();
+
+                if (pageOrder.Count == 0)
+                {
+                    return Json(new { success = false, message = "Please select at least one valid page." });
+                }
+
+                var organizeResult = await _pdfProcessingService.OrganizePdfAsync(filePath, pageOrder, outputFileName);
+                success = organizeResult.success;
+                outputFile = organizeResult.outputPath;
+                resultMessage = organizeResult.message;
+            }
+            else
+            {
+                var start = startPage ?? 1;
+                var end = endPage ?? start;
+                var splitResult = await _pdfProcessingService.SplitPdfAsync(
+                    filePath, start, end, Path.GetFileNameWithoutExtension(outputFileName));
+
+                success = splitResult.success;
+                outputFile = splitResult.outputPaths.FirstOrDefault() ?? string.Empty;
+                resultMessage = splitResult.message;
+            }
 
             // Cleanup input file
             try { System.IO.File.Delete(filePath); } catch { }
 
-            if (success && outputPaths.Count > 0)
+            if (success && !string.IsNullOrWhiteSpace(outputFile) && System.IO.File.Exists(outputFile))
             {
-                var outputFile = outputPaths[0];
                 var fileInfo = new FileInfo(outputFile);
                 await _fileProcessingService.RecordDownloadAsync(user, Path.GetFileName(outputFile), fileInfo.Length, "application/pdf");
                 
@@ -327,7 +365,10 @@ public class PdfController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ConvertToExcel([FromForm] IFormFile file)
+    public async Task<IActionResult> ConvertToExcel(
+        [FromForm] IFormFile file,
+        [FromForm] string extractionMode = "exact",
+        [FromForm] bool aiEnhance = true)
     {
         if (file == null || file.Length == 0)
         {
@@ -356,7 +397,7 @@ public class PdfController : Controller
             var outputFileName = Path.ChangeExtension(fileName, ".xlsx");
 
             var (success, outputPath, resultMessage) = await _pdfProcessingService.ConvertToExcelAsync(
-                filePath, outputFileName);
+                filePath, outputFileName, extractionMode, aiEnhance);
 
             // Cleanup input file
             try { System.IO.File.Delete(filePath); } catch { }
@@ -709,7 +750,8 @@ public class PdfController : Controller
 
             if (success && outputPaths.Count > 0)
             {
-                var thumbnails = outputPaths.Select(path => new { 
+                var thumbnails = outputPaths.Select((path, idx) => new { 
+                    pageNumber = idx + 1,
                     url = $"/Pdf/Download?fileName={Uri.EscapeDataString(Path.GetFileName(path))}",
                     fileName = Path.GetFileName(path)
                 }).ToList();
@@ -958,14 +1000,74 @@ public class PdfController : Controller
         }
 
         var user = await GetCurrentUserAsync();
-        
-        // For JPG to PDF, we need to use the ImageProcessingService
-        // For now, return an error suggesting to use Image/ToPdf
-        
-        return Json(new { 
-            success = false, 
-            message = "Please use the Image to PDF tool for converting images to PDF." 
-        });
+        long totalBytes = files.Where(f => f != null).Sum(f => f.Length);
+        var (canProcess, authMessage) = await _fileProcessingService.CanProcessFileAsync(user, totalBytes);
+        if (!canProcess)
+        {
+            return Json(new { success = false, message = authMessage });
+        }
+
+        try
+        {
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".tif", ".tiff"
+            };
+
+            var inputPaths = new List<string>();
+            for (int i = 0; i < files.Length; i++)
+            {
+                var file = files[i];
+                if (file == null || file.Length == 0) continue;
+
+                var ext = Path.GetExtension(file.FileName);
+                if (string.IsNullOrWhiteSpace(ext) || !allowed.Contains(ext))
+                {
+                    continue;
+                }
+
+                var savedFile = await _fileProcessingService.SaveUploadedFileAsync(file, $"img2pdf_{i}");
+                inputPaths.Add(_fileProcessingService.GetFilePath(savedFile));
+            }
+
+            if (inputPaths.Count == 0)
+            {
+                return Json(new { success = false, message = "No valid image files were uploaded." });
+            }
+
+            var outputFileName = _fileProcessingService.GenerateFileName("images.pdf", "img2pdf");
+            var result = await _imageProcessingService.ImagesToPdfAsync(
+                inputPaths.ToArray(),
+                outputFileName,
+                PdfPageSize.Auto);
+
+            foreach (var path in inputPaths)
+            {
+                try { System.IO.File.Delete(path); } catch { }
+            }
+
+            if (result.Success && !string.IsNullOrWhiteSpace(result.OutputPath) && System.IO.File.Exists(result.OutputPath))
+            {
+                var resultFileName = Path.GetFileName(result.OutputPath);
+                var fileInfo = new FileInfo(result.OutputPath);
+                await _fileProcessingService.RecordDownloadAsync(user, resultFileName, fileInfo.Length, "application/pdf");
+
+                return Json(new
+                {
+                    success = true,
+                    message = result.Message,
+                    downloadUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(resultFileName)}",
+                    fileName = resultFileName
+                });
+            }
+
+            return Json(new { success = false, message = result.Message ?? "Failed to convert images to PDF." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error converting images to PDF");
+            return Json(new { success = false, message = $"Error converting images to PDF: {ex.Message}" });
+        }
     }
 
     #endregion
@@ -1050,6 +1152,92 @@ public class PdfController : Controller
         return await Rotate(file, pages, degrees);
     }
 
+    /// <summary>
+    /// Rotate multiple PDF pages with individual rotation angles
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> RotateMultiple([FromForm] IFormFile file, [FromForm] string rotations)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        if (string.IsNullOrEmpty(rotations))
+        {
+            return Json(new { success = false, message = "No rotation data provided." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, authMessage) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message = authMessage });
+        }
+
+        try
+        {
+            // Parse rotations JSON: { "1": 90, "2": -90, "3": 180 }
+            var pageRotations = new Dictionary<int, int>();
+            try
+            {
+                var rotationsDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(rotations);
+                if (rotationsDict != null)
+                {
+                    foreach (var kvp in rotationsDict)
+                    {
+                        if (int.TryParse(kvp.Key, out int pageNum))
+                        {
+                            pageRotations[pageNum - 1] = kvp.Value; // Convert to 0-based index
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse rotations JSON");
+                return Json(new { success = false, message = "Invalid rotation data format." });
+            }
+
+            if (pageRotations.Count == 0)
+            {
+                return Json(new { success = false, message = "No pages to rotate." });
+            }
+
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "rotate");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "rotate");
+
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.RotateMultiplePagesAsync(
+                filePath, pageRotations, outputFileName);
+
+            // Cleanup input file
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success && System.IO.File.Exists(outputPath))
+            {
+                var resultFileName = Path.GetFileName(outputPath);
+                var fileInfo = new FileInfo(outputPath);
+                await _fileProcessingService.RecordDownloadAsync(user, resultFileName, fileInfo.Length, "application/pdf");
+                
+                return Json(new { 
+                    success = true, 
+                    message = resultMessage,
+                    downloadUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(resultFileName)}",
+                    fileName = resultFileName
+                });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rotating multiple PDF pages");
+            return Json(new { success = false, message = $"Error rotating PDF: {ex.Message}" });
+        }
+    }
+
     #endregion
 
     #region Organize Operations
@@ -1087,11 +1275,32 @@ public class PdfController : Controller
             var filePath = _fileProcessingService.GetFilePath(fileName);
             var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "organize");
 
-            // Parse page order - format: "3,1,2" (1-based page numbers)
-            var order = pageOrder.Split(',')
-                .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
-                .Where(n => n > 0)
-                .ToList();
+            // Parse page order from either JSON array "[3,1,2]" or CSV "3,1,2" (1-based page numbers).
+            var order = new List<int>();
+            try
+            {
+                var trimmed = pageOrder.Trim();
+                if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                {
+                    order = System.Text.Json.JsonSerializer.Deserialize<List<int>>(trimmed) ?? new List<int>();
+                }
+                else
+                {
+                    order = trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Select(s => int.TryParse(s, out var n) ? n : 0)
+                        .Where(n => n > 0)
+                        .ToList();
+                }
+            }
+            catch
+            {
+                order = new List<int>();
+            }
+
+            if (order.Count == 0)
+            {
+                return Json(new { success = false, message = "Invalid page order format." });
+            }
 
             var (success, outputPath, resultMessage) = await _pdfProcessingService.OrganizePdfAsync(
                 filePath, order, outputFileName);
@@ -1130,6 +1339,263 @@ public class PdfController : Controller
     public IActionResult Edit()
     {
         return View();
+    }
+
+    /// <summary>
+    /// Extract OCR text from PDF page (for editable/searchable text)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ExtractOcrText([FromForm] IFormFile file, [FromForm] int page = 1)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a file." });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "ocr");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+
+            // Get text elements from the page
+            var (pdfTextElements, pageWidth, pageHeight) = _pdfProcessingService.GetTextElementsWithDimensions(filePath, page);
+
+            // Convert to frontend format
+            var textElements = pdfTextElements?.Select(e => new TextElement 
+            { 
+                Text = e.Text, 
+                X = e.X, 
+                Y = e.Y, 
+                Width = e.Width, 
+                Height = e.Height, 
+                FontSize = e.FontSize,
+                FontFamily = e.FontFamily,
+                Color = "#000000"
+            }).ToList() ?? new List<TextElement>();
+
+            // Try to use OCR for image-based PDFs
+            if (textElements.Count == 0)
+            {
+                // Try Python OCR service
+                try
+                {
+                    using var client = new HttpClient();
+                    using var content = new MultipartFormDataContent();
+                    
+                    using var fileStream = System.IO.File.OpenRead(filePath);
+                    using var streamContent = new StreamContent(fileStream);
+                    content.Add(streamContent, "file", fileName);
+                    content.Add(new StringContent(page.ToString()), "page");
+
+                    var ocrResponse = await client.PostAsync("http://localhost:5001/api/v1/ocr", content);
+                    if (ocrResponse.IsSuccessStatusCode)
+                    {
+                        var ocrResult = await ocrResponse.Content.ReadFromJsonAsync<OcrResponse>();
+                        if (ocrResult?.Success == true && ocrResult.TextElements != null)
+                        {
+                            textElements = ocrResult.TextElements;
+                        }
+                    }
+                }
+                catch
+                {
+                    // OCR service not available, continue with basic extraction
+                }
+            }
+
+            // Cleanup
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            return Json(new { 
+                success = true, 
+                textElements = textElements,
+                pageWidth,
+                pageHeight
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting OCR text");
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Make PDF searchable (convert image to text layer)
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> MakeSearchable([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, authMessage) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message = authMessage });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "searchable");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "searchable");
+
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.MakeSearchablePdfAsync(
+                filePath, outputFileName);
+
+            // Cleanup input
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success && System.IO.File.Exists(outputPath))
+            {
+                var resultFileName = Path.GetFileName(outputPath);
+                var fileInfo = new FileInfo(outputPath);
+                await _fileProcessingService.RecordDownloadAsync(user, resultFileName, fileInfo.Length, "application/pdf");
+                
+                return Json(new { 
+                    success = true, 
+                    message = resultMessage,
+                    downloadUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(resultFileName)}",
+                    fileName = resultFileName
+                });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error making PDF searchable");
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Crop a specific page of the PDF
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> CropPage([FromForm] IFormFile file, [FromForm] int page, 
+        [FromForm] int x, [FromForm] int y, [FromForm] int width, [FromForm] int height)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        if (width <= 0 || height <= 0)
+        {
+            return Json(new { success = false, message = "Invalid crop dimensions." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, authMessage) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message = authMessage });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "crop");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "crop");
+
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.CropPdfPageAsync(
+                filePath, page, x, y, width, height, outputFileName);
+
+            // Cleanup input
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success && System.IO.File.Exists(outputPath))
+            {
+                var resultFileName = Path.GetFileName(outputPath);
+                var fileInfo = new FileInfo(outputPath);
+                await _fileProcessingService.RecordDownloadAsync(user, resultFileName, fileInfo.Length, "application/pdf");
+                
+                return Json(new { 
+                    success = true, 
+                    message = resultMessage,
+                    downloadUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(resultFileName)}",
+                    fileName = resultFileName
+                });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cropping PDF page");
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Save edited PDF with text boxes and OCR text
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> SaveEdited([FromForm] IFormFile file, [FromForm] string textBoxes, [FromForm] string ocrText)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Please upload a PDF file." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        var (canProcess, authMessage) = await _fileProcessingService.CanProcessFileAsync(user, file.Length);
+        
+        if (!canProcess)
+        {
+            return Json(new { success = false, message = authMessage });
+        }
+
+        try
+        {
+            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "edited");
+            var filePath = _fileProcessingService.GetFilePath(fileName);
+            var outputFileName = _fileProcessingService.GenerateFileName(file.FileName, "edited");
+
+            List<PageTextBox>? boxes = null;
+            if (!string.IsNullOrEmpty(textBoxes))
+            {
+                try
+                {
+                    boxes = System.Text.Json.JsonSerializer.Deserialize<List<PageTextBox>>(textBoxes);
+                }
+                catch { }
+            }
+
+            var (success, outputPath, resultMessage) = await _pdfProcessingService.SaveEditedPdfAsync(
+                filePath, boxes, outputFileName);
+
+            // Cleanup input
+            try { System.IO.File.Delete(filePath); } catch { }
+
+            if (success && System.IO.File.Exists(outputPath))
+            {
+                var resultFileName = Path.GetFileName(outputPath);
+                var fileInfo = new FileInfo(outputPath);
+                await _fileProcessingService.RecordDownloadAsync(user, resultFileName, fileInfo.Length, "application/pdf");
+                
+                return Json(new { 
+                    success = true, 
+                    message = resultMessage,
+                    downloadUrl = $"/Pdf/Download?fileName={Uri.EscapeDataString(resultFileName)}",
+                    fileName = resultFileName
+                });
+            }
+
+            return Json(new { success = false, message = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving edited PDF");
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     [HttpPost]

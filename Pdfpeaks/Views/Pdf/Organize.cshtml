@@ -1,746 +1,518 @@
 @{
-    ViewData["Title"] = "Organize PDF - Drag & Drop Page Reordering";
+    ViewData["Title"] = "Organize PDF - Reorder and Remove Pages";
 }
-<style>
-    .organize-container {
-        display: flex;
-        height: calc(100vh - 200px);
-        min-height: 500px;
-    }
-    
-    .upload-panel {
-        flex: 0 0 350px;
-        padding: 20px;
-        background: #f8f9fa;
-        border-right: 1px solid #dee2e6;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .preview-panel {
-        flex: 1;
-        padding: 20px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .page-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
-        padding: 15px;
-        overflow-y: auto;
-        flex: 1;
-    }
-    
-    .page-card {
-        position: relative;
-        background: white;
-        border: 2px solid #dee2e6;
-        border-radius: 8px;
-        padding: 8px;
-        cursor: grab;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .page-card:hover {
-        border-color: #0d6efd;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .page-card.dragging {
-        opacity: 0.5;
-        cursor: grabbing;
-    }
-    
-    .page-card.drag-over {
-        border-color: #198754;
-        border-style: dashed;
-        background: #d1e7dd;
-    }
-    
-    .page-card.selected {
-        border-color: #0d6efd;
-        border-width: 3px;
-        background: #e7f1ff;
-    }
-    
-    .page-card.multi-selected {
-        border-color: #6f42c1;
-        border-width: 3px;
-        background: #f3e8ff;
-    }
-    
-    .page-thumbnail {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 8.5/11;
-        object-fit: contain;
-        background: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-    }
-    
-    .page-number {
-        text-align: center;
-        font-weight: 600;
-        margin-top: 8px;
-        font-size: 14px;
-        color: #495057;
-    }
-    
-    .page-checkbox {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        width: 22px;
-        height: 22px;
-        cursor: pointer;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-    
-    .page-card:hover .page-checkbox,
-    .page-card.selected .page-checkbox,
-    .page-card.multi-selected .page-checkbox {
-        opacity: 1;
-    }
-    
-    .page-checkbox:checked {
-        opacity: 1;
-    }
-    
-    .selection-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: #6f42c1;
-        color: white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
-    }
-    
-    .toolbar-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid #dee2e6;
-    }
-    
-    .action-btn {
-        flex: 1;
-        min-width: 100px;
-    }
-    
-    .drop-zone {
-        border: 3px dashed #dee2e6;
-        border-radius: 12px;
-        padding: 40px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        background: #fafafa;
-    }
-    
-    .drop-zone:hover, .drop-zone.dragover {
-        border-color: #0d6efd;
-        background: #e7f1ff;
-    }
-    
-    .order-list {
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 10px;
-        margin-top: 10px;
-        max-height: 150px;
-        overflow-y: auto;
-    }
-    
-    .order-item {
-        display: inline-flex;
-        align-items: center;
-        background: #e9ecef;
-        border-radius: 4px;
-        padding: 4px 8px;
-        margin: 2px;
-        font-size: 12px;
-        cursor: pointer;
-    }
-    
-    .order-item:hover {
-        background: #dee2e6;
-    }
-    
-    .order-item .remove {
-        margin-left: 5px;
-        color: #dc3545;
-        cursor: pointer;
-    }
-    
-    .current-order {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        margin-top: 10px;
-    }
-    
-    .current-order-item {
-        display: inline-flex;
-        align-items: center;
-        background: #0d6efd;
-        color: white;
-        border-radius: 4px;
-        padding: 5px 10px;
-        font-size: 13px;
-        cursor: grab;
-    }
-    
-    .current-order-item.dragging {
-        opacity: 0.5;
-    }
-    
-    .status-bar {
-        padding: 10px 15px;
-        background: #f8f9fa;
-        border-top: 1px solid #dee2e6;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255,255,255,0.9);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-    }
-    
-    .page-view-mode {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-    
-    .view-btn {
-        padding: 8px 16px;
-        border: 1px solid #dee2e6;
-        background: white;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .view-btn:hover {
-        background: #f8f9fa;
-    }
-    
-    .view-btn.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
-    }
-    
-    .grid-view .page-card {
-        flex: 0 0 calc(20% - 12px);
-    }
-    
-    .list-view {
-        display: flex !important;
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .list-view .page-card {
-        display: flex;
-        align-items: center;
-        padding: 10px;
-    }
-    
-    .list-view .page-thumbnail {
-        width: 60px;
-        height: auto;
-        aspect-ratio: 8.5/11;
-    }
-    
-    .list-view .page-number {
-        margin-top: 0;
-        margin-left: 15px;
-        min-width: 80px;
-    }
-</style>
 
-<div class="tool-page py-3">
-    <div class="container-fluid">
-        <div class="tool-header text-center mb-3">
-            <h1 class="tool-title fw-bold">Organize PDF</h1>
-            <p class="tool-description text-muted">Drag and drop pages to reorder them visually</p>
+@Html.AntiForgeryToken()
+
+<div class="tool-wrap py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h1 class="fw-bold mb-2">Organize PDF</h1>
+            <p class="text-muted mb-0">Reorder, remove, and export pages with drag-and-drop controls</p>
         </div>
-        
-        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
-        
-        <!-- Upload State -->
-        <div id="uploadState" class="row justify-content-center">
-            <div class="col-lg-6">
-                <div id="dropZone" class="drop-zone">
-                    <i class="fas fa-file-pdf fa-4x text-primary mb-3"></i>
-                    <h4>Drop your PDF here</h4>
-                    <p class="text-muted mb-0">or click to browse</p>
-                    <p class="small text-muted mt-2">Supports multi-page PDFs up to 100 pages</p>
+
+        <input type="file" id="fileInput" accept=".pdf,application/pdf" style="display:none;" />
+
+        <div class="row g-4 justify-content-center">
+            <div class="col-lg-8">
+                <div id="uploadCard" class="upload-zone card shadow-sm border-0">
+                    <div class="card-body p-5 text-center">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h5 class="mb-2">Drop PDF here</h5>
+                        <p class="text-muted mb-3">or select a file from your device</p>
+                        <button type="button" class="btn btn-primary px-4" id="selectFileBtn">
+                            <i class="fas fa-folder-open me-2"></i>Select PDF
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Editor State -->
-        <div id="editorState" class="d-none">
-            <div class="organize-container">
-                <!-- Left Panel - Upload & Info -->
-                <div class="upload-panel">
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="fw-bold" id="fileName">No file</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="clearFile">
-                                <i class="fas fa-times"></i>
+
+                <div id="editorCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-header bg-white border-0 pt-3">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-semibold" id="fileName">-</div>
+                                <div class="small text-muted" id="fileMeta">-</div>
+                            </div>
+                            <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" id="selectAllBtn" type="button">Select All</button>
+                                <button class="btn btn-outline-secondary" id="clearSelectionBtn" type="button">Clear Selection</button>
+                                <button class="btn btn-outline-danger" id="removeSelectedBtn" type="button" disabled>Remove Selected</button>
+                            </div>
+                            <div class="small text-muted">
+                                Selected <strong id="selectedCount">0</strong> pages
+                            </div>
+                        </div>
+
+                        <div id="pageGrid" class="page-grid"></div>
+
+                        <div class="d-grid mt-4">
+                            <button type="button" class="btn btn-success btn-lg" id="saveOrderBtn" disabled>
+                                <i class="fas fa-save me-2"></i>Save and Download
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <div id="resultCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-3 text-success result-icon"><i class="fas fa-circle-check"></i></div>
+                        <h4 class="mb-2">Organization Completed</h4>
+                        <p class="text-muted mb-4" id="resultMessage">Your organized PDF is ready.</p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a id="downloadBtn" href="#" class="btn btn-success btn-lg">
+                                <i class="fas fa-download me-2"></i>Download PDF
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="organizeAnotherBtn">
+                                <i class="fas fa-rotate me-2"></i>Organize Another File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading" class="text-center mt-3 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted" id="loadingText">Loading pages...</div>
+                </div>
+
+                <div id="errorAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 info-card">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3"><i class="fas fa-circle-info me-2"></i>Organize Notes</h6>
                         <div class="small text-muted">
-                            <span id="pageCount">0</span> pages
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">View Mode</label>
-                        <div class="page-view-mode">
-                            <button class="view-btn active" data-view="grid">
-                                <i class="fas fa-th"></i> Grid
-                            </button>
-                            <button class="view-btn" data-view="list">
-                                <i class="fas fa-list"></i> List
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Selection</label>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" id="selectAllBtn">
-                                <i class="fas fa-check-square me-1"></i> Select All
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" id="deselectAllBtn">
-                                <i class="fas fa-square me-1"></i> Deselect All
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm d-none" id="deleteSelectedBtn">
-                                <i class="fas fa-trash me-1"></i> Delete Selected
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Actions</label>
-                        <div class="toolbar-actions">
-                            <button class="btn btn-primary btn-sm action-btn" id="reverseOrderBtn">
-                                <i class="fas fa-sort-numeric-down-alt me-1"></i> Reverse
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm action-btn" id="sortAscBtn">
-                                <i class="fas fa-sort-numeric-up me-1"></i> Sort ↑
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm action-btn" id="sortDescBtn">
-                                <i class="fas fa-sort-numeric-down me-1"></i> Sort ↓
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-auto">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success btn-lg" id="saveOrderBtn">
-                                <i class="fas fa-save me-2"></i> Save & Download
-                            </button>
+                            <div class="mb-2">Drag page tiles to reorder.</div>
+                            <div class="mb-2">Select and remove pages you do not need.</div>
+                            <div class="mb-2">The final sequence is exported as a new PDF.</div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Right Panel - Page Grid -->
-                <div class="preview-panel">
-                    <div id="pageGrid" class="page-grid grid-view">
-                        <!-- Pages will be rendered here -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Status Bar -->
-            <div class="status-bar">
-                <div>
-                    <span class="text-muted">Original order:</span> 
-                    <span id="originalOrder" class="fw-bold"></span>
-                </div>
-                <div>
-                    <span class="text-muted">New order:</span>
-                    <span id="newOrder" class="fw-bold text-success"></span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Loading Overlay -->
-        <div id="loadingOverlay" class="loading-overlay d-none">
-            <div class="text-center">
-                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
-                <h5 id="loadingMessage">Loading pages...</h5>
             </div>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .tool-wrap {
+            background:
+                radial-gradient(circle at 10% 20%, rgba(13, 110, 253, 0.11), transparent 40%),
+                radial-gradient(circle at 90% 18%, rgba(25, 135, 84, 0.08), transparent 36%),
+                #f8f9fb;
+        }
+
+        .upload-zone {
+            border: 2px dashed #e2e6ea;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #0d6efd;
+            transform: translateY(-1px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #0d6efd;
+        }
+
+        .info-card {
+            position: sticky;
+            top: 88px;
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+            gap: 0.75rem;
+            max-height: 640px;
+            overflow-y: auto;
+        }
+
+        .page-tile {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            cursor: grab;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .page-tile:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .page-tile.dragging {
+            opacity: 0.6;
+        }
+
+        .page-tile.dragover {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13,110,253,0.2);
+        }
+
+        .page-tile.selected {
+            border-color: #198754;
+            box-shadow: 0 0 0 3px rgba(25,135,84,0.2);
+        }
+
+        .page-tile img {
+            width: 100%;
+            height: 190px;
+            object-fit: contain;
+            display: block;
+            background: #fff;
+        }
+
+        .tile-footer {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.45rem;
+            text-align: center;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .tile-check {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+        }
+
+        .result-icon {
+            font-size: 3rem;
+        }
+    </style>
+}
+
 @section Scripts {
-<script>
-(function() {
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('dropZone');
-    const uploadState = document.getElementById('uploadState');
-    const editorState = document.getElementById('editorState');
-    const fileName = document.getElementById('fileName');
-    const pageCount = document.getElementById('pageCount');
-    const pageGrid = document.getElementById('pageGrid');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const loadingMessage = document.getElementById('loadingMessage');
-    const clearFile = document.getElementById('clearFile');
-    const saveOrderBtn = document.getElementById('saveOrderBtn');
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    const deselectAllBtn = document.getElementById('deselectAllBtn');
-    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    const reverseOrderBtn = document.getElementById('reverseOrderBtn');
-    const sortAscBtn = document.getElementById('sortAscBtn');
-    const sortDescBtn = document.getElementById('sortDescBtn');
-    
-    let currentFile = null;
-    let pages = [];
-    let pageOrder = [];
-    let selectedPages = new Set();
-    let draggedItem = null;
-    let draggedIndex = null;
-    
-    // Initialize
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
-    
-    dropZone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', e => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-    
-    clearFile.addEventListener('click', resetState);
-    
-    // View mode buttons
-    document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const view = btn.dataset.view;
-            pageGrid.className = 'page-grid ' + view + '-view';
-        });
-    });
-    
-    // Selection buttons
-    selectAllBtn.addEventListener('click', () => {
-        selectedPages = new Set(pageOrder.map((_, i) => i));
-        updateSelectionUI();
-    });
-    
-    deselectAllBtn.addEventListener('click', () => {
-        selectedPages.clear();
-        updateSelectionUI();
-    });
-    
-    deleteSelectedBtn.addEventListener('click', () => {
-        if (selectedPages.size === 0) return;
-        const indicesToRemove = Array.from(selectedPages).sort((a, b) => b - a);
-        indicesToRemove.forEach(i => pageOrder.splice(i, 1));
-        selectedPages.clear();
-        renderPages();
-        updateOrderDisplay();
-    });
-    
-    // Order buttons
-    reverseOrderBtn.addEventListener('click', () => {
-        pageOrder.reverse();
-        renderPages();
-        updateOrderDisplay();
-    });
-    
-    sortAscBtn.addEventListener('click', () => {
-        pageOrder.sort((a, b) => a - b);
-        renderPages();
-        updateOrderDisplay();
-    });
-    
-    sortDescBtn.addEventListener('click', () => {
-        pageOrder.sort((a, b) => b - a);
-        renderPages();
-        updateOrderDisplay();
-    });
-    
-    saveOrderBtn.addEventListener('click', saveAndDownload);
-    
-    async function handleFile(file) {
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
-            alert('Please select a PDF file.');
-            return;
-        }
-        
-        currentFile = file;
-        fileName.textContent = file.name;
-        showLoading('Loading PDF pages...');
-        
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const response = await fetch('/Pdf/GetPdfThumbnails', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            if (result.success && result.thumbnails) {
-                pages = result.thumbnails;
-                pageOrder = pages.map((_, i) => i + 1);
-                pageCount.textContent = pages.length;
-                
-                uploadState.classList.add('d-none');
-                editorState.classList.remove('d-none');
-                
-                renderPages();
-                updateOrderDisplay();
-            } else {
-                alert(result.message || 'Failed to load PDF');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadCard = document.getElementById('uploadCard');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const editorCard = document.getElementById('editorCard');
+            const resultCard = document.getElementById('resultCard');
+            const clearFile = document.getElementById('clearFile');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+            const removeSelectedBtn = document.getElementById('removeSelectedBtn');
+            const saveOrderBtn = document.getElementById('saveOrderBtn');
+            const organizeAnotherBtn = document.getElementById('organizeAnotherBtn');
+            const pageGrid = document.getElementById('pageGrid');
+            const selectedCount = document.getElementById('selectedCount');
+            const fileName = document.getElementById('fileName');
+            const fileMeta = document.getElementById('fileMeta');
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loadingText');
+            const errorAlert = document.getElementById('errorAlert');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const resultMessage = document.getElementById('resultMessage');
+
+            let currentFile = null;
+            let orderedPages = [];
+            let selectedPages = new Set();
+            let draggedPage = null;
+
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error loading PDF: ' + error.message);
-        } finally {
-            hideLoading();
-        }
-    }
-    
-    function renderPages() {
-        pageGrid.innerHTML = '';
-        
-        pageOrder.forEach((pageNum, displayIndex) => {
-            const pageData = pages[pageNum - 1];
-            if (!pageData) return;
-            
-            const card = document.createElement('div');
-            card.className = 'page-card';
-            card.dataset.pageNumber = pageNum;
-            card.dataset.displayIndex = displayIndex;
-            card.draggable = true;
-            
-            if (selectedPages.has(displayIndex)) {
-                card.classList.add('multi-selected');
+
+            function showError(message) {
+                errorAlert.textContent = message;
+                errorAlert.classList.remove('d-none');
             }
-            
-            card.innerHTML = `
-                <input type="checkbox" class="page-checkbox" ${selectedPages.has(displayIndex) ? 'checked' : ''} />
-                <img src="${pageData.url}" class="page-thumbnail" alt="Page ${pageNum}" />
-                <div class="page-number">Page ${pageNum}</div>
-            `;
-            
-            // Checkbox event
-            const checkbox = card.querySelector('.page-checkbox');
-            checkbox.addEventListener('change', e => {
-                e.stopPropagation();
-                if (e.target.checked) {
-                    selectedPages.add(displayIndex);
-                } else {
-                    selectedPages.delete(displayIndex);
+
+            function hideError() {
+                errorAlert.classList.add('d-none');
+                errorAlert.textContent = '';
+            }
+
+            function setLoading(show, text) {
+                loading.classList.toggle('d-none', !show);
+                if (text) loadingText.textContent = text;
+            }
+
+            function formatBytes(bytes) {
+                if (!bytes) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let value = bytes;
+                let i = 0;
+                while (value >= 1024 && i < units.length - 1) {
+                    value /= 1024;
+                    i++;
                 }
-                updateSelectionUI();
-            });
-            
-            // Click to select
-            card.addEventListener('click', e => {
-                if (e.target.classList.contains('page-checkbox')) return;
-                if (e.ctrlKey || e.metaKey) {
-                    if (selectedPages.has(displayIndex)) {
-                        selectedPages.delete(displayIndex);
-                    } else {
-                        selectedPages.add(displayIndex);
-                    }
-                } else {
-                    selectedPages.clear();
-                    selectedPages.add(displayIndex);
-                }
-                updateSelectionUI();
-            });
-            
-            // Drag events
-            card.addEventListener('dragstart', e => {
-                draggedItem = card;
-                draggedIndex = displayIndex;
-                card.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-            });
-            
-            card.addEventListener('dragend', () => {
-                card.classList.remove('dragging');
-                document.querySelectorAll('.page-card').forEach(c => c.classList.remove('drag-over'));
-                draggedItem = null;
-                draggedIndex = null;
-            });
-            
-            card.addEventListener('dragover', e => {
-                e.preventDefault();
-                if (draggedIndex === null || displayIndex === draggedIndex) return;
-                card.classList.add('drag-over');
-            });
-            
-            card.addEventListener('dragleave', () => {
-                card.classList.remove('drag-over');
-            });
-            
-            card.addEventListener('drop', e => {
-                e.preventDefault();
-                card.classList.remove('drag-over');
-                
-                if (draggedIndex === null || draggedIndex === displayIndex) return;
-                
-                // Reorder array
-                const item = pageOrder[draggedIndex];
-                pageOrder.splice(draggedIndex, 1);
-                pageOrder.splice(displayIndex, 0, item);
-                
-                // Adjust selection
-                const newSelected = new Set();
-                selectedPages.forEach(idx => {
-                    if (idx === draggedIndex) {
-                        newSelected.add(displayIndex);
-                    } else if (draggedIndex < idx && displayIndex >= idx) {
-                        newSelected.add(idx - 1);
-                    } else if (draggedIndex > idx && displayIndex <= idx) {
-                        newSelected.add(idx + 1);
-                    } else {
-                        newSelected.add(idx);
-                    }
+                return `${value.toFixed(value >= 100 ? 0 : 2)} ${units[i]}`;
+            }
+
+            function syncUiState() {
+                selectedCount.textContent = String(selectedPages.size);
+                removeSelectedBtn.disabled = selectedPages.size === 0;
+                saveOrderBtn.disabled = orderedPages.length === 0;
+                pageGrid.querySelectorAll('.page-tile').forEach(tile => {
+                    const n = Number(tile.dataset.pageNumber);
+                    tile.classList.toggle('selected', selectedPages.has(n));
+                    const cb = tile.querySelector('.tile-check');
+                    if (cb) cb.checked = selectedPages.has(n);
                 });
-                selectedPages = newSelected;
-                
+            }
+
+            function renderPages() {
+                pageGrid.innerHTML = '';
+                orderedPages.forEach((p, index) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'page-tile';
+                    tile.dataset.pageNumber = String(p.pageNumber);
+                    tile.draggable = true;
+                    tile.innerHTML = `
+                        <input class="form-check-input tile-check" type="checkbox" />
+                        <img src="${p.url}" alt="Page ${p.pageNumber}" />
+                        <div class="tile-footer">Page ${p.pageNumber} • Pos ${index + 1}</div>
+                    `;
+
+                    tile.addEventListener('click', function (e) {
+                        if (e.target.classList.contains('tile-check')) return;
+                        const n = p.pageNumber;
+                        if (selectedPages.has(n)) selectedPages.delete(n); else selectedPages.add(n);
+                        syncUiState();
+                    });
+
+                    const cb = tile.querySelector('.tile-check');
+                    cb.addEventListener('change', function () {
+                        const n = p.pageNumber;
+                        if (cb.checked) selectedPages.add(n); else selectedPages.delete(n);
+                        syncUiState();
+                    });
+
+                    tile.addEventListener('dragstart', function () {
+                        draggedPage = p.pageNumber;
+                        tile.classList.add('dragging');
+                    });
+
+                    tile.addEventListener('dragend', function () {
+                        tile.classList.remove('dragging');
+                        pageGrid.querySelectorAll('.dragover').forEach(el => el.classList.remove('dragover'));
+                        draggedPage = null;
+                    });
+
+                    tile.addEventListener('dragover', function (e) {
+                        e.preventDefault();
+                        if (draggedPage !== p.pageNumber) tile.classList.add('dragover');
+                    });
+
+                    tile.addEventListener('dragleave', function () {
+                        tile.classList.remove('dragover');
+                    });
+
+                    tile.addEventListener('drop', function (e) {
+                        e.preventDefault();
+                        tile.classList.remove('dragover');
+                        if (!draggedPage || draggedPage === p.pageNumber) return;
+                        const fromIdx = orderedPages.findIndex(x => x.pageNumber === draggedPage);
+                        const toIdx = orderedPages.findIndex(x => x.pageNumber === p.pageNumber);
+                        if (fromIdx < 0 || toIdx < 0) return;
+                        const [moved] = orderedPages.splice(fromIdx, 1);
+                        const insertIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+                        orderedPages.splice(insertIdx, 0, moved);
+                        renderPages();
+                    });
+
+                    pageGrid.appendChild(tile);
+                });
+
+                syncUiState();
+            }
+
+            function resetState() {
+                currentFile = null;
+                orderedPages = [];
+                selectedPages = new Set();
+                draggedPage = null;
+                fileInput.value = '';
+                pageGrid.innerHTML = '';
+                selectedCount.textContent = '0';
+                uploadCard.classList.remove('d-none');
+                editorCard.classList.add('d-none');
+                resultCard.classList.add('d-none');
+                setLoading(false);
+                hideError();
+                saveOrderBtn.disabled = true;
+            }
+
+            function postWithXhr(url, formData) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, true);
+                    xhr.withCredentials = true;
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) return;
+                        resolve({
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            text: xhr.responseText || ''
+                        });
+                    };
+                    xhr.onerror = function () {
+                        reject(new Error('Network transport failed (XHR).'));
+                    };
+                    xhr.send(formData);
+                });
+            }
+
+            async function setFile(file) {
+                hideError();
+                if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+                    showError('Please select a valid PDF file.');
+                    return;
+                }
+
+                currentFile = file;
+                fileName.textContent = file.name;
+                fileMeta.textContent = `Size: ${formatBytes(file.size)}`;
+                uploadCard.classList.add('d-none');
+                editorCard.classList.remove('d-none');
+                resultCard.classList.add('d-none');
+                setLoading(true, 'Generating page thumbnails...');
+
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    let res;
+                    try {
+                        const fetchRes = await fetch('/Pdf/GetPdfThumbnails', { method: 'POST', body: fd });
+                        res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                    } catch {
+                        res = await postWithXhr('/Pdf/GetPdfThumbnails', fd);
+                    }
+                    const result = parseJsonSafe(res.text);
+                    if (!result.success || !Array.isArray(result.thumbnails) || result.thumbnails.length === 0) {
+                        const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                        throw new Error(result.message || `Could not load PDF thumbnails${statusText}.`);
+                    }
+
+                    orderedPages = result.thumbnails.map((t, idx) => ({
+                        pageNumber: Number(t.pageNumber || (idx + 1)),
+                        url: t.url,
+                        fileName: t.fileName
+                    }));
+                    selectedPages = new Set();
+                    renderPages();
+                } catch (err) {
+                    showError(err.message || 'Failed to load pages.');
+                    resetState();
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            selectFileBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadCard.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async function (e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    await setFile(e.target.files[0]);
+                }
+            });
+
+            uploadCard.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadCard.classList.add('dragover');
+            });
+
+            uploadCard.addEventListener('dragleave', function () {
+                uploadCard.classList.remove('dragover');
+            });
+
+            uploadCard.addEventListener('drop', async function (e) {
+                e.preventDefault();
+                uploadCard.classList.remove('dragover');
+                const file = e.dataTransfer?.files?.[0];
+                if (file) await setFile(file);
+            });
+
+            clearFile.addEventListener('click', resetState);
+            organizeAnotherBtn.addEventListener('click', resetState);
+
+            selectAllBtn.addEventListener('click', function () {
+                selectedPages = new Set(orderedPages.map(p => p.pageNumber));
+                syncUiState();
+            });
+
+            clearSelectionBtn.addEventListener('click', function () {
+                selectedPages = new Set();
+                syncUiState();
+            });
+
+            removeSelectedBtn.addEventListener('click', function () {
+                if (selectedPages.size === 0) return;
+                orderedPages = orderedPages.filter(p => !selectedPages.has(p.pageNumber));
+                selectedPages = new Set();
                 renderPages();
-                updateOrderDisplay();
             });
-            
-            pageGrid.appendChild(card);
-        });
-        
-        updateSelectionUI();
-    }
-    
-    function updateSelectionUI() {
-        document.querySelectorAll('.page-card').forEach((card, i) => {
-            if (selectedPages.has(i)) {
-                card.classList.add('multi-selected');
-            } else {
-                card.classList.remove('multi-selected');
-            }
-            const checkbox = card.querySelector('.page-checkbox');
-            checkbox.checked = selectedPages.has(i);
-        });
-        
-        if (selectedPages.size > 0) {
-            deleteSelectedBtn.classList.remove('d-none');
-        } else {
-            deleteSelectedBtn.classList.add('d-none');
-        }
-    }
-    
-    function updateOrderDisplay() {
-        const originalOrder = pages.map((_, i) => i + 1).join(', ');
-        const newOrder = pageOrder.join(', ');
-        
-        document.getElementById('originalOrder').textContent = originalOrder;
-        document.getElementById('newOrder').textContent = newOrder;
-    }
-    
-    async function saveAndDownload() {
-        if (!currentFile || pageOrder.length === 0) return;
-        
-        // Check if order changed
-        const originalOrder = pages.map((_, i) => i + 1);
-        const isSameOrder = JSON.stringify(pageOrder) === JSON.stringify(originalOrder);
-        
-        if (isSameOrder) {
-            alert('The page order has not changed.');
-            return;
-        }
-        
-        showLoading('Saving and generating PDF...');
-        
-        try {
-            const formData = new FormData();
-            formData.append('file', currentFile);
-            formData.append('pageOrder', JSON.stringify(pageOrder));
-            
-            const response = await fetch('/Pdf/Organize', {
-                method: 'POST',
-                body: formData
+
+            saveOrderBtn.addEventListener('click', async function () {
+                if (!currentFile || orderedPages.length === 0) return;
+
+                hideError();
+                saveOrderBtn.disabled = true;
+                saveOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+                setLoading(true, 'Saving new page order...');
+
+                try {
+                    const orderCsv = orderedPages.map(p => p.pageNumber).join(',');
+                    const fd = new FormData();
+                    fd.append('file', currentFile);
+                    fd.append('pageOrder', orderCsv);
+
+                    let res;
+                    try {
+                        const fetchRes = await fetch('/Pdf/Organize', { method: 'POST', body: fd });
+                        res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                    } catch {
+                        res = await postWithXhr('/Pdf/Organize', fd);
+                    }
+
+                    const result = parseJsonSafe(res.text);
+                    if (result.success && result.downloadUrl) {
+                        resultMessage.textContent = result.message || 'PDF organized successfully.';
+                        downloadBtn.href = result.downloadUrl;
+                        downloadBtn.setAttribute('download', result.fileName || 'organized.pdf');
+                        editorCard.classList.add('d-none');
+                        resultCard.classList.remove('d-none');
+                    } else {
+                        const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                        showError(result.message || `Organize failed${statusText}.`);
+                    }
+                } catch (err) {
+                    showError('Error while organizing PDF: ' + (err.message || 'Unknown error'));
+                } finally {
+                    setLoading(false);
+                    saveOrderBtn.disabled = orderedPages.length === 0;
+                    saveOrderBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save and Download';
+                }
             });
-            
-            const result = await response.json();
-            
-            if (result.success && result.downloadUrl) {
-                window.location.href = result.downloadUrl;
-            } else {
-                alert(result.message || 'Failed to organize PDF');
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Error: ' + error.message);
-        } finally {
-            hideLoading();
-        }
-    }
-    
-    function showLoading(message) {
-        loadingMessage.textContent = message;
-        loadingOverlay.classList.remove('d-none');
-    }
-    
-    function hideLoading() {
-        loadingOverlay.classList.add('d-none');
-    }
-    
-    function resetState() {
-        currentFile = null;
-        pages = [];
-        pageOrder = [];
-        selectedPages.clear();
-        fileInput.value = '';
-        
-        uploadState.classList.remove('d-none');
-        editorState.classList.add('d-none');
-    }
-})();
-</script>
+        });
+    </script>
 }

@@ -1,92 +1,116 @@
 @{
-    ViewData["Title"] = "Rotate PDF - Rotate PDF Pages";
+    ViewData["Title"] = "Rotate PDF - PdfPeaks";
 }
-<div class="tool-page py-5">
+
+@Html.AntiForgeryToken()
+
+<div class="tool-wrap py-5">
     <div class="container">
-        <div class="tool-header text-center mb-4">
-            <h1 class="tool-title fw-bold">Rotate PDF</h1>
-            <p class="tool-description text-muted">Rotate PDF pages to the correct orientation</p>
+        <div class="text-center mb-4">
+            <h1 class="fw-bold mb-2">Rotate PDF</h1>
+            <p class="text-muted mb-0">Rotate individual pages or all pages to the correct orientation</p>
         </div>
-        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
-        <div class="row justify-content-center">
+
+        <input type="file" id="fileInput" accept=".pdf,application/pdf" style="display:none;" />
+
+        <div class="row g-4 justify-content-center">
             <div class="col-lg-10">
-                <!-- Upload Zone -->
-                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer" style="min-height: 200px;">
-                    <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
-                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
-                    <p class="text-muted small mt-2 mb-0">Maximum 50 pages for interactive preview</p>
+                <div id="uploadZone" class="upload-zone card shadow-sm border-0">
+                    <div class="card-body p-5 text-center">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <h5 class="mb-2">Drop PDF here</h5>
+                        <p class="text-muted mb-3">or select a file from your device</p>
+                        <button type="button" class="btn btn-primary px-4" id="selectFileBtn">
+                            <i class="fas fa-folder-open me-2"></i>Select PDF
+                        </button>
+                        <p class="small text-muted mt-3 mb-0">Supported: .pdf</p>
+                    </div>
                 </div>
 
-                <!-- Main Content Area -->
-                <div id="mainContent" class="d-none mt-3">
-                    <!-- File Info Bar -->
-                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                <div id="editorCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-header bg-white border-0 pt-3">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
                             <div>
-                                <span id="fileNameDisplay" class="fw-bold"></span>
-                                <span class="badge bg-primary ms-2" id="pageCountBadge"></span>
+                                <div class="fw-semibold" id="fileName">-</div>
+                                <div class="small text-muted" id="fileMeta">-</div>
+                            </div>
+                            <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Quick Rotation (Selected Pages)</label>
+                                <select id="degreesSelect" class="form-select">
+                                    <option value="90" selected>90° clockwise</option>
+                                    <option value="180">180°</option>
+                                    <option value="-90">90° counterclockwise</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-secondary" id="selectAllBtn">Select All</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="deselectAllBtn">Clear Selection</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="invertSelectionBtn">Invert Selection</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-outline-danger btn-sm" id="clearFile">
-                                <i class="fas fa-times me-1"></i> Clear
+
+                        <div class="small text-muted mb-3">
+                            Click rotation buttons on individual pages to rotate them, or select multiple pages and apply rotation above.
+                            Selected <strong id="selectedCount">0</strong> of <strong id="pageCount">0</strong> pages
+                        </div>
+
+                        <div id="thumbGrid" class="thumb-grid"></div>
+
+                        <div class="d-grid mt-4 gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" id="rotateSelectedBtn" disabled>
+                                <i class="fas fa-rotate-right me-2"></i>Apply Rotation to Selected
+                            </button>
+                            <button type="button" class="btn btn-success btn-lg" id="saveRotatedBtn" disabled>
+                                <i class="fas fa-save me-2"></i>Save Rotated PDF
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Thumbnail Grid -->
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
-                            <h5 class="mb-0"><i class="fas fa-th-large me-2 text-primary"></i>Interactive Preview</h5>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllBtn">
-                                    <i class="fas fa-check-square me-1"></i> Select All
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="rotateLeftBtn">
-                                    <i class="fas fa-rotate-left me-1"></i> Rotate Left
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="rotateRightBtn">
-                                    <i class="fas fa-rotate-right me-1"></i> Rotate Right
-                                </button>
-                            </div>
+                <div id="resultCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-3 text-success result-icon"><i class="fas fa-circle-check"></i></div>
+                        <h4 class="mb-2">Rotation Completed</h4>
+                        <p class="text-muted mb-4" id="resultMessage">Your rotated PDF is ready.</p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a id="downloadBtn" href="#" class="btn btn-success btn-lg">
+                                <i class="fas fa-download me-2"></i>Download PDF
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="rotateAnotherBtn">
+                                <i class="fas fa-rotate me-2"></i>Rotate Another File
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <div id="thumbnailGrid" class="row g-3">
-                                <!-- Thumbnails will be loaded here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="mt-4 d-flex gap-3 justify-content-end">
-                        <button type="button" class="btn btn-secondary btn-lg" id="resetBtn">
-                            <i class="fas fa-undo me-2"></i> Reset
-                        </button>
-                        <button type="button" class="btn btn-primary btn-lg" id="saveBtn">
-                            <i class="fas fa-save me-2"></i> Save Rotated PDF
-                        </button>
                     </div>
                 </div>
 
-                <!-- Loading State -->
-                <div id="loadingState" class="d-none mt-3 text-center py-5">
-                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
-                    <p class="mb-0" id="loadingMessage">Loading PDF pages...</p>
+                <div id="loading" class="text-center mt-3 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted" id="loadingText">Loading page thumbnails...</div>
                 </div>
 
-                <!-- Success State -->
-                <div id="successState" class="d-none mt-3 text-center py-5">
-                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-                    <h4>PDF Rotated Successfully!</h4>
-                    <p class="text-muted">Your rotated PDF is ready for download.</p>
-                    <div class="mt-4">
-                        <a id="downloadLink" href="#" class="btn btn-primary btn-lg">
-                            <i class="fas fa-download me-2"></i> Download PDF
-                        </a>
-                        <button type="button" class="btn btn-outline-secondary btn-lg ms-2" id="rotateAnotherBtn">
-                            Rotate Another PDF
-                        </button>
+                <div id="errorAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 info-card">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3"><i class="fas fa-circle-info me-2"></i>How to Rotate</h6>
+                        <div class="small text-muted">
+                            <div class="mb-2"><strong>Individual Rotation:</strong> Click the rotation buttons on each page thumbnail to rotate that page.</div>
+                            <div class="mb-2"><strong>Bulk Rotation:</strong> Select multiple pages and use the dropdown above, then click "Apply Rotation to Selected".</div>
+                            <div class="mb-2"><strong>Save:</strong> Click "Save Rotated PDF" when you're done to download.</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,332 +118,579 @@
     </div>
 </div>
 
-<style>
-.thumbnail-card {
-    transition: all 0.2s ease;
-    border: 2px solid transparent;
-    cursor: pointer;
+@section Styles {
+    <style>
+        .tool-wrap {
+            background:
+                radial-gradient(circle at 10% 20%, rgba(13, 110, 253, 0.11), transparent 40%),
+                radial-gradient(circle at 90% 18%, rgba(25, 135, 84, 0.08), transparent 36%),
+                #f8f9fb;
+        }
+
+        .upload-zone {
+            border: 2px dashed #e2e6ea;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #0d6efd;
+            transform: translateY(-1px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #0d6efd;
+        }
+
+        .info-card {
+            position: sticky;
+            top: 88px;
+        }
+
+        /* Larger thumbnail grid for better visibility */
+        .thumb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            max-height: 700px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .thumb-item {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .thumb-item:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .thumb-item.selected {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+        }
+
+        .thumb-item.has-rotation {
+            border-color: #198754;
+        }
+
+        .thumb-item.has-rotation::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #198754;
+        }
+
+        .thumb-image-container {
+            width: 100%;
+            height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .thumb-item img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .thumb-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .thumb-rotate-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            color: #495057;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .thumb-rotate-btn:hover {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+            transform: scale(1.1);
+        }
+
+        .thumb-rotate-btn.rotate-left:hover {
+            background: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .thumb-label {
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.5rem;
+            background: #fff;
+            border-top: 1px solid #e9ecef;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .thumb-rotation-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(25, 135, 84, 0.9);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .check-dot {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ced4da;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #fff;
+            z-index: 10;
+        }
+
+        .thumb-item.selected .check-dot {
+            border-color: #0d6efd;
+            background: #0d6efd;
+        }
+
+        .result-icon {
+            font-size: 3rem;
+        }
+    </style>
 }
-.thumbnail-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.thumbnail-card.selected {
-    border-color: #0d6efd;
-    background-color: #f0f7ff;
-}
-.thumbnail-card .rotate-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-}
-.thumbnail-card .page-number {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-}
-.thumbnail-card .rotate-controls {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    display: none;
-}
-.thumbnail-card:hover .rotate-controls {
-    display: flex;
-}
-.thumbnail-card:hover .page-number {
-    display: none;
-}
-.thumbnail-card .thumbnail-wrapper {
-    position: relative;
-    padding-top: 129%; /* A4 aspect ratio */
-    background: #f8f9fa;
-    border-radius: 4px;
-    overflow: hidden;
-}
-.thumbnail-card .thumbnail-wrapper img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-</style>
 
 @section Scripts {
-<script>
-(function() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
-    const mainContent = document.getElementById('mainContent');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const pageCountBadge = document.getElementById('pageCountBadge');
-    const thumbnailGrid = document.getElementById('thumbnailGrid');
-    const loadingState = document.getElementById('loadingState');
-    const loadingMessage = document.getElementById('loadingMessage');
-    const successState = document.getElementById('successState');
-    const clearFile = document.getElementById('clearFile');
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    const rotateLeftBtn = document.getElementById('rotateLeftBtn');
-    const rotateRightBtn = document.getElementById('rotateRightBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const downloadLink = document.getElementById('downloadLink');
-    const rotateAnotherBtn = document.getElementById('rotateAnotherBtn');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const editorCard = document.getElementById('editorCard');
+            const resultCard = document.getElementById('resultCard');
+            const clearFile = document.getElementById('clearFile');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const deselectAllBtn = document.getElementById('deselectAllBtn');
+            const invertSelectionBtn = document.getElementById('invertSelectionBtn');
+            const rotateSelectedBtn = document.getElementById('rotateSelectedBtn');
+            const saveRotatedBtn = document.getElementById('saveRotatedBtn');
+            const rotateAnotherBtn = document.getElementById('rotateAnotherBtn');
+            const degreesSelect = document.getElementById('degreesSelect');
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loadingText');
+            const errorAlert = document.getElementById('errorAlert');
+            const thumbGrid = document.getElementById('thumbGrid');
+            const selectedCount = document.getElementById('selectedCount');
+            const pageCount = document.getElementById('pageCount');
+            const fileName = document.getElementById('fileName');
+            const fileMeta = document.getElementById('fileMeta');
+            const resultMessage = document.getElementById('resultMessage');
+            const downloadBtn = document.getElementById('downloadBtn');
 
-    let currentFile = null;
-    let pageData = []; // { pageNumber, thumbnailUrl, rotation, selected }
+            let currentFile = null;
+            let currentFileName = null;
+            let pages = [];
+            let selected = new Set();
+            // Track individual page rotations: { pageNumber: degrees }
+            let pageRotations = {};
+            let hasPendingRotations = false;
 
-    // Event Listeners
-    uploadZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
-    uploadZone.addEventListener('drop', e => { 
-        e.preventDefault(); 
-        uploadZone.classList.remove('border-primary'); 
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); 
-    });
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
+            }
 
-    clearFile.addEventListener('click', resetAll);
-    selectAllBtn.addEventListener('click', selectAll);
-    rotateLeftBtn.addEventListener('click', () => rotateSelected(-90));
-    rotateRightBtn.addEventListener('click', () => rotateSelected(90));
-    resetBtn.addEventListener('click', resetRotations);
-    saveBtn.addEventListener('click', saveRotatedPdf);
-    rotateAnotherBtn.addEventListener('click', resetAll);
-
-    function handleFile(file) {
-        if (!file.name.toLowerCase().endsWith('.pdf')) { 
-            alert('Please select a PDF file.'); 
-            return; 
-        }
-        if (file.size > 50 * 1024 * 1024) {
-            alert('File size exceeds 50MB limit for interactive preview.');
-            return;
-        }
-        currentFile = file;
-        fileNameDisplay.textContent = file.name;
-        loadThumbnails();
-    }
-
-    function loadThumbnails() {
-        uploadZone.classList.add('d-none');
-        mainContent.classList.add('d-none');
-        successState.classList.add('d-none');
-        loadingState.classList.remove('d-none');
-        loadingMessage.textContent = 'Generating page thumbnails...';
-
-        const fd = new FormData();
-        fd.append('file', currentFile);
-        
-        fetch('/Pdf/GetPdfThumbnails', { 
-            method: 'POST', 
-            body: fd 
-        })
-        .then(r => r.json())
-        .then(data => {
-            loadingState.classList.add('d-none');
-            
-            if (data.success) {
-                pageData = data.thumbnails.map(t => ({
-                    pageNumber: t.pageNumber,
-                    thumbnailUrl: t.thumbnailUrl,
-                    rotation: 0,
-                    selected: false
-                }));
-                
-                if (pageData.length > 50) {
-                    alert('This PDF has more than 50 pages. Using simplified rotation interface.');
+            function formatBytes(bytes) {
+                if (!bytes) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let value = bytes;
+                let i = 0;
+                while (value >= 1024 && i < units.length - 1) {
+                    value /= 1024;
+                    i++;
                 }
+                return `${value.toFixed(value >= 100 ? 0 : 2)} ${units[i]}`;
+            }
+
+            function showError(message) {
+                errorAlert.textContent = message;
+                errorAlert.classList.remove('d-none');
+            }
+
+            function hideError() {
+                errorAlert.classList.add('d-none');
+                errorAlert.textContent = '';
+            }
+
+            function setLoading(show, text) {
+                loading.classList.toggle('d-none', !show);
+                if (text) loadingText.textContent = text;
+            }
+
+            function syncSelectionUi() {
+                selectedCount.textContent = String(selected.size);
+                rotateSelectedBtn.disabled = selected.size === 0 || !currentFile;
+                saveRotatedBtn.disabled = !hasPendingRotations || !currentFile;
                 
-                pageCountBadge.textContent = pageData.length + ' page(s)';
+                thumbGrid.querySelectorAll('.thumb-item').forEach(item => {
+                    const n = Number(item.dataset.page);
+                    item.classList.toggle('selected', selected.has(n));
+                    // Show rotation indicator
+                    const rotation = pageRotations[n];
+                    item.classList.toggle('has-rotation', rotation !== undefined && rotation !== 0);
+                });
+            }
+
+            function getRotationBadge(degrees) {
+                if (!degrees || degrees === 0) return '';
+                return `<span class="thumb-rotation-badge">${degrees > 0 ? '+' : ''}${degrees}°</span>`;
+            }
+
+            function renderThumbnails() {
+                thumbGrid.innerHTML = '';
+                pages.forEach(page => {
+                    const rotation = pageRotations[page.pageNumber] || 0;
+                    const el = document.createElement('div');
+                    el.className = 'thumb-item' + (rotation !== 0 ? ' has-rotation' : '');
+                    el.dataset.page = String(page.pageNumber);
+                    
+                    el.innerHTML = `
+                        <div class="thumb-image-container">
+                            <img src="${page.thumbnailUrl}" alt="Page ${page.pageNumber}" style="transform: rotate(${rotation}deg)">
+                            ${getRotationBadge(rotation)}
+                            <div class="check-dot"><i class="fas fa-check"></i></div>
+                        </div>
+                        <div class="thumb-controls">
+                            <button type="button" class="thumb-rotate-btn rotate-left" data-rotate="-90" title="Rotate left 90°">
+                                <i class="fas fa-rotate-left"></i>
+                            </button>
+                            <button type="button" class="thumb-rotate-btn" data-rotate="90" title="Rotate right 90°">
+                                <i class="fas fa-rotate-right"></i>
+                            </button>
+                            <button type="button" class="thumb-rotate-btn" data-rotate="180" title="Rotate 180°">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </div>
+                        <div class="thumb-label">Page ${page.pageNumber}</div>
+                    `;
+                    
+                    // Click on thumbnail to select
+                    el.addEventListener('click', function (e) {
+                        if (e.target.closest('.thumb-rotate-btn')) return;
+                        if (selected.has(page.pageNumber)) selected.delete(page.pageNumber);
+                        else selected.add(page.pageNumber);
+                        syncSelectionUi();
+                    });
+                    
+                    // Rotation buttons
+                    el.querySelectorAll('.thumb-rotate-btn').forEach(btn => {
+                        btn.addEventListener('click', async function(e) {
+                            e.stopPropagation();
+                            const degrees = parseInt(this.dataset.rotate);
+                            const pageNum = page.pageNumber;
+                            
+                            // Update rotation for this page
+                            const currentRotation = pageRotations[pageNum] || 0;
+                            pageRotations[pageNum] = (currentRotation + degrees) % 360;
+                            
+                            // Mark as having pending rotations
+                            hasPendingRotations = Object.values(pageRotations).some(r => r !== 0);
+                            
+                            // Update UI
+                            const img = el.querySelector('img');
+                            img.style.transform = `rotate(${pageRotations[pageNum]}deg)`;
+                            
+                            // Update or remove badge
+                            const existingBadge = el.querySelector('.thumb-rotation-badge');
+                            if (pageRotations[pageNum] !== 0) {
+                                if (existingBadge) {
+                                    existingBadge.textContent = `${pageRotations[pageNum] > 0 ? '+' : ''}${pageRotations[pageNum]}°`;
+                                } else {
+                                    const container = el.querySelector('.thumb-image-container');
+                                    container.insertAdjacentHTML('afterbegin', getRotationBadge(pageRotations[pageNum]));
+                                }
+                                el.classList.add('has-rotation');
+                            } else {
+                                if (existingBadge) existingBadge.remove();
+                                el.classList.remove('has-rotation');
+                            }
+                            
+                            // Auto-select this page if not selected
+                            if (!selected.has(pageNum)) {
+                                selected.add(pageNum);
+                            }
+                            
+                            syncSelectionUi();
+                        });
+                    });
+                    
+                    thumbGrid.appendChild(el);
+                });
+                syncSelectionUi();
+            }
+
+            function reset() {
+                currentFile = null;
+                currentFileName = null;
+                pages = [];
+                selected = new Set();
+                pageRotations = {};
+                hasPendingRotations = false;
+                fileInput.value = '';
+                thumbGrid.innerHTML = '';
+                selectedCount.textContent = '0';
+                pageCount.textContent = '0';
+                uploadZone.classList.remove('d-none');
+                editorCard.classList.add('d-none');
+                resultCard.classList.add('d-none');
+                setLoading(false);
+                hideError();
+                rotateSelectedBtn.disabled = true;
+                saveRotatedBtn.disabled = true;
+                rotateSelectedBtn.innerHTML = '<i class="fas fa-rotate-right me-2"></i>Apply Rotation to Selected';
+                degreesSelect.value = '90';
+            }
+
+            async function loadThumbnails(file) {
+                const fd = new FormData();
+                fd.append('file', file);
+
+                let res;
+                try {
+                    const fetchRes = await fetch('/Pdf/GetPdfThumbnails', { method: 'POST', body: fd });
+                    res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                } catch {
+                    res = await postWithXhr('/Pdf/GetPdfThumbnails', fd);
+                }
+
+                const result = parseJsonSafe(res.text);
+                if (!result.success || !Array.isArray(result.thumbnails)) {
+                    const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                    throw new Error(result.message || `Could not load PDF thumbnails${statusText}.`);
+                }
+
+                pages = result.thumbnails.map(t => ({ pageNumber: t.pageNumber, thumbnailUrl: t.thumbnailUrl }));
+                pageCount.textContent = String(pages.length);
                 renderThumbnails();
-                mainContent.classList.remove('d-none');
-            } else {
-                alert(data.message || 'Could not load PDF thumbnails');
-                resetAll();
             }
-        })
-        .catch(err => {
-            console.error(err);
-            loadingState.classList.add('d-none');
-            alert('Failed to load PDF. Please try again.');
-            resetAll();
-        });
-    }
 
-    function renderThumbnails() {
-        thumbnailGrid.innerHTML = '';
-        
-        pageData.forEach((page, index) => {
-            const col = document.createElement('div');
-            col.className = 'col-6 col-md-4 col-lg-3 col-xl-2';
-            
-            const card = document.createElement('div');
-            card.className = `thumbnail-card card h-100 position-relative${page.selected ? ' selected' : ''}`;
-            card.dataset.index = index;
-            
-            // Calculate rotation transform
-            const rotation = page.rotation;
-            
-            card.innerHTML = `
-                <div class="thumbnail-wrapper">
-                    <img src="${page.thumbnailUrl}" alt="Page ${page.pageNumber}" style="transform: rotate(${rotation}deg);">
-                    ${rotation !== 0 ? `<span class="rotate-badge">${rotation}°</span>` : ''}
-                    <span class="page-number">Page ${page.pageNumber}</span>
-                    <div class="rotate-controls btn-group">
-                        <button class="btn btn-sm btn-light rotate-left" title="Rotate Left">
-                            <i class="fas fa-rotate-left"></i>
-                        </button>
-                        <button class="btn btn-sm btn-light rotate-right" title="Rotate Right">
-                            <i class="fas fa-rotate-right"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Click to select/deselect
-            card.addEventListener('click', (e) => {
-                if (!e.target.closest('.rotate-controls')) {
-                    toggleSelection(index);
+            async function setFile(file) {
+                hideError();
+                if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+                    showError('Please select a valid PDF file.');
+                    return;
+                }
+
+                currentFile = file;
+                currentFileName = file.name;
+                fileName.textContent = file.name;
+                fileMeta.textContent = `Size: ${formatBytes(file.size)}`;
+                uploadZone.classList.add('d-none');
+                editorCard.classList.remove('d-none');
+                resultCard.classList.add('d-none');
+                selected = new Set();
+                pageRotations = {};
+                hasPendingRotations = false;
+                setLoading(true, 'Loading page thumbnails...');
+
+                try {
+                    await loadThumbnails(file);
+                } catch (err) {
+                    showError(err.message || 'Failed to load page previews.');
+                    reset();
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            function postWithXhr(url, formData) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, true);
+                    xhr.withCredentials = true;
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) return;
+                        resolve({
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            text: xhr.responseText || ''
+                        });
+                    };
+                    xhr.onerror = function () {
+                        reject(new Error('Network transport failed (XHR).'));
+                    };
+                    xhr.send(formData);
+                });
+            }
+
+            selectFileBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async function (e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    await setFile(e.target.files[0]);
                 }
             });
-            
-            // Rotate buttons
-            card.querySelector('.rotate-left').addEventListener('click', (e) => {
-                e.stopPropagation();
-                rotatePage(index, -90);
+
+            uploadZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
             });
-            
-            card.querySelector('.rotate-right').addEventListener('click', (e) => {
-                e.stopPropagation();
-                rotatePage(index, 90);
+
+            uploadZone.addEventListener('dragleave', function () {
+                uploadZone.classList.remove('dragover');
             });
-            
-            col.appendChild(card);
-            thumbnailGrid.appendChild(col);
+
+            uploadZone.addEventListener('drop', async function (e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const file = e.dataTransfer?.files?.[0];
+                if (file) await setFile(file);
+            });
+
+            clearFile.addEventListener('click', reset);
+            rotateAnotherBtn.addEventListener('click', reset);
+
+            selectAllBtn.addEventListener('click', function () {
+                selected = new Set(pages.map(p => p.pageNumber));
+                syncSelectionUi();
+            });
+
+            deselectAllBtn.addEventListener('click', function () {
+                selected = new Set();
+                syncSelectionUi();
+            });
+
+            invertSelectionBtn.addEventListener('click', function () {
+                const next = new Set();
+                pages.forEach(p => {
+                    if (!selected.has(p.pageNumber)) next.add(p.pageNumber);
+                });
+                selected = next;
+                syncSelectionUi();
+            });
+
+            // Apply rotation to selected pages using dropdown value
+            rotateSelectedBtn.addEventListener('click', async function () {
+                if (!currentFile || selected.size === 0) return;
+
+                const degrees = parseInt(degreesSelect.value);
+                
+                // Apply rotation to all selected pages
+                selected.forEach(pageNum => {
+                    const currentRotation = pageRotations[pageNum] || 0;
+                    pageRotations[pageNum] = (currentRotation + degrees) % 360;
+                });
+                
+                hasPendingRotations = Object.values(pageRotations).some(r => r !== 0);
+                
+                // Update UI for all affected pages
+                renderThumbnails();
+                
+                // Re-select the pages that were selected
+                selected.forEach(p => {
+                    const el = thumbGrid.querySelector(`.thumb-item[data-page="${p}"]`);
+                    if (el) el.classList.add('selected');
+                });
+                syncSelectionUi();
+            });
+
+            // Save rotated PDF - applies all pending rotations
+            saveRotatedBtn.addEventListener('click', async function () {
+                if (!currentFile || !hasPendingRotations) return;
+
+                hideError();
+                saveRotatedBtn.disabled = true;
+                saveRotatedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+                setLoading(true, 'Applying rotations and saving PDF...');
+
+                try {
+                    // Build rotations data: pageNumber -> degrees
+                    const rotationsData = {};
+                    Object.entries(pageRotations).forEach(([page, deg]) => {
+                        if (deg !== 0) {
+                            rotationsData[page] = deg;
+                        }
+                    });
+
+                    const fd = new FormData();
+                    fd.append('file', currentFile);
+                    fd.append('rotations', JSON.stringify(rotationsData));
+
+                    let res;
+                    try {
+                        const fetchRes = await fetch('/Pdf/RotateMultiple', { method: 'POST', body: fd });
+                        res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                    } catch {
+                        res = await postWithXhr('/Pdf/RotateMultiple', fd);
+                    }
+
+                    const result = parseJsonSafe(res.text);
+                    if (result.success && result.downloadUrl) {
+                        resultMessage.textContent = result.message || 'Rotation completed successfully.';
+                        downloadBtn.href = result.downloadUrl;
+                        downloadBtn.setAttribute('download', result.fileName || 'rotated.pdf');
+                        editorCard.classList.add('d-none');
+                        resultCard.classList.remove('d-none');
+                    } else {
+                        const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                        showError(result.message || `Rotation failed${statusText}.`);
+                    }
+                } catch (err) {
+                    showError('Error while rotating PDF: ' + (err.message || 'Unknown error'));
+                } finally {
+                    setLoading(false);
+                    saveRotatedBtn.disabled = !hasPendingRotations;
+                    saveRotatedBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Rotated PDF';
+                }
+            });
         });
-    }
-
-    function toggleSelection(index) {
-        pageData[index].selected = !pageData[index].selected;
-        renderThumbnails();
-    }
-
-    function selectAll() {
-        const allSelected = pageData.every(p => p.selected);
-        pageData.forEach(p => p.selected = !allSelected);
-        renderThumbnails();
-    }
-
-    function rotatePage(index, degrees) {
-        pageData[index].rotation = (pageData[index].rotation + degrees) % 360;
-        pageData[index].selected = true; // Auto-select when rotating
-        renderThumbnails();
-    }
-
-    function rotateSelected(degrees) {
-        let rotated = false;
-        pageData.forEach((page, index) => {
-            if (page.selected) {
-                page.rotation = (page.rotation + degrees) % 360;
-                rotated = true;
-            }
-        });
-        if (rotated) {
-            renderThumbnails();
-        } else {
-            alert('Please select at least one page to rotate.');
-        }
-    }
-
-    function resetRotations() {
-        pageData.forEach(page => {
-            page.rotation = 0;
-            page.selected = false;
-        });
-        renderThumbnails();
-    }
-
-    function saveRotatedPdf() {
-        // Check if any pages need rotation
-        const pagesToRotate = pageData.filter(p => p.rotation !== 0);
-        
-        if (pagesToRotate.length === 0) {
-            alert('No pages have been rotated. Please rotate at least one page.');
-            return;
-        }
-
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
-        loadingState.classList.remove('d-none');
-        loadingMessage.textContent = 'Applying rotations...';
-
-        const formData = new FormData();
-        formData.append('file', currentFile);
-        
-        // Group pages by rotation
-        const rotationGroups = {};
-        pagesToRotate.forEach(page => {
-            const rot = page.rotation;
-            if (!rotationGroups[rot]) rotationGroups[rot] = [];
-            rotationGroups[rot].push(page.pageNumber);
-        });
-
-        // Send rotation data
-        formData.append('rotationData', JSON.stringify(rotationGroups));
-
-        fetch('/Pdf/RotateInteractive', { 
-            method: 'POST', 
-            body: formData 
-        })
-        .then(r => r.json())
-        .then(data => {
-            loadingState.classList.add('d-none');
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save Rotated PDF';
-            
-            if (data.success && data.downloadUrl) {
-                mainContent.classList.add('d-none');
-                downloadLink.href = data.downloadUrl;
-                successState.classList.remove('d-none');
-            } else {
-                alert(data.message || 'Failed to rotate PDF');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            loadingState.classList.add('d-none');
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save Rotated PDF';
-            alert('Error processing PDF');
-        });
-    }
-
-    function resetAll() {
-        currentFile = null;
-        pageData = [];
-        fileInput.value = '';
-        uploadZone.classList.remove('d-none');
-        mainContent.classList.add('d-none');
-        successState.classList.add('d-none');
-        loadingState.classList.add('d-none');
-        thumbnailGrid.innerHTML = '';
-    }
-})();
-</script>
+    </script>
 }

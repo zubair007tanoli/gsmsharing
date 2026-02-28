@@ -1,82 +1,247 @@
 @{
     ViewData["Title"] = "PDF to PowerPoint - Convert PDF to PPTX";
 }
-<div class="tool-page py-5">
+
+<div class="tool-wrap py-5">
     <div class="container">
-        <div class="tool-header text-center mb-4">
-            <h1 class="tool-title fw-bold">PDF to PowerPoint</h1>
-            <p class="tool-description text-muted">Convert your PDF files to editable PowerPoint presentations</p>
+        <div class="text-center mb-4">
+            <h1 class="fw-bold mb-2">PDF to PowerPoint</h1>
+            <p class="text-muted mb-0">Turn each PDF page into a PowerPoint slide with high visual fidelity</p>
         </div>
-        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
-        <div class="row justify-content-center">
+
+        <input type="file" id="fileInput" accept=".pdf,application/pdf" style="display:none;" />
+
+        <div class="row g-4 justify-content-center">
             <div class="col-lg-8">
-                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
-                    <i class="fas fa-cloud-upload-alt fa-4x text-danger mb-3"></i>
-                    <p class="mb-0">Drag & drop your PDF here or click to browse</p>
-                </div>
-                <div id="fileSection" class="d-none mt-3">
-                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
-                        <span id="fileNameDisplay" class="fw-bold"></span>
-                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                <div id="uploadZone" class="upload-zone card shadow-sm border-0">
+                    <div class="card-body p-5 text-center">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-file-powerpoint"></i>
+                        </div>
+                        <h5 class="mb-2">Drop PDF here</h5>
+                        <p class="text-muted mb-3">or select a file from your device</p>
+                        <button type="button" class="btn btn-danger px-4" id="selectFileBtn">
+                            <i class="fas fa-folder-open me-2"></i>Select PDF
+                        </button>
+                        <p class="small text-muted mt-3 mb-0">Supported: .pdf</p>
                     </div>
-                    <button type="button" class="btn btn-danger btn-lg w-100" id="convertBtn">
-                        <i class="fas fa-exchange-alt me-2"></i> Convert to PowerPoint
-                    </button>
                 </div>
-                <div id="loadingState" class="d-none mt-3 text-center">
-                    <div class="spinner-border text-danger"></div>
-                    <p class="mt-2 mb-0">Converting...</p>
+
+                <div id="fileCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-semibold" id="fileName">-</div>
+                                <div class="small text-muted" id="fileMeta">-</div>
+                                <div class="small text-muted" id="pdfInfo">Analyzing PDF...</div>
+                            </div>
+                            <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="button" class="btn btn-danger btn-lg" id="convertBtn">
+                                <i class="fas fa-file-powerpoint me-2"></i>Convert to PowerPoint
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading" class="text-center mt-3 d-none">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Converting PDF to PowerPoint...</div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 info-card">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3"><i class="fas fa-circle-info me-2"></i>How It Works</h6>
+                        <div class="small text-muted">
+                            <div class="mb-2">1. Upload a PDF file.</div>
+                            <div class="mb-2">2. Each page becomes one slide.</div>
+                            <div class="mb-2">3. Download PPTX instantly.</div>
+                        </div>
+                        <hr />
+                        <div class="small text-muted mb-0">
+                            For editable text extraction from PDF, use PDF to Word/Excel tools.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-@section Scripts {
-<script>
-(function() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
-    const fileSection = document.getElementById('fileSection');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const convertBtn = document.getElementById('convertBtn');
-    const loadingState = document.getElementById('loadingState');
-    const clearFile = document.getElementById('clearFile');
-    let currentFile = null;
 
-    uploadZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files.length) setFile(e.target.files[0]); });
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('border-primary'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('border-primary'));
-    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('border-primary'); if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]); });
-    clearFile.addEventListener('click', () => { currentFile = null; fileSection.classList.add('d-none'); uploadZone.classList.remove('d-none'); fileInput.value = ''; });
-
-    function setFile(file) {
-        if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Please select a PDF file.'); return; }
-        currentFile = file;
-        fileNameDisplay.textContent = file.name;
-        uploadZone.classList.add('d-none');
-        fileSection.classList.remove('d-none');
-    }
-
-    convertBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
-        convertBtn.disabled = true;
-        loadingState.classList.remove('d-none');
-        const fd = new FormData();
-        fd.append('file', currentFile);
-        try {
-            const res = await fetch('/Pdf/ConvertToPowerPoint', { method: 'POST', body: fd });
-            const result = await res.json();
-            loadingState.classList.add('d-none');
-            convertBtn.disabled = false;
-            if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-            else { alert(result.message || 'Conversion failed'); }
-        } catch (e) {
-            loadingState.classList.add('d-none');
-            convertBtn.disabled = false;
-            alert('Error: ' + e.message);
+@section Styles {
+    <style>
+        .tool-wrap {
+            background:
+                radial-gradient(circle at 10% 20%, rgba(220, 53, 69, 0.08), transparent 40%),
+                radial-gradient(circle at 90% 15%, rgba(255, 193, 7, 0.08), transparent 35%),
+                #f8f9fb;
         }
-    });
-})();
-</script>
+
+        .upload-zone {
+            border: 2px dashed #e2e6ea;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #dc3545;
+            transform: translateY(-1px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #dc3545;
+        }
+
+        .info-card {
+            position: sticky;
+            top: 88px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const fileCard = document.getElementById('fileCard');
+            const fileName = document.getElementById('fileName');
+            const fileMeta = document.getElementById('fileMeta');
+            const pdfInfo = document.getElementById('pdfInfo');
+            const clearFile = document.getElementById('clearFile');
+            const convertBtn = document.getElementById('convertBtn');
+            const loading = document.getElementById('loading');
+
+            let currentFile = null;
+
+            function formatBytes(bytes) {
+                if (!bytes) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let size = bytes;
+                let idx = 0;
+                while (size >= 1024 && idx < units.length - 1) {
+                    size /= 1024;
+                    idx++;
+                }
+                return `${size.toFixed(size >= 100 ? 0 : 2)} ${units[idx]}`;
+            }
+
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
+            }
+
+            function reset() {
+                currentFile = null;
+                fileInput.value = '';
+                uploadZone.classList.remove('d-none');
+                fileCard.classList.add('d-none');
+                loading.classList.add('d-none');
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '<i class="fas fa-file-powerpoint me-2"></i>Convert to PowerPoint';
+            }
+
+            async function analyzePdf(file) {
+                pdfInfo.textContent = 'Analyzing PDF...';
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const response = await fetch('/Pdf/GetPdfInfo', { method: 'POST', body: fd });
+                    const result = parseJsonSafe(await response.text());
+                    if (result.success) {
+                        pdfInfo.textContent = `${result.pageCount || '-'} page(s), ${result.formattedSize || formatBytes(file.size)}`;
+                    } else {
+                        pdfInfo.textContent = 'Could not read PDF metadata.';
+                    }
+                } catch {
+                    pdfInfo.textContent = 'Could not read PDF metadata.';
+                }
+            }
+
+            async function setFile(file) {
+                if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+                    alert('Please select a PDF file.');
+                    return;
+                }
+                currentFile = file;
+                fileName.textContent = file.name;
+                fileMeta.textContent = `Size: ${formatBytes(file.size)}`;
+                uploadZone.classList.add('d-none');
+                fileCard.classList.remove('d-none');
+                await analyzePdf(file);
+            }
+
+            selectFileBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async function (e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    await setFile(e.target.files[0]);
+                }
+            });
+
+            uploadZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', function () {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', async function (e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const file = e.dataTransfer?.files?.[0];
+                if (file) await setFile(file);
+            });
+
+            clearFile.addEventListener('click', reset);
+
+            convertBtn.addEventListener('click', async function () {
+                if (!currentFile) return;
+
+                convertBtn.disabled = true;
+                convertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Converting...';
+                loading.classList.remove('d-none');
+
+                try {
+                    const fd = new FormData();
+                    fd.append('file', currentFile);
+
+                    const response = await fetch('/Pdf/ConvertToPowerPoint', { method: 'POST', body: fd });
+                    const result = parseJsonSafe(await response.text());
+
+                    if (result.success && result.downloadUrl) {
+                        window.location.href = result.downloadUrl;
+                    } else {
+                        const statusText = !response.ok ? ` (HTTP ${response.status})` : '';
+                        alert(result.message || `Conversion failed${statusText}.`);
+                    }
+                } catch (err) {
+                    alert('Error: ' + (err.message || 'Unknown error'));
+                } finally {
+                    loading.classList.add('d-none');
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = '<i class="fas fa-file-powerpoint me-2"></i>Convert to PowerPoint';
+                }
+            });
+        });
+    </script>
 }

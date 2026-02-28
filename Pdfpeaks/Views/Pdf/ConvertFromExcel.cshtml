@@ -1,129 +1,273 @@
 @{
-    ViewData["Title"] = "Excel to PDF - Convert XLSX to PDF";
+    ViewData["Title"] = "Excel to PDF - Convert XLS/XLSX to PDF";
 }
 
-<div class="tool-page py-5">
+@Html.AntiForgeryToken()
+
+<div class="tool-wrap py-5">
     <div class="container">
-        <div class="tool-header text-center mb-4">
-            <h1 class="tool-title fw-bold">Excel to PDF</h1>
-            <p class="tool-description text-muted">Convert your Excel spreadsheets to PDF format</p>
+        <div class="text-center mb-4">
+            <h1 class="fw-bold mb-2">Excel to PDF</h1>
+            <p class="text-muted mb-0">Create print-ready PDFs while preserving workbook layout and text searchability</p>
         </div>
 
-        <input type="file" id="fileInput" accept=".xls,.xlsx" style="display: none;" />
+        <input type="file" id="fileInput" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" />
 
-        <div class="row justify-content-center">
+        <div class="row g-4 justify-content-center">
             <div class="col-lg-8">
-                <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white cursor-pointer">
-                    <i class="fas fa-file-excel fa-4x text-success mb-3"></i>
-                    <p class="mb-1">Drag & drop your Excel file here or click to browse</p>
-                    <p class="small text-muted mb-0">.xls, .xlsx</p>
-                </div>
-
-                <div id="fileSection" class="d-none mt-3">
-                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
-                        <span id="fileNameDisplay" class="fw-bold"></span>
-                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                <div id="uploadZone" class="upload-zone card shadow-sm border-0">
+                    <div class="card-body p-5 text-center">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <h5 class="mb-2">Drop Excel file here</h5>
+                        <p class="text-muted mb-3">or select a workbook from your device</p>
+                        <button type="button" class="btn btn-success px-4" id="selectFileBtn">
+                            <i class="fas fa-folder-open me-2"></i>Select Excel
+                        </button>
+                        <p class="small text-muted mt-3 mb-0">Supported: .xls, .xlsx</p>
                     </div>
-
-                    <button type="button" class="btn btn-success btn-lg w-100" id="convertBtn">
-                        <i class="fas fa-file-pdf me-2"></i> Convert to PDF
-                    </button>
                 </div>
 
-                <div id="loadingState" class="d-none mt-3 text-center">
-                    <div class="spinner-border text-success"></div>
-                    <p class="mt-2 mb-0">Converting...</p>
+                <div id="fileCard" class="card shadow-sm border-0 mt-3 d-none">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-semibold" id="fileName">-</div>
+                                <div class="small text-muted" id="fileMeta">-</div>
+                                <div class="small text-muted">Output is generated with worksheet print settings and page-fit analysis.</div>
+                            </div>
+                            <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="button" class="btn btn-success btn-lg" id="convertBtn">
+                                <i class="fas fa-file-pdf me-2"></i>Convert to PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading" class="text-center mt-3 d-none">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Converting Excel to PDF...</div>
+                </div>
+
+                <div id="errorAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 info-card">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3"><i class="fas fa-circle-info me-2"></i>Conversion Notes</h6>
+                        <div class="small text-muted">
+                            <div class="mb-2">Page orientation and margins are auto-evaluated per worksheet.</div>
+                            <div class="mb-2">Large sheets are fitted to avoid clipped content.</div>
+                            <div class="mb-2">Searchable text is preserved where source cells contain text.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .tool-wrap {
+            background:
+                radial-gradient(circle at 10% 20%, rgba(25, 135, 84, 0.12), transparent 40%),
+                radial-gradient(circle at 88% 18%, rgba(13, 110, 253, 0.08), transparent 36%),
+                #f8f9fb;
+        }
+
+        .upload-zone {
+            border: 2px dashed #e2e6ea;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #198754;
+            transform: translateY(-1px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #198754;
+        }
+
+        .info-card {
+            position: sticky;
+            top: 88px;
+        }
+    </style>
+}
+
 @section Scripts {
-<script>
-(function() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
-    const fileSection = document.getElementById('fileSection');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const convertBtn = document.getElementById('convertBtn');
-    const loadingState = document.getElementById('loadingState');
-    const clearFile = document.getElementById('clearFile');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const fileCard = document.getElementById('fileCard');
+            const fileName = document.getElementById('fileName');
+            const fileMeta = document.getElementById('fileMeta');
+            const clearFile = document.getElementById('clearFile');
+            const convertBtn = document.getElementById('convertBtn');
+            const loading = document.getElementById('loading');
+            const errorAlert = document.getElementById('errorAlert');
 
-    let currentFile = null;
+            let currentFile = null;
 
-    uploadZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => {
-        if (e.target.files.length > 0) {
-            setFile(e.target.files[0]);
-        }
-    });
+            function isExcel(name) {
+                const lower = (name || '').toLowerCase();
+                return lower.endsWith('.xls') || lower.endsWith('.xlsx');
+            }
 
-    uploadZone.addEventListener('dragover', e => {
-        e.preventDefault();
-        uploadZone.classList.add('border-success');
-    });
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
+            }
 
-    uploadZone.addEventListener('dragleave', () => {
-        uploadZone.classList.remove('border-success');
-    });
+            function formatBytes(bytes) {
+                if (!bytes) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let value = bytes;
+                let i = 0;
+                while (value >= 1024 && i < units.length - 1) {
+                    value /= 1024;
+                    i++;
+                }
+                return `${value.toFixed(value >= 100 ? 0 : 2)} ${units[i]}`;
+            }
 
-    uploadZone.addEventListener('drop', e => {
-        e.preventDefault();
-        uploadZone.classList.remove('border-success');
-        if (e.dataTransfer.files.length > 0) {
-            setFile(e.dataTransfer.files[0]);
-        }
-    });
+            function showError(message) {
+                errorAlert.textContent = message;
+                errorAlert.classList.remove('d-none');
+            }
 
-    clearFile.addEventListener('click', () => {
-        currentFile = null;
-        fileSection.classList.add('d-none');
-        uploadZone.classList.remove('d-none');
-        fileInput.value = '';
-    });
+            function hideError() {
+                errorAlert.classList.add('d-none');
+                errorAlert.textContent = '';
+            }
 
-    function setFile(file) {
-        const fileName = (file.name || '').toLowerCase();
-        if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
-            alert('Please select an Excel file (.xls or .xlsx).');
-            return;
-        }
+            function reset() {
+                currentFile = null;
+                fileInput.value = '';
+                fileCard.classList.add('d-none');
+                uploadZone.classList.remove('d-none');
+                loading.classList.add('d-none');
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '<i class="fas fa-file-pdf me-2"></i>Convert to PDF';
+                hideError();
+            }
 
-        currentFile = file;
-        fileNameDisplay.textContent = file.name;
-        uploadZone.classList.add('d-none');
-        fileSection.classList.remove('d-none');
-    }
+            function setFile(file) {
+                hideError();
+                if (!file || !isExcel(file.name)) {
+                    showError('Please select an Excel file (.xls or .xlsx).');
+                    return;
+                }
+                currentFile = file;
+                fileName.textContent = file.name;
+                fileMeta.textContent = `Size: ${formatBytes(file.size)}`;
+                uploadZone.classList.add('d-none');
+                fileCard.classList.remove('d-none');
+            }
 
-    convertBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
+            function postWithXhr(url, formData) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, true);
+                    xhr.withCredentials = true;
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) return;
+                        resolve({
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            text: xhr.responseText || ''
+                        });
+                    };
+                    xhr.onerror = function () {
+                        reject(new Error('Network transport failed (XHR).'));
+                    };
+                    xhr.send(formData);
+                });
+            }
 
-        convertBtn.disabled = true;
-        loadingState.classList.remove('d-none');
-
-        try {
-            const formData = new FormData();
-            formData.append('file', currentFile);
-
-            const response = await fetch('/Pdf/ConvertFromExcel', {
-                method: 'POST',
-                body: formData
+            selectFileBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
             });
 
-            const result = await response.json();
-            if (result.success && result.downloadUrl) {
-                window.location.href = result.downloadUrl;
-            } else {
-                alert(result.message || 'Conversion failed.');
-            }
-        } catch (err) {
-            alert('Conversion failed: ' + (err.message || 'Unknown error'));
-        } finally {
-            loadingState.classList.add('d-none');
-            convertBtn.disabled = false;
-        }
-    });
-})();
-</script>
+            uploadZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function (e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    setFile(e.target.files[0]);
+                }
+            });
+
+            uploadZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', function () {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const file = e.dataTransfer?.files?.[0];
+                if (file) setFile(file);
+            });
+
+            clearFile.addEventListener('click', reset);
+
+            convertBtn.addEventListener('click', async function () {
+                if (!currentFile) return;
+
+                hideError();
+                convertBtn.disabled = true;
+                convertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Converting...';
+                loading.classList.remove('d-none');
+
+                try {
+                    const fd = new FormData();
+                    fd.append('file', currentFile);
+
+                    let res;
+                    try {
+                        const fetchRes = await fetch('/Pdf/ConvertFromExcel', { method: 'POST', body: fd });
+                        res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                    } catch {
+                        res = await postWithXhr('/Pdf/ConvertFromExcel', fd);
+                    }
+
+                    const result = parseJsonSafe(res.text);
+                    if (result.success && result.downloadUrl) {
+                        window.location.href = result.downloadUrl;
+                    } else {
+                        const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                        showError(result.message || `Conversion failed${statusText}.`);
+                    }
+                } catch (err) {
+                    showError('Error while converting Excel to PDF: ' + (err.message || 'Unknown error'));
+                } finally {
+                    loading.classList.add('d-none');
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = '<i class="fas fa-file-pdf me-2"></i>Convert to PDF';
+                }
+            });
+        });
+    </script>
 }

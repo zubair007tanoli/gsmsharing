@@ -2,106 +2,281 @@
     ViewData["Title"] = "PDF to Excel - Convert PDF to Excel";
 }
 
-<style>
-    .tool-page { padding: 2rem 0; }
-    .tool-header { text-align: center; margin-bottom: 2rem; }
-    .tool-title { font-size: 2rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem; }
-    .tool-description { color: var(--text-light); font-size: 1.1rem; }
-    .upload-zone { border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff; transition: all 0.3s ease; cursor: pointer; margin-bottom: 2rem; }
-    .upload-zone:hover { border-color: #217346; background: rgba(33, 115, 70, 0.02); }
-    .upload-icon { font-size: 4rem; color: #217346; margin-bottom: 1rem; }
-    .action-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-    .btn-tool { padding: 1rem 2rem; border-radius: 12px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; }
-    .btn-primary { background: linear-gradient(135deg, #217346 0%, #185c37 100%); color: #fff; }
-    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(33, 115, 70, 0.3); }
-    .btn-secondary { background: #fff; color: var(--text-dark); border: 2px solid #e0e0e0; }
-</style>
-
-<div class="tool-page">
+<div class="tool-page py-5">
     <div class="container">
-        <div class="tool-header">
-            <h1 class="tool-title">PDF to Excel</h1>
-            <p class="tool-description">Convert your PDF files to editable Excel spreadsheets</p>
+        <div class="tool-header text-center mb-4">
+            <h1 class="tool-title fw-bold">PDF to Excel</h1>
+            <p class="tool-description text-muted">Convert PDF tables and text to structured, editable Excel sheets</p>
         </div>
-        <div class="upload-zone" id="uploadZone" style="position: relative;">
-            <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-            <p class="upload-text">Drag & drop your PDF file here</p>
-            <p class="upload-hint">or click to browse</p>
-            <input type="file" id="fileInput" accept=".pdf" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;">
+
+        <input type="file" id="fileInput" accept=".pdf" style="display: none;" />
+
+        <div id="uploadZone" class="upload-zone border border-3 border-dashed rounded-4 p-5 text-center bg-white">
+            <i class="fas fa-file-excel fa-4x text-success mb-3"></i>
+            <p class="mb-1">Drag & drop your PDF here</p>
+            <p class="small text-muted mb-3">or</p>
+            <button type="button" class="btn btn-outline-success" id="selectFileBtn">
+                <i class="fas fa-folder-open me-2"></i>Select PDF
+            </button>
         </div>
-        <div class="action-buttons">
-            <button type="button" class="btn-tool btn-primary" id="convertBtn" disabled>
-                <i class="fas fa-exchange-alt"></i> Convert to Excel
-            </button>
-            <button type="button" class="btn-tool btn-secondary" id="clearBtn">
-                <i class="fas fa-trash-alt"></i> Clear
-            </button>
+
+        <div id="fileSection" class="d-none mt-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <div class="fw-bold" id="fileNameDisplay">-</div>
+                            <div class="small text-muted" id="fileMetaDisplay">-</div>
+                            <div class="small text-muted" id="filePdfInfo">Analyzing PDF...</div>
+                        </div>
+                        <button type="button" class="btn-close" id="clearFile" aria-label="Clear"></button>
+                    </div>
+
+                    <hr />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Extraction Mode</label>
+                            <select id="extractionMode" class="form-select">
+                                <option value="exact" selected>Exact Visual Copy (Recommended)</option>
+                                <option value="accurate">Accurate Editable</option>
+                                <option value="balanced">Balanced</option>
+                                <option value="fast">Fast (Legacy fallback allowed)</option>
+                            </select>
+                            <small class="text-muted">Exact mode preserves colors/fonts/layout by embedding page visuals; includes hidden searchable text index.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Enhancements</label>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="aiEnhance" checked />
+                                <label class="form-check-label" for="aiEnhance">
+                                    Enable layout intelligence for better table/column detection
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="button" class="btn btn-success btn-lg" id="convertBtn">
+                            <i class="fas fa-exchange-alt me-2"></i>Convert to Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingState" class="d-none text-center mt-4">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 mb-0" id="loadingText">Converting PDF to structured Excel...</p>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .upload-zone {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: #198754 !important;
+            background: #f7fff9 !important;
+        }
+
+        .upload-zone.dragover {
+            border-color: #198754 !important;
+            background: #ecfff2 !important;
+        }
+    </style>
+}
+
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const uploadZone = document.getElementById('uploadZone');
+        document.addEventListener('DOMContentLoaded', function () {
             const fileInput = document.getElementById('fileInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const fileSection = document.getElementById('fileSection');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const fileMetaDisplay = document.getElementById('fileMetaDisplay');
+            const filePdfInfo = document.getElementById('filePdfInfo');
+            const clearFile = document.getElementById('clearFile');
+            const extractionMode = document.getElementById('extractionMode');
+            const aiEnhance = document.getElementById('aiEnhance');
             const convertBtn = document.getElementById('convertBtn');
-            const clearBtn = document.getElementById('clearBtn');
+            const loadingState = document.getElementById('loadingState');
+            const loadingText = document.getElementById('loadingText');
+
             let currentFile = null;
 
-            uploadZone.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    currentFile = e.target.files[0];
-                    if (!currentFile.name.toLowerCase().endsWith('.pdf')) { alert('Please select a PDF file.'); return; }
-                    convertBtn.disabled = false;
+            function formatBytes(bytes) {
+                if (!bytes) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let value = bytes;
+                let i = 0;
+                while (value >= 1024 && i < units.length - 1) {
+                    value /= 1024;
+                    i++;
                 }
-            });
+                return `${value.toFixed(value >= 100 ? 0 : 2)} ${units[i]}`;
+            }
 
-            uploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadZone.style.borderColor = '#217346';
-                uploadZone.style.background = 'rgba(33, 115, 70, 0.08)';
-            });
+            function resetSelection() {
+                currentFile = null;
+                fileInput.value = '';
+                fileSection.classList.add('d-none');
+                uploadZone.classList.remove('d-none');
+                loadingState.classList.add('d-none');
+                fileNameDisplay.textContent = '-';
+                fileMetaDisplay.textContent = '-';
+                filePdfInfo.textContent = '-';
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '<i class="fas fa-exchange-alt me-2"></i>Convert to Excel';
+            }
 
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.style.borderColor = '#d0d0d0';
-                uploadZone.style.background = '#fff';
-            });
-
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadZone.style.borderColor = '#d0d0d0';
-                uploadZone.style.background = '#fff';
-
-                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    const droppedFile = e.dataTransfer.files[0];
-                    if (!droppedFile.name.toLowerCase().endsWith('.pdf')) {
-                        alert('Please drop a PDF file.');
-                        return;
+            async function analyzePdf(file) {
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const response = await fetch('/Pdf/GetPdfInfo', { method: 'POST', body: fd });
+                    const text = await response.text();
+                    let result = {};
+                    if (text && text.trim()) {
+                        result = JSON.parse(text);
                     }
-                    fileInput.files = e.dataTransfer.files;
-                    currentFile = droppedFile;
-                    convertBtn.disabled = false;
+
+                    if (result.success) {
+                        filePdfInfo.textContent = `${result.pageCount || '-'} page(s), ${(result.formattedSize || formatBytes(file.size))}`;
+                    } else {
+                        filePdfInfo.textContent = 'Could not analyze PDF details.';
+                    }
+                } catch {
+                    filePdfInfo.textContent = 'Could not analyze PDF details.';
+                }
+            }
+
+            async function setFile(file) {
+                const name = (file?.name || '').toLowerCase();
+                if (!name.endsWith('.pdf')) {
+                    alert('Please select a PDF file.');
+                    return;
+                }
+                const maxBytes = 145 * 1024 * 1024; // keep under server 150MB request cap
+                if (file.size > maxBytes) {
+                    alert('Selected PDF is too large for online conversion (max 145MB).');
+                    return;
+                }
+
+                currentFile = file;
+                fileNameDisplay.textContent = file.name;
+                fileMetaDisplay.textContent = `Size: ${formatBytes(file.size)}`;
+                filePdfInfo.textContent = 'Analyzing PDF...';
+                uploadZone.classList.add('d-none');
+                fileSection.classList.remove('d-none');
+                await analyzePdf(file);
+            }
+
+            selectFileBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            uploadZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async function (e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    await setFile(e.target.files[0]);
                 }
             });
 
-            clearBtn.addEventListener('click', () => { convertBtn.disabled = true; fileInput.value = ''; currentFile = null; });
+            uploadZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
 
-            convertBtn.addEventListener('click', async () => {
+            uploadZone.addEventListener('dragleave', function () {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', async function (e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const dropped = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+                if (dropped) {
+                    await setFile(dropped);
+                }
+            });
+
+            clearFile.addEventListener('click', resetSelection);
+
+            function parseJsonSafe(text) {
+                if (!text || !text.trim()) return {};
+                try { return JSON.parse(text); } catch { return {}; }
+            }
+
+            function postWithXhr(url, formData) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, true);
+                    xhr.withCredentials = true;
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) return;
+                        resolve({
+                            ok: xhr.status >= 200 && xhr.status < 300,
+                            status: xhr.status,
+                            text: xhr.responseText || ''
+                        });
+                    };
+                    xhr.onerror = function () {
+                        reject(new Error('Network transport failed (XHR).'));
+                    };
+                    xhr.send(formData);
+                });
+            }
+
+            convertBtn.addEventListener('click', async function () {
                 if (!currentFile) return;
+
                 convertBtn.disabled = true;
+                convertBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Converting...';
+                loadingText.textContent = 'Converting PDF to structured Excel...';
+                loadingState.classList.remove('d-none');
+
                 try {
                     const fd = new FormData();
                     fd.append('file', currentFile);
-                    const res = await fetch('/Pdf/ConvertToExcel', { method: 'POST', body: fd });
-                    const result = await res.json();
+                    fd.append('extractionMode', extractionMode.value);
+                    fd.append('aiEnhance', aiEnhance.checked);
+
+                    let res;
+                    try {
+                        const fetchRes = await fetch('/Pdf/ConvertToExcel', { method: 'POST', body: fd });
+                        res = { ok: fetchRes.ok, status: fetchRes.status, text: await fetchRes.text() };
+                    } catch (fetchErr) {
+                        // Fallback path for browsers/environments where fetch transport intermittently fails.
+                        res = await postWithXhr('/Pdf/ConvertToExcel', fd);
+                    }
+
+                    const result = parseJsonSafe(res.text);
+
+                    if (result.success && result.downloadUrl) {
+                        window.location.href = result.downloadUrl;
+                    } else {
+                        const statusText = !res.ok ? ` (HTTP ${res.status})` : '';
+                        alert(result.message || `Conversion failed${statusText}.`);
+                    }
+                } catch (err) {
+                    const details = `online=${navigator.onLine}, origin=${window.location.origin}`;
+                    alert('Error: ' + (err.message || 'Unknown error') + ` [${details}]`);
+                } finally {
+                    loadingState.classList.add('d-none');
                     convertBtn.disabled = false;
-                    if (result.success && result.downloadUrl) { window.location.href = result.downloadUrl; }
-                    else { alert(result.message || 'Conversion failed'); }
-                } catch (e) {
-                    convertBtn.disabled = false;
-                    alert('Error: ' + e.message);
+                    convertBtn.innerHTML = '<i class="fas fa-exchange-alt me-2"></i>Convert to Excel';
                 }
             });
         });
