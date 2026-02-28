@@ -7,9 +7,51 @@
             <h1 class="tool-title" style="font-size: 2rem; font-weight: 700; color: var(--text-dark);">Convert to BMP</h1>
             <p class="tool-description" style="color: var(--text-light);">Convert your images to BMP format</p>
         </div>
-        <div class="upload-zone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff;">
+        <div class="upload-zone" id="uploadZone" style="border: 3px dashed #d0d0d0; border-radius: 20px; padding: 3rem; text-align: center; background: #fff; position: relative; cursor: pointer; transition: all 0.2s ease;">
             <i class="fas fa-cloud-upload-alt" style="font-size: 4rem; color: #667eea; margin-bottom: 1rem;"></i>
             <p>Drag & drop your image here</p>
+            <p id="selectedFile" style="margin-top: 0.5rem; color: #6c757d; font-size: 0.95rem;">No file selected</p>
+            <input type="file" id="fileInput" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFile = document.getElementById('selectedFile');
+
+    function setFile(file) {
+        if (!file) return;
+        selectedFile.textContent = file.name;
+    }
+
+    fileInput.addEventListener('change', function (e) {
+        if (e.target.files && e.target.files.length > 0) setFile(e.target.files[0]);
+    });
+
+    uploadZone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        uploadZone.style.borderColor = '#667eea';
+        uploadZone.style.background = '#f8f9ff';
+    });
+
+    uploadZone.addEventListener('dragleave', function () {
+        uploadZone.style.borderColor = '#d0d0d0';
+        uploadZone.style.background = '#fff';
+    });
+
+    uploadZone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        uploadZone.style.borderColor = '#d0d0d0';
+        uploadZone.style.background = '#fff';
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            setFile(e.dataTransfer.files[0]);
+        }
+    });
+});
+</script>
+}

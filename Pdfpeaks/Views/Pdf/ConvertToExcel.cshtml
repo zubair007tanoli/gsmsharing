@@ -57,6 +57,35 @@
                     convertBtn.disabled = false;
                 }
             });
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = '#217346';
+                uploadZone.style.background = 'rgba(33, 115, 70, 0.08)';
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.style.borderColor = '#d0d0d0';
+                uploadZone.style.background = '#fff';
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = '#d0d0d0';
+                uploadZone.style.background = '#fff';
+
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const droppedFile = e.dataTransfer.files[0];
+                    if (!droppedFile.name.toLowerCase().endsWith('.pdf')) {
+                        alert('Please drop a PDF file.');
+                        return;
+                    }
+                    fileInput.files = e.dataTransfer.files;
+                    currentFile = droppedFile;
+                    convertBtn.disabled = false;
+                }
+            });
+
             clearBtn.addEventListener('click', () => { convertBtn.disabled = true; fileInput.value = ''; currentFile = null; });
 
             convertBtn.addEventListener('click', async () => {

@@ -4,6 +4,7 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Tiff;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
@@ -66,7 +67,9 @@ public class ImageProcessingService
             var options = new ResizeOptions
             {
                 Mode = resizeMode,
-                Size = new Size(width, height)
+                Size = new Size(width, height),
+                Sampler = KnownResamplers.Lanczos3,
+                Compand = true
             };
             
             image.Mutate(ctx => ctx.Resize(options));
@@ -214,7 +217,7 @@ public class ImageProcessingService
     /// Convert image to different format
     /// </summary>
     public async Task<(bool success, string outputPath, string message)> ConvertImageFormatAsync(
-        string inputPath, string outputFileName, string targetFormat)
+        string inputPath, string outputFileName, string targetFormat, int quality = 90)
     {
         try
         {
@@ -224,14 +227,16 @@ public class ImageProcessingService
             }
 
             using var image = await Image.LoadAsync(inputPath);
+            quality = Math.Clamp(quality, 1, 100);
             
             IImageEncoder encoder = targetFormat.ToLower() switch
             {
                 "png" => new PngEncoder(),
-                "jpg" or "jpeg" => new JpegEncoder(),
+                "jpg" or "jpeg" => new JpegEncoder { Quality = quality },
                 "bmp" => new BmpEncoder(),
                 "gif" => new GifEncoder(),
-                "webp" => new WebpEncoder(),
+                "webp" => new WebpEncoder { Quality = quality },
+                "tif" or "tiff" => new TiffEncoder(),
                 _ => new PngEncoder()
             };
             
@@ -336,10 +341,15 @@ public class ImageProcessingService
             var originalSize = new FileInfo(inputPath).Length;
             
             using var image = await Image.LoadAsync(inputPath);
-            
-            var encoder = new JpegEncoder
+            quality = Math.Clamp(quality, 1, 100);
+
+            var inputExt = Path.GetExtension(inputPath).ToLowerInvariant();
+            IImageEncoder encoder = inputExt switch
             {
-                Quality = quality
+                ".jpg" or ".jpeg" => new JpegEncoder { Quality = quality },
+                ".webp" => new WebpEncoder { Quality = quality },
+                ".png" => new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression },
+                _ => new JpegEncoder { Quality = quality }
             };
             
             var outputPath = Path.Combine(_tempFilePath, outputFileName);
@@ -656,7 +666,7 @@ public class ImageProcessingService
 
     public async Task<ProcessResult> ConvertFormatAsync(string inputPath, string outputFileName, string targetFormat)
     {
-        var (success, path, message) = await ConvertImageFormatAsync(inputPath, outputFileName, targetFormat);
+        var (success, path, message) = await ConvertImageFormatAsync(inputPath, outputFileName, targetFormat, 90);
         return new ProcessResult(success, path, message);
     }
 
@@ -710,7 +720,15 @@ public class ImageProcessingService
 
     public async Task<ProcessResult> ImageToPdfAsync(string inputPath, string outputFileName, PdfPageSize pageSize)
     {
-        var (success, path, message) = await ConvertToPdfAsync(inputPath, outputFileName);
+        var paperSize = pageSize switch
+        {
+            PdfPageSize.A3 => "a3",
+            PdfPageSize.A4 => "a4",
+            PdfPageSize.Letter => "letter",
+            PdfPageSize.Legal => "legal",
+            _ => "auto"
+        };
+        var (success, path, message) = await ConvertToPdfAsync(inputPath, outputFileName, paperSize);
         return new ProcessResult(success, path, message);
     }
 

@@ -8,6 +8,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Drawing;
 using UglyToad.PdfPig;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using QuestPDF.Fluent;
@@ -316,7 +317,7 @@ public class PdfProcessingService
     /// <summary>
     /// Extract text from a table
     /// </summary>
-    private string ExtractTableText(Table table)
+    private string ExtractTableText(DocumentFormat.OpenXml.Wordprocessing.Table table)
     {
         var sb = new StringBuilder();
 
@@ -1618,21 +1619,44 @@ public class PdfProcessingService
         var outputPath = Path.Combine(_tempFilePath, outputFileName);
         if (!File.Exists(inputFile))
             return (false, "", "Input file not found.");
+
         var contentRoot = Path.GetDirectoryName(_tempFilePath) ?? _tempFilePath;
         var scriptPath = Path.Combine(contentRoot, "scripts", "pdf_to_excel.py");
         if (!File.Exists(scriptPath) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             scriptPath = Path.Combine("/var/www/pdfpeaks", "scripts", "pdf_to_excel.py");
-        if (!File.Exists(scriptPath))
-            return (false, "", "Conversion script not found. Ensure scripts/pdf_to_excel.py exists. Install: pip install pdfplumber openpyxl");
-        var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_excel.py", $"\"{inputFile}\" \"{outputPath}\"");
-        var output = (stdout + "\n" + stderr).Trim();
-        if (exitCode != 0 || !File.Exists(outputPath))
+
+        if (File.Exists(scriptPath))
         {
-            var err = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : stdout.Trim());
-            return (false, "", string.IsNullOrWhiteSpace(err) ? "PDF to Excel conversion failed." : err);
+            try
+            {
+                var (exitCode, stdout, stderr) = await RunPythonScriptAsync("pdf_to_excel.py", $"\"{inputFile}\" \"{outputPath}\"");
+                var output = (stdout + "\n" + stderr).Trim();
+
+                if (exitCode == 0 && File.Exists(outputPath))
+                {
+                    _logger.LogInformation("PDF converted to Excel using Python script: {Input} -> {Output}", inputFile, outputPath);
+                    return (true, outputPath, "Processed");
+                }
+
+                _logger.LogWarning("Python PDF to Excel conversion failed (exit={ExitCode}). Falling back to OpenXml. stderr={Stderr}",
+                    exitCode, stderr);
+                var err = output.Contains("ERROR:") ? output.Replace("ERROR:", "").Trim() : (stderr.Trim().Length > 0 ? stderr.Trim() : stdout.Trim());
+                if (!string.IsNullOrWhiteSpace(err))
+                {
+                    _logger.LogInformation("Python conversion failure details: {Error}", err);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Python PDF to Excel conversion threw exception. Falling back to OpenXml.");
+            }
         }
-        _logger.LogInformation("PDF converted to Excel: {Input} -> {Output}", inputFile, outputPath);
-        return (true, outputPath, "Processed");
+        else
+        {
+            _logger.LogWarning("pdf_to_excel.py script not found. Falling back to OpenXml conversion.");
+        }
+
+        return await ConvertPdfToExcelFallbackAsync(inputFile, outputPath);
     }
 
     /// <summary>
@@ -1655,23 +1679,267 @@ public class PdfProcessingService
                 return (false, outputPath, $"Unsupported file format: {extension}. Only .xls and .xlsx files are supported.");
             }
 
-            // Try using LibreOffice via Python script (preserves formatting)
-            var (exitCode, stdout, stderr) = await RunPythonScriptAsync("excel_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
-
-            if (exitCode == 0 && File.Exists(outputPath))
+            // Try using LibreOffice via Python script first (best formatting preservation).
+            try
             {
-                _logger.LogInformation("Excel to PDF conversion successful: {OutputPath}", outputPath);
-                return (true, outputPath, "Excel document converted to PDF successfully (formatting preserved).");
+                var (exitCode, stdout, stderr) = await RunPythonScriptAsync("excel_to_pdf.py", $"\"{inputPath}\" \"{outputPath}\"");
+
+                if (exitCode == 0 && File.Exists(outputPath))
+                {
+                    _logger.LogInformation("Excel to PDF conversion successful (LibreOffice): {OutputPath}", outputPath);
+                    return (true, outputPath, "Excel document converted to PDF successfully (formatting preserved).");
+                }
+
+                _logger.LogWarning("Excel to PDF conversion via LibreOffice failed (exitCode={ExitCode}). Falling back to OpenXml + QuestPDF. stderr={Error}",
+                    exitCode, stderr);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Excel to PDF conversion via LibreOffice failed with exception. Falling back to OpenXml + QuestPDF.");
             }
 
-            _logger.LogError("Excel to PDF conversion failed (exitCode={ExitCode}): {Error}", exitCode, stderr);
-            return (false, outputPath, $"Conversion failed: {stderr}");
+            // Fallback for .xlsx only (legacy .xls needs LibreOffice).
+            if (extension == ".xlsx")
+            {
+                return await ConvertXlsxToPdfFallbackAsync(inputPath, outputPath);
+            }
+
+            return (false, outputPath,
+                "Conversion failed for .xls. Please install LibreOffice on the server for legacy Excel support.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Excel to PDF conversion failed for {InputPath}", inputPath);
             return (false, outputPath, $"Conversion failed: {ex.Message}");
         }
+    }
+
+    private async Task<(bool success, string outputPath, string message)> ConvertPdfToExcelFallbackAsync(
+        string inputPath, string outputPath)
+    {
+        try
+        {
+            var outDir = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrWhiteSpace(outDir) && !Directory.Exists(outDir))
+            {
+                Directory.CreateDirectory(outDir);
+            }
+
+            await Task.Run(() =>
+            {
+                using var spreadsheet = DocumentFormat.OpenXml.Packaging.SpreadsheetDocument.Create(
+                    outputPath, DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook);
+                var workbookPart = spreadsheet.AddWorkbookPart();
+                workbookPart.Workbook = new DocumentFormat.OpenXml.Spreadsheet.Workbook();
+
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                var sheetData = new DocumentFormat.OpenXml.Spreadsheet.SheetData();
+                worksheetPart.Worksheet = new DocumentFormat.OpenXml.Spreadsheet.Worksheet(sheetData);
+
+                var sheets = workbookPart.Workbook.AppendChild(new DocumentFormat.OpenXml.Spreadsheet.Sheets());
+                var sheet = new DocumentFormat.OpenXml.Spreadsheet.Sheet
+                {
+                    Id = workbookPart.GetIdOfPart(worksheetPart),
+                    SheetId = 1,
+                    Name = "PDF Content"
+                };
+                sheets.Append(sheet);
+
+                uint rowIndex = 1;
+
+                using var pdfDocument = UglyToad.PdfPig.PdfDocument.Open(inputPath);
+                foreach (var page in pdfDocument.GetPages())
+                {
+                    AppendSingleCellRow(sheetData, rowIndex++, $"Page {page.Number}");
+
+                    var pageText = page.Text ?? string.Empty;
+                    var lines = pageText.Split('\n', StringSplitOptions.None);
+
+                    if (lines.Length == 0 || lines.All(string.IsNullOrWhiteSpace))
+                    {
+                        AppendSingleCellRow(sheetData, rowIndex++, "[No extractable text found on this page]");
+                    }
+                    else
+                    {
+                        foreach (var line in lines)
+                        {
+                            if (!string.IsNullOrWhiteSpace(line))
+                            {
+                                AppendSingleCellRow(sheetData, rowIndex++, line.TrimEnd());
+                            }
+                        }
+                    }
+
+                    rowIndex++;
+                }
+
+                workbookPart.Workbook.Save();
+            });
+
+            if (File.Exists(outputPath))
+            {
+                _logger.LogInformation("PDF converted to Excel using OpenXml fallback: {Input} -> {Output}", inputPath, outputPath);
+                return (true, outputPath,
+                    "Successfully converted PDF to Excel (text extraction mode). For table-aware output, install Python packages: pdfplumber openpyxl.");
+            }
+
+            return (false, outputPath, "Failed to create Excel file.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fallback PDF to Excel conversion failed for {Input}", inputPath);
+            return (false, outputPath, $"PDF to Excel fallback conversion failed: {ex.Message}");
+        }
+    }
+
+    private async Task<(bool success, string outputPath, string message)> ConvertXlsxToPdfFallbackAsync(
+        string inputPath, string outputPath)
+    {
+        try
+        {
+            var rows = await ExtractRowsFromXlsxAsync(inputPath);
+            if (rows.Count == 0)
+            {
+                return (false, outputPath, "No readable content found in the Excel file.");
+            }
+
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            var fontFamilies = new[] { "Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "Noto Sans", "sans-serif" };
+
+            var document = QuestPDFDocument.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(1.2f, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily(fontFamilies));
+
+                    page.Content().Column(column =>
+                    {
+                        foreach (var row in rows)
+                        {
+                            var line = string.Join(" | ", row);
+                            if (string.IsNullOrWhiteSpace(line))
+                            {
+                                column.Item().PaddingVertical(1);
+                            }
+                            else
+                            {
+                                column.Item().Text(line).FontFamily(fontFamilies);
+                            }
+                        }
+                    });
+                });
+            });
+
+            document.GeneratePdf(outputPath);
+
+            if (File.Exists(outputPath))
+            {
+                _logger.LogInformation("Excel to PDF converted using OpenXml + QuestPDF fallback: {Input} -> {Output}", inputPath, outputPath);
+                return (true, outputPath,
+                    "Excel converted to PDF successfully (text-layout mode). For full formatting fidelity, install LibreOffice.");
+            }
+
+            return (false, outputPath, "Fallback conversion failed to generate output PDF.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fallback Excel to PDF conversion failed for {InputPath}", inputPath);
+            return (false, outputPath, $"Fallback conversion failed: {ex.Message}");
+        }
+    }
+
+    private async Task<List<List<string>>> ExtractRowsFromXlsxAsync(string inputPath)
+    {
+        return await Task.Run(() =>
+        {
+            var rows = new List<List<string>>();
+
+            using var spreadsheet = SpreadsheetDocument.Open(inputPath, false);
+            var workbookPart = spreadsheet.WorkbookPart;
+            if (workbookPart?.Workbook?.Sheets == null)
+            {
+                return rows;
+            }
+
+            var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable;
+
+            foreach (var sheet in workbookPart.Workbook.Sheets.OfType<DocumentFormat.OpenXml.Spreadsheet.Sheet>())
+            {
+                if (sheet.Id == null || string.IsNullOrWhiteSpace(sheet.Id.Value))
+                    continue;
+
+                rows.Add(new List<string> { $"[{sheet.Name?.Value ?? "Sheet"}]" });
+
+                var worksheetPart = (WorksheetPart?)workbookPart.GetPartById(sheet.Id.Value!);
+                var sheetData = worksheetPart?.Worksheet?.Elements<DocumentFormat.OpenXml.Spreadsheet.SheetData>().FirstOrDefault();
+                if (sheetData == null)
+                {
+                    rows.Add(new List<string>());
+                    continue;
+                }
+
+                foreach (var row in sheetData.Elements<DocumentFormat.OpenXml.Spreadsheet.Row>())
+                {
+                    var values = row.Elements<DocumentFormat.OpenXml.Spreadsheet.Cell>()
+                        .Select(c => GetCellValue(c, sharedStrings))
+                        .ToList();
+
+                    if (values.Count > 0)
+                    {
+                        rows.Add(values);
+                    }
+                }
+
+                rows.Add(new List<string>());
+            }
+
+            return rows;
+        });
+    }
+
+    private static string GetCellValue(
+        DocumentFormat.OpenXml.Spreadsheet.Cell cell,
+        DocumentFormat.OpenXml.Spreadsheet.SharedStringTable? sharedStrings)
+    {
+        if (cell.CellValue == null)
+        {
+            return cell.InnerText ?? string.Empty;
+        }
+
+        var value = cell.CellValue.InnerText ?? string.Empty;
+
+        if (cell.DataType?.Value == DocumentFormat.OpenXml.Spreadsheet.CellValues.SharedString &&
+            int.TryParse(value, out var sharedIndex) &&
+            sharedStrings != null &&
+            sharedIndex >= 0 &&
+            sharedIndex < sharedStrings.Count())
+        {
+            return sharedStrings.ElementAt(sharedIndex).InnerText ?? string.Empty;
+        }
+
+        return value;
+    }
+
+    private static void AppendSingleCellRow(DocumentFormat.OpenXml.Spreadsheet.SheetData sheetData, uint rowIndex, string value)
+    {
+        var cellReference = $"A{rowIndex}";
+        var row = new DocumentFormat.OpenXml.Spreadsheet.Row { RowIndex = rowIndex };
+        row.Append(new DocumentFormat.OpenXml.Spreadsheet.Cell
+        {
+            CellReference = cellReference,
+            DataType = DocumentFormat.OpenXml.Spreadsheet.CellValues.InlineString,
+            InlineString = new DocumentFormat.OpenXml.Spreadsheet.InlineString(
+                new DocumentFormat.OpenXml.Spreadsheet.Text(value ?? string.Empty)
+                {
+                    Space = SpaceProcessingModeValues.Preserve
+                })
+        });
+
+        sheetData.Append(row);
     }
 
     /// <summary>

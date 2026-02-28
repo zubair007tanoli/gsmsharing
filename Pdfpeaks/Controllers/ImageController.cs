@@ -10,6 +10,7 @@ namespace Pdfpeaks.Controllers;
 /// <summary>
 /// Controller for Image processing operations
 /// </summary>
+[IgnoreAntiforgeryToken]
 public class ImageController : Controller
 {
     private readonly ILogger<ImageController> _logger;
@@ -240,7 +241,7 @@ public class ImageController : Controller
             var outputFileName = Path.ChangeExtension(fileName, $".{targetFormat}");
 
             var (success, outputPath, resultMessage) = await _imageProcessingService.ConvertImageFormatAsync(
-                filePath, outputFileName, targetFormat);
+                filePath, outputFileName, targetFormat, quality);
 
             return Json(new { 
                 success, 
@@ -411,6 +412,8 @@ public class ImageController : Controller
                 success, 
                 message = resultMessage,
                 compressionRatio,
+                originalSize,
+                compressedSize,
                 downloadUrl = success ? $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
                 fileName = outputFileName
             });
@@ -433,26 +436,80 @@ public class ImageController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ToPdf(IFormFile file, string paperSize = "auto")
+    public async Task<IActionResult> ToPdf(
+        [FromForm] IFormFile? file,
+        [FromForm] IFormFile[]? files,
+        [FromForm] string paperSize = "auto",
+        [FromForm] bool enhanceForReadability = true,
+        [FromForm] bool blackAndWhite = false)
     {
-        if (file == null || file.Length == 0)
+        var allFiles = (files ?? Array.Empty<IFormFile>())
+            .Where(f => f != null && f.Length > 0)
+            .ToList();
+
+        if ((file != null && file.Length > 0) && allFiles.Count == 0)
+        {
+            allFiles.Add(file);
+        }
+
+        if (allFiles.Count == 0)
         {
             return Json(new { success = false, message = "No file uploaded." });
         }
 
         try
         {
-            var fileName = await _fileProcessingService.SaveUploadedFileAsync(file, "img2pdf");
-            var filePath = _fileProcessingService.GetFilePath(fileName);
-            var outputFileName = _fileProcessingService.GenerateFileName("image.pdf", "img2pdf");
+            var preparedImagePaths = new List<string>();
+            foreach (var inputFile in allFiles)
+            {
+                var savedName = await _fileProcessingService.SaveUploadedFileAsync(inputFile, "img2pdf");
+                var savedPath = _fileProcessingService.GetFilePath(savedName);
+                var workingPath = savedPath;
 
-            var (success, outputPath, resultMessage) = await _imageProcessingService.ConvertToPdfAsync(
-                filePath, outputFileName, paperSize);
+                if (enhanceForReadability)
+                {
+                    var enhancedName = _fileProcessingService.GenerateFileName(inputFile.FileName, "scan");
+                    var (enhanceSuccess, enhancedPath, _) = await _imageProcessingService.EnhanceImageWithAIAsync(
+                        savedPath, enhancedName, "document");
+
+                    if (enhanceSuccess && System.IO.File.Exists(enhancedPath))
+                    {
+                        workingPath = enhancedPath;
+                    }
+                }
+
+                if (blackAndWhite)
+                {
+                    var bwName = _fileProcessingService.GenerateFileName(inputFile.FileName, "bw");
+                    var (bwSuccess, bwPath, _) = await _imageEnhancementService.BinarizeAsync(workingPath, bwName, 150);
+                    if (bwSuccess && System.IO.File.Exists(bwPath))
+                    {
+                        workingPath = bwPath;
+                    }
+                }
+
+                preparedImagePaths.Add(workingPath);
+            }
+
+            var outputFileName = _fileProcessingService.GenerateFileName(
+                allFiles.Count > 1 ? "scanned-bundle.pdf" : "image.pdf", "img2pdf");
+            var pageSize = paperSize?.ToLowerInvariant() switch
+            {
+                "a3" => PdfPageSize.A3,
+                "a4" => PdfPageSize.A4,
+                "letter" => PdfPageSize.Letter,
+                "legal" => PdfPageSize.Legal,
+                _ => PdfPageSize.Auto
+            };
+
+            var result = preparedImagePaths.Count > 1
+                ? await _imageProcessingService.ImagesToPdfAsync(preparedImagePaths.ToArray(), outputFileName, pageSize)
+                : await _imageProcessingService.ImageToPdfAsync(preparedImagePaths[0], outputFileName, pageSize);
 
             return Json(new { 
-                success, 
-                message = resultMessage,
-                downloadUrl = success ? $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
+                success = result.Success, 
+                message = result.Message,
+                downloadUrl = result.Success ? $"/Image/Download?fileName={Uri.EscapeDataString(outputFileName)}" : null,
                 fileName = outputFileName
             });
         }

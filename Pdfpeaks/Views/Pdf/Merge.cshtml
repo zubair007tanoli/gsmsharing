@@ -137,16 +137,63 @@
         background: #f8f9fa;
         border-radius: 8px;
         border: 1px solid #e9ecef;
+        transition: border-color 0.2s ease, background-color 0.2s ease;
     }
     
     .file-item:hover {
         background: #e9ecef;
+    }
+
+    .file-item[draggable="true"] {
+        cursor: grab;
+    }
+
+    .file-item.dragging {
+        opacity: 0.6;
+        background: #eef4ff;
+    }
+
+    .file-item.drag-over {
+        border-color: #0d6efd;
+        background: #eef4ff;
     }
     
     .file-item .drag-handle {
         cursor: grab;
         color: #adb5bd;
         font-size: 1.2rem;
+    }
+
+    .file-item .preview-box {
+        width: 70px;
+        height: 90px;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        background: #fff;
+        overflow: hidden;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .file-item .preview-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .file-item .preview-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0.25rem;
     }
     
     .file-item .file-icon {
@@ -202,10 +249,16 @@
 </style>
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            if (window.pdfjsLib) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+
             const fileInput = document.getElementById('fileInput');
             const uploadSection = document.getElementById('uploadSection');
+            const uploadDropZone = uploadSection.querySelector('.border-dashed');
             const fileListCard = document.getElementById('fileListCard');
             const progressSection = document.getElementById('progressSection');
             const downloadSection = document.getElementById('downloadSection');
@@ -220,11 +273,30 @@
             const successMessage = document.getElementById('successMessage');
             
             let selectedFiles = [];
+            let draggedFileId = null;
             
             // File input change handler
             fileInput.addEventListener('change', function(e) {
                 handleFiles(e.target.files);
                 fileInput.value = ''; // Reset to allow selecting same files
+            });
+
+            // Upload drop zone drag/drop handlers
+            uploadDropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadDropZone.classList.add('border-primary');
+            });
+
+            uploadDropZone.addEventListener('dragleave', function() {
+                uploadDropZone.classList.remove('border-primary');
+            });
+
+            uploadDropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadDropZone.classList.remove('border-primary');
+                if (e.dataTransfer && e.dataTransfer.files) {
+                    handleFiles(e.dataTransfer.files);
+                }
             });
             
             function handleFiles(files) {
@@ -233,12 +305,16 @@
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                        const fileId = Date.now() + Math.random();
                         selectedFiles.push({
-                            id: Date.now() + Math.random(),
+                            id: fileId,
                             file: file,
                             name: file.name,
-                            size: file.size
+                            size: file.size,
+                            previewDataUrl: null
                         });
+
+                        generatePdfPreview(file, fileId);
                     }
                 }
                 
@@ -280,12 +356,18 @@
                     const fileItem = document.createElement('div');
                     fileItem.className = 'file-item';
                     fileItem.dataset.id = fileData.id;
+                    fileItem.setAttribute('draggable', 'true');
                     
                     fileItem.innerHTML = `
                         <div class="drag-handle"><i class="bi bi-grip-vertical"></i></div>
-                        <div class="file-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+                        <div class="preview-box">
+                            ${fileData.previewDataUrl
+                                ? `<img src="${fileData.previewDataUrl}" alt="Preview of ${escapeHtml(fileData.name)}">`
+                                : '<div class="preview-placeholder"><i class="bi bi-file-earmark-pdf"></i></div>'
+                            }
+                        </div>
                         <div class="file-info">
-                            <div class="file-name">${fileData.name}</div>
+                            <div class="file-name">${escapeHtml(fileData.name)}</div>
                             <div class="file-meta">${formatSize(fileData.size)} - Position ${index + 1} of ${selectedFiles.length}</div>
                         </div>
                         <div class="file-actions">
@@ -298,9 +380,74 @@
                     fileItem.querySelector('.move-up').addEventListener('click', () => moveFile(fileData.id, -1));
                     fileItem.querySelector('.move-down').addEventListener('click', () => moveFile(fileData.id, 1));
                     fileItem.querySelector('.delete').addEventListener('click', () => removeFile(fileData.id));
-                    
+
+                    fileItem.addEventListener('dragstart', function(e) {
+                        draggedFileId = fileData.id;
+                        fileItem.classList.add('dragging');
+                        if (e.dataTransfer) {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', String(fileData.id));
+                        }
+                    });
+
+                    fileItem.addEventListener('dragend', function() {
+                        draggedFileId = null;
+                        fileItem.classList.remove('dragging');
+                        document.querySelectorAll('.file-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    });
+
+                    fileItem.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        if (draggedFileId !== fileData.id) {
+                            fileItem.classList.add('drag-over');
+                        }
+                    });
+
+                    fileItem.addEventListener('dragleave', function() {
+                        fileItem.classList.remove('drag-over');
+                    });
+
+                    fileItem.addEventListener('drop', function(e) {
+                        e.preventDefault();
+                        fileItem.classList.remove('drag-over');
+                        reorderByDrag(draggedFileId, fileData.id);
+                    });
+
                     fileList.appendChild(fileItem);
                 });
+            }
+
+            async function generatePdfPreview(file, fileId) {
+                if (!window.pdfjsLib) return;
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    const pdfDoc = await loadingTask.promise;
+                    const page = await pdfDoc.getPage(1);
+                    const viewport = page.getViewport({ scale: 1 });
+                    const scale = Math.min(70 / viewport.width, 90 / viewport.height);
+                    const scaledViewport = page.getViewport({ scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = Math.ceil(scaledViewport.width);
+                    canvas.height = Math.ceil(scaledViewport.height);
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: scaledViewport
+                    }).promise;
+
+                    const previewDataUrl = canvas.toDataURL('image/png');
+                    const fileIndex = selectedFiles.findIndex(f => f.id === fileId);
+                    if (fileIndex >= 0) {
+                        selectedFiles[fileIndex].previewDataUrl = previewDataUrl;
+                        renderFileItems();
+                    }
+                } catch (error) {
+                    console.warn('Preview generation failed:', file.name, error);
+                }
             }
             
             function moveFile(id, direction) {
@@ -313,10 +460,32 @@
                 [selectedFiles[index], selectedFiles[newIndex]] = [selectedFiles[newIndex], selectedFiles[index]];
                 renderFileItems();
             }
+
+            function reorderByDrag(sourceId, targetId) {
+                if (!sourceId || sourceId === targetId) return;
+
+                const sourceIndex = selectedFiles.findIndex(f => f.id === sourceId);
+                const targetIndex = selectedFiles.findIndex(f => f.id === targetId);
+                if (sourceIndex < 0 || targetIndex < 0) return;
+
+                const [moved] = selectedFiles.splice(sourceIndex, 1);
+                const insertIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+                selectedFiles.splice(insertIndex, 0, moved);
+                renderFileItems();
+            }
             
             function removeFile(id) {
                 selectedFiles = selectedFiles.filter(f => f.id !== id);
                 renderFileList();
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
             }
             
             function formatSize(bytes) {
@@ -371,13 +540,27 @@
                     
                     const sortOrder = selectedFiles.map((_, i) => i);
                     formData.append('sortOrder', JSON.stringify(sortOrder));
+
+                    // CSRF token required because AutoValidateAntiforgeryToken is enabled globally
+                    const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
                     
                     const response = await fetch('/Pdf/Merge', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}
                     });
                     
-                    const result = await response.json();
+                    // Read text first to avoid JSON.parse errors on empty/non-JSON responses
+                    const text = await response.text();
+                    let result = {};
+                    if (text && text.trim().length > 0) {
+                        try {
+                            result = JSON.parse(text);
+                        } catch (parseError) {
+                            console.error('Merge raw response:', text);
+                            throw new Error('Unexpected server response. Please try again.');
+                        }
+                    }
                     
                     // Hide progress section
                     progressSection.style.display = 'none';
@@ -424,7 +607,8 @@
                         mergeBtn.innerHTML = '<i class="bi bi-union"></i> Merge PDF Files';
                     } else {
                         console.error('Merge failed:', result);
-                        showError(result.message || 'An error occurred during merging.');
+                        const statusText = !response.ok ? ` (HTTP ${response.status})` : '';
+                        showError(result.message || `An error occurred during merging${statusText}.`);
                         mergeBtn.disabled = false;
                         mergeBtn.innerHTML = '<i class="bi bi-union"></i> Merge PDF Files';
                     }

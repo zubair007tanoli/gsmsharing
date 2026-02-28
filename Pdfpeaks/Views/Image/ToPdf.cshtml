@@ -26,7 +26,7 @@
                                 <button type="button" class="btn btn-danger" id="img2pdfSelectImageBtn">
                                     <i class="bi bi-folder-plus"></i> Select Image
                                 </button>
-                                <input type="file" id="img2pdfFileInput" accept="image/*" style="display:none" />
+                                <input type="file" id="img2pdfFileInput" accept="image/*" multiple style="display:none" />
                                 <small class="d-block text-muted mt-2">Supported: JPG, PNG, GIF, BMP, WebP</small>
                             </div>
                         </div>
@@ -39,12 +39,25 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Page Size</label>
-                                <select id="img2pdfPageSize" class="form-select" disabled>
+                                <select id="img2pdfPageSize" class="form-select">
                                     <option value="auto" selected>Auto (match image)</option>
+                                    <option value="a4">A4</option>
+                                    <option value="letter">Letter</option>
+                                    <option value="legal">Legal</option>
+                                    <option value="a3">A3</option>
                                 </select>
-                                <small class="text-muted d-block mt-1">
-                                    For now, page size automatically matches your image dimensions.
-                                </small>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="img2pdfEnhanceReadability" checked />
+                                <label class="form-check-label" for="img2pdfEnhanceReadability">
+                                    Auto-enhance for document readability
+                                </label>
+                            </div>
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="checkbox" id="img2pdfBlackAndWhite" />
+                                <label class="form-check-label" for="img2pdfBlackAndWhite">
+                                    OCR-friendly black & white output
+                                </label>
                             </div>
                         </div>
                         <div class="card-footer bg-white">
@@ -73,7 +86,7 @@
                         <div class="card-footer bg-white">
                             <div class="row text-center">
                                 <div class="col-6">
-                                    <small class="text-muted d-block">Image</small>
+                    <small class="text-muted d-block">Image(s)</small>
                                     <strong id="img2pdfImageInfo">-</strong>
                                 </div>
                                 <div class="col-6">
@@ -150,8 +163,11 @@
             const imagePreview = document.getElementById('img2pdfImagePreview');
             const convertBtn = document.getElementById('img2pdfConvertBtn');
             const loadingOverlay = document.getElementById('img2pdfLoadingOverlay');
+            const pageSize = document.getElementById('img2pdfPageSize');
+            const enhanceReadability = document.getElementById('img2pdfEnhanceReadability');
+            const blackAndWhite = document.getElementById('img2pdfBlackAndWhite');
 
-            let currentFile = null;
+            let currentFiles = [];
 
             if (selectImageBtn) {
                 selectImageBtn.addEventListener('click', () => fileInput.click());
@@ -159,7 +175,7 @@
 
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    handleFile(e.target.files[0]);
+                    handleFiles(Array.from(e.target.files));
                 }
             });
 
@@ -177,17 +193,18 @@
                 e.preventDefault();
                 dropZone.classList.remove('bg-danger', 'text-white');
                 if (e.dataTransfer.files.length > 0) {
-                    handleFile(e.dataTransfer.files[0]);
+                    handleFiles(Array.from(e.dataTransfer.files));
                 }
             });
 
-            function handleFile(file) {
-                if (!file.type.startsWith('image/')) {
-                    alert('Please select an image file.');
+            function handleFiles(files) {
+                const validFiles = files.filter(f => f.type && f.type.startsWith('image/'));
+                if (validFiles.length === 0) {
+                    alert('Please select image files.');
                     return;
                 }
 
-                currentFile = file;
+                currentFiles = validFiles;
                 optionsCard.classList.remove('d-none');
                 previewCard.classList.remove('d-none');
                 emptyPreview.classList.add('d-none');
@@ -198,20 +215,34 @@
                     imagePreview.innerHTML = `
                         <img src="${e.target.result}" alt="Preview" class="img-fluid preview-image" style="max-height: 400px; object-fit: contain;">
                     `;
-                    document.getElementById('img2pdfImageInfo').textContent = file.name;
+                    const totalBytes = currentFiles.reduce((sum, f) => sum + f.size, 0);
+                    document.getElementById('img2pdfImageInfo').textContent = currentFiles.length === 1
+                        ? `${currentFiles[0].name} (${formatFileSize(totalBytes)})`
+                        : `${currentFiles.length} files (${formatFileSize(totalBytes)})`;
                     document.getElementById('img2pdfPdfInfo').textContent = '-';
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(currentFiles[0]);
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
             convertBtn.addEventListener('click', async () => {
-                if (!currentFile) return;
+                if (!currentFiles || currentFiles.length === 0) return;
 
                 loadingOverlay.classList.remove('d-none');
 
                 try {
                     const formData = new FormData();
-                    formData.append('file', currentFile);
+                    currentFiles.forEach(f => formData.append('files', f));
+                    formData.append('paperSize', pageSize.value);
+                    formData.append('enhanceForReadability', enhanceReadability.checked);
+                    formData.append('blackAndWhite', blackAndWhite.checked);
 
                     // Get CSRF token from cookie
                     const csrfToken = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
