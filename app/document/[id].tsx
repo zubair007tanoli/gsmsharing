@@ -215,7 +215,7 @@ export default function DocumentScreen() {
             <View style={styles.actionsGrid}>
               <ActionButton icon="share-outline" label="Share" color="#2563EB" onPress={handleShare} />
               <ActionButton icon="create-outline" label="Edit" color="#8B5CF6" onPress={() => Alert.alert("Edit", "Open in editor")} />
-              <ActionButton icon="compress-outline" label="Compress" color="#10B981" onPress={() => Alert.alert("Compress", "Reducing file size...")} />
+              <ActionButton icon="contract-outline" label="Compress" color="#10B981" onPress={() => Alert.alert("Compress", "Reducing file size...")} />
               <ActionButton icon="lock-closed-outline" label="Protect" color="#EF4444" onPress={() => Alert.alert("Protect", "Add password protection")} />
               <ActionButton icon="document-text-outline" label="OCR" color="#06B6D4" onPress={() => Alert.alert("OCR", "Extracting text...")} />
               <ActionButton icon="trash-outline" label="Delete" color="#EF4444" onPress={handleDelete} />

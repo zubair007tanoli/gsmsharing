@@ -19,6 +19,55 @@ import Colors from "@/constants/colors";
 import { useDocuments, Document, Folder } from "@/context/DocumentsContext";
 import { router } from "expo-router";
 
+function InlineAdBanner({ onDismiss }: { onDismiss: () => void }) {
+  const colorScheme = useColorScheme();
+  const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
+  return (
+    <View style={[inlineAdStyles.banner, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View style={inlineAdStyles.left}>
+        <View style={[inlineAdStyles.icon, { backgroundColor: "#8B5CF6" + "18" }]}>
+          <Ionicons name="rocket" size={18} color="#8B5CF6" />
+        </View>
+        <View>
+          <View style={[inlineAdStyles.sponsoredTag, { backgroundColor: "#8B5CF6" + "18" }]}>
+            <Text style={[inlineAdStyles.sponsoredText, { color: "#8B5CF6", fontFamily: "Inter_600SemiBold" }]}>
+              Sponsored
+            </Text>
+          </View>
+          <Text style={[inlineAdStyles.adTitle, { color: theme.text, fontFamily: "Inter_500Medium" }]}>
+            Unlock unlimited PDF tools
+          </Text>
+          <Text style={[inlineAdStyles.adSub, { color: theme.textMuted, fontFamily: "Inter_400Regular" }]}>
+            Pro plan from $4.99/month
+          </Text>
+        </View>
+      </View>
+      <View style={inlineAdStyles.right}>
+        <Pressable style={[inlineAdStyles.cta, { backgroundColor: "#8B5CF6" }]}>
+          <Text style={[inlineAdStyles.ctaText, { fontFamily: "Inter_600SemiBold" }]}>Try Pro</Text>
+        </Pressable>
+        <Pressable onPress={onDismiss} style={inlineAdStyles.closeBtn}>
+          <Ionicons name="close" size={13} color={theme.textMuted} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const inlineAdStyles = StyleSheet.create({
+  banner: { borderRadius: 14, borderWidth: 1, padding: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  left: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  icon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  sponsoredTag: { alignSelf: "flex-start", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, marginBottom: 3 },
+  sponsoredText: { fontSize: 9 },
+  adTitle: { fontSize: 13, marginBottom: 1 },
+  adSub: { fontSize: 11 },
+  right: { flexDirection: "row", alignItems: "center", gap: 6 },
+  cta: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 9 },
+  ctaText: { color: "#fff", fontSize: 12 },
+  closeBtn: { padding: 4 },
+});
+
 const FOLDER_COLORS = ["#2563EB", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#EC4899", "#06B6D4"];
 
 function DocTypeIcon({ type, size = 20 }: { type: string; size?: number }) {
@@ -106,6 +155,7 @@ export default function DocumentsScreen() {
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0]);
+  const [showDocAd, setShowDocAd] = useState(true);
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
@@ -240,12 +290,17 @@ export default function DocumentsScreen() {
         keyExtractor={(d) => d.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: Platform.OS === "web" ? 34 : insets.bottom + 90, gap: 8, paddingTop: 4 }}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <DocRow
-            doc={item}
-            onPress={() => router.push({ pathname: "/document/[id]", params: { id: item.id } })}
-            onLongPress={() => handleDocLongPress(item)}
-          />
+        renderItem={({ item, index }) => (
+          <>
+            <DocRow
+              doc={item}
+              onPress={() => router.push({ pathname: "/document/[id]", params: { id: item.id } })}
+              onLongPress={() => handleDocLongPress(item)}
+            />
+            {index === 2 && showDocAd && (
+              <InlineAdBanner onDismiss={() => setShowDocAd(false)} />
+            )}
+          </>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
