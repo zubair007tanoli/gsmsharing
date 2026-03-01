@@ -18,8 +18,17 @@ using Serilog;
 using StackExchange.Redis;
 using System.Security.Claims;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.HttpOverrides; // ✅ FIX: Required for ForwardedHeaders
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Ensure a reachable default bind in server deployments when no URL is configured.
+var configuredUrls = builder.Configuration["ASPNETCORE_URLS"];
+var hasKestrelEndpoints = builder.Configuration.GetSection("Kestrel:Endpoints").Exists();
+if (string.IsNullOrWhiteSpace(configuredUrls) && !hasKestrelEndpoints)
+{
+    builder.WebHost.UseUrls("http://0.0.0.0:5000");
+}
 
 // ============ Configure Kestrel ============
 builder.WebHost.ConfigureKestrel(options =>
@@ -44,6 +53,17 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // ============ Add Services ============
+
+// ✅ FIX: Trust X-Forwarded-Proto and X-Forwarded-For from nginx reverse proxy.
+// Without this, Kestrel sees the request as HTTP and antiforgery's SSL check fails → 500 error.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Clear restrictions so the local nginx proxy is trusted
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddAntiforgery(options =>
 {
     options.FormFieldName = "__RequestVerificationToken";
@@ -52,11 +72,11 @@ builder.Services.AddAntiforgery(options =>
     // The middleware below writes the request token to "XSRF-TOKEN" for fetch/AJAX.
     options.Cookie.Name = "CSRF-COOKIE";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
-        ? CookieSecurePolicy.None 
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.None
         : CookieSecurePolicy.Always;
-    options.Cookie.SameSite = builder.Environment.IsDevelopment() 
-        ? SameSiteMode.Lax 
+    options.Cookie.SameSite = builder.Environment.IsDevelopment()
+        ? SameSiteMode.Lax
         : SameSiteMode.Strict;
 });
 
@@ -77,20 +97,20 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddHttpContextAccessor();
 
 // ============ Database Configuration ============
-// Priority: appsettings.Development.json > env var DB_CONNECTION_STRING > appsettings.json
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+// Use standard ASP.NET Core config flow:
+// appsettings*.json + env var ConnectionStrings__DefaultConnection.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     if (builder.Environment.IsProduction())
     {
-        Log.Fatal("DB_CONNECTION_STRING environment variable is not set. Application cannot start in Production without a database connection.");
-        throw new InvalidOperationException("DB_CONNECTION_STRING is required in Production. Set the environment variable.");
+        Log.Fatal("ConnectionStrings:DefaultConnection is not set. Application cannot start in Production.");
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required in Production. Set environment variable ConnectionStrings__DefaultConnection.");
     }
     // Development fallback — uses local SQL Server with default dev credentials
     connectionString = "Server=localhost;Database=Pdfpeaks;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;";
-    Log.Warning("No DB connection string configured. Using local development fallback. Set ConnectionStrings__DefaultConnection or DB_CONNECTION_STRING for production.");
+    Log.Warning("No DB connection string configured. Using local development fallback. Set ConnectionStrings__DefaultConnection for production.");
 }
 
 if (!string.IsNullOrEmpty(connectionString))
@@ -114,14 +134,14 @@ if (!string.IsNullOrEmpty(connectionString))
         options.Password.RequireUppercase = true;
         options.Password.RequireNonAlphanumeric = true;
         options.Password.RequiredLength = 8;
-        
+
         // User settings
         options.User.RequireUniqueEmail = true;
-        
+
         // Sign-in settings
         options.SignIn.RequireConfirmedEmail = false;
         options.SignIn.RequireConfirmedAccount = false;
-        
+
         // Lockout settings
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         options.Lockout.MaxFailedAccessAttempts = 5;
@@ -140,11 +160,11 @@ if (!string.IsNullOrEmpty(connectionString))
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromDays(14);
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
-            ? CookieSecurePolicy.None 
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.None
             : CookieSecurePolicy.Always;
-        options.Cookie.SameSite = builder.Environment.IsDevelopment() 
-            ? SameSiteMode.Lax 
+        options.Cookie.SameSite = builder.Environment.IsDevelopment()
+            ? SameSiteMode.Lax
             : SameSiteMode.Strict;
     });
 
@@ -173,25 +193,26 @@ if (!string.IsNullOrEmpty(connectionString))
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    var connectionString = configuration.GetConnectionString("Redis") 
-        ?? configuration["Redis:ConnectionString"] 
+    var connectionString = configuration.GetConnectionString("Redis")
+        ?? configuration["ConnectionStrings:Redis"]
+        ?? configuration["Redis:ConnectionString"]
         ?? "localhost:6379";
-
-    var config = ConfigurationOptions.Parse(connectionString);
-    config.AbortOnConnectFail = false;  // Don't throw if Redis unavailable
-    config.ConnectTimeout = 100;        // Quick timeout (100ms) - fail fast
-    config.SyncTimeout = 100;
-    config.AsyncTimeout = 100;
 
     try
     {
+        var config = ConfigurationOptions.Parse(connectionString);
+        config.AbortOnConnectFail = false;  // Don't throw if Redis unavailable
+        config.ConnectTimeout = 100;        // Quick timeout (100ms) - fail fast
+        config.SyncTimeout = 100;
+        config.AsyncTimeout = 100;
+
         // Try to connect with very short timeout - will retry on first use
         return ConnectionMultiplexer.Connect(config);
     }
-    catch
+    catch (Exception ex)
     {
         // If Redis unavailable, return null multiplexer - services handle gracefully
-        Log.Warning("Redis connection failed during startup. Services will retry on demand.");
+        Log.Warning(ex, "Redis connection failed during startup. Services will retry on demand.");
         return null!;  // Services must handle null gracefully
     }
 });
@@ -252,7 +273,7 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .WithExposedHeaders("X-Pagination");
     });
-    
+
     options.AddPolicy("AllowReactApp", policy =>
     {
         var reactUrl = builder.Configuration["ReactApp:Url"] ?? "http://localhost:3000";
@@ -326,6 +347,11 @@ var app = builder.Build();
 
 // ============ Configure Pipeline ============
 
+// ✅ FIX: Must be FIRST in the pipeline.
+// Reads X-Forwarded-Proto from nginx so Kestrel knows the real scheme is https.
+// This fixes the antiforgery SSL check that was causing HTTP 500 on all pages.
+app.UseForwardedHeaders();
+
 // Exception handling
 app.UseSerilogRequestLogging(options =>
 {
@@ -334,7 +360,7 @@ app.UseSerilogRequestLogging(options =>
         diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
         diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
         diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"].ToString());
-        
+
         if (httpContext.User.Identity?.IsAuthenticated == true)
         {
             diagnosticContext.Set("UserId", httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
@@ -345,7 +371,7 @@ app.UseSerilogRequestLogging(options =>
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    // NOTE: UseHsts() removed — nginx handles TLS termination, Kestrel should not send HSTS headers
 }
 
 app.UseStaticFiles();
@@ -479,12 +505,12 @@ app.Run();
 public class CustomPasswordValidator : IPasswordValidator<ApplicationUser>
 {
     public Task<IdentityResult> ValidateAsync(
-        UserManager<ApplicationUser> manager, 
-        ApplicationUser user, 
+        UserManager<ApplicationUser> manager,
+        ApplicationUser user,
         string? password)
     {
         var errors = new List<IdentityError>();
-        
+
         if (password != null && password.Contains(user.UserName ?? ""))
         {
             errors.Add(new IdentityError
@@ -493,7 +519,7 @@ public class CustomPasswordValidator : IPasswordValidator<ApplicationUser>
                 Description = "Password cannot contain your username"
             });
         }
-        
+
         if (password != null && !password.Any(char.IsUpper))
         {
             errors.Add(new IdentityError
@@ -502,9 +528,9 @@ public class CustomPasswordValidator : IPasswordValidator<ApplicationUser>
                 Description = "Password must contain at least one uppercase letter"
             });
         }
-        
-        return Task.FromResult(errors.Count == 0 
-            ? IdentityResult.Success 
+
+        return Task.FromResult(errors.Count == 0
+            ? IdentityResult.Success
             : IdentityResult.Failed(errors.ToArray()));
     }
 }

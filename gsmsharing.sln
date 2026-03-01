@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fluxdox", "Fluxdox\Fluxdox.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pdfpeaks", "Pdfpeaks\Pdfpeaks.csproj", "{FC5D8502-3603-4201-B60C-41CA2D4F45AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PdfPeaksApp", "PdfPeaksApp\PdfPeaksApp.csproj", "{42EDA072-5A4B-417E-B69C-545109DB6895}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{FC5D8502-3603-4201-B60C-41CA2D4F45AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC5D8502-3603-4201-B60C-41CA2D4F45AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC5D8502-3603-4201-B60C-41CA2D4F45AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42EDA072-5A4B-417E-B69C-545109DB6895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42EDA072-5A4B-417E-B69C-545109DB6895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42EDA072-5A4B-417E-B69C-545109DB6895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42EDA072-5A4B-417E-B69C-545109DB6895}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
