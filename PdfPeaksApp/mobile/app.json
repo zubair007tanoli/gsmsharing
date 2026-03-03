@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "PDFPeaksApp",
+    "slug": "pdfpeaksapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/placeholder.svg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/placeholder.svg",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563EB"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pdfpeaksapp.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/placeholder.svg",
+        "backgroundColor": "#2563EB"
+      },
+      "package": "com.pdfpeaksapp.app"
+    },
+    "web": {
+      "favicon": "./assets/placeholder.svg"
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-image-picker",
+      "expo-media-library"
+    ]
+  }
+}

@@ -1,24 +1,36 @@
-﻿namespace PdfPeaksApp
+﻿using Microsoft.Maui.Controls;
+
+namespace PdfPeaksApp
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-
         public MainPage()
         {
             InitializeComponent();
         }
 
-        private void OnCounterClicked(object? sender, EventArgs e)
+        private async void OnScanClicked(object? sender, EventArgs e)
         {
-            count++;
+            // Navigate to Scanner screen
+            await DisplayAlertAsync("Scanner", "Opening scanner...", "OK");
+            // In a full implementation, this would navigate to the ScannerPage
+            // await Navigation.PushAsync(new ScannerPage());
+        }
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+        private async void OnDocumentsClicked(object? sender, EventArgs e)
+        {
+            // Navigate to Documents screen
+            await DisplayAlertAsync("Documents", "Opening documents...", "OK");
+            // In a full implementation, this would navigate to the DocumentsPage
+            // await Navigation.PushAsync(new DocumentsPage());
+        }
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+        private async void OnSettingsClicked(object? sender, EventArgs e)
+        {
+            // Navigate to Settings screen
+            await DisplayAlertAsync("Settings", "Opening settings...", "OK");
+            // In a full implementation, this would navigate to the SettingsPage
+            // await Navigation.PushAsync(new SettingsPage());
         }
     }
 }
