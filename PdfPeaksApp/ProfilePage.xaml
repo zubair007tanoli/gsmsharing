@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PdfPeaksApp.ProfilePage"
+             Title="Profile"
+             BackgroundColor="{StaticResource Surface}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <Label Text="Profile &amp; Settings"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="24"
+                   TextColor="{StaticResource TextPrimary}"/>
+            <Label Text="Manage sync, security and export preferences."
+                   Style="{StaticResource MutedLabelStyle}"/>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Cloud Sync" FontFamily="OpenSansSemibold" FontSize="18"/>
+                    <Label Text="Ready for Google Drive, Dropbox, OneDrive." Style="{StaticResource MutedLabelStyle}"/>
+                    <Switch />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Biometric Lock" FontFamily="OpenSansSemibold" FontSize="18"/>
+                    <Label Text="Face ID / Fingerprint required to open the app." Style="{StaticResource MutedLabelStyle}"/>
+                    <Switch />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Default Export" FontFamily="OpenSansSemibold" FontSize="18"/>
+                    <Label Text="PDF with OCR text layer and medium compression." Style="{StaticResource MutedLabelStyle}"/>
+                    <Button Text="Change" BackgroundColor="{StaticResource Surface}" TextColor="{StaticResource TextPrimary}" BorderColor="{StaticResource CardBorder}" BorderWidth="1"/>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

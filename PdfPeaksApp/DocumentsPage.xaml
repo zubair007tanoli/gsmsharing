@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PdfPeaksApp.DocumentsPage"
+             Title="Documents"
+             BackgroundColor="{StaticResource Surface}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <Label Text="My Documents"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="24"
+                   TextColor="{StaticResource TextPrimary}"/>
+            <Label Text="Folders, tags, and quick filters for your scans and PDFs."
+                   Style="{StaticResource MutedLabelStyle}"/>
+
+            <SearchBar Placeholder="Search documents" />
+
+            <VerticalStackLayout Spacing="12">
+                <Border Style="{StaticResource CardFrameStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Contracts" FontFamily="OpenSansSemibold" FontSize="16"/>
+                        <Label Text="12 files • last updated today" Style="{StaticResource MutedLabelStyle}"/>
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource CardFrameStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Receipts" FontFamily="OpenSansSemibold" FontSize="16"/>
+                        <Label Text="38 files • auto-tagged" Style="{StaticResource MutedLabelStyle}"/>
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource CardFrameStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="IDs &amp; Travel" FontFamily="OpenSansSemibold" FontSize="16"/>
+                        <Label Text="Passports, visas, driver IDs" Style="{StaticResource MutedLabelStyle}"/>
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

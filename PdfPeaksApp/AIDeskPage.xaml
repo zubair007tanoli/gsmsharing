@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PdfPeaksApp.AIDeskPage"
+             Title="AI Desk"
+             BackgroundColor="{StaticResource Surface}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <Label Text="AI Desk"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="24"
+                   TextColor="{StaticResource TextPrimary}"/>
+            <Label Text="Choose an AI detector for IDs, passports, forms and tables."
+                   Style="{StaticResource MutedLabelStyle}"/>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Passport &amp; Visa Detection" FontFamily="OpenSansSemibold" FontSize="18"/>
+                    <Label Text="Detect MRZ lines, crop, deskew, and highlight tampering." Style="{StaticResource MutedLabelStyle}"/>
+                    <Button Text="Run Passport Detector" Clicked="OnPassportDetect"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="ID Anti-Fraud" FontFamily="OpenSansSemibold" FontSize="18"/>
+                    <Label Text="Glare, hologram, and pixel-level forgery checks." Style="{StaticResource MutedLabelStyle}"/>
+                    <Button Text="Run ID Scan" Clicked="OnIdDetect"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Document → PDF + Text" FontFamily="OpenSansSemibold" FontSize="18"/>
+                    <Label Text="Export clean PDFs with embedded searchable text." Style="{StaticResource MutedLabelStyle}"/>
+                    <Button Text="Create Searchable PDF" BackgroundColor="{StaticResource Surface}" TextColor="{StaticResource TextPrimary}" BorderColor="{StaticResource CardBorder}" BorderWidth="1" Clicked="OnSearchablePdf"/>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

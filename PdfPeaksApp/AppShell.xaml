@@ -7,13 +7,35 @@
     Title="PDFPeaksApp">
 
     <TabBar>
-        <Tab
-            Title="Home"
-            Icon="home.png">
+        <Tab Title="Home">
             <ShellContent
                 Title="Home"
                 ContentTemplate="{DataTemplate local:MainPage}"
                 Route="MainPage" />
+        </Tab>
+        <Tab Title="Scan">
+            <ShellContent
+                Title="Scan"
+                ContentTemplate="{DataTemplate local:ScanPage}"
+                Route="ScanPage" />
+        </Tab>
+        <Tab Title="Documents">
+            <ShellContent
+                Title="Documents"
+                ContentTemplate="{DataTemplate local:DocumentsPage}"
+                Route="DocumentsPage" />
+        </Tab>
+        <Tab Title="AI Desk">
+            <ShellContent
+                Title="AI Desk"
+                ContentTemplate="{DataTemplate local:AIDeskPage}"
+                Route="AIDeskPage" />
+        </Tab>
+        <Tab Title="Profile">
+            <ShellContent
+                Title="Profile"
+                ContentTemplate="{DataTemplate local:ProfilePage}"
+                Route="ProfilePage" />
         </Tab>
     </TabBar>
 

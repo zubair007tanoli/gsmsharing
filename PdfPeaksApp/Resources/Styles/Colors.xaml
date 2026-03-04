@@ -5,33 +5,68 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#ac99ea</Color>
-    <Color x:Key="PrimaryDarkText">#242424</Color>
-    <Color x:Key="Secondary">#DFD8F7</Color>
-    <Color x:Key="SecondaryDarkText">#9880e5</Color>
-    <Color x:Key="Tertiary">#2B0B98</Color>
+    <!-- CamScanner-inspired teal palette -->
+    <Color x:Key="Primary">#00B483</Color>
+    <Color x:Key="PrimaryDark">#008B64</Color>
+    <Color x:Key="PrimaryLight">#7BEBC9</Color>
+    <Color x:Key="Accent">#12D5B5</Color>
+    <Color x:Key="Secondary">#0F2E3D</Color>
+    <Color x:Key="SecondaryMuted">#163B4D</Color>
 
-    <Color x:Key="White">White</Color>
-    <Color x:Key="Black">Black</Color>
-    <Color x:Key="Magenta">#D600AA</Color>
-    <Color x:Key="MidnightBlue">#190649</Color>
-    <Color x:Key="OffBlack">#1f1f1f</Color>
+    <Color x:Key="Surface">#F6F9FB</Color>
+    <Color x:Key="Card">#FFFFFF</Color>
+    <Color x:Key="CardBorder">#E2EDF3</Color>
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
 
-    <Color x:Key="Gray100">#E1E1E1</Color>
-    <Color x:Key="Gray200">#C8C8C8</Color>
-    <Color x:Key="Gray300">#ACACAC</Color>
-    <Color x:Key="Gray400">#919191</Color>
-    <Color x:Key="Gray500">#6E6E6E</Color>
-    <Color x:Key="Gray600">#404040</Color>
-    <Color x:Key="Gray900">#212121</Color>
-    <Color x:Key="Gray950">#141414</Color>
+    <Color x:Key="TextPrimary">#0E1D27</Color>
+    <Color x:Key="TextSecondary">#3C5566</Color>
+    <Color x:Key="TextMuted">#6B7A88</Color>
+
+    <Color x:Key="Success">#29D07C</Color>
+    <Color x:Key="Warning">#FFC940</Color>
+    <Color x:Key="Danger">#FF6B6B</Color>
+
+    <Color x:Key="Gray100">#EEF4F7</Color>
+    <Color x:Key="Gray200">#DFE8EE</Color>
+    <Color x:Key="Gray300">#C6D4DD</Color>
+    <Color x:Key="Gray400">#A7B5C0</Color>
+    <Color x:Key="Gray500">#8898A7</Color>
+    <Color x:Key="Gray600">#647583</Color>
+    <Color x:Key="Gray900">#0D1C27</Color>
+    <Color x:Key="Gray950">#0A141B</Color>
+
+    <!-- Gradient stops for hero/header surfaces -->
+    <LinearGradientBrush x:Key="HeroGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#0B2C3A" Offset="0" />
+        <GradientStop Color="#0F445A" Offset="0.6" />
+        <GradientStop Color="#00B483" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CardAccentGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#12D5B5" Offset="0" />
+        <GradientStop Color="#0DAA81" Offset="1" />
+    </LinearGradientBrush>
 
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDark}"/>
+    <SolidColorBrush x:Key="PrimaryLightBrush" Color="{StaticResource PrimaryLight}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
-    <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
+    <SolidColorBrush x:Key="SecondaryMutedBrush" Color="{StaticResource SecondaryMuted}"/>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource Surface}"/>
+    <SolidColorBrush x:Key="CardBrush" Color="{StaticResource Card}"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="{StaticResource CardBorder}"/>
     <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
     <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}"/>
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Warning}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource Danger}"/>
 
     <SolidColorBrush x:Key="Gray100Brush" Color="{StaticResource Gray100}"/>
     <SolidColorBrush x:Key="Gray200Brush" Color="{StaticResource Gray200}"/>

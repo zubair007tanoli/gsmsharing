@@ -1,57 +1,234 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
              x:Class="PdfPeaksApp.MainPage"
-             Title="PDFPeaksApp">
+             x:Name="HomePage"
+             Title="PDF Peaks"
+             BackgroundColor="{StaticResource Surface}">
 
-    <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Image
-                Source="dotnet_bot.png"
-                HeightRequest="185"
-                Aspect="AspectFit"
-                SemanticProperties.Description="PDFPeaks App Logo" />
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Padding="24,10,24,90" Spacing="20">
 
-            <Label
-                Text="PDFPeaksApp"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+                <!-- Hero: AI scanner top card -->
+                <Border Background="{StaticResource HeroGradient}"
+                        Padding="20">
+                    <Border.StrokeShape>
+                        <shapes:RoundRectangle CornerRadius="24" />
+                    </Border.StrokeShape>
+                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="PDF Peaks AI Scanner"
+                                   TextColor="White"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="24"/>
+                            <Label Text="Smart scans, auto-edge detection, OCR and instant exports."
+                                   TextColor="#D5E7EE"
+                                   FontSize="14"/>
+                            <HorizontalStackLayout Spacing="8">
+                                <Border Style="{StaticResource ChipBorderStyle}" Background="{StaticResource SecondaryMutedBrush}" StrokeThickness="0" Padding="10,6">
+                                    <Label Text="AI Detect" TextColor="{StaticResource PrimaryLight}" FontSize="12" FontFamily="OpenSansSemibold"/>
+                                </Border>
+                                <Border Style="{StaticResource ChipBorderStyle}" Background="{StaticResource SecondaryBrush}" StrokeThickness="0" Padding="10,6">
+                                    <Label Text="ID / Passport" TextColor="White" FontSize="12" FontFamily="OpenSansSemibold"/>
+                                </Border>
+                                <Border Style="{StaticResource ChipBorderStyle}" Background="{StaticResource SecondaryMutedBrush}" StrokeThickness="0" Padding="10,6">
+                                    <Label Text="Multi-page" TextColor="#D5E7EE" FontSize="12"/>
+                                </Border>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
 
-            <Label
-                Text="Document Scanner &amp; PDF Manager"
-                Style="{StaticResource SubHeadline}"
-                SemanticProperties.HeadingLevel="Level2"
-                SemanticProperties.Description="Professional document scanning and management" />
+                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Auto" TextColor="{StaticResource PrimaryLight}" FontSize="12"/>
+                                <Label Text="Edge Detect" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16"/>
+                                <Label Text="Realtime" TextColor="#CDE8F3" FontSize="12"/>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="OCR+" TextColor="{StaticResource PrimaryLight}" FontSize="12"/>
+                                <Label Text="Searchable PDF" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16"/>
+                                <Label Text="50+ langs" TextColor="#CDE8F3" FontSize="12"/>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="AI" TextColor="{StaticResource PrimaryLight}" FontSize="12"/>
+                                <Label Text="ID &amp; Passport" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16"/>
+                                <Label Text="Fraud flags" TextColor="#CDE8F3" FontSize="12"/>
+                            </VerticalStackLayout>
+                        </Grid>
 
-            <Button
-                x:Name="ScanButton"
-                Text="Start Scanning"
-                SemanticProperties.Hint="Tap to start scanning documents"
-                Clicked="OnScanClicked"
-                HorizontalOptions="Fill"
-                HeightRequest="50"
-                FontSize="16" />
+                        <Button Grid.Row="2"
+                                Text="Start AI Scan"
+                                HeightRequest="50"
+                                Clicked="OnScanClicked"
+                                BackgroundColor="{StaticResource Accent}"
+                                TextColor="White"
+                                CornerRadius="16"
+                                FontSize="16"
+                                SemanticProperties.Hint="Launch camera with AI detection"/>
+                    </Grid>
+                </Border>
 
-            <Button
-                x:Name="DocumentsButton"
-                Text="My Documents"
-                SemanticProperties.Hint="View your documents"
-                Clicked="OnDocumentsClicked"
-                HorizontalOptions="Fill"
-                HeightRequest="50"
-                FontSize="16" />
+                <!-- Quick actions carousel -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Quick Actions" Style="{StaticResource SectionTitleStyle}"/>
+                    <Label Text="Edge detect, OCR, export" Style="{StaticResource MutedLabelStyle}" HorizontalOptions="End" VerticalOptions="Center"/>
+                </Grid>
 
-            <Button
-                x:Name="SettingsButton"
-                Text="Settings"
-                SemanticProperties.Hint="Open settings"
-                Clicked="OnSettingsClicked"
-                HorizontalOptions="Fill"
-                HeightRequest="50"
-                FontSize="16" />
-        </VerticalStackLayout>
-    </ScrollView>
+                <CollectionView ItemsSource="{Binding QuickActions}"
+                                SelectionMode="None"
+                                HeightRequest="200">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal"/>
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border WidthRequest="220"
+                                    Padding="14"
+                                    Stroke="{StaticResource CardBorderBrush}"
+                                    Background="{StaticResource CardBrush}"
+                                    Margin="0,0,14,0">
+                                <Border.StrokeShape>
+                                    <shapes:RoundRectangle CornerRadius="18" />
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnQuickActionTapped" CommandParameter="{Binding ActionKey}"/>
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="12">
+                                    <Border Background="{Binding AccentBrush}" StrokeThickness="0" WidthRequest="42" HeightRequest="42" HorizontalOptions="Start">
+                                        <Border.StrokeShape>
+                                            <shapes:RoundRectangle CornerRadius="14" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding Icon}" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="White"/>
+                                    </Border>
+                                    <Label Text="{Binding Title}" FontSize="16" FontFamily="OpenSansSemibold" TextColor="{StaticResource TextPrimary}"/>
+                                    <Label Text="{Binding Subtitle}" Style="{StaticResource MutedLabelStyle}" LineBreakMode="TailTruncation"/>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Border Background="{StaticResource PrimaryLightBrush}" StrokeThickness="0" Padding="6,3">
+                                            <Border.StrokeShape>
+                                                <shapes:RoundRectangle CornerRadius="10" />
+                                            </Border.StrokeShape>
+                                            <Label Text="AI" FontFamily="OpenSansSemibold" FontSize="12" TextColor="{StaticResource Secondary}"/>
+                                        </Border>
+                                        <Label Text="Tap to start" TextColor="{StaticResource TextMuted}" FontSize="12" VerticalTextAlignment="Center"/>
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
+                <!-- AI workflows grid -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="AI Detection Desk" Style="{StaticResource SectionTitleStyle}"/>
+                    <Label Text="IDs • Passports • Forms" Style="{StaticResource MutedLabelStyle}" HorizontalOptions="End" VerticalOptions="Center"/>
+                </Grid>
+
+                <CollectionView ItemsSource="{Binding AIWorkflows}"
+                                SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout Orientation="Vertical" Span="2"/>
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="14"
+                                    Stroke="{StaticResource CardBorderBrush}"
+                                    Background="{StaticResource CardBrush}"
+                                    Margin="0,0,12,12">
+                                <Border.StrokeShape>
+                                    <shapes:RoundRectangle CornerRadius="16" />
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnWorkflowTapped" CommandParameter="{Binding ActionKey}"/>
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="10">
+                                    <Border Background="{Binding AccentBrush}" StrokeThickness="0" Padding="8" WidthRequest="36" HeightRequest="36">
+                                        <Border.StrokeShape>
+                                            <shapes:RoundRectangle CornerRadius="12" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding Icon}" HorizontalOptions="Center" VerticalOptions="Center" FontSize="16" TextColor="White"/>
+                                    </Border>
+                                    <Label Text="{Binding Title}" FontSize="15" FontFamily="OpenSansSemibold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation"/>
+                                    <Label Text="{Binding Subtitle}" Style="{StaticResource MutedLabelStyle}" />
+                                    <ProgressBar Progress="{Binding Confidence}" ProgressColor="{StaticResource Primary}" HeightRequest="6"/>
+                                    <Label Text="{Binding ConfidenceText}" FontSize="12" TextColor="{StaticResource TextMuted}"/>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Recent documents -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Recent Documents" Style="{StaticResource SectionTitleStyle}"/>
+                    <Label Text="Secure &amp; synced" Style="{StaticResource MutedLabelStyle}" HorizontalOptions="End" VerticalOptions="Center"/>
+                </Grid>
+
+                <CollectionView ItemsSource="{Binding RecentDocuments}"
+                                SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource CardFrameStyle}" Margin="0,0,0,14">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                                        <Label Text="{Binding Title}" FontSize="16" FontFamily="OpenSansSemibold" TextColor="{StaticResource TextPrimary}"/>
+                                        <Label Text="{Binding Subtitle}" Style="{StaticResource MutedLabelStyle}"/>
+                                    </VerticalStackLayout>
+                                    <Border Grid.Row="0" Grid.Column="1" Background="{StaticResource PrimaryLightBrush}" StrokeThickness="0" Padding="8,4" VerticalOptions="Start">
+                                        <Border.StrokeShape>
+                                            <shapes:RoundRectangle CornerRadius="10" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding Badge}" FontFamily="OpenSansSemibold" FontSize="12" TextColor="{StaticResource Secondary}"/>
+                                    </Border>
+
+                                    <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                        <Label Text="{Binding Timestamp}" TextColor="{StaticResource TextMuted}" FontSize="12" VerticalTextAlignment="Center"/>
+                                        <ProgressBar Grid.Column="1" Progress="{Binding Confidence}" ProgressColor="{StaticResource Primary}" HeightRequest="6"/>
+                                    </Grid>
+
+                                    <HorizontalStackLayout Grid.Row="2" Grid.ColumnSpan="2" Spacing="8">
+                                        <Border Style="{StaticResource ChipBorderStyle}" Stroke="{StaticResource CardBorderBrush}" Background="{StaticResource SurfaceBrush}" Padding="8,4">
+                                            <Label Text="{Binding Icon}" FontSize="12" TextColor="{StaticResource TextPrimary}"/>
+                                        </Border>
+                                        <Label Text="{Binding ConfidenceLabel}" TextColor="{StaticResource TextMuted}" FontSize="12" VerticalTextAlignment="Center"/>
+                                    </HorizontalStackLayout>
+
+                                    <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
+                                        <Button Text="Open" HeightRequest="40" Clicked="OnDocumentActionClicked" CommandParameter="{Binding Title}"/>
+                                        <Button Text="Share" HeightRequest="40" BackgroundColor="{StaticResource Surface}" TextColor="{StaticResource TextPrimary}" BorderColor="{StaticResource CardBorder}" BorderWidth="1" Clicked="OnDocumentActionClicked" CommandParameter="{Binding Title}"/>
+                                    </Grid>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Floating scan control -->
+        <Grid Padding="24" VerticalOptions="End" HorizontalOptions="Center">
+            <Border Background="{StaticResource CardAccentGradient}"
+                    Padding="18,14">
+                <Border.StrokeShape>
+                    <shapes:RoundRectangle CornerRadius="20" />
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnScanClicked"/>
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout Spacing="12" VerticalOptions="Center" HorizontalOptions="Center">
+                    <Border Background="{StaticResource WhiteBrush}" StrokeThickness="0" Padding="8,6">
+                        <Border.StrokeShape>
+                            <shapes:RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <Label Text="📸" FontSize="16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                    </Border>
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Scan Now" FontSize="16" FontFamily="OpenSansSemibold" TextColor="White"/>
+                        <Label Text="Auto edge + AI detection" FontSize="12" TextColor="#E7FFFA"/>
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
 </ContentPage>

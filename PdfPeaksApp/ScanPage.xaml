@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PdfPeaksApp.ScanPage"
+             Title="Scan"
+             BackgroundColor="{StaticResource Surface}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="18">
+            <Label Text="Scan &amp; Capture"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="24"
+                   TextColor="{StaticResource TextPrimary}"/>
+            <Label Text="Auto-edge detection, batch capture, glare reduction and flash control."
+                   Style="{StaticResource MutedLabelStyle}"/>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Camera Scan" FontFamily="OpenSansSemibold" FontSize="18" TextColor="{StaticResource TextPrimary}"/>
+                    <Label Text="Live edge detection, multi-page and deskew. Best for paperwork, receipts, IDs." Style="{StaticResource MutedLabelStyle}"/>
+                    <Button Text="Start Camera" Clicked="OnStartCamera" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Gallery Import" FontFamily="OpenSansSemibold" FontSize="18" TextColor="{StaticResource TextPrimary}"/>
+                    <Label Text="Select existing photos. Apply AI cleanup and combine into PDFs." Style="{StaticResource MutedLabelStyle}"/>
+                    <Button Text="Choose Images" BackgroundColor="{StaticResource Surface}" TextColor="{StaticResource TextPrimary}" BorderColor="{StaticResource CardBorder}" BorderWidth="1" Clicked="OnImportImages"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrameStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Scan Modes" FontFamily="OpenSansSemibold" FontSize="16"/>
+                    <Label Text="• Auto capture with edge detection" Style="{StaticResource MutedLabelStyle}"/>
+                    <Label Text="• Manual capture with grid guides" Style="{StaticResource MutedLabelStyle}"/>
+                    <Label Text="• Batch scanning for multi-page docs" Style="{StaticResource MutedLabelStyle}"/>
+                    <Label Text="• Flash on/off + anti-glare tips" Style="{StaticResource MutedLabelStyle}"/>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
