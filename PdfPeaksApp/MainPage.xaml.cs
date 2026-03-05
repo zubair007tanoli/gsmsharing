@@ -70,14 +70,14 @@ namespace PdfPeaksApp
 
         private async void OnScanClicked(object? sender, EventArgs e)
         {
-            await DisplayAlert("Scanner", "Launching AI scanner with auto-edge detection and OCR.", "OK");
+            await DisplayAlertAsync("Scanner", "Launching AI scanner with auto-edge detection and OCR.", "OK");
         }
 
         private async void OnQuickActionTapped(object? sender, TappedEventArgs e)
         {
             if (e.Parameter is string key)
             {
-                await DisplayAlert("Quick Action", $"Starting {key} workflow with AI enhancements.", "OK");
+                await DisplayAlertAsync("Quick Action", $"Starting {key} workflow with AI enhancements.", "OK");
             }
         }
 
@@ -85,7 +85,7 @@ namespace PdfPeaksApp
         {
             if (e.Parameter is string key)
             {
-                await DisplayAlert("AI Desk", $"Opening {key} detector with real-time checks.", "OK");
+                await DisplayAlertAsync("AI Desk", $"Opening {key} detector with real-time checks.", "OK");
             }
         }
 
@@ -94,7 +94,7 @@ namespace PdfPeaksApp
             if (sender is Button button && button.CommandParameter is string title)
             {
                 var action = button.Text?.ToLowerInvariant() ?? "open";
-                await DisplayAlert("Documents", $"{action} → {title}", "OK");
+                await DisplayAlertAsync("Documents", $"{action} → {title}", "OK");
             }
         }
     }
