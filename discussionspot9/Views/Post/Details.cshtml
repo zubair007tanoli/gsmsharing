@@ -45,7 +45,7 @@
         "@@type": "DiscussionForumPosting",
         "@@id": "@postUrl",
         "headline": "@Model.Post.Title",
-        "description": "@excerpt.Replace("\"", "\\\""))",
+        "description": "@excerpt.Replace("\"", "\\\"")",
         "image": "@imageUrl",
         "url": "@postUrl",
         "datePublished": "@Model.Post.CreatedAt.ToString("o")",
@@ -82,6 +82,24 @@
         ],
         "commentCount": @Model.Post.CommentCount,
         "inLanguage": "en-US"
+    }
+    </script>
+    
+    <!-- Person schema to reinforce author expertise -->
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "Person",
+        "name": "@Model.Post.AuthorDisplayName",
+        "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}/u/{Model.Post.AuthorDisplayName}")",
+        "affiliation": {
+            "@@type": "Organization",
+            "name": "DiscussionSpot"
+        },
+        "knowsAbout": [
+            "r/@Model.Post.CommunitySlug",
+            "@Model.Post.CommunityName"
+        ]
     }
     </script>
     
@@ -134,24 +152,34 @@
         
         <div class="row">
             <!-- Left Sidebar -->
-            <div class="col-xl-3 col-lg-3 d-none d-xl-block">
+            <aside class="col-xl-3 col-lg-3 d-none d-xl-block" aria-label="Community navigation">
                 @await Component.InvokeAsync("LeftSidebar", new {
                 communitySlug = Model.CommunitySlug
                                 })
-            </div>
+            </aside>
 
             <!-- Main Content -->
             <div class="col-xl-6 col-lg-8">
                 <!-- Post Container -->
-                <div class="pd-post-container pd-card">
+                <article class="pd-post-container pd-card" role="article" itemscope itemtype="https://schema.org/DiscussionForumPosting">
                     @await Component.InvokeAsync("PostContent", new {
                                         post = Model.Post,
                                         communitySlug = Model.CommunitySlug
                                         })
-                </div>
+                </article>
+                
+                <!-- Author Bio -->
+                <section class="card border-0 shadow-sm mb-3" aria-labelledby="author-bio-heading">
+                    <div class="card-body">
+                        <h2 class="h5 mb-2" id="author-bio-heading">About @Model.Post.AuthorDisplayName</h2>
+                        <p class="mb-2">Active voice from r/@Model.Post.CommunitySlug. Check their profile to see the threads, comments, and votes that shaped this post.</p>
+                        <a class="btn btn-outline-primary btn-sm" href="@($"/u/{Model.Post.AuthorDisplayName}")" rel="author">View profile</a>
+                    </div>
+                </section>
                 
                 <!-- Social Share Buttons -->
-                <div class="card border-0 shadow-sm mb-3">
+                <section class="card border-0 shadow-sm mb-3" aria-labelledby="share-actions-heading">
+                    <h2 class="visually-hidden" id="share-actions-heading">Share this post</h2>
                     <div class="card-body">
                         @await Html.PartialAsync("_ShareButtonsUnified", new ViewDataDictionary(ViewData) {
                             { "ShareTitle", Model.Post.Title },
@@ -163,10 +191,11 @@
                             { "ShareVariant", "dropdown" }
                         })
                     </div>
-                </div>
+                </section>
 
                 <!-- Report Post Button -->
-                <div class="card border-0 shadow-sm mb-3">
+                <section class="card border-0 shadow-sm mb-3" aria-labelledby="report-heading">
+                    <h2 class="visually-hidden" id="report-heading">Report post</h2>
                     <div class="card-body">
                         <button class="btn btn-outline-danger btn-sm w-100" 
                                 onclick="openReportModal(@Model.Post.PostId, '@Model.Post.Title')"
@@ -174,7 +203,7 @@
                             <i class="fas fa-flag me-2"></i> Report Post
                         </button>
                     </div>
-                </div>
+                </section>
 
                 <!-- Ad: After Post Content (High Engagement Point) -->
                 <partial name="_AdUnit_InArticle" />
@@ -188,14 +217,17 @@
                                 }
 
                 <!-- Comments Section -->
-                @await Component.InvokeAsync("CommentSection", new {
-                                comments = Model.Comments,
-                                postId = Model.Post.PostId
-                                })
+                <section aria-labelledby="comments-heading">
+                    <h2 class="visually-hidden" id="comments-heading">Comments</h2>
+                    @await Component.InvokeAsync("CommentSection", new {
+                                    comments = Model.Comments,
+                                    postId = Model.Post.PostId
+                                    })
+                </section>
             </div>
 
             <!-- Right Sidebar -->
-            <div class="col-xl-3 col-lg-4">
+            <aside class="col-xl-3 col-lg-4" aria-label="Related content">
                 <!-- Sidebar Ad: Sticky -->
                 <div class="position-sticky" style="top: 80px;">
                     <partial name="_AdUnit_Side" />
@@ -210,7 +242,7 @@
                 <div class="mt-3">
                     <partial name="_AdUnit_Display" />
                 </div>
-            </div>
+            </aside>
         </div>
     </div>
 </div>

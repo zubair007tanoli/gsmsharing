@@ -571,6 +571,68 @@
             color: white;
         }
 
+    /* AI audit panel */
+    .audit-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .audit-pane {
+        border: 1px solid #e1e5e9;
+        border-radius: 8px;
+        background: #fdfdfd;
+        overflow: hidden;
+    }
+
+    .audit-pane__title {
+        font-weight: 600;
+        padding: 10px 12px;
+        background: #f6f8fb;
+        border-bottom: 1px solid #e1e5e9;
+    }
+
+    .audit-pane__body {
+        padding: 12px;
+        min-height: 120px;
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        background: #fff;
+    }
+
+    .audit-pane__body.muted {
+        color: #7c7c7c;
+    }
+
+    .para-suggestion {
+        border: 1px solid #e1e5e9;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: var(--bs-body-bg, #fff);
+    }
+
+    .para-suggestion .badge {
+        font-size: 10px;
+    }
+
+    .para-suggestion pre {
+        white-space: pre-wrap;
+        margin: 0;
+        font-size: 12px;
+    }
+
+    .applied-highlight {
+        animation: flash-highlight 1.2s ease;
+    }
+
+    @@keyframes flash-highlight {
+        0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.55); }
+        50% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.35); }
+        100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+    }
+
     
     /* Add this to your existing CSS */
     /* Community info layout adjustments */
@@ -1049,6 +1111,35 @@
             <!-- SEO ASSISTANT - NEW! -->
             @await Html.PartialAsync("_SeoAssistant")
             
+            <!-- AI Content Audit (side-by-side user vs system suggestions) -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header d-flex align-items-center justify-content-between bg-body-secondary text-body">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-search-plus"></i>
+                        <span>AI Content Audit</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="runAuditBtn">
+                        <i class="fas fa-magic"></i> Open audit
+                    </button>
+                </div>
+                <div class="card-content" style="font-size: 13px;">
+                    <div id="auditIssues" class="alert alert-info" style="display:none; padding:10px; margin-bottom:12px;"></div>
+                    <div class="audit-grid">
+                        <div class="audit-pane">
+                            <div class="audit-pane__title">User version</div>
+                            <div id="userVersion" class="audit-pane__body muted">Run audit to load your draft.</div>
+                        </div>
+                        <div class="audit-pane">
+                            <div class="audit-pane__title d-flex justify-content-between align-items-center">
+                                <span>System-updated version</span>
+                                <span class="badge bg-success" style="font-size:10px;">SEO-ready</span>
+                            </div>
+                            <div id="systemVersion" class="audit-pane__body muted">AI will propose a cleaner, human first rewrite without changing facts.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Original Posting Guidelines -->
             <div class="card" style="margin-top: 20px;">
                 <div class="card-header">
@@ -1087,17 +1178,48 @@
     </div>
 </div>
 
+<!-- Version Preview Modal -->
+<div class="modal fade" id="versionModal" tabindex="-1" aria-labelledby="versionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="versionModalLabel">Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height:70vh; overflow-y:auto;">
+                <div class="btn-group btn-group-sm mb-3" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" id="modalUserBtn">User version</button>
+                    <button type="button" class="btn btn-outline-success" id="modalSystemBtn">System version</button>
+                </div>
+                <div id="versionModalBody" class="text-body"></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <div class="text-muted small" id="versionModalMeta"></div>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary me-2" id="undoApplyBtn" disabled>Undo last apply</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="applyVersionBtn">Use this version</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Global state
     let currentPostType = 'text';
     let selectedCommunity = null;
     let tags = [];
+    let auditVersions = { userHtml: '', systemHtml: '', userPlain: '', systemPlain: '' };
+    let lastAppliedHtml = '';
 
     // Initialize when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
         initializeEventListeners();
         loadCommunityData();
         loadPersistedCommunitySelection();
+        wireAuditButton();
+        wireVersionButtons();
     });
 
     function initializeEventListeners() {
@@ -1498,6 +1620,441 @@
         if (!communitySearch.contains(e.target) && !communityDropdown.contains(e.target)) {
             communityDropdown.style.display = 'none';
         }
+    }
+
+    // =============================
+    // AI CONTENT AUDIT (client-side)
+    // =============================
+    function wireAuditButton() {
+        const btn = document.getElementById('runAuditBtn');
+        if (btn) {
+            btn.addEventListener('click', () => {
+                runContentAudit();
+                showVersionModal('user');
+            });
+        }
+    }
+
+    function wireVersionButtons() {
+        const modalUserBtn = document.getElementById('modalUserBtn');
+        const modalSystemBtn = document.getElementById('modalSystemBtn');
+        if (modalUserBtn) modalUserBtn.addEventListener('click', () => showVersionModal('user'));
+        if (modalSystemBtn) modalSystemBtn.addEventListener('click', () => showVersionModal('system'));
+        const applyBtn = document.getElementById('applyVersionBtn');
+        if (applyBtn) applyBtn.addEventListener('click', () => applyVersionToEditor());
+        const undoBtn = document.getElementById('undoApplyBtn');
+
+        // Delegate single-paragraph apply inside modal
+        const modalBody = document.getElementById('versionModalBody');
+        if (modalBody) {
+            modalBody.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target && target.dataset && target.dataset.applySingle !== undefined) {
+                    applySingleParagraph(target.dataset.applySingle);
+                }
+            });
+        }
+
+        if (undoBtn) {
+            undoBtn.addEventListener('click', undoLastApply);
+        }
+    }
+
+    function runContentAudit() {
+        const title = (document.getElementById('title')?.value || '').trim();
+        const htmlContent = window.contentQuill
+            ? window.contentQuill.root.innerHTML
+            : (document.getElementById('contentTextarea')?.value || '');
+
+        const plain = stripHtml(htmlContent);
+        const wordCount = countWords(plain);
+        const issues = [];
+
+        if (wordCount < 1000) {
+            issues.push(`Thin content detected (${wordCount} words). Add first-hand details, comparisons, and testing notes.`);
+        }
+
+        const cliches = [
+            "in today's fast-paced world",
+            "in today's digital age",
+            "moreover",
+            "additionally",
+            "furthermore"
+        ];
+        if (containsAny(plain.toLowerCase(), cliches)) {
+            issues.push("Intro uses AI-sounding clichés. Swap for varied, conversational openers.");
+        }
+
+        if (/column\s*1/i.test(plain) || /column\s*2/i.test(plain) || /colum\s*2/i.test(plain)) {
+            issues.push("Remove placeholder text like “column 1 / column 2” and replace with real subheadings or bullets.");
+        }
+
+        if (!/<h1/i.test(htmlContent) || !/<h2/i.test(htmlContent)) {
+            issues.push("Add clear H1 and supporting H2/H3 structure for scannability.");
+        }
+
+        if (!/application\/ld\+json/i.test(htmlContent)) {
+            issues.push("Missing JSON-LD Article/Person schema.");
+        }
+
+        if (!/author bio/i.test(plain) && !/about the author/i.test(plain)) {
+            issues.push("Add an Author Bio with first-hand experience and profile link.");
+        }
+
+        if ((htmlContent.match(/href="#"/gi) || []).length > 0) {
+            issues.push("Found placeholder links (href=\"#\"). Replace or remove.");
+        }
+
+        const auditIssues = document.getElementById('auditIssues');
+        if (auditIssues) {
+            if (issues.length) {
+                auditIssues.style.display = 'block';
+                auditIssues.className = 'alert alert-warning';
+                auditIssues.innerHTML = '<strong>Needs work:</strong><ul style="margin:6px 0 0 18px;">' +
+                    issues.map(i => `<li>${i}</li>`).join('') + '</ul>';
+            } else {
+                auditIssues.style.display = 'block';
+                auditIssues.className = 'alert alert-success';
+                auditIssues.textContent = 'Looks solid. Run the read-aloud test to confirm it flows naturally.';
+            }
+        }
+
+        const userPane = document.getElementById('userVersion');
+        if (userPane) {
+            userPane.classList.remove('muted');
+            userPane.textContent = plain || 'No content found. Start typing to generate a preview.';
+        }
+
+        const systemPane = document.getElementById('systemVersion');
+        if (systemPane) {
+            const improved = buildSystemVersion(title, plain, htmlContent);
+            systemPane.classList.remove('muted');
+            systemPane.innerHTML = improved;
+            auditVersions.systemHtml = improved;
+            auditVersions.systemPlain = stripHtml(improved);
+        }
+
+        auditVersions.userHtml = htmlContent || (document.getElementById('contentTextarea')?.value || '');
+        auditVersions.userPlain = plain;
+    }
+
+    function buildSystemVersion(title, plain, originalHtml) {
+        const cleanTitle = title || 'Add a specific, benefit-driven headline';
+        const intro = humanizeIntro(plain);
+        const cleanedHtml = cleanHtmlForRewrite(originalHtml || plain);
+        const paragraphs = splitIntoParas(cleanedHtml);
+
+        const improvedParas = paragraphs.map((p, idx) => {
+            const trimmed = p.trim();
+            if (!trimmed) return '';
+            const improved = smartRewrite(trimmed);
+            return `
+                <div class="para-suggestion" data-idx="${idx}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">Paragraph ${idx + 1}</span>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="useSuggestion-${idx}" checked>
+                            <label class="form-check-label small" for="useSuggestion-${idx}">Use suggestion</label>
+                        </div>
+                    </div>
+                    <div class="small text-muted mb-1">Original</div>
+                    <div class="border rounded p-2 mb-2 bg-body-secondary">${trimmed}</div>
+                    <div class="small text-muted mb-1 d-flex justify-content-between align-items-center">
+                        <span>Suggested (grammar/clarity only)</span>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-apply-single="${idx}">Apply this</button>
+                    </div>
+                    <div class="border rounded p-2 bg-body">${improved}</div>
+                </div>
+            `;
+        }).join('');
+
+        return [
+            `<h1 style="margin:0 0 6px 0;">${cleanTitle}</h1>`,
+            `<p>${intro}</p>`,
+            `<h2>Paragraph-level suggestions</h2>`,
+            `<div class="audit-pane__body" style="border:1px solid #e1e5e9;">${improvedParas || 'No content to review yet.'}</div>`,
+            `<div class="alert alert-secondary mt-3 mb-0" role="alert">Toggle “Use suggestion” per paragraph. “Use this version” will apply only the selected suggestions.</div>`
+        ].join('');
+    }
+
+    function humanizeIntro(text) {
+        if (!text) return "Lead with what you actually saw, measured, or felt. Keep it under 3 lines.";
+        let intro = text.trim().split(/[.!?]/)[0] || text.slice(0, 180);
+        intro = intro.replace(/in today's fast-paced world/gi, "The kicker is");
+        intro = intro.replace(/in today's digital age/gi, "Right now");
+        intro = intro.replace(/\bMoreover\b/gi, "On top of that");
+        intro = intro.replace(/\bAdditionally\b/gi, "Another angle");
+        return intro;
+    }
+
+    function showVersionModal(kind) {
+        const modalEl = document.getElementById('versionModal');
+        const body = document.getElementById('versionModalBody');
+        const meta = document.getElementById('versionModalMeta');
+        const label = document.getElementById('versionModalLabel');
+        const applyBtn = document.getElementById('applyVersionBtn');
+        const modalUserBtn = document.getElementById('modalUserBtn');
+        const modalSystemBtn = document.getElementById('modalSystemBtn');
+        const undoBtn = document.getElementById('undoApplyBtn');
+
+        if (!modalEl || !body || !label || !applyBtn) return;
+
+        if (modalUserBtn && modalSystemBtn) {
+            modalUserBtn.classList.toggle('active', kind === 'user');
+            modalSystemBtn.classList.toggle('active', kind === 'system');
+        }
+
+        let html = '';
+        let summary = '';
+        if (kind === 'system') {
+            html = auditVersions.systemHtml || 'Run audit to generate system version.';
+            summary = `System version • paragraph-level suggestions`;
+            applyBtn.dataset.version = 'system';
+        } else {
+            html = auditVersions.userHtml || 'No user draft found. Type in the editor first.';
+            summary = `User version • ${auditVersions.userPlain?.split(/\s+/).filter(Boolean).length || 0} words`;
+            applyBtn.dataset.version = 'user';
+        }
+
+        body.innerHTML = html;
+        label.textContent = kind === 'system' ? 'System-updated version' : 'User version';
+        meta.textContent = summary;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        if (undoBtn) {
+            undoBtn.disabled = !lastAppliedHtml;
+        }
+    }
+
+    function applyVersionToEditor() {
+        const applyBtn = document.getElementById('applyVersionBtn');
+        if (!applyBtn) return;
+        const kind = applyBtn.dataset.version || 'user';
+        let html = kind === 'system' ? auditVersions.systemHtml : auditVersions.userHtml;
+
+        // For system version, merge selected suggestions back into a single HTML string
+        if (kind === 'system') {
+            const temp = document.createElement('div');
+            temp.innerHTML = auditVersions.systemHtml || '';
+            const suggestions = Array.from(temp.querySelectorAll('.para-suggestion'));
+            const merged = suggestions.map(s => {
+                const idx = s.dataset.idx;
+                const useSuggestion = s.querySelector(`#useSuggestion-${idx}`)?.checked ?? true;
+                const suggested = s.querySelector('.border.rounded.p-2.bg-body')?.innerHTML || '';
+                const original = s.querySelector('.border.rounded.p-2.mb-2')?.innerHTML || '';
+                return useSuggestion ? suggested : original;
+            }).filter(Boolean);
+            html = merged.map(p => `<p>${p}</p>`).join('');
+        }
+
+        if (window.contentQuill && html) {
+            window.contentQuill.root.innerHTML = html;
+            const textarea = document.getElementById('contentTextarea');
+            if (textarea) textarea.value = html;
+            showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied to editor`);
+        } else if (html) {
+            const textarea = document.getElementById('contentTextarea');
+            if (textarea) {
+                textarea.value = html;
+                showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied to editor`);
+            }
+        } else {
+            showStatus('error', 'No content to apply. Run audit first.');
+            return;
+        }
+
+        const modalEl = document.getElementById('versionModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.hide();
+        }
+
+        const undoBtn = document.getElementById('undoApplyBtn');
+        if (undoBtn) undoBtn.disabled = !lastAppliedHtml;
+    }
+
+    function applySingleParagraph(idx) {
+        const temp = document.createElement('div');
+        temp.innerHTML = auditVersions.systemHtml || '';
+        const block = temp.querySelector(`.para-suggestion[data-idx="${idx}"]`);
+        if (!block) return;
+        const suggested = block.querySelector('.border.rounded.p-2.bg-body')?.innerHTML || '';
+        const original = block.querySelector('.border.rounded.p-2.mb-2')?.innerHTML || '';
+        const useSuggested = block.querySelector(`#useSuggestion-${idx}`)?.checked ?? true;
+        const fragment = useSuggested ? suggested : original;
+        if (!fragment) return;
+
+        // Update only the corresponding paragraph in the editor
+        snapshotEditor();
+
+        if (window.contentQuill) {
+            const quillHtml = window.contentQuill.root.innerHTML;
+            const tempEditor = document.createElement('div');
+            tempEditor.innerHTML = quillHtml;
+            const paras = tempEditor.querySelectorAll('p, div');
+            if (paras[idx]) {
+                paras[idx].innerHTML = fragment;
+            } else {
+                const p = document.createElement('p');
+                p.innerHTML = fragment;
+                tempEditor.appendChild(p);
+            }
+            const newHtml = tempEditor.innerHTML;
+            window.contentQuill.root.innerHTML = newHtml;
+            const textarea = document.getElementById('contentTextarea');
+            if (textarea) textarea.value = newHtml;
+            highlightEditor();
+            showStatus('success', `Paragraph ${parseInt(idx, 10) + 1} applied to editor`);
+        }
+
+        const undoBtn = document.getElementById('undoApplyBtn');
+        if (undoBtn) undoBtn.disabled = !lastAppliedHtml;
+    }
+
+    function snapshotEditor() {
+        if (window.contentQuill) {
+            lastAppliedHtml = window.contentQuill.root.innerHTML;
+        } else {
+            const textarea = document.getElementById('contentTextarea');
+            lastAppliedHtml = textarea?.value || '';
+        }
+    }
+
+    function undoLastApply() {
+        if (!lastAppliedHtml) return;
+        if (window.contentQuill) {
+            window.contentQuill.root.innerHTML = lastAppliedHtml;
+        }
+        const textarea = document.getElementById('contentTextarea');
+        if (textarea) textarea.value = lastAppliedHtml;
+        showStatus('info', 'Reverted to previous content');
+        lastAppliedHtml = '';
+        const undoBtn = document.getElementById('undoApplyBtn');
+        if (undoBtn) undoBtn.disabled = true;
+    }
+
+    function highlightEditor() {
+        const editor = document.querySelector('#contentQuillEditor .ql-editor');
+        if (!editor) return;
+        editor.classList.add('applied-highlight');
+        setTimeout(() => editor.classList.remove('applied-highlight'), 1200);
+    }
+
+    function chunkify(text) {
+        if (!text) return '';
+        return text.split(/\n+/).map(p => p.trim()).filter(Boolean).map(p => {
+            // Split long paragraphs into ~2-3 line chunks
+            if (p.length > 240) {
+                return p.match(/.{1,220}(\s|$)/g).join('\n\n');
+            }
+            return p;
+        }).join('\n\n');
+    }
+
+    // Paragraph splitter that keeps basic HTML
+    function splitIntoParas(htmlOrText) {
+        if (!htmlOrText) return [];
+        const tmp = document.createElement('div');
+        tmp.innerHTML = htmlOrText;
+        // If HTML contains block elements, split by them; else fall back to line breaks
+        const blocks = tmp.querySelectorAll('p, div, li');
+        if (blocks.length) {
+            return Array.from(blocks).map(b => b.innerHTML);
+        }
+        const plain = tmp.textContent || '';
+        return plain.split(/\n{2,}/).filter(p => p.trim().length);
+    }
+
+    // Clean HTML noise ( stray closing tags etc.) before rewrite
+    function cleanHtmlForRewrite(htmlOrText) {
+        if (!htmlOrText) return '';
+        let text = htmlOrText;
+        text = text.replace(/<\/?(strong|b|i|em)>\s*:/gi, ': ');
+        text = text.replace(/<\/?(strong|b|i|em)>/gi, '');
+        return text;
+    }
+
+    // Humanizing rewrite: grammar + cadence + light contractions (keeps meaning)
+    function smartRewrite(text) {
+        if (!text) return '';
+        let t = text;
+        const replacements = [
+            [/in today's fast-paced world/gi, ''],
+            [/in today's digital age/gi, ''],
+            [/\bmoreover\b/gi, 'On top of that,'],
+            [/\badditionally\b/gi, 'Also,'],
+            [/\bfurthermore\b/gi, 'Plus,'],
+            [/\butilize\b/gi, 'use'],
+            [/\bapproximately\b/gi, 'about'],
+            [/\bdue to the fact that\b/gi, 'because'],
+            [/\bat this point in time\b/gi, 'now'],
+            [/\bit is\b/gi, "it's"],
+            [/\bdo not\b/gi, "don't"],
+            [/\bdoes not\b/gi, "doesn't"],
+            [/\bcan not\b/gi, "can't"],
+            [/\bare not\b/gi, "aren't"],
+            [/\bis not\b/gi, "isn't"],
+            [/\bwill not\b/gi, "won't"]
+        ];
+        replacements.forEach(([pat, rep]) => {
+            t = t.replace(pat, rep);
+        });
+        // Remove stray closing tags and double punctuation
+        t = t.replace(/<\/?[^>]+>/g, '');
+        t = t.replace(/:{2,}/g, ':');
+        // Trim double spaces and tidy punctuation
+        t = t.replace(/\s{2,}/g, ' ').trim();
+        // Humanize cadence: split long sentences, keep meaning
+        return humanizeCadence(t);
+    }
+
+    function humanizeCadence(text) {
+        if (!text) return '';
+        const sentences = text
+            .replace(/([.!?])\s+/g, '$1|')
+            .split('|')
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        const softened = sentences.map(s => {
+            if (s.length <= 120) return s;
+            // Split long sentences at commas or "and"
+            const parts = s.split(/,| and /);
+            if (parts.length > 1) {
+                const trimmedParts = parts.map(p => p.trim()).filter(Boolean);
+                return trimmedParts.join('. ');
+            }
+            return s;
+        });
+
+        return softened.join('. ').replace(/\.\./g, '.').trim();
+    }
+
+    function stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html || '';
+        return tmp.textContent || tmp.innerText || '';
+    }
+
+    // Ensure modal body text stays readable in dark mode
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('versionModal');
+        if (modal) {
+            modal.addEventListener('show.bs.modal', () => {
+                modal.classList.add('text-body');
+            });
+        }
+    });
+
+    function countWords(text) {
+        if (!text) return 0;
+        return (text.trim().split(/\s+/) || []).filter(Boolean).length;
+    }
+
+    function containsAny(text, list) {
+        return list.some(item => text.includes(item));
     }
 
     function showStatus(type, message) {

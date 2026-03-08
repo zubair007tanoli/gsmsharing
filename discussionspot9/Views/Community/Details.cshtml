@@ -1,6 +1,10 @@
 ﻿@model discussionspot9.Models.ViewModels.CreativeViewModels.CommunityDetailPageViewModel
 @{
     ViewData["Title"] = Model.Community.Title ?? "Community";
+    ViewData["Description"] = Model.Community.ShortDescription ?? Model.Community.Description ?? $"Join r/{Model.Community.Name} on DiscussionSpot.";
+    ViewData["Keywords"] = $"{Model.Community.Title}, community, discussion, r/{Model.Community.Name}";
+    var canonicalCommunitySlug = Model.Community.Slug ?? Model.Community.Name;
+    ViewData["CanonicalUrl"] = $"{Context.Request.Scheme}://{Context.Request.Host}/r/{canonicalCommunitySlug}";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
 }

@@ -67,6 +67,52 @@ namespace discussionspot9.Controllers
             }
         }
 
+        [HttpGet("sitemap-posts-{page}.xml")]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
+        [Produces("application/xml")]
+        public async Task<IActionResult> SitemapPosts(int page)
+        {
+            try
+            {
+                var scheme = Request.Scheme;
+                var host = Request.Host.ToString();
+
+                var sitemapXml = await _sitemapService.GeneratePostsSitemapAsync(page, scheme, host);
+
+                sitemapXml = sitemapXml.Trim();
+
+                return Content(sitemapXml, "application/xml; charset=utf-8");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating posts sitemap for page {Page}", page);
+                return StatusCode(500, "Error generating posts sitemap");
+            }
+        }
+
+        [HttpGet("sitemap-stories.xml")]
+        [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
+        [Produces("application/xml")]
+        public async Task<IActionResult> StoriesSitemap()
+        {
+            try
+            {
+                var scheme = Request.Scheme;
+                var host = Request.Host.ToString();
+
+                var sitemapXml = await _sitemapService.GenerateStoriesSitemapAsync(scheme, host);
+
+                sitemapXml = sitemapXml.Trim();
+
+                return Content(sitemapXml, "application/xml; charset=utf-8");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating stories sitemap");
+                return StatusCode(500, "Error generating stories sitemap");
+            }
+        }
+
         [HttpGet("robots.txt")]
         [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
         [Produces("text/plain")]
@@ -74,12 +120,24 @@ namespace discussionspot9.Controllers
         {
             var scheme = Request.Scheme;
             var host = Request.Host.ToString();
+            var canonicalBase = $"{scheme}://{host}";
 
             var robotsTxt = new StringBuilder();
             robotsTxt.AppendLine("User-agent: *");
             robotsTxt.AppendLine("Allow: /");
+            robotsTxt.AppendLine("Disallow: /admin/");
+            robotsTxt.AppendLine("Disallow: /api/");
+            robotsTxt.AppendLine("Disallow: /account/settings");
+            robotsTxt.AppendLine("Disallow: /account/profile");
+            robotsTxt.AppendLine("Disallow: */create");
+            robotsTxt.AppendLine("Disallow: */edit");
+            robotsTxt.AppendLine("Disallow: */delete");
+            robotsTxt.AppendLine("Disallow: /signin-google");
+            robotsTxt.AppendLine("Disallow: /auth");
             robotsTxt.AppendLine();
-            robotsTxt.AppendLine($"Sitemap: {scheme}://{host}/sitemap.xml");
+            robotsTxt.AppendLine($"Sitemap: {canonicalBase}/sitemap-index.xml");
+            robotsTxt.AppendLine($"Sitemap: {canonicalBase}/sitemap.xml");
+            robotsTxt.AppendLine($"Host: {host}");
 
             return Content(robotsTxt.ToString(), "text/plain; charset=utf-8");
         }

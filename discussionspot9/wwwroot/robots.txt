@@ -1,5 +1,5 @@
-# robots.txt for DiscussionSpot & GSMSharing
-# Allow search engines to crawl and index content
+# robots.txt for DiscussionSpot
+# Keep search engines focused on canonical, indexable surfaces
 
 User-agent: *
 Allow: /
@@ -13,34 +13,6 @@ Disallow: */delete
 Disallow: /signin-google
 Disallow: /auth
 
-# Allow important pages
-Allow: /r/
-Allow: /u/
-Allow: /categories
-Allow: /communities
-Allow: /popular
-Allow: /search
-
-# Googlebot specific
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 0
-
-# Google AdSense bot
-User-agent: Mediapartners-Google
-Allow: /
-
-# Bing
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-# Yandex
-User-agent: Yandex
-Allow: /
-Crawl-delay: 2
-
-# Sitemaps
-Sitemap: https://gsmsharing.com/sitemap.xml
+Sitemap: https://discussionspot.com/sitemap-index.xml
 Sitemap: https://discussionspot.com/sitemap.xml
-
+Host: discussionspot.com

@@ -10,6 +10,8 @@ namespace discussionspot9.Services
     {
         Task<string> GenerateSitemapAsync(string scheme, string host);
         Task<string> GenerateSitemapIndexAsync(string scheme, string host);
+        Task<string> GeneratePostsSitemapAsync(int page, string scheme, string host);
+        Task<string> GenerateStoriesSitemapAsync(string scheme, string host);
     }
 
     public class SitemapService : ISitemapService
@@ -211,6 +213,7 @@ namespace discussionspot9.Services
                     try
                     {
                         WriteSitemap(xmlWriter, $"{scheme}://{host}/sitemap.xml", DateTime.UtcNow);
+                        WriteSitemap(xmlWriter, $"{scheme}://{host}/sitemap-stories.xml", DateTime.UtcNow);
 
                         var postCount = await _context.Posts
                             .Where(p => p.Status == "published")
@@ -232,6 +235,168 @@ namespace discussionspot9.Services
                     finally
                     {
                         xmlWriter.WriteEndElement(); // sitemapindex
+                        xmlWriter.WriteEndDocument();
+                    }
+                }
+
+                return stringWriter.ToString();
+            }
+        }
+
+        public async Task<string> GeneratePostsSitemapAsync(int page, string scheme, string host)
+        {
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+            const int pageSize = 50000;
+            var skip = (page - 1) * pageSize;
+
+            using (var stringWriter = new Utf8StringWriter())
+            {
+                using (var xmlWriter = new XmlTextWriter(stringWriter)
+                {
+                    Formatting = Formatting.Indented,
+                    Indentation = 2
+                })
+                {
+                    xmlWriter.WriteStartDocument();
+                    xmlWriter.WriteStartElement("urlset");
+                    xmlWriter.WriteAttributeString("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
+                    xmlWriter.WriteAttributeString("xmlns:image", "http://www.google.com/schemas/sitemap-image/1.1");
+
+                    try
+                    {
+                        var posts = await _context.Posts
+                            .Include(p => p.Community)
+                            .Include(p => p.Media)
+                            .Where(p => p.Status == "published"
+                                && p.Community != null
+                                && !p.Community.IsDeleted
+                                && !string.IsNullOrWhiteSpace(p.Slug)
+                                && !string.IsNullOrWhiteSpace(p.Community.Slug)
+                                && !string.IsNullOrWhiteSpace(p.Title))
+                            .OrderByDescending(p => p.UpdatedAt)
+                            .Skip(skip)
+                            .Take(pageSize)
+                            .ToListAsync();
+
+                        foreach (var post in posts)
+                        {
+                            var communitySlug = post.Community?.Slug;
+                            if (string.IsNullOrWhiteSpace(communitySlug) || string.IsNullOrWhiteSpace(post.Slug))
+                            {
+                                continue;
+                            }
+
+                            var postUrl = $"{scheme}://{host}/r/{EscapeUrl(communitySlug)}/posts/{EscapeUrl(post.Slug)}";
+
+                            xmlWriter.WriteStartElement("url");
+                            xmlWriter.WriteElementString("loc", postUrl);
+                            xmlWriter.WriteElementString("lastmod", post.UpdatedAt.ToString("yyyy-MM-dd"));
+                            xmlWriter.WriteElementString("changefreq", "daily");
+                            xmlWriter.WriteElementString("priority", "0.8");
+
+                            var mediaUrl = post.Media?.FirstOrDefault()?.Url ?? post.Url;
+                            if (!string.IsNullOrEmpty(mediaUrl))
+                            {
+                                var imageUrl = GetValidImageUrl(mediaUrl, scheme, host);
+                                if (!string.IsNullOrEmpty(imageUrl))
+                                {
+                                    var title = post.Title ?? "";
+                                    var caption = post.Content != null
+                                        ? TruncateToSentence(StripHtml(post.Content), 180)
+                                        : "";
+                                    WriteImage(xmlWriter, imageUrl, title, caption);
+                                }
+                            }
+
+                            xmlWriter.WriteEndElement();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error generating paginated post sitemap for page {Page}", page);
+                    }
+                    finally
+                    {
+                        xmlWriter.WriteEndElement();
+                        xmlWriter.WriteEndDocument();
+                    }
+                }
+
+                return stringWriter.ToString();
+            }
+        }
+
+        public async Task<string> GenerateStoriesSitemapAsync(string scheme, string host)
+        {
+            using (var stringWriter = new Utf8StringWriter())
+            {
+                using (var xmlWriter = new XmlTextWriter(stringWriter)
+                {
+                    Formatting = Formatting.Indented,
+                    Indentation = 2
+                })
+                {
+                    xmlWriter.WriteStartDocument();
+                    xmlWriter.WriteStartElement("urlset");
+                    xmlWriter.WriteAttributeString("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
+                    xmlWriter.WriteAttributeString("xmlns:image", "http://www.google.com/schemas/sitemap-image/1.1");
+
+                    try
+                    {
+                        var stories = await _context.Stories
+                            .Where(s => s.Status == "published"
+                                && !string.IsNullOrWhiteSpace(s.Slug)
+                                && !string.IsNullOrWhiteSpace(s.Title))
+                            .OrderByDescending(s => s.PublishedAt ?? s.UpdatedAt)
+                            .Take(10000)
+                            .ToListAsync();
+
+                        foreach (var story in stories)
+                        {
+                            if (string.IsNullOrWhiteSpace(story.Slug))
+                            {
+                                continue;
+                            }
+
+                            var storyUrl = $"{scheme}://{host}/stories/viewer/{EscapeUrl(story.Slug)}";
+
+                            xmlWriter.WriteStartElement("url");
+                            xmlWriter.WriteElementString("loc", storyUrl);
+                            xmlWriter.WriteElementString("lastmod", story.UpdatedAt.ToString("yyyy-MM-dd"));
+                            xmlWriter.WriteElementString("changefreq", "weekly");
+                            xmlWriter.WriteElementString("priority", "0.8");
+
+                            if (!string.IsNullOrEmpty(story.PosterImageUrl))
+                            {
+                                var imageUrl = GetValidImageUrl(story.PosterImageUrl, scheme, host);
+                                if (!string.IsNullOrEmpty(imageUrl))
+                                {
+                                    var title = story.Title ?? "";
+                                    var description = story.Description ?? "";
+                                    WriteImage(xmlWriter, imageUrl, title, description);
+                                }
+                            }
+
+                            xmlWriter.WriteEndElement();
+
+                            if (story.IsAmpEnabled)
+                            {
+                                var ampUrl = $"{scheme}://{host}/stories/amp/{EscapeUrl(story.Slug)}";
+                                WriteUrl(xmlWriter, ampUrl, story.UpdatedAt, "weekly", "0.7");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error generating stories sitemap");
+                    }
+                    finally
+                    {
+                        xmlWriter.WriteEndElement();
                         xmlWriter.WriteEndDocument();
                     }
                 }

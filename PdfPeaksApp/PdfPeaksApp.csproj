@@ -17,7 +17,11 @@
 		<ApplicationTitle>PdfPeaksApp</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.pdfpeaksapp</ApplicationId>
+		<ApplicationId>com.daniyal.pdfpeaks</ApplicationId>
+
+		<!-- Android 14 / API 34 target + tools -->
+		<AndroidSdkBuildToolsVersion>34.0.0</AndroidSdkBuildToolsVersion>
+		<AndroidTargetSdkVersion>34</AndroidTargetSdkVersion>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -36,6 +40,9 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
+		<AndroidEnableMultiDex>True</AndroidEnableMultiDex>
+		<DebugSymbols>True</DebugSymbols>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-maccatalyst'">
@@ -50,6 +57,12 @@
 
 	<PropertyGroup>
 	  <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
+	  <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
+	  <AndroidEnableMultiDex>True</AndroidEnableMultiDex>
+	  <DebugSymbols>False</DebugSymbols>
 	</PropertyGroup>
 
 	<ItemGroup>

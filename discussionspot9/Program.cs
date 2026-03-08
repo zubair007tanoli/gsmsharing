@@ -939,9 +939,20 @@ app.MapControllerRoute(
     defaults: new { controller = "Sitemap", action = "Sitemap" });
 
 app.MapControllerRoute(
+    name: "sitemap_index",
+    pattern: "sitemap-index.xml",
+    defaults: new { controller = "Sitemap", action = "SitemapIndex" });
+
+app.MapControllerRoute(
     name: "sitemap_stories",
     pattern: "sitemap-stories.xml",
     defaults: new { controller = "Sitemap", action = "StoriesSitemap" });
+
+app.MapControllerRoute(
+    name: "sitemap_posts_paginated",
+    pattern: "sitemap-posts-{page}.xml",
+    defaults: new { controller = "Sitemap", action = "SitemapPosts" },
+    constraints: new { page = @"^[1-9][0-9]*$" });
 
 app.MapControllerRoute(
     name: "post_create_general",

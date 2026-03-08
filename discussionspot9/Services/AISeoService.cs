@@ -240,9 +240,18 @@ namespace discussionspot9.Services
                     // Fallback to Gemini if OpenAI fails
                     if (!string.IsNullOrEmpty(_geminiApiKey))
                     {
-                        return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                        try
+                        {
+                            return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                        }
+                        catch (Exception gex)
+                        {
+                            _logger.LogWarning(gex, "Gemini fallback after OpenAI failed. Falling back to local/free optimizer.");
+                            return UseLocalFallback(baseline, "OpenAI+Gemini unavailable");
+                        }
                     }
-                    throw;
+                    _logger.LogWarning("OpenAI unavailable and no Gemini key configured. Falling back to local/free optimizer.");
+                    return UseLocalFallback(baseline, "OpenAI unavailable");
                 }
             }
             else if (_aiProvider == "anthropic" && !string.IsNullOrEmpty(_anthropicApiKey))
@@ -257,34 +266,51 @@ namespace discussionspot9.Services
                     // Fallback to Gemini if Anthropic fails
                     if (!string.IsNullOrEmpty(_geminiApiKey))
                     {
-                        return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                        try
+                        {
+                            return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                        }
+                        catch (Exception gex)
+                        {
+                            _logger.LogWarning(gex, "Gemini fallback after Anthropic failed. Falling back to local/free optimizer.");
+                            return UseLocalFallback(baseline, "Anthropic+Gemini unavailable");
+                        }
                     }
-                    throw;
+                    _logger.LogWarning("Anthropic unavailable and no Gemini key configured. Falling back to local/free optimizer.");
+                    return UseLocalFallback(baseline, "Anthropic unavailable");
                 }
             }
             else if (_aiProvider == "gemini" && !string.IsNullOrEmpty(_geminiApiKey))
             {
-                return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                try
+                {
+                    return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Gemini optimization failed. Falling back to local/free optimizer.");
+                    return UseLocalFallback(baseline, "Gemini unavailable");
+                }
             }
             else if (!string.IsNullOrEmpty(_geminiApiKey))
             {
                 // Use Gemini as default fallback
                 _logger.LogInformation("Using Gemini as fallback AI provider");
-                return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                try
+                {
+                    return await OptimizeWithGeminiAsync(title, content, community, baseline, searchContext);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Gemini fallback failed. Falling back to local/free optimizer.");
+                    return UseLocalFallback(baseline, "Gemini fallback unavailable");
+                }
             }
             else
             {
                 _logger.LogWarning("AI provider not configured, falling back to Python analyzer");
                 // Fallback to Python analyzer
-                return new AIOptimizationResult
-                {
-                    OptimizedTitle = baseline.OptimizedTitle,
-                    OptimizedContent = baseline.OptimizedContent,
-                    MetaDescription = baseline.SuggestedMetaDescription,
-                    Keywords = baseline.SuggestedKeywords,
-                    EstimatedScore = baseline.SeoScore,
-                    Improvements = baseline.ImprovementsMade
-                };
+                return UseLocalFallback(baseline, "No external AI configured");
             }
         }
 
@@ -394,6 +420,25 @@ namespace discussionspot9.Services
                 _logger.LogError(ex, "Error calling OpenAI API");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Final safety net: use baseline (Python/local) results when paid AI fails or is unavailable.
+        /// </summary>
+        private AIOptimizationResult UseLocalFallback(SeoAnalysisResult baseline, string reason)
+        {
+            var improvements = baseline.ImprovementsMade ?? new List<string>();
+            improvements.Add($"Used local SEO analyzer because: {reason}");
+
+            return new AIOptimizationResult
+            {
+                OptimizedTitle = baseline.OptimizedTitle,
+                OptimizedContent = baseline.OptimizedContent,
+                MetaDescription = baseline.SuggestedMetaDescription,
+                Keywords = baseline.SuggestedKeywords,
+                EstimatedScore = baseline.SeoScore,
+                Improvements = improvements
+            };
         }
 
         /// <summary>

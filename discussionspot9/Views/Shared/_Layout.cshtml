@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+@{
+    var request = Context?.Request;
+    var rawCanonical = (ViewData["CanonicalUrl"] as string) ?? $"{request?.Scheme}://{request?.Host}{request?.Path}";
+    var canonicalUrl = string.IsNullOrWhiteSpace(rawCanonical)
+        ? $"{request?.Scheme}://{request?.Host}"
+        : rawCanonical.TrimEnd('/');
+}
     <!-- Allow data URIs for base64 images -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; img-src 'self' data: blob: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:; style-src 'self' 'unsafe-inline' https: http:; font-src 'self' data: https: http:; connect-src 'self' https: http: ws: wss:;">
     
@@ -24,18 +31,11 @@
     }
     
     <!-- Canonical URL -->
-    @if (ViewData["CanonicalUrl"] != null)
-    {
-        <link rel="canonical" href="@ViewData["CanonicalUrl"]">
-    }
-    else
-    {
-        <link rel="canonical" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
-    }
+    <link rel="canonical" href="@canonicalUrl">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="@(ViewData["OgType"] ?? "website")">
-    <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+    <meta property="og:url" content="@canonicalUrl">
     <meta property="og:title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
     <meta property="og:description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more.")">
     <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
@@ -44,13 +44,14 @@
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
+    <meta name="twitter:url" content="@canonicalUrl">
     <meta name="twitter:title" content="@(ViewData["Title"] ?? "DiscussionSpot - Where Knowledge Meets Community")">
     <meta name="twitter:description" content="@(ViewData["Description"] ?? "Join DiscussionSpot - A thriving community platform for discussions on technology, gaming, entertainment, and more.")">
     <meta name="twitter:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/Assets/Logo_Auth.png")">
     
     <!-- Google AdSense -->
     <meta name="google-adsense-account" content="ca-pub-5934633595595089">
+    <meta name="theme-color" content="#0ea5e9">
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="~/Assets/Logo_Auth.png">
@@ -75,14 +76,16 @@
     <link rel="dns-prefetch" href="//pagead2.googlesyndication.com">
     
     <!-- Preconnect for performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     
     <!-- Dynamic SEO Meta Tags (from pages) -->
     @await RenderSectionAsync("MetaTags", required: false)
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS (preloaded for faster LCP) -->
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></noscript>
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
