@@ -61,9 +61,13 @@ class SeoAnalyzer:
         issues.extend(title_issues)
         improvements.extend(title_improvements)
         
+        # Sanitize content before optimization (remove stray tags / scaffolding)
+        cleaned_content, sanitize_issues = self._sanitize_content(content)
+        issues.extend(sanitize_issues)
+
         # Analyze and optimize content
         optimized_content, content_issues, content_improvements = self._optimize_content(
-            content, title, post_type
+            cleaned_content, title, post_type
         )
         issues.extend(content_issues)
         improvements.extend(content_improvements)
@@ -161,11 +165,11 @@ class SeoAnalyzer:
         
         # Remove HTML tags for analysis (but keep them in optimized version)
         text_only = re.sub(r'<[^>]+>', '', content)
-        
+
         # Check content length
         if len(text_only) < self.min_content_length and post_type == 'text':
             issues.append(f"Content too short for SEO (min {self.min_content_length} chars recommended)")
-        
+
         # Add heading if content doesn't have one and is long enough
         if len(text_only) > 200 and not re.search(r'<h[1-6]>', content, re.IGNORECASE):
             if title:
@@ -189,8 +193,80 @@ class SeoAnalyzer:
             
             if keyword_usage < 0.5:
                 issues.append("Low keyword relevance between title and content")
-        
+
+        # Humanize cadence and tone (medium = balanced)
+        optimized = self._humanize_content(optimized, tone='medium')
+
         return optimized, issues, improvements
+
+    def _sanitize_content(self, content: str) -> tuple:
+        """Clean stray tags, scaffolding labels, and capture issues"""
+        if not content:
+            return content, []
+        issues = []
+        cleaned = content
+        # Remove strong/b/i/em wrappers before colons
+        cleaned = re.sub(r'</?(strong|b|i|em)>\s*:', ': ', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'</?(strong|b|i|em)>', '', cleaned, flags=re.IGNORECASE)
+        # Strip Column X scaffolding
+        if re.search(r'column\s+\d+', cleaned, flags=re.IGNORECASE):
+            issues.append("Found “Column X” scaffolding; convert to real subheadings.")
+            cleaned = re.sub(r'column\s+\d+\s*:\s*', '', cleaned, flags=re.IGNORECASE)
+        # Normalize final tip heading
+        cleaned = re.sub(r'Final Pro-Tip for 20\d{2} Buyers', 'Final tip for buyers', cleaned, flags=re.IGNORECASE)
+        return cleaned, issues
+
+    def _humanize_content(self, content: str, tone: str = 'medium') -> str:
+        """Humanize cadence and tone; conservative by default"""
+        if not content:
+            return content
+        text = re.sub(r'</?[^>]+>', '', content)
+        # Replace filler & add contractions
+        replacements = [
+            (r"in today's fast-paced world", ''),
+            (r"in today's digital age", ''),
+            (r'\bmoreover\b', 'On top of that,'),
+            (r'\badditionally\b', 'Also,'),
+            (r'\bfurthermore\b', 'Plus,'),
+            (r'\butilize\b', 'use'),
+            (r'\bapproximately\b', 'about'),
+            (r'\bdue to the fact that\b', 'because'),
+            (r'\bat this point in time\b', 'now'),
+            (r'\bit is\b', "it's"),
+            (r'\bdo not\b', "don't"),
+            (r'\bdoes not\b', "doesn't"),
+            (r'\bcan not\b', "can't"),
+            (r'\bare not\b', "aren't"),
+            (r'\bis not\b', "isn't"),
+            (r'\bwill not\b', "won't")
+        ]
+        for pat, rep in replacements:
+            text = re.sub(pat, rep, text, flags=re.IGNORECASE)
+        text = re.sub(r'\s{2,}', ' ', text).strip()
+
+        # Cadence
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        max_len = 95 if tone == 'medium' else 70 if tone == 'bold' else 120
+        softened = []
+        for s in sentences:
+            s = s.strip()
+            if len(s) <= max_len:
+                softened.append(s)
+                continue
+            parts = re.split(r',| and ', s)
+            parts = [p.strip() for p in parts if p.strip()]
+            softened.append('. '.join(parts))
+        joined = '. '.join(softened).replace('..', '.').strip()
+
+        if tone == 'bold':
+            joined = re.sub(r'\bwe\b', 'I', joined, flags=re.IGNORECASE)
+            joined = re.sub(r'\bour\b', 'my', joined, flags=re.IGNORECASE)
+            if not re.search(r'takeaway|bottom line|my view|hands-on', joined, flags=re.IGNORECASE):
+                joined += ' From my hands-on checks, this still feels like the smart pick.'
+
+        # Re-wrap into simple paragraphs
+        paras = [p.strip() for p in re.split(r'\n{2,}', joined) if p.strip()]
+        return '\n\n'.join(paras)
     
     def _generate_meta_description(self, content: str, title: str) -> str:
         """Generate SEO-friendly meta description"""
@@ -218,7 +294,7 @@ class SeoAnalyzer:
     def _extract_keywords(self, title: str, content: str) -> List[str]:
         """Extract relevant keywords"""
         # Remove HTML and combine text
-        text = title + " " + re.sub(r'<[^>]+>', '', content)
+        text = title + " " + re.sub(r'<[^>]+>', ' ', content)
         text = text.lower()
         
         # Extract words (4+ letters)

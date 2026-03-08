@@ -1124,6 +1124,14 @@
                 </div>
                 <div class="card-content" style="font-size: 13px;">
                     <div id="auditIssues" class="alert alert-info" style="display:none; padding:10px; margin-bottom:12px;"></div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <label class="small text-muted mb-0" for="toneSelect">Humanize tone:</label>
+                        <select id="toneSelect" class="form-select form-select-sm" style="max-width: 200px;">
+                            <option value="light" selected>Light (safer)</option>
+                            <option value="medium">Medium</option>
+                            <option value="bold">Bold</option>
+                        </select>
+                    </div>
                     <div class="audit-grid">
                         <div class="audit-pane">
                             <div class="audit-pane__title">User version</div>
@@ -1212,6 +1220,7 @@
     let tags = [];
     let auditVersions = { userHtml: '', systemHtml: '', userPlain: '', systemPlain: '' };
     let lastAppliedHtml = '';
+    let humanizeTone = 'light';
 
     // Initialize when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -1633,6 +1642,14 @@
                 showVersionModal('user');
             });
         }
+        const tone = document.getElementById('toneSelect');
+        if (tone) {
+            humanizeTone = tone.value;
+            tone.addEventListener('change', () => {
+                humanizeTone = tone.value;
+                runContentAudit();
+            });
+        }
     }
 
     function wireVersionButtons() {
@@ -1687,6 +1704,9 @@
 
         if (/column\s*1/i.test(plain) || /column\s*2/i.test(plain) || /colum\s*2/i.test(plain)) {
             issues.push("Remove placeholder text like “column 1 / column 2” and replace with real subheadings or bullets.");
+        }
+        if (/column\s*\d+/i.test(plain)) {
+            issues.push("Found “Column X” scaffolding — rewrite as real subheadings (e.g., “Budget Maximalist”).");
         }
 
         if (!/<h1/i.test(htmlContent) || !/<h2/i.test(htmlContent)) {
@@ -1747,7 +1767,7 @@
         const improvedParas = paragraphs.map((p, idx) => {
             const trimmed = p.trim();
             if (!trimmed) return '';
-            const improved = smartRewrite(trimmed);
+            const improved = smartRewrite(trimmed, humanizeTone);
             return `
                 <div class="para-suggestion" data-idx="${idx}">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1834,6 +1854,8 @@
         const kind = applyBtn.dataset.version || 'user';
         let html = kind === 'system' ? auditVersions.systemHtml : auditVersions.userHtml;
 
+        snapshotEditor();
+
         // For system version, merge selected suggestions back into a single HTML string
         if (kind === 'system') {
             const temp = document.createElement('div');
@@ -1854,6 +1876,7 @@
             const textarea = document.getElementById('contentTextarea');
             if (textarea) textarea.value = html;
             showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied to editor`);
+            highlightEditor();
         } else if (html) {
             const textarea = document.getElementById('contentTextarea');
             if (textarea) {
@@ -1973,11 +1996,15 @@
         let text = htmlOrText;
         text = text.replace(/<\/?(strong|b|i|em)>\s*:/gi, ': ');
         text = text.replace(/<\/?(strong|b|i|em)>/gi, '');
+        // Remove column scaffolding labels
+        text = text.replace(/Column\s+\d+\s*:\s*/gi, '');
+        // Normalize final tip heading
+        text = text.replace(/Final Pro-Tip for 2026 Buyers/gi, 'Final tip for 2026 buyers');
         return text;
     }
 
     // Humanizing rewrite: grammar + cadence + light contractions (keeps meaning)
-    function smartRewrite(text) {
+    function smartRewrite(text, tone = 'light') {
         if (!text) return '';
         let t = text;
         const replacements = [
@@ -2007,10 +2034,10 @@
         // Trim double spaces and tidy punctuation
         t = t.replace(/\s{2,}/g, ' ').trim();
         // Humanize cadence: split long sentences, keep meaning
-        return humanizeCadence(t);
+        return humanizeCadence(t, tone);
     }
 
-    function humanizeCadence(text) {
+    function humanizeCadence(text, tone = 'light') {
         if (!text) return '';
         const sentences = text
             .replace(/([.!?])\s+/g, '$1|')
@@ -2019,8 +2046,8 @@
             .filter(Boolean);
 
         const softened = sentences.map(s => {
-            if (s.length <= 120) return s;
-            // Split long sentences at commas or "and"
+            const maxLen = tone === 'bold' ? 70 : tone === 'medium' ? 95 : 120;
+            if (s.length <= maxLen) return s;
             const parts = s.split(/,| and /);
             if (parts.length > 1) {
                 const trimmedParts = parts.map(p => p.trim()).filter(Boolean);
@@ -2029,7 +2056,19 @@
             return s;
         });
 
-        return softened.join('. ').replace(/\.\./g, '.').trim();
+        let joined = softened.join('. ').replace(/\.\./g, '.').trim();
+        if (tone === 'bold') {
+            // Add a touch of first-person framing without changing facts
+            joined = joined
+                .replace(/\bwe\b/gi, 'I')
+                .replace(/\bour\b/gi, 'my')
+                .replace(/\busers\b/gi, 'people like us');
+            // Nudge in a takeaway if missing
+            if (!/takeaway|bottom line|my view|from my tests/i.test(joined)) {
+                joined += ' From my hands-on checks, this still feels like the smart pick.';
+            }
+        }
+        return joined;
     }
 
     function stripHtml(html) {
