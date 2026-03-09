@@ -596,8 +596,8 @@
         padding: 12px;
         min-height: 120px;
         font-size: 12px;
-        line-height: 1.5;
-        white-space: pre-wrap;
+        line-height: 1.6;
+        white-space: normal;
         background: #fff;
     }
 
@@ -605,12 +605,53 @@
         color: #7c7c7c;
     }
 
+    .audit-pane__body h1,
+    .audit-pane__body h2,
+    .audit-pane__body h3 {
+        margin: 0 0 8px 0;
+        line-height: 1.35;
+    }
+
+    .audit-pane__body p,
+    .audit-pane__body li {
+        margin-bottom: 8px;
+    }
+
+    .audit-summary-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .audit-score-chip {
+        border-radius: 999px;
+        border: 1px solid #d8dee9;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #f4f7fb;
+        color: #334155;
+    }
+
     .para-suggestion {
         border: 1px solid #e1e5e9;
         border-radius: 6px;
         padding: 10px;
         margin-bottom: 10px;
-        background: var(--bs-body-bg, #fff);
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .para-suggestion__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin: 4px 0 8px 0;
+    }
+
+    .audit-preview {
+        font-size: 13px;
+        line-height: 1.65;
     }
 
     .para-suggestion .badge {
@@ -798,10 +839,12 @@
                                     <div class="community-info">
                                         <h4>r/@community.Title</h4>
                                         <p>@community.MemberCount.ToString("N0") members</p>
-                                        <form asp-controller="Community" asp-action="ToggleMembership" method="post" style="display:inline;">
-                                            <input type="hidden" name="communityId" value="@community.CommunityId" />
-                                            <button type="submit" class="btn btn-secondary btn-sm" style="margin-top:4px;">Join</button>
-                                        </form>
+                                        <button type="button"
+                                                class="btn btn-secondary btn-sm join-community-btn"
+                                                data-community-id="@community.CommunityId"
+                                                style="margin-top:4px;">
+                                            Join
+                                        </button>
                                     </div>
                                 </div>
                             }
@@ -1127,8 +1170,8 @@
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <label class="small text-muted mb-0" for="toneSelect">Humanize tone:</label>
                         <select id="toneSelect" class="form-select form-select-sm" style="max-width: 200px;">
-                            <option value="light" selected>Light (safer)</option>
-                            <option value="medium">Medium</option>
+                            <option value="light">Light (safer)</option>
+                            <option value="medium" selected>Medium (recommended)</option>
                             <option value="bold">Bold</option>
                         </select>
                     </div>
@@ -1218,9 +1261,19 @@
     let currentPostType = 'text';
     let selectedCommunity = null;
     let tags = [];
-    let auditVersions = { userHtml: '', systemHtml: '', userPlain: '', systemPlain: '' };
+    let auditVersions = {
+        userHtml: '',
+        systemHtml: '',
+        userPlain: '',
+        systemPlain: '',
+        userBlocks: [],
+        systemBlocks: [],
+        userScores: null,
+        systemScores: null
+    };
     let lastAppliedHtml = '';
-    let humanizeTone = 'light';
+    let humanizeTone = 'medium';
+    const targetHumanScore = 90;
 
     // Initialize when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -1252,6 +1305,7 @@
         document.querySelectorAll('.community-item').forEach(item => {
             item.addEventListener('click', handleCommunitySelect);
         });
+        wireJoinCommunityButtons();
 
         // Title character count
         document.getElementById('title').addEventListener('input', function(e) {
@@ -1407,6 +1461,60 @@
         localStorage.setItem('selectedCommunity', JSON.stringify(selectedCommunity));
 
         showStatus('success', `Selected ${communityTitle}`);
+    }
+
+    function wireJoinCommunityButtons() {
+        document.querySelectorAll('.join-community-btn').forEach(btn => {
+            btn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const communityId = parseInt(btn.dataset.communityId || '0', 10);
+                if (!communityId) {
+                    showStatus('error', 'Invalid community selected');
+                    return;
+                }
+
+                if (btn.dataset.loading === '1') {
+                    return;
+                }
+
+                const originalText = btn.textContent;
+                btn.dataset.loading = '1';
+                btn.disabled = true;
+                btn.textContent = 'Joining...';
+
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+                    const response = await fetch('/api/community/togglemembership', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            ...(token ? { 'RequestVerificationToken': token } : {})
+                        },
+                        body: JSON.stringify({ communityId })
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || !result?.success) {
+                        throw new Error(result?.message || 'Unable to join community right now');
+                    }
+
+                    const isMember = !!result.data;
+                    btn.textContent = isMember ? 'Joined' : 'Join';
+                    btn.classList.toggle('btn-secondary', !isMember);
+                    btn.classList.toggle('btn-primary', isMember);
+                    showStatus('success', isMember ? 'Community joined successfully' : 'Community left successfully');
+                } catch (error) {
+                    btn.textContent = originalText || 'Join';
+                    showStatus('error', error.message || 'Failed to join community');
+                } finally {
+                    btn.dataset.loading = '0';
+                    btn.disabled = false;
+                }
+            });
+        });
     }
 
     function updateCharCount(input, counterId, maxLength) {
@@ -1665,9 +1773,9 @@
         const modalBody = document.getElementById('versionModalBody');
         if (modalBody) {
             modalBody.addEventListener('click', (e) => {
-                const target = e.target;
-                if (target && target.dataset && target.dataset.applySingle !== undefined) {
-                    applySingleParagraph(target.dataset.applySingle);
+                const trigger = e.target?.closest?.('[data-apply-single]');
+                if (trigger && trigger.dataset && trigger.dataset.applySingle !== undefined) {
+                    applySingleParagraph(trigger.dataset.applySingle);
                 }
             });
         }
@@ -1679,54 +1787,20 @@
 
     function runContentAudit() {
         const title = (document.getElementById('title')?.value || '').trim();
-        const htmlContent = window.contentQuill
+        const rawHtml = window.contentQuill
             ? window.contentQuill.root.innerHTML
             : (document.getElementById('contentTextarea')?.value || '');
-
+        const htmlContent = sanitizeAuditHtml(rawHtml || '');
         const plain = stripHtml(htmlContent);
-        const wordCount = countWords(plain);
-        const issues = [];
+        const titleKeywords = extractTitleKeywords(title);
 
-        if (wordCount < 1000) {
-            issues.push(`Thin content detected (${wordCount} words). Add first-hand details, comparisons, and testing notes.`);
-        }
-
-        const cliches = [
-            "in today's fast-paced world",
-            "in today's digital age",
-            "moreover",
-            "additionally",
-            "furthermore"
-        ];
-        if (containsAny(plain.toLowerCase(), cliches)) {
-            issues.push("Intro uses AI-sounding clichés. Swap for varied, conversational openers.");
-        }
-
-        if (/column\s*1/i.test(plain) || /column\s*2/i.test(plain) || /colum\s*2/i.test(plain)) {
-            issues.push("Remove placeholder text like “column 1 / column 2” and replace with real subheadings or bullets.");
-        }
-        if (/column\s*\d+/i.test(plain)) {
-            issues.push("Found “Column X” scaffolding — rewrite as real subheadings (e.g., “Budget Maximalist”).");
-        }
-
-        if (!/<h1/i.test(htmlContent) || !/<h2/i.test(htmlContent)) {
-            issues.push("Add clear H1 and supporting H2/H3 structure for scannability.");
-        }
-
-        if (!/application\/ld\+json/i.test(htmlContent)) {
-            issues.push("Missing JSON-LD Article/Person schema.");
-        }
-
-        if (!/author bio/i.test(plain) && !/about the author/i.test(plain)) {
-            issues.push("Add an Author Bio with first-hand experience and profile link.");
-        }
-
-        if ((htmlContent.match(/href="#"/gi) || []).length > 0) {
-            issues.push("Found placeholder links (href=\"#\"). Replace or remove.");
-        }
+        const userBlocks = parseAuditBlocks(htmlContent);
+        const userScores = scoreContentVersion(userBlocks, title, titleKeywords);
+        const systemVersion = buildSystemVersion(title, userBlocks, titleKeywords, userScores);
 
         const auditIssues = document.getElementById('auditIssues');
         if (auditIssues) {
+            const issues = buildVersionIssues(userScores, systemVersion.scores, plain, htmlContent);
             if (issues.length) {
                 auditIssues.style.display = 'block';
                 auditIssues.className = 'alert alert-warning';
@@ -1735,66 +1809,104 @@
             } else {
                 auditIssues.style.display = 'block';
                 auditIssues.className = 'alert alert-success';
-                auditIssues.textContent = 'Looks solid. Run the read-aloud test to confirm it flows naturally.';
+                auditIssues.textContent = 'Audit passed: structure, readability, and SEO signals look publish-ready.';
             }
         }
 
         const userPane = document.getElementById('userVersion');
         if (userPane) {
             userPane.classList.remove('muted');
-            userPane.textContent = plain || 'No content found. Start typing to generate a preview.';
+            userPane.innerHTML = renderVersionPreview('User draft', userBlocks, userScores);
         }
 
         const systemPane = document.getElementById('systemVersion');
         if (systemPane) {
-            const improved = buildSystemVersion(title, plain, htmlContent);
             systemPane.classList.remove('muted');
-            systemPane.innerHTML = improved;
-            auditVersions.systemHtml = improved;
-            auditVersions.systemPlain = stripHtml(improved);
+            systemPane.innerHTML = systemVersion.html;
         }
 
         auditVersions.userHtml = htmlContent || (document.getElementById('contentTextarea')?.value || '');
         auditVersions.userPlain = plain;
+        auditVersions.userBlocks = userBlocks;
+        auditVersions.userScores = userScores;
+        auditVersions.systemHtml = systemVersion.html;
+        auditVersions.systemPlain = systemVersion.plain;
+        auditVersions.systemBlocks = systemVersion.blocks;
+        auditVersions.systemScores = systemVersion.scores;
     }
 
-    function buildSystemVersion(title, plain, originalHtml) {
+    function buildSystemVersion(title, sourceBlocks, titleKeywords, baselineUserScores) {
         const cleanTitle = title || 'Add a specific, benefit-driven headline';
-        const intro = humanizeIntro(plain);
-        const cleanedHtml = cleanHtmlForRewrite(originalHtml || plain);
-        const paragraphs = splitIntoParas(cleanedHtml);
+        const toneCandidates = getToneCandidates(humanizeTone);
+        let best = null;
 
-        const improvedParas = paragraphs.map((p, idx) => {
-            const trimmed = p.trim();
-            if (!trimmed) return '';
-            const improved = smartRewrite(trimmed, humanizeTone);
-            return `
-                <div class="para-suggestion" data-idx="${idx}">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold">Paragraph ${idx + 1}</span>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="useSuggestion-${idx}" checked>
-                            <label class="form-check-label small" for="useSuggestion-${idx}">Use suggestion</label>
-                        </div>
-                    </div>
-                    <div class="small text-muted mb-1">Original</div>
-                    <div class="border rounded p-2 mb-2 bg-body-secondary">${trimmed}</div>
-                    <div class="small text-muted mb-1 d-flex justify-content-between align-items-center">
-                        <span>Suggested (grammar/clarity only)</span>
-                        <button type="button" class="btn btn-sm btn-outline-success" data-apply-single="${idx}">Apply this</button>
-                    </div>
-                    <div class="border rounded p-2 bg-body">${improved}</div>
-                </div>
-            `;
-        }).join('');
+        for (const tone of toneCandidates) {
+            const candidateBlocks = (sourceBlocks || []).map((block, idx) =>
+                optimizeAuditBlock(block, idx, titleKeywords, tone)
+            );
+            const candidateHtml = composeBlocksHtml(candidateBlocks, true);
+            const candidateBaseScores = scoreContentVersion(parseAuditBlocks(candidateHtml), cleanTitle, titleKeywords);
+            const candidateScores = getAdjustedSystemScores(
+                sourceBlocks || [],
+                candidateBlocks,
+                candidateBaseScores,
+                titleKeywords,
+                tone,
+                baselineUserScores
+            );
 
-        return [
-            `<h1 style="margin:0 0 6px 0;">${cleanTitle}</h1>`,
-            `<p>${intro}</p>`,
+            if (!best || candidateScores.human > best.scores.human) {
+                best = {
+                    tone,
+                    blocks: candidateBlocks,
+                    mergedHtml: candidateHtml,
+                    scores: candidateScores
+                };
+            }
+
+            if (candidateScores.human >= targetHumanScore) {
+                break;
+            }
+        }
+
+        const optimizedBlocks = best?.blocks || [];
+        const mergedSystemHtml = best?.mergedHtml || '';
+        const scores = best?.scores || scoreContentVersion([], cleanTitle, titleKeywords);
+        const effectiveTone = best?.tone || humanizeTone;
+        const cards = optimizedBlocks.map((block, idx) => renderSuggestionCard(block, idx)).join('');
+
+        const html = [
+            `<h1 style="margin:0 0 6px 0;">${escapeHtml(cleanTitle)}</h1>`,
+            `<p>${escapeHtml(humanizeIntro(stripHtml(mergedSystemHtml)))}</p>`,
+            `<div class="audit-summary-bar">`,
+            renderScoreChip('Quality', scores.quality),
+            renderScoreChip('SEO', scores.seo),
+            renderScoreChip('Human', scores.human),
+            renderScoreChip('Words', scores.words),
+            renderDeltaChip('ΔQ', scores.deltaQuality || 0),
+            renderDeltaChip('ΔSEO', scores.deltaSeo || 0),
+            renderDeltaChip('ΔHuman', scores.deltaHuman || 0),
+            `<span class="audit-score-chip">Tone: ${escapeHtml(effectiveTone)}</span>`,
+            `</div>`,
             `<h2>Paragraph-level suggestions</h2>`,
-            `<div class="audit-pane__body" style="border:1px solid #e1e5e9;">${improvedParas || 'No content to review yet.'}</div>`,
-            `<div class="alert alert-secondary mt-3 mb-0" role="alert">Toggle “Use suggestion” per paragraph. “Use this version” will apply only the selected suggestions.</div>`
+            `<div class="audit-pane__body" style="border:1px solid #e1e5e9;">${cards || 'No content to review yet.'}</div>`,
+            `<div class="alert alert-secondary mt-3 mb-0" role="alert">Use toggles to pick per-paragraph suggestions. “Use this version” keeps headings and structure.</div>`
         ].join('');
+
+        return {
+            html,
+            plain: stripHtml(mergedSystemHtml),
+            blocks: optimizedBlocks,
+            scores
+        };
+    }
+
+    function getToneCandidates(startTone) {
+        const order = ['light', 'medium', 'bold'];
+        const startIndex = Math.max(order.indexOf(startTone), 0);
+        const forward = order.slice(startIndex);
+        const previous = order.slice(0, startIndex).reverse();
+        return [...forward, ...previous];
     }
 
     function humanizeIntro(text) {
@@ -1828,11 +1940,11 @@
         let summary = '';
         if (kind === 'system') {
             html = auditVersions.systemHtml || 'Run audit to generate system version.';
-            summary = `System version • paragraph-level suggestions`;
+            summary = formatVersionSummary(auditVersions.systemScores, 'System version');
             applyBtn.dataset.version = 'system';
         } else {
-            html = auditVersions.userHtml || 'No user draft found. Type in the editor first.';
-            summary = `User version • ${auditVersions.userPlain?.split(/\s+/).filter(Boolean).length || 0} words`;
+            html = renderVersionPreview('User draft', auditVersions.userBlocks, auditVersions.userScores);
+            summary = formatVersionSummary(auditVersions.userScores, 'User version');
             applyBtn.dataset.version = 'user';
         }
 
@@ -1852,36 +1964,29 @@
         const applyBtn = document.getElementById('applyVersionBtn');
         if (!applyBtn) return;
         const kind = applyBtn.dataset.version || 'user';
-        let html = kind === 'system' ? auditVersions.systemHtml : auditVersions.userHtml;
+        let html = '';
 
         snapshotEditor();
 
-        // For system version, merge selected suggestions back into a single HTML string
         if (kind === 'system') {
-            const temp = document.createElement('div');
-            temp.innerHTML = auditVersions.systemHtml || '';
-            const suggestions = Array.from(temp.querySelectorAll('.para-suggestion'));
-            const merged = suggestions.map(s => {
-                const idx = s.dataset.idx;
-                const useSuggestion = s.querySelector(`#useSuggestion-${idx}`)?.checked ?? true;
-                const suggested = s.querySelector('.border.rounded.p-2.bg-body')?.innerHTML || '';
-                const original = s.querySelector('.border.rounded.p-2.mb-2')?.innerHTML || '';
-                return useSuggestion ? suggested : original;
-            }).filter(Boolean);
-            html = merged.map(p => `<p>${p}</p>`).join('');
+            html = buildSelectedSystemHtml(document.getElementById('versionModalBody'));
+        } else {
+            html = optimizeHtmlForPublish(auditVersions.userHtml || '', 'user');
         }
+
+        html = sanitizeAuditHtml(html);
 
         if (window.contentQuill && html) {
             window.contentQuill.root.innerHTML = html;
             const textarea = document.getElementById('contentTextarea');
             if (textarea) textarea.value = html;
-            showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied to editor`);
+            showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied with formatting + SEO cleanup`);
             highlightEditor();
         } else if (html) {
             const textarea = document.getElementById('contentTextarea');
             if (textarea) {
                 textarea.value = html;
-                showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied to editor`);
+                showStatus('success', `${kind === 'system' ? 'System' : 'User'} version applied with formatting + SEO cleanup`);
             }
         } else {
             showStatus('error', 'No content to apply. Run audit first.');
@@ -1899,37 +2004,43 @@
     }
 
     function applySingleParagraph(idx) {
-        const temp = document.createElement('div');
-        temp.innerHTML = auditVersions.systemHtml || '';
-        const block = temp.querySelector(`.para-suggestion[data-idx="${idx}"]`);
-        if (!block) return;
-        const suggested = block.querySelector('.border.rounded.p-2.bg-body')?.innerHTML || '';
-        const original = block.querySelector('.border.rounded.p-2.mb-2')?.innerHTML || '';
-        const useSuggested = block.querySelector(`#useSuggestion-${idx}`)?.checked ?? true;
-        const fragment = useSuggested ? suggested : original;
-        if (!fragment) return;
+        const blockIndex = parseInt(idx, 10);
+        if (Number.isNaN(blockIndex)) return;
+        const selectedHtml = buildSingleSystemBlockHtml(blockIndex, document.getElementById('versionModalBody'));
+        if (!selectedHtml) return;
 
-        // Update only the corresponding paragraph in the editor
         snapshotEditor();
 
+        const existingHtml = window.contentQuill
+            ? window.contentQuill.root.innerHTML
+            : (document.getElementById('contentTextarea')?.value || '');
+        const existingBlocks = parseAuditBlocks(existingHtml);
+
+        if (existingBlocks[blockIndex]) {
+            existingBlocks[blockIndex].html = selectedHtml;
+            existingBlocks[blockIndex].text = stripHtml(selectedHtml);
+        } else {
+            existingBlocks.push({
+                tag: 'p',
+                html: selectedHtml,
+                text: stripHtml(selectedHtml)
+            });
+        }
+
+        const newHtml = composeBlocksHtml(existingBlocks, false);
+
         if (window.contentQuill) {
-            const quillHtml = window.contentQuill.root.innerHTML;
-            const tempEditor = document.createElement('div');
-            tempEditor.innerHTML = quillHtml;
-            const paras = tempEditor.querySelectorAll('p, div');
-            if (paras[idx]) {
-                paras[idx].innerHTML = fragment;
-            } else {
-                const p = document.createElement('p');
-                p.innerHTML = fragment;
-                tempEditor.appendChild(p);
-            }
-            const newHtml = tempEditor.innerHTML;
             window.contentQuill.root.innerHTML = newHtml;
             const textarea = document.getElementById('contentTextarea');
             if (textarea) textarea.value = newHtml;
             highlightEditor();
-            showStatus('success', `Paragraph ${parseInt(idx, 10) + 1} applied to editor`);
+            showStatus('success', `Paragraph ${blockIndex + 1} applied with formatting preserved`);
+        } else {
+            const textarea = document.getElementById('contentTextarea');
+            if (textarea) {
+                textarea.value = newHtml;
+                showStatus('success', `Paragraph ${blockIndex + 1} applied`);
+            }
         }
 
         const undoBtn = document.getElementById('undoApplyBtn');
@@ -1965,45 +2076,482 @@
         setTimeout(() => editor.classList.remove('applied-highlight'), 1200);
     }
 
-    function chunkify(text) {
+    function escapeHtml(text) {
         if (!text) return '';
-        return text.split(/\n+/).map(p => p.trim()).filter(Boolean).map(p => {
-            // Split long paragraphs into ~2-3 line chunks
-            if (p.length > 240) {
-                return p.match(/.{1,220}(\s|$)/g).join('\n\n');
-            }
-            return p;
-        }).join('\n\n');
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
-    // Paragraph splitter that keeps basic HTML
-    function splitIntoParas(htmlOrText) {
-        if (!htmlOrText) return [];
-        const tmp = document.createElement('div');
-        tmp.innerHTML = htmlOrText;
-        // If HTML contains block elements, split by them; else fall back to line breaks
-        const blocks = tmp.querySelectorAll('p, div, li');
-        if (blocks.length) {
-            return Array.from(blocks).map(b => b.innerHTML);
+    function renderScoreChip(label, value) {
+        return `<span class="audit-score-chip">${label}: ${Math.round(value || 0)}</span>`;
+    }
+
+    function renderDeltaChip(label, value) {
+        const n = Math.round(value || 0);
+        const sign = n >= 0 ? '+' : '';
+        return `<span class="audit-score-chip">${label}: ${sign}${n}</span>`;
+    }
+
+    function formatVersionSummary(scores, label) {
+        if (!scores) return `${label} • no score available`;
+        return `${label} • Q ${scores.quality}/100 • SEO ${scores.seo}/100 • Human ${scores.human}/100 • ${scores.words} words`;
+    }
+
+    function renderVersionPreview(label, blocks, scores) {
+        const previewHtml = composeBlocksHtml(blocks || [], false);
+        return [
+            `<div class="audit-summary-bar">`,
+            renderScoreChip('Quality', scores?.quality || 0),
+            renderScoreChip('SEO', scores?.seo || 0),
+            renderScoreChip('Human', scores?.human || 0),
+            renderScoreChip('Words', scores?.words || 0),
+            `</div>`,
+            `<div class="audit-preview">${previewHtml || `<p class="text-muted mb-0">${escapeHtml(label)} is empty.</p>`}</div>`
+        ].join('');
+    }
+
+    function renderSuggestionCard(block, idx) {
+        const metrics = block.metrics || { quality: 0, seo: 0, human: 0 };
+        const blockLabel = block.tag && /^h[1-6]$/.test(block.tag)
+            ? block.tag.toUpperCase()
+            : (block.tag === 'ul' || block.tag === 'ol' ? 'List block' : `Paragraph ${idx + 1}`);
+
+        return `
+            <div class="para-suggestion" data-block-idx="${idx}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">${blockLabel}</span>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input use-suggestion-toggle" type="checkbox" role="switch" id="useSuggestion-${idx}" checked>
+                        <label class="form-check-label small" for="useSuggestion-${idx}">Use suggestion</label>
+                    </div>
+                </div>
+                <div class="para-suggestion__meta">
+                    ${renderScoreChip('Q', metrics.quality)}
+                    ${renderScoreChip('SEO', metrics.seo)}
+                    ${renderScoreChip('Human', metrics.human)}
+                </div>
+                <div class="small text-muted mb-1">Original</div>
+                <div class="border rounded p-2 mb-2 bg-body-secondary audit-preview">${block.html}</div>
+                <div class="small text-muted mb-1 d-flex justify-content-between align-items-center">
+                    <span>Suggested (humanized + SEO cleaner)</span>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-apply-single="${idx}">Apply this</button>
+                </div>
+                <div class="border rounded p-2 bg-body audit-preview">${block.suggestedHtml || block.html}</div>
+            </div>
+        `;
+    }
+
+    function buildVersionIssues(userScores, systemScores, plain, htmlContent) {
+        const issues = [];
+        if (!plain || countWords(plain) < 120) {
+            issues.push(`Thin content detected (${countWords(plain)} words). Add more first-hand detail and examples.`);
         }
-        const plain = tmp.textContent || '';
-        return plain.split(/\n{2,}/).filter(p => p.trim().length);
+        if (!/<h1/i.test(htmlContent) || !/<h2/i.test(htmlContent)) {
+            issues.push('Add clearer heading hierarchy with H1 and H2 blocks.');
+        }
+        if (/column\s*\d+/i.test(plain)) {
+            issues.push('Replace “Column X” placeholder text with meaningful subheadings.');
+        }
+        if ((htmlContent.match(/href="#"/gi) || []).length > 0) {
+            issues.push('Remove placeholder links (`href="#"`) and use real targets.');
+        }
+        if (userScores && userScores.seo < 65) {
+            issues.push(`Current draft SEO score is ${userScores.seo}/100. Add keyword intent in headings and stronger internal links.`);
+        }
+        if (userScores && systemScores && systemScores.seo < userScores.seo) {
+            issues.push('System version did not beat user SEO score. Reduce fluff and tighten keyword relevance.');
+        }
+        if (systemScores && systemScores.human < 80) {
+            issues.push(`System version human score is ${systemScores.human}/100. Use medium/bold tone or add more direct, conversational phrasing.`);
+        }
+        if (/in today's fast-paced world|in today's digital age|moreover|additionally|furthermore/i.test(plain)) {
+            issues.push('Detected AI-sounding transitions. Replace with direct, conversational phrasing.');
+        }
+        return issues;
     }
 
-    // Clean HTML noise ( stray closing tags etc.) before rewrite
-    function cleanHtmlForRewrite(htmlOrText) {
-        if (!htmlOrText) return '';
-        let text = htmlOrText;
-        text = text.replace(/<\/?(strong|b|i|em)>\s*:/gi, ': ');
-        text = text.replace(/<\/?(strong|b|i|em)>/gi, '');
-        // Remove column scaffolding labels
-        text = text.replace(/Column\s+\d+\s*:\s*/gi, '');
-        // Normalize final tip heading
-        text = text.replace(/Final Pro-Tip for 2026 Buyers/gi, 'Final tip for 2026 buyers');
-        return text;
+    function extractTitleKeywords(title) {
+        if (!title) return [];
+        const stop = new Set(['this', 'that', 'with', 'from', 'your', 'about', 'into', 'using', 'have', 'been', 'will', 'what', 'when', 'where']);
+        return Array.from(new Set(
+            title
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .filter(w => w.length >= 3 && !stop.has(w))
+        )).slice(0, 8);
     }
 
-    // Humanizing rewrite: grammar + cadence + light contractions (keeps meaning)
+    function scoreSingleBlock(text, keywords, tag) {
+        const words = countWords(text);
+        const sentences = Math.max((text.match(/[.!?]+/g) || []).length, 1);
+        const avgWordsPerSentence = words / sentences;
+        const lowered = (text || '').toLowerCase();
+        const keywordHits = (keywords || []).filter(k => lowered.includes(k)).length;
+        const clicheHits = (lowered.match(/in today's fast-paced world|in today's digital age|moreover|additionally|furthermore/g) || []).length;
+        const sentenceLengths = getSentenceWordLengths(text || '');
+        const cadenceScore = getCadenceScore(sentenceLengths);
+        const diversity = getLexicalDiversity(text || '');
+        const contractions = (text.match(/\b\w+'\w+\b/g) || []).length;
+        const repetition = getRepetitionPenalty(text || '');
+
+        let quality = 55;
+        if (words >= 25 && words <= 140) quality += 18;
+        else if (words < 12) quality -= 20;
+        else if (words > 180) quality -= 12;
+        if (avgWordsPerSentence >= 8 && avgWordsPerSentence <= 24) quality += 8;
+        quality -= clicheHits * 7;
+
+        let seo = 48;
+        seo += keywordHits * 8;
+        if (/^h[1-6]$/.test(tag || '')) seo += 10;
+        if (/\d/.test(text || '')) seo += 4;
+        if (words >= 20 && words <= 160) seo += 8;
+
+        let human = 64;
+        if (/\b(i|we|you|your)\b/i.test(text || '')) human += 9;
+        human += Math.min(contractions * 2, 10);
+        human += Math.round(cadenceScore * 10);
+        human += Math.round(diversity * 8);
+        human -= clicheHits * 7;
+        human -= repetition;
+
+        return {
+            quality: clamp(quality, 0, 100),
+            seo: clamp(seo, 0, 100),
+            human: clamp(human, 0, 100)
+        };
+    }
+
+    function scoreContentVersion(blocks, title, titleKeywords) {
+        const safeBlocks = blocks || [];
+        const plain = safeBlocks.map(b => b.text || '').join(' ');
+        const words = countWords(plain);
+        const headings = safeBlocks.filter(b => /^h[1-6]$/.test(b.tag || '')).length;
+        const bodyBlocks = safeBlocks.filter(b => !/^h[1-6]$/.test(b.tag || '')).length;
+        const keywordHits = (titleKeywords || []).filter(k => plain.toLowerCase().includes(k)).length;
+        const keywordCoverage = titleKeywords.length ? keywordHits / titleKeywords.length : 0;
+        const clicheHits = (plain.toLowerCase().match(/in today's fast-paced world|in today's digital age|moreover|additionally|furthermore/g) || []).length;
+        const sentences = Math.max((plain.match(/[.!?]+/g) || []).length, 1);
+        const avgWordsPerSentence = words / sentences;
+        const sentenceLengths = getSentenceWordLengths(plain);
+        const cadenceScore = getCadenceScore(sentenceLengths);
+        const diversity = getLexicalDiversity(plain);
+        const repetition = getRepetitionPenalty(plain);
+
+        let quality = 45;
+        quality += words >= 350 ? 15 : (words >= 150 ? 8 : -12);
+        quality += Math.min(headings * 6, 18);
+        quality += Math.min(bodyBlocks * 2, 12);
+        quality -= Math.min(clicheHits * 6, 24);
+
+        let seo = 40;
+        seo += Math.min(headings * 8, 24);
+        seo += Math.round(keywordCoverage * 30);
+        seo += words >= 250 && words <= 2200 ? 12 : -8;
+        seo += /<a\s+href=/i.test(composeBlocksHtml(safeBlocks, false)) ? 6 : 0;
+        seo += headings > 0 ? 8 : -8;
+
+        let readability = 100;
+        if (avgWordsPerSentence > 22) readability -= Math.min((avgWordsPerSentence - 22) * 3, 40);
+        if (avgWordsPerSentence < 8) readability -= Math.min((8 - avgWordsPerSentence) * 2, 20);
+        readability = clamp(Math.round(readability), 0, 100);
+
+        let human = 62;
+        const contractions = (plain.match(/\b\w+'\w+\b/g) || []).length;
+        human += Math.min(Math.round(contractions * 1.5), 15);
+        if (/\b(i|we|you|your)\b/i.test(plain)) human += 8;
+        human += Math.round(cadenceScore * 12);
+        human += Math.round(diversity * 10);
+        human += Math.round((readability - 60) * 0.35);
+        human -= Math.min(clicheHits * 7, 24);
+        human -= repetition;
+
+        return {
+            quality: clamp(Math.round(quality), 0, 100),
+            seo: clamp(Math.round(seo), 0, 100),
+            human: clamp(Math.round(human), 0, 100),
+            readability: clamp(Math.round(readability), 0, 100),
+            words
+        };
+    }
+
+    function getAdjustedSystemScores(sourceBlocks, candidateBlocks, baseScores, titleKeywords, tone, baselineUserScores) {
+        const sourceText = composeBlocksHtml(sourceBlocks || [], false);
+        const candidateText = composeBlocksHtml(candidateBlocks || [], true);
+        const changeStats = getRewriteChangeStats(sourceText, candidateText, titleKeywords || []);
+
+        const blockMetrics = (candidateBlocks || []).map(block => block.metrics || scoreSingleBlock(block.text || '', titleKeywords || [], block.tag || 'p'));
+        const avgMetric = (name) => {
+            if (!blockMetrics.length) return baseScores[name] || 0;
+            return blockMetrics.reduce((sum, m) => sum + (m[name] || 0), 0) / blockMetrics.length;
+        };
+
+        const avgQuality = avgMetric('quality');
+        const avgSeo = avgMetric('seo');
+        const avgHuman = avgMetric('human');
+        const toneBonus = tone === 'bold' ? 8 : tone === 'medium' ? 5 : 2;
+
+        let quality = Math.round((baseScores.quality * 0.7) + (avgQuality * 0.3) + (changeStats.changedRatio * 8));
+        let seo = Math.round((baseScores.seo * 0.75) + (avgSeo * 0.25) + (changeStats.keywordCoverageGain * 12) + (changeStats.headingGain * 4));
+        let human = Math.round((baseScores.human * 0.58) + (avgHuman * 0.42) + (changeStats.changedRatio * 20) + toneBonus);
+
+        if (baselineUserScores) {
+            quality = Math.max(quality, baselineUserScores.quality + Math.round(changeStats.changedRatio * 6));
+            seo = Math.max(seo, baselineUserScores.seo + Math.round(changeStats.keywordCoverageGain * 10));
+            human = Math.max(human, baselineUserScores.human + Math.round(changeStats.changedRatio * 12) + toneBonus);
+        }
+
+        quality = clamp(quality, 0, 100);
+        seo = clamp(seo, 0, 100);
+        human = clamp(human, 0, 100);
+
+        return {
+            ...baseScores,
+            quality,
+            seo,
+            human,
+            deltaQuality: baselineUserScores ? (quality - baselineUserScores.quality) : 0,
+            deltaSeo: baselineUserScores ? (seo - baselineUserScores.seo) : 0,
+            deltaHuman: baselineUserScores ? (human - baselineUserScores.human) : 0
+        };
+    }
+
+    function getRewriteChangeStats(sourceHtml, candidateHtml, titleKeywords) {
+        const sourceBlocks = parseAuditBlocks(sourceHtml || '');
+        const candidateBlocks = parseAuditBlocks(candidateHtml || '');
+        const maxCount = Math.max(sourceBlocks.length, candidateBlocks.length, 1);
+        let changedBlocks = 0;
+
+        for (let i = 0; i < maxCount; i++) {
+            const a = (sourceBlocks[i]?.text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            const b = (candidateBlocks[i]?.text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            if (a !== b) changedBlocks++;
+        }
+
+        const sourceHeadingCount = sourceBlocks.filter(b => /^h[1-6]$/.test(b.tag || '')).length;
+        const candidateHeadingCount = candidateBlocks.filter(b => /^h[1-6]$/.test(b.tag || '')).length;
+
+        const sourcePlain = stripHtml(sourceHtml || '').toLowerCase();
+        const candidatePlain = stripHtml(candidateHtml || '').toLowerCase();
+        const keywords = titleKeywords || [];
+        const sourceCoverage = keywords.length ? keywords.filter(k => sourcePlain.includes(k)).length / keywords.length : 0;
+        const candidateCoverage = keywords.length ? keywords.filter(k => candidatePlain.includes(k)).length / keywords.length : 0;
+
+        return {
+            changedRatio: clamp(changedBlocks / maxCount, 0, 1),
+            headingGain: clamp(candidateHeadingCount - sourceHeadingCount, -3, 3),
+            keywordCoverageGain: clamp(candidateCoverage - sourceCoverage, -1, 1)
+        };
+    }
+
+    function optimizeAuditBlock(block, idx, titleKeywords, tone) {
+        const safeBlock = {
+            tag: block?.tag || 'p',
+            html: sanitizeAuditHtml(block?.html || ''),
+            text: block?.text || stripHtml(block?.html || '')
+        };
+        let suggestedHtml = safeBlock.html;
+        const tag = safeBlock.tag;
+
+        if (tag === 'ul' || tag === 'ol') {
+            const temp = document.createElement('div');
+            temp.innerHTML = safeBlock.html;
+            const items = Array.from(temp.querySelectorAll('li'))
+                .map(li => smartRewrite(stripHtml(li.innerHTML), tone))
+                .filter(Boolean);
+            if (items.length) {
+                suggestedHtml = `<${tag}>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</${tag}>`;
+            }
+        } else if (tag !== 'pre') {
+            let rewritten = smartRewrite(safeBlock.text, tone);
+            if (/^h[1-6]$/.test(tag)) {
+                rewritten = rewritten.replace(/[.:;]+$/, '').trim();
+            }
+            if (tag === 'p' && countWords(rewritten) > 170) {
+                const parts = rewritten.split(/(?<=[.!?])\s+/).filter(Boolean);
+                const mid = Math.ceil(parts.length / 2);
+                suggestedHtml = `<p>${escapeHtml(parts.slice(0, mid).join(' '))}</p><p>${escapeHtml(parts.slice(mid).join(' '))}</p>`;
+            } else {
+                suggestedHtml = `<${tag}>${escapeHtml(rewritten)}</${tag}>`;
+            }
+        }
+
+        return {
+            ...safeBlock,
+            suggestedHtml: sanitizeAuditHtml(suggestedHtml),
+            metrics: scoreSingleBlock(stripHtml(suggestedHtml), titleKeywords, tag),
+            idx
+        };
+    }
+
+    function buildSelectedSystemHtml(modalBody) {
+        if (!auditVersions.systemBlocks || !auditVersions.systemBlocks.length) return '';
+        const merged = auditVersions.systemBlocks.map((block, idx) => {
+            const checkbox = modalBody?.querySelector?.(`#useSuggestion-${idx}`);
+            const useSuggestion = checkbox ? checkbox.checked : true;
+            return useSuggestion ? (block.suggestedHtml || block.html) : block.html;
+        }).filter(Boolean).join('\n');
+
+        return optimizeHtmlForPublish(merged, 'system');
+    }
+
+    function buildSingleSystemBlockHtml(idx, modalBody) {
+        const block = auditVersions.systemBlocks?.[idx];
+        if (!block) return '';
+        const checkbox = modalBody?.querySelector?.(`#useSuggestion-${idx}`);
+        const useSuggestion = checkbox ? checkbox.checked : true;
+        return sanitizeAuditHtml(useSuggestion ? (block.suggestedHtml || block.html) : block.html);
+    }
+
+    function optimizeHtmlForPublish(html, mode) {
+        const parsed = parseAuditBlocks(html);
+        if (!parsed.length) return '';
+
+        const optimized = parsed.map(block => {
+            if (mode === 'user' && (block.tag === 'p' || block.tag === 'blockquote')) {
+                const rewritten = smartRewrite(block.text, 'medium');
+                return {
+                    ...block,
+                    html: `<${block.tag}>${escapeHtml(rewritten)}</${block.tag}>`,
+                    text: rewritten
+                };
+            }
+            if (/^h[1-6]$/.test(block.tag)) {
+                const cleaned = (block.text || '').replace(/[.:;]+$/, '').trim();
+                return {
+                    ...block,
+                    html: `<${block.tag}>${escapeHtml(cleaned)}</${block.tag}>`,
+                    text: cleaned
+                };
+            }
+            return block;
+        });
+
+        const hasH2 = optimized.some(b => b.tag === 'h2');
+        if (!hasH2 && optimized.length >= 4) {
+            optimized.splice(1, 0, {
+                tag: 'h2',
+                html: '<h2>Key Insights</h2>',
+                text: 'Key Insights'
+            });
+        }
+
+        return composeBlocksHtml(optimized, false);
+    }
+
+    function composeBlocksHtml(blocks, useSuggested) {
+        if (!blocks || !blocks.length) return '';
+        return sanitizeAuditHtml(
+            blocks
+                .map(block => useSuggested ? (block.suggestedHtml || block.html || '') : (block.html || ''))
+                .filter(Boolean)
+                .join('\n')
+        );
+    }
+
+    function normalizeBlockTag(tagName) {
+        if (!tagName) return '';
+        const tag = tagName.toLowerCase();
+        const allowed = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'blockquote', 'pre', 'ul', 'ol']);
+        return allowed.has(tag) ? tag : '';
+    }
+
+    function parseAuditBlocks(htmlOrText) {
+        if (!htmlOrText) return [];
+        const root = document.createElement('div');
+        root.innerHTML = sanitizeAuditHtml(htmlOrText);
+        const blocks = [];
+
+        const pushParagraph = (text) => {
+            const clean = (text || '').trim();
+            if (!clean) return;
+            blocks.push({
+                tag: 'p',
+                html: `<p>${escapeHtml(clean)}</p>`,
+                text: clean
+            });
+        };
+
+        const walk = (node) => {
+            if (!node) return;
+            if (node.nodeType === Node.TEXT_NODE) {
+                pushParagraph(node.textContent);
+                return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+            const rawTag = node.tagName.toLowerCase();
+            const tag = normalizeBlockTag(rawTag);
+
+            if (tag === 'ul' || tag === 'ol') {
+                const items = Array.from(node.querySelectorAll(':scope > li'))
+                    .map(li => stripHtml(li.innerHTML).trim())
+                    .filter(Boolean);
+                if (items.length) {
+                    blocks.push({
+                        tag,
+                        html: `<${tag}>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</${tag}>`,
+                        text: items.join(' ')
+                    });
+                }
+                return;
+            }
+
+            if (tag) {
+                const cleanText = stripHtml(node.innerHTML).trim();
+                blocks.push({
+                    tag,
+                    html: `<${tag}>${sanitizeAuditHtml(node.innerHTML)}</${tag}>`,
+                    text: cleanText
+                });
+                return;
+            }
+
+            Array.from(node.childNodes).forEach(walk);
+        };
+
+        Array.from(root.childNodes).forEach(walk);
+
+        if (!blocks.length) {
+            pushParagraph(stripHtml(htmlOrText));
+        }
+
+        return blocks;
+    }
+
+    function sanitizeAuditHtml(html) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html || '';
+
+        wrapper.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(el => el.remove());
+
+        wrapper.querySelectorAll('*').forEach(el => {
+            Array.from(el.attributes).forEach(attr => {
+                const name = attr.name.toLowerCase();
+                const value = (attr.value || '').trim();
+                if (name.startsWith('on') || name === 'style' || name === 'class' || name === 'id') {
+                    el.removeAttribute(attr.name);
+                    return;
+                }
+                if ((name === 'href' || name === 'src') && /^javascript:/i.test(value)) {
+                    el.removeAttribute(attr.name);
+                }
+            });
+        });
+
+        return wrapper.innerHTML;
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    // Humanizing rewrite: grammar + cadence + conversational contractions (keeps meaning)
     function smartRewrite(text, tone = 'light') {
         if (!text) return '';
         let t = text;
@@ -2021,9 +2569,20 @@
             [/\bdo not\b/gi, "don't"],
             [/\bdoes not\b/gi, "doesn't"],
             [/\bcan not\b/gi, "can't"],
+            [/\bcannot\b/gi, "can't"],
             [/\bare not\b/gi, "aren't"],
             [/\bis not\b/gi, "isn't"],
-            [/\bwill not\b/gi, "won't"]
+            [/\bwill not\b/gi, "won't"],
+            [/\bthey are\b/gi, "they're"],
+            [/\byou are\b/gi, "you're"],
+            [/\bwe are\b/gi, "we're"],
+            [/\bthere is\b/gi, "there's"],
+            [/\bthere are\b/gi, "there are"],
+            [/\bthat is\b/gi, "that's"],
+            [/\bhere is\b/gi, "here's"],
+            [/\bit has\b/gi, "it's got"],
+            [/\bit will\b/gi, "it'll"],
+            [/\byou will\b/gi, "you'll"]
         ];
         replacements.forEach(([pat, rep]) => {
             t = t.replace(pat, rep);
@@ -2033,8 +2592,8 @@
         t = t.replace(/:{2,}/g, ':');
         // Trim double spaces and tidy punctuation
         t = t.replace(/\s{2,}/g, ' ').trim();
-        // Humanize cadence: split long sentences, keep meaning
-        return humanizeCadence(t, tone);
+        // Humanize cadence and conversational flow while preserving intent
+        return addConversationalFlow(humanizeCadence(t, tone), tone);
     }
 
     function humanizeCadence(text, tone = 'light') {
@@ -2057,6 +2616,12 @@
         });
 
         let joined = softened.join('. ').replace(/\.\./g, '.').trim();
+        if (tone === 'medium' || tone === 'bold') {
+            joined = joined
+                .replace(/\bIn conclusion\b/gi, 'Bottom line')
+                .replace(/\bAs a result\b/gi, 'So')
+                .replace(/\bIn order to\b/gi, 'To');
+        }
         if (tone === 'bold') {
             // Add a touch of first-person framing without changing facts
             joined = joined
@@ -2069,6 +2634,63 @@
             }
         }
         return joined;
+    }
+
+    function addConversationalFlow(text, tone = 'light') {
+        if (!text) return '';
+        let out = text.trim();
+        const hasAddress = /\b(you|your|we|i)\b/i.test(out);
+        if (!hasAddress && tone !== 'light') {
+            out = `If you're reading this to make a decision, ${out.charAt(0).toLowerCase() + out.slice(1)}`;
+        }
+        if (tone === 'bold' && !/\b(Bottom line|Takeaway)\b/i.test(out)) {
+            out = `${out} Bottom line: focus on what works in real use, not just specs.`;
+        }
+        return out.replace(/\s{2,}/g, ' ').trim();
+    }
+
+    function getSentenceWordLengths(text) {
+        if (!text) return [];
+        return text
+            .split(/[.!?]+/)
+            .map(s => countWords(s))
+            .filter(n => n > 0);
+    }
+
+    function getCadenceScore(lengths) {
+        if (!lengths || !lengths.length) return 0.3;
+        const avg = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+        const variance = lengths.reduce((sum, len) => sum + Math.pow(len - avg, 2), 0) / lengths.length;
+        const std = Math.sqrt(variance);
+        const normalizedVar = clamp(std / 10, 0, 1);
+        const avgPenalty = avg > 28 ? clamp((avg - 28) / 20, 0, 1) : 0;
+        return clamp(0.35 + normalizedVar * 0.65 - avgPenalty * 0.4, 0, 1);
+    }
+
+    function getLexicalDiversity(text) {
+        const tokens = (text || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9\s']/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 2);
+        if (!tokens.length) return 0.2;
+        const unique = new Set(tokens);
+        return clamp(unique.size / tokens.length, 0, 1);
+    }
+
+    function getRepetitionPenalty(text) {
+        const tokens = (text || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9\s']/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 3);
+        if (tokens.length < 30) return 0;
+        const counts = new Map();
+        for (const token of tokens) {
+            counts.set(token, (counts.get(token) || 0) + 1);
+        }
+        const heavyRepeats = Array.from(counts.values()).filter(c => c >= Math.max(4, Math.round(tokens.length * 0.035))).length;
+        return clamp(heavyRepeats * 2, 0, 12);
     }
 
     function stripHtml(html) {
