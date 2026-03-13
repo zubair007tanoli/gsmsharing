@@ -1,7 +1,28 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pdftoolspro.com/sitemap.xml
+Sitemap: https://pdfpeaks.com/sitemap.xml
+
+# Allow PDF tool pages for indexing
+Allow: /Pdf/
+Allow: /Pdf/Merge
+Allow: /Pdf/Split
+Allow: /Pdf/Compress
+Allow: /Pdf/ConvertToWord
+Allow: /Pdf/ConvertToExcel
+Allow: /Pdf/ConvertToPowerPoint
+Allow: /Pdf/Edit
+Allow: /Pdf/Rotate
+Allow: /Pdf/Protect
+Allow: /Pdf/Unlock
+Allow: /Pdf/Organize
+Allow: /Pdf/ConvertFromWord
+Allow: /Pdf/ConvertFromExcel
+Allow: /Pdf/ConvertFromPowerPoint
+Allow: /Pdf/ConvertToJpg
+Allow: /Pdf/ConvertToPng
+Allow: /Image/
+Allow: /Home/
 
 # Disallow admin areas
 Disallow: /Admin/

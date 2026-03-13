@@ -168,6 +168,48 @@ if (!string.IsNullOrEmpty(connectionString))
             : SameSiteMode.Strict;
     });
 
+    // ============ External Authentication (Social Login) ============
+    // Only configure if credentials are provided in configuration
+    var authenticationBuilder = builder.Services.AddAuthentication();
+    
+    var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+    var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+    {
+        authenticationBuilder.AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.CallbackPath = "/signin-google";
+            options.Scope.Add("profile");
+            options.Scope.Add("email");
+        });
+        Log.Information("Google OAuth configured");
+    }
+    else
+    {
+        Log.Warning("Google OAuth credentials not configured. Set Authentication:Google:ClientId and Authentication:Google:ClientSecret in appsettings.json");
+    }
+    
+    var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"];
+    var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
+    if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSecret))
+    {
+        authenticationBuilder.AddFacebook(options =>
+        {
+            options.AppId = facebookAppId;
+            options.AppSecret = facebookAppSecret;
+            options.CallbackPath = "/signin-facebook";
+            options.Scope.Add("email");
+            options.Fields.Add("email");
+        });
+        Log.Information("Facebook OAuth configured");
+    }
+    else
+    {
+        Log.Warning("Facebook OAuth credentials not configured. Set Authentication:Facebook:AppId and Authentication:Facebook:AppSecret in appsettings.json");
+    }
+
     // ============ Hangfire Background Jobs ============
     builder.Services.AddHangfire(config =>
     {

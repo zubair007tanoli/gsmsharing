@@ -684,9 +684,9 @@ class ChatController {
                 <div class="chat-ad-label">Advertisement</div>
                 <ins class="adsbygoogle"
                      style="display:block"
-                     data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
-                     data-ad-slot="YOUR_AD_SLOT_ID"
-                     data-ad-format="auto"
+                     data-ad-client="ca-pub-5934633595595089"
+                     data-ad-slot="2447020422"
+                     data-ad-format="autorelaxed"
                      data-full-width-responsive="true"></ins>
             </div>
         `;

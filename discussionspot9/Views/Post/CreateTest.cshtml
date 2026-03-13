@@ -2306,6 +2306,13 @@
             human = Math.max(human, baselineUserScores.human + Math.round(changeStats.changedRatio * 12) + toneBonus);
         }
 
+        // If almost nothing changed, dampen deltas so user/system don't appear identical artificially
+        if (changeStats.changedRatio < 0.05) {
+            quality -= 4;
+            seo -= 3;
+            human -= 6;
+        }
+
         quality = clamp(quality, 0, 100);
         seo = clamp(seo, 0, 100);
         human = clamp(human, 0, 100);
@@ -2342,18 +2349,28 @@
         const sourceCoverage = keywords.length ? keywords.filter(k => sourcePlain.includes(k)).length / keywords.length : 0;
         const candidateCoverage = keywords.length ? keywords.filter(k => candidatePlain.includes(k)).length / keywords.length : 0;
 
+        const changedRatio = clamp(changedBlocks / maxCount, 0, 1);
+
         return {
-            changedRatio: clamp(changedBlocks / maxCount, 0, 1),
+            changedRatio,
             headingGain: clamp(candidateHeadingCount - sourceHeadingCount, -3, 3),
             keywordCoverageGain: clamp(candidateCoverage - sourceCoverage, -1, 1)
         };
+    }
+
+    function scrubScaffolding(text) {
+        if (!text) return '';
+        return text
+            .replace(/if you're reading this to make a decision[:,]?\s*/gi, '')
+            .replace(/column\s+\d+\s*:\s*/gi, '')
+            .trim();
     }
 
     function optimizeAuditBlock(block, idx, titleKeywords, tone) {
         const safeBlock = {
             tag: block?.tag || 'p',
             html: sanitizeAuditHtml(block?.html || ''),
-            text: block?.text || stripHtml(block?.html || '')
+            text: scrubScaffolding(block?.text || stripHtml(block?.html || ''))
         };
         let suggestedHtml = safeBlock.html;
         const tag = safeBlock.tag;
@@ -2362,15 +2379,22 @@
             const temp = document.createElement('div');
             temp.innerHTML = safeBlock.html;
             const items = Array.from(temp.querySelectorAll('li'))
-                .map(li => smartRewrite(stripHtml(li.innerHTML), tone))
+                .map(li => smartRewrite(scrubScaffolding(stripHtml(li.innerHTML)), tone, 'li'))
                 .filter(Boolean);
             if (items.length) {
                 suggestedHtml = `<${tag}>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</${tag}>`;
             }
         } else if (tag !== 'pre') {
-            let rewritten = smartRewrite(safeBlock.text, tone);
+            let rewritten = smartRewrite(safeBlock.text, tone, tag);
             if (/^h[1-6]$/.test(tag)) {
                 rewritten = rewritten.replace(/[.:;]+$/, '').trim();
+                suggestedHtml = `<${tag}>${escapeHtml(rewritten)}</${tag}>`; // keep headings as-is beyond trimming
+                return {
+                    ...safeBlock,
+                    suggestedHtml,
+                    metrics: scoreSingleBlock(stripHtml(suggestedHtml), titleKeywords, tag),
+                    idx
+                };
             }
             if (tag === 'p' && countWords(rewritten) > 170) {
                 const parts = rewritten.split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -2414,7 +2438,7 @@
 
         const optimized = parsed.map(block => {
             if (mode === 'user' && (block.tag === 'p' || block.tag === 'blockquote')) {
-                const rewritten = smartRewrite(block.text, 'medium');
+                const rewritten = smartRewrite(block.text, 'medium', block.tag);
                 return {
                     ...block,
                     html: `<${block.tag}>${escapeHtml(rewritten)}</${block.tag}>`,
@@ -2552,9 +2576,9 @@
     }
 
     // Humanizing rewrite: grammar + cadence + conversational contractions (keeps meaning)
-    function smartRewrite(text, tone = 'light') {
+    function smartRewrite(text, tone = 'light', tag = '') {
         if (!text) return '';
-        let t = text;
+        let t = scrubScaffolding(text);
         const replacements = [
             [/in today's fast-paced world/gi, ''],
             [/in today's digital age/gi, ''],
@@ -2593,7 +2617,7 @@
         // Trim double spaces and tidy punctuation
         t = t.replace(/\s{2,}/g, ' ').trim();
         // Humanize cadence and conversational flow while preserving intent
-        return addConversationalFlow(humanizeCadence(t, tone), tone);
+        return addConversationalFlow(humanizeCadence(t, tone), tone, tag);
     }
 
     function humanizeCadence(text, tone = 'light') {
@@ -2636,12 +2660,16 @@
         return joined;
     }
 
-    function addConversationalFlow(text, tone = 'light') {
+    function addConversationalFlow(text, tone = 'light', tag = '') {
         if (!text) return '';
+        if (/^h[1-6]$/i.test(tag)) return text.trim(); // never prefix headings
+
         let out = text.trim();
         const hasAddress = /\b(you|your|we|i)\b/i.test(out);
-        if (!hasAddress && tone !== 'light') {
-            out = `If you're reading this to make a decision, ${out.charAt(0).toLowerCase() + out.slice(1)}`;
+        const startsWithDecision = /^if you're reading this to make a decision/i.test(out);
+
+        if (!hasAddress && tone !== 'light' && !startsWithDecision) {
+            out = `${out.charAt(0).toUpperCase()}${out.slice(1)}`;
         }
         if (tone === 'bold' && !/\b(Bottom line|Takeaway)\b/i.test(out)) {
             out = `${out} Bottom line: focus on what works in real use, not just specs.`;
