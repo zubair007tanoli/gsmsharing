@@ -62,6 +62,19 @@ namespace discussionspot9.Middleware
                     return;
                 }
 
+                // Enforce non-www (remove www prefix) - prevents duplicate content in Google
+                var host = context.Request.Host.Host;
+                if (host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) && 
+                    !host.Contains("localhost") &&
+                    !context.Response.HasStarted)
+                {
+                    var newHost = host.Substring(4); // Remove "www."
+                    var newUrl = $"https://{newHost}{context.Request.Path}{context.Request.QueryString}";
+                    _logger.LogInformation($"Redirecting www to non-www: {newUrl}");
+                    context.Response.Redirect(newUrl, permanent: true);
+                    return;
+                }
+
                 await _next(context);
             }
             catch (Exception ex)
