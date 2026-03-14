@@ -28,6 +28,26 @@ namespace Pdfpeaks.Controllers
             return View();
         }
 
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        public IActionResult Terms()
+        {
+            return View();
+        }
+
+        public IActionResult Cookies()
+        {
+            return View();
+        }
+
+        public IActionResult Gdpr()
+        {
+            return View();
+        }
+
         [HttpGet]
         public IActionResult Contact()
         {
