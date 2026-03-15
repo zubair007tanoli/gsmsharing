@@ -1,0 +1,17 @@
+# Cursor IDE Rules
+
+## Tool Call Guidelines
+- Always ensure tool calls have valid JSON arguments
+- Never pass empty strings as JSON arguments
+- Validate all parameters before making tool calls
+- If a parameter is optional, omit it rather than passing empty values
+
+## Error Handling
+- Gracefully handle invalid JSON responses
+- Provide clear error messages when tool calls fail
+- Retry failed tool calls with corrected parameters
+
+## Best Practices
+- Use structured data formats consistently
+- Validate input parameters before processing
+- Log errors with sufficient context for debugging
